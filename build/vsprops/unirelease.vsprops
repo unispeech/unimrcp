@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="unirelease"
+	InheritedPropertySheets="unibase.vsprops"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		PreprocessorDefinitions="NDEBUG;"
+		RuntimeLibrary="2"
+		UsePrecompiledHeader="0"
+		Detect64BitPortabilityProblems="true"
+		DebugInformationFormat="3"
+	/>
+</VisualStudioPropertySheet>
