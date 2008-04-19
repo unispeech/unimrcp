@@ -28,27 +28,19 @@ APT_BEGIN_EXTERN_C
 
 /** Opaque task declaration */
 typedef struct apt_task_t apt_task_t;
-
-/** Prototype of task event handler */
+/** Opaque task virtual table declaration */
+typedef struct apt_task_vtable_t apt_task_vtable_t;
+/** Opaque task event handler */
 typedef void (*apt_task_event_handler_f)(void *obj);
 
-typedef struct apt_task_vtable_t apt_task_vtable_t;
-/** Table of task virtual methods */
-struct apt_task_vtable_t {
-	apt_task_event_handler_f main;
-	apt_task_event_handler_f on_start_request;
-	apt_task_event_handler_f on_terminate_request;
-	apt_task_event_handler_f on_pre_run;
-	apt_task_event_handler_f on_post_run;
-};
 
 /**
  * Create task.
- * @param data the data to pass to main function of the task
- * @param main the the main function of the task to run
+ * @param obj the external object to associate with the task
+ * @param vtable the table of virtual methods of the task
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t vtable, apr_pool_t *pool);
+APT_DECLARE(apt_task_t*) apt_task_create(void *obj, const apt_task_vtable_t *vtable, apr_pool_t *pool);
 
 /**
  * Destroy task.
@@ -89,6 +81,24 @@ APT_DECLARE(void) apt_task_delay(apr_size_t msec);
  */
 APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
 
+
+/** Table of task virtual methods */
+struct apt_task_vtable_t {
+	apt_task_event_handler_f main;
+	apt_task_event_handler_f on_start_request;
+	apt_task_event_handler_f on_terminate_request;
+	apt_task_event_handler_f on_pre_run;
+	apt_task_event_handler_f on_post_run;
+};
+
+static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
+{
+	vtable->main = NULL;
+	vtable->on_start_request = NULL;
+	vtable->on_terminate_request = NULL;
+	vtable->on_pre_run = NULL;
+	vtable->on_post_run = NULL;
+}
 
 APT_END_EXTERN_C
 

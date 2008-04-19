@@ -38,7 +38,27 @@ struct apt_task_t {
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
 
-APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t vtable, apr_pool_t *pool)
+static APR_INLINE void apt_task_vtable_copy(apt_task_t *task, const apt_task_vtable_t *vtable)
+{
+	if(vtable->main) {
+		task->vtable.main = vtable->main;
+	}
+	if(vtable->on_start_request) {
+		task->vtable.on_start_request = vtable->on_start_request;
+	}
+	if(vtable->on_terminate_request) {
+		task->vtable.on_terminate_request = vtable->on_terminate_request;
+	}
+	if(vtable->on_pre_run) {
+		task->vtable.on_pre_run = vtable->on_pre_run;
+	}
+	if(vtable->on_post_run) {
+		task->vtable.on_post_run = vtable->on_post_run;
+	}
+}
+
+
+APT_DECLARE(apt_task_t*) apt_task_create(void *obj, const apt_task_vtable_t *vtable, apr_pool_t *pool)
 {
 	apt_task_t *task = apr_palloc(pool,sizeof(apt_task_t));
 	task->pool = pool;
@@ -49,7 +69,10 @@ APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t vtable, ap
 		return NULL;
 	}
 	task->obj = obj;
-	task->vtable = vtable;
+	apt_task_vtable_reset(&task->vtable);
+	if(vtable) {
+		apt_task_vtable_copy(task,vtable);
+	}
 	return task;
 }
 
