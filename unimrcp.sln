@@ -3,6 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aprtoolkit", "libs\apr-toolkit\aprtoolkit.vcproj", "{13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{AC4356E8-48A1-4D2D-AFB1-11CF30B974CD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apttest", "tests\apttest\apttest.vcproj", "{429C907B-97D1-4B2D-9B0E-A14A5BFDAD15}"
+	ProjectSection(ProjectDependencies) = postProject
+		{13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2} = {13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{5377DC3A-DB96-4819-8AAF-2A75F3A69119}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,8 +22,16 @@ Global
 		{13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2}.Debug|Win32.Build.0 = Debug|Win32
 		{13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2}.Release|Win32.ActiveCfg = Release|Win32
 		{13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2}.Release|Win32.Build.0 = Release|Win32
+		{429C907B-97D1-4B2D-9B0E-A14A5BFDAD15}.Debug|Win32.ActiveCfg = Debug|Win32
+		{429C907B-97D1-4B2D-9B0E-A14A5BFDAD15}.Debug|Win32.Build.0 = Debug|Win32
+		{429C907B-97D1-4B2D-9B0E-A14A5BFDAD15}.Release|Win32.ActiveCfg = Release|Win32
+		{429C907B-97D1-4B2D-9B0E-A14A5BFDAD15}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{429C907B-97D1-4B2D-9B0E-A14A5BFDAD15} = {AC4356E8-48A1-4D2D-AFB1-11CF30B974CD}
+		{13DEECA0-BDD4-4744-A1A2-8EB0A44DF3D2} = {5377DC3A-DB96-4819-8AAF-2A75F3A69119}
 	EndGlobalSection
 EndGlobal
