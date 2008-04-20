@@ -6,6 +6,10 @@ INCLUDES                 = -I$(top_srcdir)/libs/apr-toolkit/include \
 noinst_LTLIBRARIES       = libaprtoolkit.la
 
 include_HEADERS          = include/apt.h \
-                           include/apt_task.h
+                           include/apt_task.h \
+                           include/apt_obj_list.h
 
-libaprtoolkit_la_SOURCES = src/apt_task.c
+
+libaprtoolkit_la_SOURCES = src/apt_task.c \
+                           src/apt_obj_list.c
+
