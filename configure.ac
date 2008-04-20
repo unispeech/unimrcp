@@ -46,6 +46,8 @@ AC_CONFIG_FILES([
   Makefile
   libs/Makefile
   libs/apr-toolkit/Makefile
+  tests/Makefile
+  tests/apttest/Makefile
 ])
 
 AC_OUTPUT
