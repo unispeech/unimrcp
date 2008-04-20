@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
+#include <stdio.h>
 #include "apt_task.h"
 
 static void sample_task_main(void *obj)
