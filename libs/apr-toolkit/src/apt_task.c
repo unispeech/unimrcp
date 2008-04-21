@@ -40,25 +40,25 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 
 static APR_INLINE void apt_task_vtable_copy(apt_task_t *task, const apt_task_vtable_t *vtable)
 {
-	if(vtable->main) {
-		task->vtable.main = vtable->main;
+	if(vtable->destroy) {
+		task->vtable.destroy = vtable->destroy;
 	}
-	if(vtable->on_start_request) {
-		task->vtable.on_start_request = vtable->on_start_request;
+	if(vtable->start) {
+		task->vtable.start = vtable->start;
 	}
-	if(vtable->on_terminate_request) {
-		task->vtable.on_terminate_request = vtable->on_terminate_request;
+	if(vtable->terminate) {
+		task->vtable.terminate = vtable->terminate;
 	}
-	if(vtable->on_pre_run) {
-		task->vtable.on_pre_run = vtable->on_pre_run;
+	if(vtable->pre_run) {
+		task->vtable.pre_run = vtable->pre_run;
 	}
-	if(vtable->on_post_run) {
-		task->vtable.on_post_run = vtable->on_post_run;
+	if(vtable->post_run) {
+		task->vtable.post_run = vtable->post_run;
 	}
 }
 
 
-APT_DECLARE(apt_task_t*) apt_task_create(void *obj, const apt_task_vtable_t *vtable, apr_pool_t *pool)
+APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t *vtable, apr_pool_t *pool)
 {
 	apt_task_t *task = apr_palloc(pool,sizeof(apt_task_t));
 	task->pool = pool;
@@ -82,6 +82,10 @@ APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 		apt_task_wait_till_complete(task);
 	}
 
+	if(task->vtable.destroy) {
+		task->vtable.destroy(task);
+	}
+	
 	apr_thread_mutex_destroy(task->data_guard);
 	return TRUE;
 }
@@ -94,8 +98,8 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 		apr_status_t rv;
 		task->state = TASK_STATE_START_REQUESTED;
 		/* raise start request event */
-		if(task->vtable.on_start_request) {
-			task->vtable.on_start_request(task->obj);
+		if(task->vtable.start) {
+			task->vtable.start(task);
 		}
 		rv = apr_thread_create(&task->thread_handle,NULL,apt_task_run,task,task->pool);
 		if(rv != APR_SUCCESS) {
@@ -120,8 +124,8 @@ APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_til
 
 	if(task->state == TASK_STATE_TERMINATE_REQUESTED) {
 		/* raise terminate request event */
-		if(task->vtable.on_terminate_request) {
-			task->vtable.on_terminate_request(task->obj);
+		if(task->vtable.terminate) {
+			task->vtable.terminate(task);
 		}
 
 		if(wait_till_complete == TRUE) {
@@ -157,24 +161,24 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 	apt_task_t *task = data;
 	
 	/* raise pre-run event */
-	if(task->vtable.on_pre_run) {
-		task->vtable.on_pre_run(task->obj);
+	if(task->vtable.pre_run) {
+		task->vtable.pre_run(task);
 	}
 	apr_thread_mutex_lock(task->data_guard);
 	task->state = TASK_STATE_RUNNING;
 	apr_thread_mutex_unlock(task->data_guard);
 
 	/* run task */
-	if(task->vtable.main) {
-		task->vtable.main(task->obj);
+	if(task->vtable.run) {
+		task->vtable.run(task);
 	}
 
 	apr_thread_mutex_lock(task->data_guard);
 	task->state = TASK_STATE_NONE;
 	apr_thread_mutex_unlock(task->data_guard);
 	/* raise post-run event */
-	if(task->vtable.on_post_run) {
-		task->vtable.on_post_run(task->obj);
+	if(task->vtable.post_run) {
+		task->vtable.post_run(task);
 	}
 	return NULL;
 }

@@ -27,21 +27,9 @@ int main(int argc, char *argv[])
 {
 	apr_pool_t *pool;
 	apt_task_t *task;
-	/* simply declare const task vtable */
-	const apt_task_vtable_t sample_task_vtable = {
-		sample_task_main,
-		NULL,
-		NULL,
-		NULL,
-		NULL
-	};
-
-#if 0
-	/* another way of task vtable usage */
-	apt_task_vtable_t another_task_vtable;
-	apt_task_vtable_reset(&another_task_vtable);
-	another_task_vtable.main = sample_task_main;
-#endif
+	apt_task_vtable_t vtable;
+	apt_task_vtable_reset(&vtable);
+	vtable.run = sample_task_main;
 
 	if(apr_initialize() != APR_SUCCESS) {
 		return 0;
@@ -53,7 +41,7 @@ int main(int argc, char *argv[])
 	}
 
 	printf("Create Task\n");
-	task = apt_task_create(NULL,&sample_task_vtable,pool);
+	task = apt_task_create(NULL,&vtable,pool);
 	printf("Start Task\n");
 	apt_task_start(task);
 	printf("Wait for Task to Complete\n");
