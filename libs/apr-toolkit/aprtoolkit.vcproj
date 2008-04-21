@@ -134,6 +134,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_composite_task.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_obj_list.h"
 				>
 			</File>
@@ -141,11 +145,19 @@
 				RelativePath=".\include\apt_task.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\apt_task_msg.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\apt_composite_task.c"
+				>
+			</File>
 			<File
 				RelativePath=".\src\apt_obj_list.c"
 				>
