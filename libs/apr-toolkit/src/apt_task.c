@@ -52,6 +52,9 @@ static APR_INLINE void apt_task_vtable_copy(apt_task_t *task, const apt_task_vta
 	if(vtable->pre_run) {
 		task->vtable.pre_run = vtable->pre_run;
 	}
+	if(vtable->run) {
+		task->vtable.run = vtable->run;
+	}
 	if(vtable->post_run) {
 		task->vtable.post_run = vtable->post_run;
 	}

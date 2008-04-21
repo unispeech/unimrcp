@@ -98,6 +98,7 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 	vtable->start = NULL;
 	vtable->terminate = NULL;
 	vtable->pre_run = NULL;
+	vtable->run = NULL;
 	vtable->post_run = NULL;
 }
 

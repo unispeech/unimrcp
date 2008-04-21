@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include "apt_task.h"
 
-static void sample_task_main(void *obj)
+static void sample_task_main(apt_task_t *task)
 {
 	printf("Do the Job\n");
 	apt_task_delay(5000);
