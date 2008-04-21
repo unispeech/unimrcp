@@ -137,7 +137,7 @@ APT_DECLARE(apt_list_elem_t*) apt_list_elem_remove(apt_obj_list_t *list, apt_lis
 	return next_elem;
 }
 
-APT_DECLARE(void*) apt_list_elem_data_get(apt_list_elem_t *elem)
+APT_DECLARE(void*) apt_list_elem_object_get(apt_list_elem_t *elem)
 {
 	return elem->obj;
 }
