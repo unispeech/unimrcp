@@ -50,7 +50,7 @@ typedef enum {
 	APT_LOG_HEADER_PRIORITY = 0x04,
 
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
-} apt_log_priority_t;
+} apt_log_header_t;
 
 /** Prototype of log handler function */
 typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_t priority, const char *format, va_list arg_ptr);
