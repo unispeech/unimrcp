@@ -89,13 +89,13 @@ static apt_bool_t apt_do_log(apt_log_priority_t priority, const char *format, va
 	apr_time_exp_lt(&result,now);
 
 	if(apt_logger.header & APT_LOG_HEADER_DATE) {
-		offset += apr_snprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,"%4ld-%02ld-%02ld ",
+		offset += apr_snprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,"%4d-%02d-%02d ",
 							result.tm_year+1900,
 							result.tm_mon+1,
 							result.tm_mday);
 	}
 	if(apt_logger.header & APT_LOG_HEADER_TIME) {
-		offset += apr_snprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,"%02ld:%02ld:%02ld:%06ld ",
+		offset += apr_snprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,"%02d:%02d:%02d:%06d ",
 							result.tm_hour,
 							result.tm_min,
 							result.tm_sec,
