@@ -138,6 +138,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_log.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_obj_list.h"
 				>
 			</File>
@@ -156,6 +160,10 @@
 			>
 			<File
 				RelativePath=".\src\apt_composite_task.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_log.c"
 				>
 			</File>
 			<File

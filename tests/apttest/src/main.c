@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
 #include "apt_task.h"
+#include "apt_log.h"
 
 static void sample_task_main(apt_task_t *task)
 {
-	printf("Do the Job\n");
+	apt_log(APT_PRIO_DEBUG,"Do the Job");
 	apt_task_delay(5000);
 }
 
@@ -40,13 +40,13 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	printf("Create Task\n");
+	apt_log(APT_PRIO_NOTICE,"Create Task");
 	task = apt_task_create(NULL,&vtable,pool);
-	printf("Start Task\n");
+	apt_log(APT_PRIO_INFO,"Start Task");
 	apt_task_start(task);
-	printf("Wait for Task to Complete\n");
+	apt_log(APT_PRIO_INFO,"Wait for Task to Complete");
 	apt_task_wait_till_complete(task);
-	printf("Destroy Task\n");
+	apt_log(APT_PRIO_NOTICE,"Destroy Task");
 	apt_task_destroy(task);
 
 	apr_pool_destroy(pool);
