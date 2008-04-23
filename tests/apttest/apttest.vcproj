@@ -150,6 +150,10 @@
 				RelativePath=".\src\main.c"
 				>
 			</File>
+			<File
+				RelativePath=".\src\task_suite.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="include"

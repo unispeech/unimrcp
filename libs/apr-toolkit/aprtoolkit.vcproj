@@ -153,6 +153,10 @@
 				RelativePath=".\include\apt_task_msg.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\apt_test_suite.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
@@ -172,6 +176,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_task.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_test_suite.c"
 				>
 			</File>
 		</Filter>

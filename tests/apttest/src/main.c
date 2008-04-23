@@ -14,42 +14,37 @@
  * limitations under the License.
  */
 
-#include "apt_task.h"
+#include "apt_test_suite.h"
 #include "apt_log.h"
 
-static void sample_task_main(apt_task_t *task)
-{
-	apt_log(APT_PRIO_DEBUG,"Do the Job");
-	apt_task_delay(5000);
-}
+apt_test_suite_t* task_test_suite_create(apr_pool_t *pool);
 
-int main(int argc, char *argv[])
+int main(int argc, const char * const *argv)
 {
+	apt_test_framework_t *test_framework;
+	apt_test_suite_t *test_suite;
 	apr_pool_t *pool;
-	apt_task_t *task;
-	apt_task_vtable_t vtable;
-	apt_task_vtable_reset(&vtable);
-	vtable.run = sample_task_main;
-
+	
+	/* one time apr global initialization */
 	if(apr_initialize() != APR_SUCCESS) {
 		return 0;
 	}
 
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
-		apr_terminate();
-		return 0;
-	}
+	/* create test framework */
+	test_framework = apt_test_framework_create();
+	pool = apt_test_framework_pool_get(test_framework);
 
-	apt_log(APT_PRIO_NOTICE,"Create Task");
-	task = apt_task_create(NULL,&vtable,pool);
-	apt_log(APT_PRIO_INFO,"Start Task");
-	apt_task_start(task);
-	apt_log(APT_PRIO_INFO,"Wait for Task to Complete");
-	apt_task_wait_till_complete(task);
-	apt_log(APT_PRIO_NOTICE,"Destroy Task");
-	apt_task_destroy(task);
+	/* create test suites and add them to test framework */
+	test_suite = task_test_suite_create(pool);
+	apt_test_framework_suite_add(test_framework,test_suite);
 
-	apr_pool_destroy(pool);
+	/* run tests */
+	apt_test_framework_run(test_framework,argc,argv);
+
+	/* destroy test framework */
+	apt_test_framework_destroy(test_framework);
+
+	/* final apr global termination */
 	apr_terminate();
 	return 0;
 }
