@@ -44,10 +44,10 @@ typedef enum {
 
 /** Header (format) of log messages */
 typedef enum {
-	APT_LOG_HEADER_NONE     = 0x00,
-	APT_LOG_HEADER_DATE     = 0x01,
-	APT_LOG_HEADER_TIME     = 0x02,
-	APT_LOG_HEADER_PRIORITY = 0x04,
+	APT_LOG_HEADER_NONE     = 0x00, /* none of optional headers is enabled*/
+	APT_LOG_HEADER_DATE     = 0x01, /* enable date output */
+	APT_LOG_HEADER_TIME     = 0x02, /* enable time output */
+	APT_LOG_HEADER_PRIORITY = 0x04, /* enable priority name output */
 
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
 } apt_log_header_t;

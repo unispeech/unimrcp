@@ -35,7 +35,7 @@
 #define APT_END_EXTERN_C
 #endif 
 
-/* lib export/import defines (win32) */
+/** lib export/import defines (win32) */
 #ifdef WIN32
 #ifdef APT_STATIC_LIB
 #define APT_DECLARE(type)   type __stdcall
@@ -50,7 +50,7 @@
 #define APT_DECLARE(type) type
 #endif
 
-/* boolean value */
+/** Boolean value */
 typedef int apt_bool_t;
 
 static APR_INLINE apt_bool_t apt_str_compare(const char *str1, const char *str2)

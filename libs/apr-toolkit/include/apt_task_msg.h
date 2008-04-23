@@ -41,8 +41,10 @@ typedef struct apt_task_msg_t apt_task_msg_t;
 
 /** Task message is used for task inter-communication */
 struct apt_task_msg_t {
-	apt_task_msg_type_t  type;     /* one of apt_task_msg_type_t*/
-	char                 data[1];  /* context specific data */
+	/** One of apt_task_msg_type_t */
+	apt_task_msg_type_t  type;
+	/** Context specific data */
+	char                 data[1];
 };
 
 APT_END_EXTERN_C

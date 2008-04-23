@@ -36,7 +36,8 @@ typedef struct apt_composite_task_vtable_t apt_composite_task_vtable_t;
 /**
  * Create composite task.
  * @param obj the external object to associate with the task
- * @param vtable the table of virtual methods of the task
+ * @param base_vtable the table of virtual methods of the task base
+ * @param vtable the table of virtual methods of the composite task
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_composite_task_t*) apt_composite_task_create(
@@ -81,10 +82,14 @@ APT_DECLARE(void*) apt_composite_task_object_get(apt_composite_task_t *task);
 
 /** Table of composite task virtual methods */
 struct apt_composite_task_vtable_t {
+	/** Virtual method to signal task message  */
 	apt_bool_t (*signal_msg)(apt_composite_task_t *task, apt_task_msg_t *msg);
+	/** Virtual method to process task message */
 	apt_bool_t (*process_msg)(apt_composite_task_t *task, apt_task_msg_t *msg);
 
+	/** Virtual method to notify start is complite */
 	apt_bool_t (*on_start_complete)(apt_composite_task_t *task);
+	/** Virtual method to notify terminate is complite */
 	apt_bool_t (*on_terminate_complete)(apt_composite_task_t *task);
 };
 

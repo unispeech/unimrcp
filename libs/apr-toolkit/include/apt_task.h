@@ -70,7 +70,6 @@ APT_DECLARE(apt_bool_t) apt_task_wait_till_complete(apt_task_t *task);
 
 /**
  * Hold task execution.
- * @param task the task to hold
  * @param msec the time to hold
  */
 APT_DECLARE(void) apt_task_delay(apr_size_t msec);
@@ -84,11 +83,17 @@ APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
 
 /** Table of task virtual methods */
 struct apt_task_vtable_t {
+	/** Virtual destroy */
 	apt_task_method_f destroy;
+	/** Virtual start */
 	apt_task_method_f start;
+	/** Virtual terminate */
 	apt_task_method_f terminate;
+	/** Virtual pre-run */
 	apt_task_method_f pre_run;
+	/** Virtual run */
 	apt_task_method_f run;
+	/** Virtual post-run */
 	apt_task_method_f post_run;
 };
 
