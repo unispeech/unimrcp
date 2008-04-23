@@ -49,11 +49,11 @@ struct apt_test_suite_t {
  * Create test suite.
  * @param pool the pool to allocate memory from
  * @param name the unique name of the test suite
- * @param object the external object associated with the test suite
+ * @param obj the external object associated with the test suite
  * @param tester the test function to execute
  */
 APT_DECLARE(apt_test_suite_t*) apt_test_suite_create(apr_pool_t *pool, const char *name, 
-													 void *obj, apt_test_f tester);
+                                                     void *obj, apt_test_f tester);
 
 
 
