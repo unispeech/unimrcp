@@ -1,0 +1,47 @@
+INTRODUCTION
+============
+UniMRCP - Open Source Media Resource Control Protocol Stack.
+
+
+INSTALLATION
+============
+See the file "INSTALLATION" for installation tips.
+
+
+DOCUMENTATION
+=============
+See the file "INSTALLATION" for doxygen generated documentation.
+More to come (Enterpise Architect generated documentation).
+
+
+REFERENCES
+==========
+Website:
+   http://www.unimrcp.org
+
+Project Home:
+   http://code.google.com/p/unimrcp/
+
+Wiki:
+   http://code.google.com/p/unimrcp/w/list
+
+Issue Tracker:
+   http://code.google.com/p/unimrcp/issues/list
+
+Discussion Group:
+   http://groups.google.com/group/unimrcp
+
+Version control repository (SVN):
+   http://unimrcp.googlecode.com/svn/trunk/
+
+Commit monitor:
+   http://code.google.com/p/unimrcp/source/list
+   http://groups.google.com/group/unimrcp-svn-commits
+
+
+LICENSING
+=========
+UniMRCP is licensed under terms of the Apache 2.0 license.
+See the file "LICENSE" for more information.
+
+Copyright 2008 Arsen Chaloyan

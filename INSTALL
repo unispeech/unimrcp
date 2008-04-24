@@ -1,0 +1,63 @@
+BUILD REQUIREMENTS
+==================
+UniMRCP depends on a number of third party tools and libraries,
+which must be installed prior to UniMRCP build.
+
+1. Apache Portable Runtime [1.2.x] (http://apr.apache.org/)
+Whenever you want to build any part of UniMRCP, you need the
+Apache Portable Runtime (APR) and the APR Utility (APR-util)
+libraries.
+
+More to come
+
+
+GNU BUILD
+===================
+Additional requirements
+- autoconf 2.57 or newer
+- libtool 1.4 or newer
+
+Build
+$ ./bootstrap
+$ ./configure
+$ make
+$ make install
+
+There are a couple of options to "./configure".
+To specify where to look for the APR and APR-util libraries
+use the "--with-apr=" and "--with-apr-util=" options.
+For example
+$ ./configure --with-apr=/usr/local/apr \
+              --with-apr-util=/usr/local/apr
+
+
+To generate doxygen documentation from the sources use
+$ make dox
+Find output in docs/dox
+
+To build distribution tarball use
+$ make dist
+
+
+WINDOWS BUILD
+======================
+Additional requirements
+- Microsoft Visual Studio 2005
+
+Build Preparation
+You may need to adjust the paths for 3-rd party libraries
+in appropriate property sheets to match your local installation,
+while below are the defaults (build/vsprops).
+
+apr.vsprops
+	<UserMacro
+		Name="AprDir"
+		Value="$(SolutionDir)libs\apr"
+	/>
+	<UserMacro
+		Name="AprUtilDir"
+		Value="$(SolutionDir)libs\apr-util"
+	/>
+	
+Build
+Open unimrcp.sln and build it.
