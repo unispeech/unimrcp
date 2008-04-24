@@ -21,10 +21,10 @@
 static void task_main(apt_task_t *task)
 {
 	apt_log(APT_PRIO_DEBUG,"Do the Job");
-	apt_task_delay(5000);
+	apt_task_delay(3000);
 }
 
-static apt_bool_t run_task_test(apt_test_suite_t *suite, int argc, const char * const *argv)
+static apt_bool_t task_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
 {
 	apt_task_t *task;
 	apt_task_vtable_t vtable;
@@ -54,6 +54,6 @@ static apt_bool_t run_task_test(apt_test_suite_t *suite, int argc, const char * 
 
 apt_test_suite_t* task_test_suite_create(apr_pool_t *pool)
 {
-	apt_test_suite_t *suite = apt_test_suite_create(pool,"task",NULL,run_task_test);
+	apt_test_suite_t *suite = apt_test_suite_create(pool,"task",NULL,task_test_run);
 	return suite;
 }
