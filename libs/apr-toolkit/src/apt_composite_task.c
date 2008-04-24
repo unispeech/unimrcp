@@ -20,6 +20,7 @@
 struct apt_composite_task_t {
 	apt_task_t                 *base;              /* base task */
 	apt_composite_task_vtable_t vtable;            /* table of virtual methods */
+	apt_task_msg_pool_t        *msg_pool;          /* message pool to allocate task messages from */
 	void                       *obj;               /* external object associated with the task */
 
 	apt_composite_task_t       *master_task;       /* master task */
@@ -53,6 +54,7 @@ APT_DECLARE(apt_composite_task_t*) apt_composite_task_create(
 									void *obj,
 									apt_task_vtable_t *base_vtable,
 									apt_composite_task_vtable_t *vtable,
+									apt_task_msg_pool_t *msg_pool,
 									apr_pool_t *pool)
 {
 	apt_composite_task_t *composite_task = apr_palloc(pool,sizeof(apt_composite_task_t));
@@ -65,6 +67,7 @@ APT_DECLARE(apt_composite_task_t*) apt_composite_task_create(
 		}
 	}
 	composite_task->base = apt_task_create(composite_task,base_vtable,pool);
+	composite_task->msg_pool = msg_pool;
 	composite_task->obj = obj;
 	apt_composite_task_vtable_reset(&composite_task->vtable);
 	if(vtable) {
@@ -94,6 +97,7 @@ APT_DECLARE(apt_bool_t) apt_composite_task_msg_signal(apt_composite_task_t *task
 
 APT_DECLARE(apt_bool_t) apt_composite_task_msg_process(apt_composite_task_t *task, apt_task_msg_t *msg)
 {
+	apt_bool_t running = TRUE;
 	switch(msg->type) {
 		case TASK_MSG_START_COMPLETE: 
 		{
@@ -136,6 +140,7 @@ APT_DECLARE(apt_bool_t) apt_composite_task_msg_process(apt_composite_task_t *tas
 					/* signal terminate-complete message */
 					apt_composite_task_msg_signal(task->master_task,msg);
 				}
+				running = FALSE;
 			}
 			break;
 		}
@@ -151,6 +156,7 @@ APT_DECLARE(apt_bool_t) apt_composite_task_msg_process(apt_composite_task_t *tas
 						/* signal terminate-complete message */
 						apt_composite_task_msg_signal(task->master_task,msg);
 					}
+					running = FALSE;
 				}
 			}
 			break;
@@ -163,7 +169,8 @@ APT_DECLARE(apt_bool_t) apt_composite_task_msg_process(apt_composite_task_t *tas
 		}
 	}
 
-	return TRUE;
+	apt_task_msg_release(msg);
+	return running;
 }
 
 APT_DECLARE(apt_task_t*) apt_composite_task_base_get(apt_composite_task_t *task)
@@ -179,10 +186,10 @@ APT_DECLARE(void*) apt_composite_task_object_get(apt_composite_task_t *task)
 static void apt_task_on_terminate(apt_task_t *task)
 {
 	apt_composite_task_t *composite_task = apt_task_object_get(task);
-	apt_task_msg_t msg;
+	apt_task_msg_t *msg = apt_task_msg_acquire(composite_task->msg_pool);
 	/* signal terminate-request message */
-	msg.type = TASK_MSG_TERMINATE_REQUEST;
-	apt_composite_task_msg_signal(composite_task,&msg);
+	msg->type = TASK_MSG_TERMINATE_REQUEST;
+	apt_composite_task_msg_signal(composite_task,msg);
 }
 
 static void apt_task_on_pre_run(apt_task_t *task)

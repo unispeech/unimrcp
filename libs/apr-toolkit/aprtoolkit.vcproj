@@ -138,6 +138,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_consumer_task.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_log.h"
 				>
 			</File>
@@ -167,6 +171,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\apt_consumer_task.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\apt_log.c"
 				>
 			</File>
@@ -176,6 +184,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_task.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_task_msg.c"
 				>
 			</File>
 			<File

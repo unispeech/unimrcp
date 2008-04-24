@@ -38,12 +38,14 @@ typedef struct apt_composite_task_vtable_t apt_composite_task_vtable_t;
  * @param obj the external object to associate with the task
  * @param base_vtable the table of virtual methods of the task base
  * @param vtable the table of virtual methods of the composite task
+ * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_composite_task_t*) apt_composite_task_create(
 									void *obj,
 									apt_task_vtable_t *base_vtable,
 									apt_composite_task_vtable_t *vtable,
+									apt_task_msg_pool_t *msg_pool,
 									apr_pool_t *pool);
 
 /**

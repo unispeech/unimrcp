@@ -36,16 +36,38 @@ typedef enum {
 	TASK_MSG_USER,
 } apt_task_msg_type_t;
 
-/** Task message declaration */
+/** Opaque task message declaration */
 typedef struct apt_task_msg_t apt_task_msg_t;
+/** Opaque task message pool declaration */
+typedef struct apt_task_msg_pool_t apt_task_msg_pool_t;
 
-/** Task message is used for task inter-communication */
+/** Task message is used for inter task communication */
 struct apt_task_msg_t {
+	/** Message pool the task message is allocated from */
+	apt_task_msg_pool_t *msg_pool;
 	/** One of apt_task_msg_type_t */
 	apt_task_msg_type_t  type;
 	/** Context specific data */
 	char                 data[1];
 };
+
+
+/** Create pool of task messages with dynamic allocation of messages (no actual pool is created) */
+APT_DECLARE(apt_task_msg_pool_t*) apt_task_msg_pool_create_dynamic(apr_size_t msg_size, apr_pool_t *pool);
+
+/** Create pool of task messages with static allocation of messages */
+APT_DECLARE(apt_task_msg_pool_t*) apt_task_msg_pool_create_static(apr_size_t msg_size, apr_size_t msg_pool_size, apr_pool_t *pool);
+
+/** Destroy pool of task messages */
+APT_DECLARE(void) apt_task_msg_pool_destroy(apt_task_msg_pool_t *msg_pool);
+
+
+/** Acquire task message from task message pool */
+APT_DECLARE(apt_task_msg_t*) apt_task_msg_acquire(apt_task_msg_pool_t *task_msg_pool);
+
+/** Realese task message */
+APT_DECLARE(void) apt_task_msg_release(apt_task_msg_t *task_msg);
+
 
 APT_END_EXTERN_C
 
