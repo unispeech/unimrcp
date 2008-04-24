@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "apt_task_msg.h"
 
 /** Abstract pool of task messages to allocate task messages from */
