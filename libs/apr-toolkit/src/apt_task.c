@@ -20,10 +20,10 @@
 
 /** Internal states of the task */
 typedef enum {
-	TASK_STATE_NONE,               /* no task activity */
-	TASK_STATE_START_REQUESTED,    /* task start is requested and is in progress */
-	TASK_STATE_RUNNING,            /* task is running */
-	TASK_STATE_TERMINATE_REQUESTED /* task termination is requested and is in progress */
+	TASK_STATE_IDLE,               /**< no task activity */
+	TASK_STATE_START_REQUESTED,    /**< task start is requested and is in progress */
+	TASK_STATE_RUNNING,            /**< task is running */
+	TASK_STATE_TERMINATE_REQUESTED /**< task termination is requested and is in progress */
 } apt_task_state_t;
 
 struct apt_task_t {
@@ -66,7 +66,7 @@ APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t *vtable, a
 	apt_task_t *task = apr_palloc(pool,sizeof(apt_task_t));
 	task->pool = pool;
 
-	task->state = TASK_STATE_NONE;
+	task->state = TASK_STATE_IDLE;
 	task->thread_handle = NULL;
 	if(apr_thread_mutex_create(&task->data_guard, APR_THREAD_MUTEX_DEFAULT, task->pool) != APR_SUCCESS) {
 		return NULL;
@@ -81,7 +81,7 @@ APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t *vtable, a
 
 APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 {
-	if(task->state != TASK_STATE_NONE) {
+	if(task->state != TASK_STATE_IDLE) {
 		apt_task_wait_till_complete(task);
 	}
 
@@ -97,7 +97,7 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 {
 	apt_bool_t status = TRUE;
 	apr_thread_mutex_lock(task->data_guard);
-	if(task->state == TASK_STATE_NONE) {
+	if(task->state == TASK_STATE_IDLE) {
 		apr_status_t rv;
 		task->state = TASK_STATE_START_REQUESTED;
 		/* raise start request event */
@@ -106,7 +106,7 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 		}
 		rv = apr_thread_create(&task->thread_handle,NULL,apt_task_run,task,task->pool);
 		if(rv != APR_SUCCESS) {
-			task->state = TASK_STATE_NONE;
+			task->state = TASK_STATE_IDLE;
 			status = FALSE;
 		}
 	}
@@ -177,7 +177,7 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 	}
 
 	apr_thread_mutex_lock(task->data_guard);
-	task->state = TASK_STATE_NONE;
+	task->state = TASK_STATE_IDLE;
 	apr_thread_mutex_unlock(task->data_guard);
 	/* raise post-run event */
 	if(task->vtable.post_run) {

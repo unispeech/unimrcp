@@ -36,17 +36,17 @@ static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 typedef struct apt_logger_t apt_logger_t;
 
 struct apt_logger_t {
-	apt_log_priority_t priority;
+	apt_log_priority_e priority;
 	int                header;
 	apt_log_handler_f  handler;
 };
 
 static apt_logger_t apt_logger = {APT_PRIO_DEBUG, APT_LOG_HEADER_DEFAULT, NULL};
 
-static apt_bool_t apt_do_log(apt_log_priority_t priority, const char *format, va_list arg_ptr);
+static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 
-APT_DECLARE(void) apt_log_priority_set(apt_log_priority_t priority)
+APT_DECLARE(void) apt_log_priority_set(apt_log_priority_e priority)
 {
 	if(priority < APT_PRIO_COUNT) {
 		apt_logger.priority = priority;
@@ -63,7 +63,7 @@ APT_DECLARE(void) apt_log_handler_set(apt_log_handler_f handler)
 	apt_logger.handler = handler;
 }
 
-APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_t priority, const char *format, ...)
+APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format, ...)
 {
 	apt_bool_t status = TRUE;
 	if(priority <= apt_logger.priority) {
@@ -80,7 +80,7 @@ APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_t priority, const char *format,
 	return status;
 }
 
-static apt_bool_t apt_do_log(apt_log_priority_t priority, const char *format, va_list arg_ptr)
+static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va_list arg_ptr)
 {
 	char logEntry[MAX_LOG_ENTRY_SIZE];
 	apr_size_t offset = 0;

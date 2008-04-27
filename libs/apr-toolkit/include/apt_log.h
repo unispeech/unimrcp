@@ -30,36 +30,36 @@ APT_BEGIN_EXTERN_C
 
 /** Priority of log messages ordered from highest priority to lowest (rfc3164) */
 typedef enum {
-	APT_PRIO_EMERGENCY, /** System is unusable */
-	APT_PRIO_ALERT,     /** Action must be taken immediately */
-	APT_PRIO_CRITICAL,  /** Critical condition */
-	APT_PRIO_ERROR,     /** Error condition */
-	APT_PRIO_WARNING,   /** Warning condition */
-	APT_PRIO_NOTICE,    /** Normal, but significant, condition */
-	APT_PRIO_INFO,      /** Informational message */
-	APT_PRIO_DEBUG,     /** Debug-level message */
+	APT_PRIO_EMERGENCY, /**< system is unusable */
+	APT_PRIO_ALERT,     /**< action must be taken immediately */
+	APT_PRIO_CRITICAL,  /**< critical condition */
+	APT_PRIO_ERROR,     /**< error condition */
+	APT_PRIO_WARNING,   /**< warning condition */
+	APT_PRIO_NOTICE,    /**< normal, but significant condition */
+	APT_PRIO_INFO,      /**< informational message */
+	APT_PRIO_DEBUG,     /**< debug-level message */
 
-	APT_PRIO_COUNT     	/** Number of priorities */
-} apt_log_priority_t;
+	APT_PRIO_COUNT     	/**< number of priorities */
+} apt_log_priority_e;
 
 /** Header (format) of log messages */
 typedef enum {
-	APT_LOG_HEADER_NONE     = 0x00, /* none of optional headers is enabled*/
-	APT_LOG_HEADER_DATE     = 0x01, /* enable date output */
-	APT_LOG_HEADER_TIME     = 0x02, /* enable time output */
-	APT_LOG_HEADER_PRIORITY = 0x04, /* enable priority name output */
+	APT_LOG_HEADER_NONE     = 0x00, /**< disable optional headers output */
+	APT_LOG_HEADER_DATE     = 0x01, /**< enable date output */
+	APT_LOG_HEADER_TIME     = 0x02, /**< enable time output */
+	APT_LOG_HEADER_PRIORITY = 0x04, /**< enable priority name output */
 
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
-} apt_log_header_t;
+} apt_log_header_e;
 
 /** Prototype of log handler function */
-typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_t priority, const char *format, va_list arg_ptr);
+typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 /**
  * Set the logging priority (log level).
  * @param priority the priority to set
  */
-APT_DECLARE(void) apt_log_priority_set(apt_log_priority_t priority);
+APT_DECLARE(void) apt_log_priority_set(apt_log_priority_e priority);
 
 /**
  * Set the header (format) for log messages.
@@ -80,7 +80,7 @@ APT_DECLARE(void) apt_log_handler_set(apt_log_handler_f handler);
  * @param priority the priority of the entire log entry
  * @param format the format of the entire log entry
  */
-APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_t priority, const char *format, ...);
+APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format, ...);
 
 APT_END_EXTERN_C
 
