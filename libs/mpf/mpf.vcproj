@@ -18,7 +18,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			ConfigurationType="4"
-			InheritedPropertySheets="$(SolutionDir)build\vsprops\unidebug.vsprops;$(SolutionDir)build\vsprops\apt.vsprops"
+			InheritedPropertySheets="$(SolutionDir)build\vsprops\unidebug.vsprops;$(SolutionDir)build\vsprops\mpf.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -133,11 +133,23 @@
 				RelativePath=".\include\mpf.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\mpf_engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_message.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\mpf_engine.c"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
