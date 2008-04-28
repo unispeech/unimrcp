@@ -28,9 +28,6 @@ APT_BEGIN_EXTERN_C
 
 /** Opaque consumer task declaration */
 typedef struct apt_consumer_task_t apt_consumer_task_t;
-/** Opaque virtual table declaration */
-typedef struct apt_consumer_task_vtable_t apt_consumer_task_vtable_t;
-
 
 /**
  * Create consumer task.
