@@ -22,7 +22,9 @@
  * @brief Media Processing Framework Engine
  */ 
 
+#include "apt_task.h"
 #include "mpf_message.h"
+#include "mpf_context.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -32,18 +34,15 @@ typedef struct mpf_engine_t mpf_engine_t;
 
 /**
  * Create MPF engine.
- * @param master_task the master task to send responses and events to
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_engine_t*) mpf_engine_create(
-									apt_composite_task_t *master_task,
-									apr_pool_t *pool);
+MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool);
 
 /**
- * Get composite task.
- * @param engine the engine to get composite task from
+ * Get task.
+ * @param engine the engine to get task from
  */
-MPF_DECLARE(apt_composite_task_t*) mpf_task_get(mpf_engine_t *engine);
+MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine);
 
 
 APT_END_EXTERN_C
