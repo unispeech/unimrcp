@@ -50,6 +50,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="winmm.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -103,6 +104,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="winmm.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -134,11 +136,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_context.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_engine.h"
 				>
 			</File>
 			<File
 				RelativePath=".\include\mpf_message.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_timer.h"
 				>
 			</File>
 		</Filter>
@@ -147,7 +157,15 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 			<File
+				RelativePath=".\src\mpf_context.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mpf_engine.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_timer.c"
 				>
 			</File>
 		</Filter>
