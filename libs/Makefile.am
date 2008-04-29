@@ -1,3 +1,3 @@
 MAINTAINERCLEANFILES   = Makefile.in
 
-SUBDIRS                = apr-toolkit
+SUBDIRS                = apr-toolkit mpf

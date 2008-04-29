@@ -135,7 +135,7 @@ static void* APR_THREAD_FUNC timer_thread_proc(apr_thread_t *thread, void *data)
 	time_now = apr_time_now();
 	while(timer->running) {
 		time_last = time_now;
-		timer->timer_proc(timer,timer->data);
+		timer->timer_proc(timer,timer->obj);
 
 		if(timeout > time_drift) {
 			apr_sleep(timeout - time_drift);
