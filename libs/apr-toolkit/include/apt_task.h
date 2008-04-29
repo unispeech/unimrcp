@@ -23,6 +23,7 @@
  */ 
 
 #include "apt.h"
+#include "apt_task_msg.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -31,22 +32,36 @@ typedef struct apt_task_t apt_task_t;
 /** Opaque task virtual table declaration */
 typedef struct apt_task_vtable_t apt_task_vtable_t;
 /** Opaque task method declaration */
-typedef void (*apt_task_method_f)(apt_task_t *task);
+typedef apt_bool_t (*apt_task_method_f)(apt_task_t *task);
+/** Opaque task event declaration */
+typedef void (*apt_task_event_f)(apt_task_t *task);
 
 
 /**
  * Create task.
  * @param obj the external object to associate with the task
  * @param vtable the table of virtual methods of the task
+ * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(apt_task_t*) apt_task_create(void *obj, apt_task_vtable_t *vtable, apr_pool_t *pool);
+APT_DECLARE(apt_task_t*) apt_task_create(
+								void *obj,
+								apt_task_vtable_t *vtable,
+								apt_task_msg_pool_t *msg_pool,
+								apr_pool_t *pool);
 
 /**
  * Destroy task.
  * @param task the task to destroy
  */
 APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task);
+
+/**
+ * Add slave task.
+ * @param task the task to add slave task to
+ * @param child_task the child task to add
+ */
+APT_DECLARE(apt_bool_t) apt_task_add(apt_task_t *task, apt_task_t *child_task);
 
 /**
  * Start task.
@@ -69,6 +84,27 @@ APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_til
 APT_DECLARE(apt_bool_t) apt_task_wait_till_complete(apt_task_t *task);
 
 /**
+ * Get (acquire) task message.
+ * @param task the task to get task message from
+ */
+APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task);
+
+/**
+ * Signal (post) message to the task.
+ * @param task the task to signal message to
+ * @param msg the message to signal
+ */
+APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
+
+/**
+ * Process message signaled to the task.
+ * @param task the task to process message
+ * @param msg the message to process
+ */
+APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+
+
+/**
  * Hold task execution.
  * @param msec the time to hold
  */
@@ -83,18 +119,28 @@ APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
 
 /** Table of task virtual methods */
 struct apt_task_vtable_t {
-	/** Virtual destroy */
+	/** Virtual destroy method */
 	apt_task_method_f destroy;
-	/** Virtual start */
+	/** Virtual start method*/
 	apt_task_method_f start;
-	/** Virtual terminate */
+	/** Virtual terminate method */
 	apt_task_method_f terminate;
-	/** Virtual pre-run */
-	apt_task_method_f pre_run;
-	/** Virtual run */
+	/** Virtual run method*/
 	apt_task_method_f run;
-	/** Virtual post-run */
-	apt_task_method_f post_run;
+
+	/** Virtual signal method  */
+	apt_bool_t (*signal_msg)(apt_task_t *task, apt_task_msg_t *msg);
+	/** Virtual process method */
+	apt_bool_t (*process_msg)(apt_task_t *task, apt_task_msg_t *msg);
+
+	/** Virtual pre-run event handler */
+	apt_task_event_f on_pre_run;
+	/** Virtual post-run event handler */
+	apt_task_event_f on_post_run;
+	/** Virtual start-complite event handler */
+	apt_task_event_f on_start_complete;
+	/** Virtual terminate-complite event handler */
+	apt_task_event_f on_terminate_complete;
 };
 
 static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
@@ -102,9 +148,13 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 	vtable->destroy = NULL;
 	vtable->start = NULL;
 	vtable->terminate = NULL;
-	vtable->pre_run = NULL;
 	vtable->run = NULL;
-	vtable->post_run = NULL;
+	vtable->signal_msg = NULL;
+	vtable->process_msg = NULL;
+	vtable->on_pre_run = NULL;
+	vtable->on_post_run = NULL;
+	vtable->on_start_complete = NULL;
+	vtable->on_terminate_complete = NULL;
 }
 
 APT_END_EXTERN_C

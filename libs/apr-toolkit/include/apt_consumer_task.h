@@ -22,7 +22,7 @@
  * @brief Consumer Task Definition
  */ 
 
-#include "apt_composite_task.h"
+#include "apt_task.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -39,16 +39,15 @@ typedef struct apt_consumer_task_t apt_consumer_task_t;
  */
 APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
 									void *obj,
-									apt_task_vtable_t *base_vtable,
-									apt_composite_task_vtable_t *vtable,
+									apt_task_vtable_t *vtable,
 									apt_task_msg_pool_t *msg_pool,
 									apr_pool_t *pool);
 
 /**
- * Get base task.
+ * Get task base.
  * @param task the consumer task to get base for
  */
-APT_DECLARE(apt_composite_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task);
+APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task);
 
 APT_END_EXTERN_C
 

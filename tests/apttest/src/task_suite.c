@@ -18,10 +18,11 @@
 #include "apt_task.h"
 #include "apt_log.h"
 
-static void task_main(apt_task_t *task)
+static apt_bool_t task_main(apt_task_t *task)
 {
 	apt_log(APT_PRIO_DEBUG,"Do the Job");
 	apt_task_delay(3000);
+	return TRUE;
 }
 
 static apt_bool_t task_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
@@ -32,7 +33,7 @@ static apt_bool_t task_test_run(apt_test_suite_t *suite, int argc, const char * 
 	vtable.run = task_main;
 
 	apt_log(APT_PRIO_NOTICE,"Create Task");
-	task = apt_task_create(NULL,&vtable,suite->pool);
+	task = apt_task_create(NULL,&vtable,NULL,suite->pool);
 	if(!task) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create Task");
 		return FALSE;
