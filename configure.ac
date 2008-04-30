@@ -67,6 +67,7 @@ AC_CONFIG_FILES([
   libs/mpf/Makefile
   tests/Makefile
   tests/apttest/Makefile
+  tests/mpftest/Makefile
 ])
 
 AC_OUTPUT
