@@ -10,6 +10,7 @@ include_HEADERS          = include/mpf.h \
                            include/mpf_message.h \
                            include/mpf_engine.h \
                            include/mpf_timer.h \
+                           include/mpf_context.h \
                            include/mpf_context.h
 
 libmpf_la_SOURCES        = src/mpf_engine.c \

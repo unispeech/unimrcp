@@ -148,6 +148,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_stream.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_timer.h"
 				>
 			</File>

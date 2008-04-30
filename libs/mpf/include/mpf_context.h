@@ -34,6 +34,21 @@ APT_BEGIN_EXTERN_C
 MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool);
 
 /**
+ * Add termination to context.
+ * @param context the context to add termination to
+ * @param termination the termination to add
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_termination_t *termination);
+
+/**
+ * Remove termination from context.
+ * @param context the context to remove termination from
+ * @param termination the termination to remove
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_termination_remove(mpf_context_t *context, mpf_termination_t *termination);
+
+
+/**
  * Create MPF termination.
  * @param obj the external object associated with termination
  * @param pool the pool to allocate memory from
