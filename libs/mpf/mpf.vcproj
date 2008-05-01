@@ -148,6 +148,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_object.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_stream.h"
 				>
 			</File>

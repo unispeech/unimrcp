@@ -23,8 +23,22 @@
  */ 
 
 #include "mpf_message.h"
+#include "mpf_object.h"
+#include "apt_obj_list.h"
 
 APT_BEGIN_EXTERN_C
+
+#define MAX_TERMINATION_COUNT 2
+
+struct mpf_context_t {
+	apr_pool_t        *pool;
+	void              *obj;
+	apt_list_elem_t   *elem;
+
+	apr_size_t         termination_count;
+	mpf_termination_t *terminations[MAX_TERMINATION_COUNT];
+	mpf_object_t      *objects[MAX_TERMINATION_COUNT];
+};
 
 /**
  * Create MPF context.
@@ -46,6 +60,12 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
  * @param termination the termination to remove
  */
 MPF_DECLARE(apt_bool_t) mpf_context_termination_remove(mpf_context_t *context, mpf_termination_t *termination);
+
+/**
+ * Process context.
+ * @param context the context
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
 
 
 /**

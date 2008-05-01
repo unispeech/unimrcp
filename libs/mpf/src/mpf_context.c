@@ -17,30 +17,12 @@
 #include "mpf_context.h"
 #include "mpf_stream.h"
 
-typedef struct mpf_object_t mpf_object_t;
-
-#define MAX_TERMINATION_COUNT 2
-
-struct mpf_context_t {
-	apr_pool_t        *pool;
-	void              *obj;
-
-	apr_size_t         termination_count;
-	mpf_termination_t *terminations[MAX_TERMINATION_COUNT];
-	mpf_object_t      *objects[MAX_TERMINATION_COUNT];
-};
-
 struct mpf_termination_t {
 	apr_pool_t         *pool;
 	void               *obj;
 
 	mpf_audio_stream_t *audio_stream;
 	mpf_video_stream_t *video_stream;
-};
-
-struct mpf_object_t {
-	mpf_audio_stream_t *src_stream;
-	mpf_audio_stream_t *dest_stream;
 };
 
 static apt_bool_t mpf_context_topology_apply(mpf_context_t *context);
@@ -52,6 +34,7 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool)
 	mpf_context_t *context = apr_palloc(pool,sizeof(mpf_context_t));
 	context->obj = obj;
 	context->pool = pool;
+	context->elem = NULL;
 	context->termination_count = 0;
 	for(i=0; i<MAX_TERMINATION_COUNT; i++) {
 		context->terminations[i] = NULL;
@@ -86,6 +69,19 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_remove(mpf_context_t *context, m
 		}
 	}
 	return FALSE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context)
+{
+	mpf_object_t *object;
+	apr_size_t i;
+	for(i=0; i<context->termination_count; i++) {
+		object = context->objects[i];
+		if(object && object->process) {
+			object->process(object);
+		}
+	}
+	return TRUE;
 }
 
 

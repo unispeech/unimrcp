@@ -16,25 +16,97 @@
 
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
+#include "apt_consumer_task.h"
 #include "apt_log.h"
 
-static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
+static apt_bool_t task_on_start_complete(apt_task_t *task)
 {
-	apt_task_t *task;
-	mpf_engine_t *engine;
 	mpf_context_t *context;
 	mpf_termination_t *termination1;
 	mpf_termination_t *termination2;
 	apt_task_msg_t *msg;
 	mpf_message_t *mpf_message;
-	
-	apt_log(APT_PRIO_NOTICE,"Create MPF Engine");
+	apr_pool_t *pool;
+
+	apt_log(APT_PRIO_INFO,"On Task Start");
+	pool = apt_task_pool_get(task);
+
+	apt_log(APT_PRIO_INFO,"Create MPF Context");
+	context = mpf_context_create(NULL,pool);
+
+	apt_log(APT_PRIO_INFO,"Create Termination [1]");
+	termination1 = mpf_termination_create(NULL,pool);
+
+	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
+	msg = apt_task_msg_get(task);
+	mpf_message = (mpf_message_t*) msg->data;
+
+	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
+	mpf_message->command_id = MPF_COMMAND_ADD;
+	mpf_message->context = context;
+	mpf_message->termination = termination1;
+	apt_task_msg_signal(task,msg);
+
+	apt_log(APT_PRIO_INFO,"Create Termination [2]");
+	termination2 = mpf_termination_create(NULL,pool);
+
+	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
+	msg = apt_task_msg_get(task);
+	mpf_message = (mpf_message_t*) msg->data;
+
+	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
+	mpf_message->command_id = MPF_COMMAND_ADD;
+	mpf_message->context = context;
+	mpf_message->termination = termination2;
+	apt_task_msg_signal(task,msg);
+	return TRUE;
+}
+
+static apt_bool_t task_on_terminate_complete(apt_task_t *task)
+{
+	apt_log(APT_PRIO_INFO,"On Task Terminate");
+	return TRUE;
+}
+
+static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
+{
+	apt_log(APT_PRIO_DEBUG,"Process MPF Response");
+	return TRUE;
+}
+
+static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
+{
+	mpf_engine_t *engine;
+	apt_task_t *engine_task;
+
+	apt_consumer_task_t *consumer_task;
+	apt_task_t *task;
+	apt_task_vtable_t vtable;
+	apt_task_msg_pool_t *msg_pool;
+
 	engine = mpf_engine_create(suite->pool);
 	if(!engine) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create MPF Engine");
 		return FALSE;
 	}
-	task = mpf_task_get(engine);
+	engine_task = mpf_task_get(engine);
+
+	apt_task_vtable_reset(&vtable);
+	vtable.process_msg = task_msg_process;
+	vtable.on_start_complete = task_on_start_complete;
+	vtable.on_terminate_complete = task_on_terminate_complete;
+
+	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),suite->pool);
+
+	apt_log(APT_PRIO_NOTICE,"Create Consumer Task");
+	consumer_task = apt_consumer_task_create(NULL,&vtable,msg_pool,suite->pool);
+	if(!consumer_task) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create Consumer Task");
+		return FALSE;
+	}
+	task = apt_consumer_task_base_get(consumer_task);
+
+	apt_task_add(task,engine_task);
 
 	apt_log(APT_PRIO_INFO,"Start Task");
 	if(apt_task_start(task) == FALSE) {
@@ -43,39 +115,9 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Create MPF Context");
-	context = mpf_context_create(NULL,suite->pool);
-
-	apt_log(APT_PRIO_INFO,"Create Termination [1]");
-	termination1 = mpf_termination_create(NULL,suite->pool);
-
-	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
-	msg = apt_task_msg_get(task);
-	mpf_message = (mpf_message_t*) msg->data;
-
-	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
-	mpf_message->action_type = MPF_ACTION_TYPE_CONTEXT;
-	mpf_message->action_id = MPF_CONTEXT_ACTION_ADD;
-	mpf_message->context = context;
-	mpf_message->termination = termination1;
-	apt_task_msg_signal(task,msg);
-
-	apt_log(APT_PRIO_INFO,"Create Termination [2]");
-	termination2 = mpf_termination_create(NULL,suite->pool);
-
-	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
-	msg = apt_task_msg_get(task);
-	mpf_message = (mpf_message_t*) msg->data;
-
-	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
-	mpf_message->action_type = MPF_ACTION_TYPE_CONTEXT;
-	mpf_message->action_id = MPF_CONTEXT_ACTION_ADD;
-	mpf_message->context = context;
-	mpf_message->termination = termination2;
-	apt_task_msg_signal(task,msg);
-
-	apt_task_delay(5000);
-
+	apt_log(APT_PRIO_INFO,"Press Enter to Exit");
+	getchar();
+	
 	apt_log(APT_PRIO_INFO,"Terminate Task [wait till complete]");
 	apt_task_terminate(task,TRUE);
 	apt_log(APT_PRIO_NOTICE,"Destroy Task");

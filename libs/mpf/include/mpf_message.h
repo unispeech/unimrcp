@@ -40,18 +40,13 @@ typedef enum {
 } mpf_status_code_e;
 
 
-/** Enumeration of action types */
+/** Enumeration of commands */
 typedef enum {
-	MPF_ACTION_TYPE_CONTEXT,    /**< context specific action */
-	MPF_ACTION_TYPE_TERMINATION /**< termination specific action */
-} mpf_action_type_e;
-
-/** Enumeration of context actions */
-typedef enum {
-	MPF_CONTEXT_ACTION_ADD,      /**< add termination to context */
-	MPF_CONTEXT_ACTION_SUBTRACT, /**< subtract termination from context */
-	MPF_CONTEXT_ACTION_MOVE      /**< move termination to another context */
-} mpf_context_action_e;
+	MPF_COMMAND_ADD,     /**< add termination to context */
+	MPF_COMMAND_MODIFY,  /**< modify termination properties */
+	MPF_COMMAND_SUBTRACT,/**< subtract termination from context */ 
+	MPF_COMMAND_MOVE     /**< move termination to another context */
+} mpf_command_type_e;
 
 /** Opaque MPF context declaration */
 typedef struct mpf_context_t mpf_context_t;
@@ -65,8 +60,7 @@ typedef struct mpf_message_t mpf_message_t;
 /** MPF message definition */
 struct mpf_message_t {
 	mpf_message_type_e message_type;
-	mpf_action_type_e  action_type;
-	int                action_id;
+	mpf_command_type_e command_id;
 	mpf_status_code_e  status_code;
 
 	mpf_context_t     *context;

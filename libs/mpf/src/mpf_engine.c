@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-#include "apt_obj_list.h"
 #include "mpf_engine.h"
 #include "mpf_timer.h"
+#include "apt_obj_list.h"
+#include "apt_log.h"
 
 struct mpf_engine_t {
 	apt_task_t         *base;
 	apr_pool_t         *pool;
 	apr_thread_mutex_t *request_queue_guard;
 	apt_obj_list_t     *request_queue;
+	apt_obj_list_t     *contexts;
 	mpf_timer_t        *timer;
 };
 
@@ -38,6 +40,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	mpf_engine_t *engine = apr_palloc(pool,sizeof(mpf_engine_t));
 	engine->pool = pool;
 	engine->request_queue = NULL;
+	engine->contexts = NULL;
 
 	apt_task_vtable_reset(&vtable);
 	vtable.start = mpf_engine_start;
@@ -46,6 +49,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
+	apt_log(APT_PRIO_NOTICE,"Create Media Processing Engine");
 	engine->base = apt_task_create(engine,&vtable,msg_pool,pool);
 	return engine;
 }
@@ -62,7 +66,11 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 	engine->request_queue = apt_list_create(engine->pool);
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
 
+	engine->contexts = apt_list_create(engine->pool);
+
+	apt_log(APT_PRIO_INFO,"Start Media Processing Engine");
 	engine->timer = mpf_timer_start(10,mpf_engine_main,engine,engine->pool);
+	apt_task_child_start(task);
 	return TRUE;
 }
 
@@ -70,7 +78,11 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
+	apt_log(APT_PRIO_INFO,"Terminate Media Processing Engine");
 	mpf_timer_stop(engine->timer);
+	apt_task_child_terminate(task);
+
+	apt_list_destroy(engine->contexts);
 
 	apt_list_destroy(engine->request_queue);
 	apr_thread_mutex_destroy(engine->request_queue_guard);
@@ -87,30 +99,74 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 	return TRUE;
 }
 
-static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, apt_task_msg_t *msg)
+static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_msg_t *msg)
 {
-	mpf_message_t *mpf_message = (mpf_message_t*) msg->data;
-	if(mpf_message->message_type != MPF_MESSAGE_TYPE_REQUEST) {
+	apt_task_t *parent_task;
+	apt_task_msg_t *response_msg;
+	mpf_message_t *response;
+	const mpf_message_t *request = (const mpf_message_t*) msg->data;
+	apt_log(APT_PRIO_DEBUG,"Process MPF Message");
+	if(request->message_type != MPF_MESSAGE_TYPE_REQUEST) {
+		apt_log(APT_PRIO_WARNING,"Invalid MPF Message Type [%d]",request->message_type);
 		return FALSE;
 	}
-	
-	switch(mpf_message->action_type) {
-		case MPF_ACTION_TYPE_CONTEXT:
+
+	parent_task = apt_task_parent_get(engine->base);
+	if(!parent_task) {
+		apt_log(APT_PRIO_WARNING,"No MPF Parent Task",request->message_type);
+		return FALSE;
+	}
+
+	response_msg = apt_task_msg_get(engine->base);
+	response = (mpf_message_t*) response_msg->data;
+	*response = *request;
+	response->status_code = MPF_STATUS_CODE_SUCCESS;
+	switch(request->command_id) {
+		case MPF_COMMAND_ADD:
 		{
+			mpf_context_t *context = request->context;
+			mpf_termination_t *termination = request->termination;
+			if(mpf_context_termination_add(context,termination) == FALSE) {
+				response->status_code = MPF_STATUS_CODE_FAILURE;
+				break;
+			}
+			if(context->termination_count == 1) {
+				apt_log(APT_PRIO_INFO,"Add Context");
+				request->context->elem = apt_list_push_back(engine->contexts,context);
+			}
 			break;
 		}
-		case MPF_ACTION_TYPE_TERMINATION:
+		case MPF_COMMAND_SUBTRACT:
 		{
+			mpf_context_t *context = request->context;
+			mpf_termination_t *termination = request->termination;
+			if(mpf_context_termination_add(context,termination) == FALSE) {
+				response->status_code = MPF_STATUS_CODE_FAILURE;
+				break;
+			}
+			if(context->termination_count == 0) {
+				apt_log(APT_PRIO_INFO,"Remove Context");
+				apt_list_elem_remove(engine->contexts,context->elem);
+				context->elem = NULL;
+			}
 			break;
+		}
+		default:
+		{
+			response->status_code = MPF_STATUS_CODE_FAILURE;
 		}
 	}
-	return TRUE;
+
+	return apt_task_msg_signal(parent_task,response_msg);
 }
 
 static void mpf_engine_main(mpf_timer_t *timer, void *data)
 {
 	mpf_engine_t *engine = data;
 	apt_task_msg_t *msg;
+	apt_list_elem_t *elem;
+	mpf_context_t *context;
+
 	/* process request queue */
 	apr_thread_mutex_lock(engine->request_queue_guard);
 	msg = apt_list_pop_front(engine->request_queue);
@@ -123,4 +179,12 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 
 	/* process contexts */
+	elem = apt_list_first_elem_get(engine->contexts);
+	while(elem) {
+		context = apt_list_elem_object_get(elem);
+		if(context) {
+			mpf_context_process(context);
+		}
+		elem = apt_list_next_elem_get(engine->contexts,elem);
+	}
 }
