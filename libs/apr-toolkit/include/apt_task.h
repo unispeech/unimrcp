@@ -78,6 +78,18 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task);
 APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_till_complete);
 
 /**
+ * Start child tasks.
+ * @param task the parent task
+ */
+APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task);
+
+/**
+ * Terminate child tasks.
+ * @param task the parent task
+ */
+APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task);
+
+/**
  * Wait for task till complete.
  * @param task the task to wait for
  */
@@ -103,18 +115,29 @@ APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *ms
  */
 APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
+/**
+ * Get parent (master) task.
+ * @param task the task to get parent from
+ */
+APT_DECLARE(apt_task_t*) apt_task_parent_get(apt_task_t *task);
 
 /**
- * Hold task execution.
- * @param msec the time to hold
+ * Get memory pool associated with task.
+ * @param task the task to get pool from
  */
-APT_DECLARE(void) apt_task_delay(apr_size_t msec);
+APT_DECLARE(apr_pool_t*) apt_task_pool_get(apt_task_t *task);
 
 /**
  * Get external object associated with the task.
  * @param task the task to get object from
  */
 APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
+
+/**
+ * Hold task execution.
+ * @param msec the time to hold
+ */
+APT_DECLARE(void) apt_task_delay(apr_size_t msec);
 
 
 /** Table of task virtual methods */

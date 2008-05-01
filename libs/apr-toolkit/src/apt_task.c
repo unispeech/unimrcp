@@ -43,8 +43,6 @@ struct apt_task_t {
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
 static APR_INLINE void apt_task_vtable_copy(apt_task_t *task, const apt_task_vtable_t *vtable);
-static void apt_task_child_start(apt_task_t *task);
-static void apt_task_child_terminate(apt_task_t *task);
 static apt_bool_t apt_task_terminate_request(apt_task_t *task);
 
 
@@ -166,6 +164,16 @@ APT_DECLARE(void) apt_task_delay(apr_size_t msec)
 	apr_sleep(1000*msec);
 }
 
+APT_DECLARE(apt_task_t*) apt_task_parent_get(apt_task_t *task)
+{
+	return task->parent_task;
+}
+
+APT_DECLARE(apr_pool_t*) apt_task_pool_get(apt_task_t *task)
+{
+	return task->pool;
+}
+
 APT_DECLARE(void*) apt_task_object_get(apt_task_t *task)
 {
 	return task->obj;
@@ -259,7 +267,7 @@ static apt_bool_t apt_task_terminate_request(apt_task_t *task)
 	return FALSE;
 }
 
-static void apt_task_child_start(apt_task_t *task)
+APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task)
 {
 	apt_task_t *child_task = NULL;
 	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
@@ -287,9 +295,10 @@ static void apt_task_child_start(apt_task_t *task)
 			apt_task_msg_signal(task->parent_task,msg);
 		}
 	}
+	return TRUE;
 }
 
-static void apt_task_child_terminate(apt_task_t *task)
+APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task)
 {
 	apt_task_t *child_task = NULL;
 	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
@@ -317,6 +326,7 @@ static void apt_task_child_terminate(apt_task_t *task)
 			apt_task_msg_signal(task->parent_task,msg);
 		}
 	}
+	return TRUE;
 }
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data)
