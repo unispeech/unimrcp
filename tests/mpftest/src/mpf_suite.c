@@ -16,12 +16,16 @@
 
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
+#include "mpf_audio_file_stream.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
 static apt_bool_t task_on_start_complete(apt_task_t *task)
 {
+	apt_task_t *consumer_task;
+	apt_task_t *engine_task;
 	mpf_context_t *context;
+	mpf_audio_stream_t *audio_stream;
 	mpf_termination_t *termination1;
 	mpf_termination_t *termination2;
 	apt_task_msg_t *msg;
@@ -29,13 +33,17 @@ static apt_bool_t task_on_start_complete(apt_task_t *task)
 	apr_pool_t *pool;
 
 	apt_log(APT_PRIO_INFO,"On Task Start");
+	consumer_task = apt_task_object_get(task);
+	engine_task = apt_task_object_get(consumer_task);
 	pool = apt_task_pool_get(task);
 
 	apt_log(APT_PRIO_INFO,"Create MPF Context");
 	context = mpf_context_create(NULL,pool);
 
+	audio_stream = mpf_audio_file_reader_create("demo.pcm",pool);
+	
 	apt_log(APT_PRIO_INFO,"Create Termination [1]");
-	termination1 = mpf_termination_create(NULL,pool);
+	termination1 = mpf_termination_create(NULL,audio_stream,NULL,pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
 	msg = apt_task_msg_get(task);
@@ -45,10 +53,12 @@ static apt_bool_t task_on_start_complete(apt_task_t *task)
 	mpf_message->command_id = MPF_COMMAND_ADD;
 	mpf_message->context = context;
 	mpf_message->termination = termination1;
-	apt_task_msg_signal(task,msg);
+	apt_task_msg_signal(engine_task,msg);
+
+	audio_stream = mpf_audio_file_writer_create("demo_out.pcm",pool);
 
 	apt_log(APT_PRIO_INFO,"Create Termination [2]");
-	termination2 = mpf_termination_create(NULL,pool);
+	termination2 = mpf_termination_create(NULL,audio_stream,NULL,pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
 	msg = apt_task_msg_get(task);
@@ -58,7 +68,7 @@ static apt_bool_t task_on_start_complete(apt_task_t *task)
 	mpf_message->command_id = MPF_COMMAND_ADD;
 	mpf_message->context = context;
 	mpf_message->termination = termination2;
-	apt_task_msg_signal(task,msg);
+	apt_task_msg_signal(engine_task,msg);
 	return TRUE;
 }
 
@@ -99,7 +109,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),suite->pool);
 
 	apt_log(APT_PRIO_NOTICE,"Create Consumer Task");
-	consumer_task = apt_consumer_task_create(NULL,&vtable,msg_pool,suite->pool);
+	consumer_task = apt_consumer_task_create(engine_task,&vtable,msg_pool,suite->pool);
 	if(!consumer_task) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create Consumer Task");
 		return FALSE;

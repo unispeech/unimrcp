@@ -136,11 +136,31 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_audio_file_stream.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_bridge.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_codec.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_codec_descriptor.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_context.h"
 				>
 			</File>
 			<File
 				RelativePath=".\include\mpf_engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_frame.h"
 				>
 			</File>
 			<File
@@ -164,6 +184,14 @@
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\mpf_audio_file_stream.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_bridge.c"
+				>
+			</File>
 			<File
 				RelativePath=".\src\mpf_context.c"
 				>

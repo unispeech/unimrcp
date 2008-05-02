@@ -48,6 +48,12 @@ struct mpf_context_t {
 MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool);
 
 /**
+ * Destroy MPF context.
+ * @param context the context to destroy
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
+
+/**
  * Add termination to context.
  * @param context the context to add termination to
  * @param termination the termination to add
@@ -55,11 +61,11 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool);
 MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_termination_t *termination);
 
 /**
- * Remove termination from context.
- * @param context the context to remove termination from
- * @param termination the termination to remove
+ * Subtract termination from context.
+ * @param context the context to subtract termination from
+ * @param termination the termination to subtract
  */
-MPF_DECLARE(apt_bool_t) mpf_context_termination_remove(mpf_context_t *context, mpf_termination_t *termination);
+MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context, mpf_termination_t *termination);
 
 /**
  * Process context.
@@ -73,7 +79,11 @@ MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
  * @param obj the external object associated with termination
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_termination_t*) mpf_termination_create(void *obj, apr_pool_t *pool);
+MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
+										void *obj, 
+										mpf_audio_stream_t *audio_stream, 
+										mpf_video_stream_t *video_stream, 
+										apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

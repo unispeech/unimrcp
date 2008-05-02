@@ -16,6 +16,7 @@
 
 #include "mpf_engine.h"
 #include "mpf_timer.h"
+#include "mpf_codec_descriptor.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
 
@@ -32,6 +33,8 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data);
 static apt_bool_t mpf_engine_start(apt_task_t *task);
 static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
+
+static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine);
 
 MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 {
@@ -69,7 +72,7 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 	engine->contexts = apt_list_create(engine->pool);
 
 	apt_log(APT_PRIO_INFO,"Start Media Processing Engine");
-	engine->timer = mpf_timer_start(10,mpf_engine_main,engine,engine->pool);
+	engine->timer = mpf_timer_start(CODEC_FRAME_TIME_BASE,mpf_engine_main,engine,engine->pool);
 	apt_task_child_start(task);
 	return TRUE;
 }
@@ -80,12 +83,26 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 
 	apt_log(APT_PRIO_INFO,"Terminate Media Processing Engine");
 	mpf_timer_stop(engine->timer);
+	mpf_engine_contexts_destroy(engine);
+
 	apt_task_child_terminate(task);
 
 	apt_list_destroy(engine->contexts);
 
 	apt_list_destroy(engine->request_queue);
 	apr_thread_mutex_destroy(engine->request_queue_guard);
+	return TRUE;
+}
+
+static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine)
+{
+	mpf_context_t *context;
+	context = apt_list_pop_front(engine->contexts);
+	while(context) {
+		mpf_context_destroy(context);
+		
+		context = apt_list_pop_front(engine->contexts);
+	}
 	return TRUE;
 }
 
@@ -140,7 +157,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 		{
 			mpf_context_t *context = request->context;
 			mpf_termination_t *termination = request->termination;
-			if(mpf_context_termination_add(context,termination) == FALSE) {
+			if(mpf_context_termination_subtract(context,termination) == FALSE) {
 				response->status_code = MPF_STATUS_CODE_FAILURE;
 				break;
 			}

@@ -14,33 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef __MPF_OBJECT_H__
-#define __MPF_OBJECT_H__
+#ifndef __MPF_BRIDGE_H__
+#define __MPF_BRIDGE_H__
 
 /**
- * @file mpf_object.h
- * @brief Media Processing Object (bridge, multiplexor, mixer, ...)
+ * @file mpf_audio_file_stream.h
+ * @brief MPF Audio FIle Stream
  */ 
 
-#include "mpf.h"
-#include "mpf_frame.h"
-#include "mpf_stream.h"
+#include "mpf_object.h"
 
 APT_BEGIN_EXTERN_C
 
-typedef struct mpf_object_t mpf_object_t;
-
-struct mpf_object_t {
-	mpf_audio_stream_t *src_stream;
-	mpf_audio_stream_t *dest_stream;
-
-	mpf_frame_t         frame;
-
-	apt_bool_t (*process)(mpf_object_t *object);
-	apt_bool_t (*destroy)(mpf_object_t *object);
-};
+/**
+ * Create bridge for audio streams.
+ * @param src_stream the source audio stream
+ * @param dest_stream the destination audio stream
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *src_stream, mpf_audio_stream_t *dest_stream, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_OBJECT_H__*/
+#endif /*__MPF_BRIDGE_H__*/
