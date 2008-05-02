@@ -19,8 +19,8 @@ include_HEADERS          = include/mpf.h \
                            include/mpf_stream.h \
                            include/mpf_timer.h
 
-libmpf_la_SOURCES        = src/mpf_audio_file_stream_engine.c \
+libmpf_la_SOURCES        = src/mpf_audio_file_stream.c \
                            src/mpf_bridge.c \
-                           src/mpf_context.c
-                           src/mpf_engine.c
+                           src/mpf_context.c \
+                           src/mpf_engine.c \
                            src/mpf_timer.c

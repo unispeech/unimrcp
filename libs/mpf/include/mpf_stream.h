@@ -22,7 +22,7 @@
  * @brief MPF Stream
  */ 
 
-#include "mpf.h"
+#include "mpf_frame.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -34,7 +34,6 @@ typedef enum {
 	STREAM_MODE_SEND_RECEIVE = STREAM_MODE_SEND | STREAM_MODE_RECEIVE
 } mpf_stream_mode_e; 
 
-typedef struct mpf_frame_t mpf_frame_t;
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
 typedef struct mpf_audio_stream_t mpf_audio_stream_t;
 
