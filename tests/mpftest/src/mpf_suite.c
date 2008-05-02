@@ -20,7 +20,7 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
-static apt_bool_t task_on_start_complete(apt_task_t *task)
+static void task_on_start_complete(apt_task_t *task)
 {
 	apt_task_t *consumer_task;
 	apt_task_t *engine_task;
@@ -69,13 +69,11 @@ static apt_bool_t task_on_start_complete(apt_task_t *task)
 	mpf_message->context = context;
 	mpf_message->termination = termination2;
 	apt_task_msg_signal(engine_task,msg);
-	return TRUE;
 }
 
-static apt_bool_t task_on_terminate_complete(apt_task_t *task)
+static void task_on_terminate_complete(apt_task_t *task)
 {
 	apt_log(APT_PRIO_INFO,"On Task Terminate");
-	return TRUE;
 }
 
 static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)

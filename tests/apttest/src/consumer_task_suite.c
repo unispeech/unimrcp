@@ -24,16 +24,14 @@ typedef struct {
 	int        number;
 } sample_msg_data_t;
 
-static apt_bool_t task_on_start_complete(apt_task_t *task)
+static void task_on_start_complete(apt_task_t *task)
 {
 	apt_log(APT_PRIO_INFO,"On Task Start");
-	return TRUE;
 }
 
-static apt_bool_t task_on_terminate_complete(apt_task_t *task)
+static void task_on_terminate_complete(apt_task_t *task)
 {
 	apt_log(APT_PRIO_INFO,"On Task Terminate");
-	return TRUE;
 }
 
 static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
