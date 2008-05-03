@@ -17,16 +17,18 @@
 #include "mpf_engine.h"
 #include "mpf_timer.h"
 #include "mpf_codec_descriptor.h"
+#include "mpf_codec_manager.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
 
 struct mpf_engine_t {
-	apt_task_t         *base;
-	apr_pool_t         *pool;
-	apr_thread_mutex_t *request_queue_guard;
-	apt_obj_list_t     *request_queue;
-	apt_obj_list_t     *contexts;
-	mpf_timer_t        *timer;
+	apt_task_t          *base;
+	apr_pool_t          *pool;
+	apr_thread_mutex_t  *request_queue_guard;
+	apt_obj_list_t      *request_queue;
+	apt_obj_list_t      *contexts;
+	mpf_timer_t         *timer;
+	mpf_codec_manager_t *codec_manager;
 };
 
 static void mpf_engine_main(mpf_timer_t *timer, void *data);
@@ -35,6 +37,11 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 
 static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine);
+
+static apt_bool_t mpf_engine_codec_manager_create(mpf_engine_t *engine);
+mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
+mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
+mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
 
 MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 {
@@ -49,6 +56,8 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	vtable.start = mpf_engine_start;
 	vtable.terminate = mpf_engine_terminate;
 	vtable.signal_msg = mpf_engine_msg_signal;
+
+	mpf_engine_codec_manager_create(engine);
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
@@ -204,4 +213,22 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 		}
 		elem = apt_list_next_elem_get(engine->contexts,elem);
 	}
+}
+
+static apt_bool_t mpf_engine_codec_manager_create(mpf_engine_t *engine)
+{
+	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(20,engine->pool);
+	if(codec_manager) {
+		mpf_codec_t *codec;
+		codec = mpf_codec_l16_create(engine->pool);
+		mpf_codec_manager_codec_register(codec_manager,codec);
+
+		codec = mpf_codec_g711u_create(engine->pool);
+		mpf_codec_manager_codec_register(codec_manager,codec);
+
+		codec = mpf_codec_g711a_create(engine->pool);
+		mpf_codec_manager_codec_register(codec_manager,codec);
+	}
+	engine->codec_manager = codec_manager;
+	return codec_manager ? TRUE : FALSE;
 }

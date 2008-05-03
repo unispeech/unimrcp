@@ -6,11 +6,13 @@ INCLUDES                 = -I$(top_srcdir)/libs/mpf/include \
 
 noinst_LTLIBRARIES       = libmpf.la
 
-include_HEADERS          = include/mpf.h \
+include_HEADERS          = codecs/g711/g711.h \
+                           include/mpf.h \
                            include/mpf_audio_file_stream.h \
                            include/mpf_bridge.h \
                            include/mpf_codec.h \
                            include/mpf_codec_descriptor.h \
+                           include/mpf_codec_manager.h \
                            include/mpf_context.h \
                            include/mpf_engine.h \
                            include/mpf_frame.h \
@@ -19,8 +21,12 @@ include_HEADERS          = include/mpf.h \
                            include/mpf_stream.h \
                            include/mpf_timer.h
 
-libmpf_la_SOURCES        = src/mpf_audio_file_stream.c \
+libmpf_la_SOURCES        = codecs/g711/g711.c \
+                           src/mpf_audio_file_stream.c \
                            src/mpf_bridge.c \
+                           src/mpf_codec_g711.c \
+                           src/mpf_codec_linear.c \
+                           src/mpf_codec_manager.c \
                            src/mpf_context.c \
                            src/mpf_engine.c \
                            src/mpf_timer.c

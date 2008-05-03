@@ -89,11 +89,27 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_audio_file_frame_write
 };
 
+static void mpf_audio_file_capabilities_init(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apr_pool_t *pool)
+{
+	mpf_codec_descriptor_t *descriptor;
+	mpf_audio_stream_init(stream,&vtable);
+	stream->mode = mode;
+	mpf_codec_list_init(&stream->codec_list,1,pool);
+	descriptor = mpf_codec_list_add(&stream->codec_list);
+	if(descriptor) {
+		descriptor->payload_type = 11;
+		descriptor->name = "L16";
+		descriptor->sampling_rate = 8000;
+		descriptor->channel_count = 1;
+	}
+}
+
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_reader_create(const char *file_name, apr_pool_t *pool)
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-	file_stream->base.mode = STREAM_MODE_SEND;
-	file_stream->base.vtable = &vtable;
+//	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_RECEIVE,pool);
+	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_SEND,pool);
+
 	file_stream->write_file = NULL;
 	file_stream->read_file = fopen(file_name,"rb");
 	return &file_stream->base;
@@ -102,8 +118,9 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_reader_create(const char *file_n
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_writer_create(const char *file_name, apr_pool_t *pool)
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-	file_stream->base.mode = STREAM_MODE_RECEIVE;
-	file_stream->base.vtable = &vtable;
+//	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_SEND,pool);
+	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_RECEIVE,pool);
+
 	file_stream->read_file = NULL;
 	file_stream->write_file = fopen(file_name,"wb");
 	return &file_stream->base;

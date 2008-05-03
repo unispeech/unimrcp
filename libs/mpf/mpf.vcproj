@@ -38,6 +38,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="codecs"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -92,6 +93,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="codecs"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -127,6 +129,22 @@
 	</References>
 	<Files>
 		<Filter
+			Name="codecs"
+			>
+			<Filter
+				Name="g711"
+				>
+				<File
+					RelativePath=".\codecs\g711\g711.c"
+					>
+				</File>
+				<File
+					RelativePath=".\codecs\g711\g711.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
 			Name="include"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
@@ -149,6 +167,10 @@
 			</File>
 			<File
 				RelativePath=".\include\mpf_codec_descriptor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_codec_manager.h"
 				>
 			</File>
 			<File
@@ -190,6 +212,18 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_bridge.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_codec_g711.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_codec_linear.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_codec_manager.c"
 				>
 			</File>
 			<File

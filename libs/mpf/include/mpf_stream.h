@@ -19,10 +19,11 @@
 
 /**
  * @file mpf_stream.h
- * @brief MPF Stream
+ * @brief MPF Bidirectional Stream
  */ 
 
 #include "mpf_frame.h"
+#include "mpf_codec.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -38,8 +39,13 @@ typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
 typedef struct mpf_audio_stream_t mpf_audio_stream_t;
 
 struct mpf_audio_stream_t {
-	mpf_stream_mode_e                mode;
 	const mpf_audio_stream_vtable_t *vtable;
+	mpf_stream_mode_e                mode;
+
+	mpf_codec_list_t                 codec_list;
+
+	mpf_codec_t                     *rx_codec;
+	mpf_codec_t                     *tx_codec;
 };
 
 struct mpf_audio_stream_vtable_t {
@@ -59,6 +65,17 @@ typedef struct mpf_video_stream_t mpf_video_stream_t;
 struct mpf_video_stream_t {
 	mpf_stream_mode_e mode;
 };
+
+
+/** Initialize audio stream */
+static APR_INLINE void mpf_audio_stream_init(mpf_audio_stream_t *stream, const mpf_audio_stream_vtable_t *vtable)
+{
+	stream->vtable = vtable;
+	stream->mode = STREAM_MODE_NONE;
+	mpf_codec_list_reset(&stream->codec_list);
+	stream->rx_codec = NULL;
+	stream->tx_codec = NULL;
+}
 
 
 APT_END_EXTERN_C
