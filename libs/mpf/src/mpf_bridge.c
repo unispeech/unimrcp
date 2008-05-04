@@ -21,7 +21,7 @@
 static apt_bool_t mpf_bridge_process(mpf_object_t *object)
 {
 	object->frame.type = MEDIA_FRAME_TYPE_NONE;
-	object->src_stream->vtable->read_frame(object->src_stream,&object->frame);
+	object->source->vtable->read_frame(object->source,&object->frame);
 	
 	if((object->frame.type & MEDIA_FRAME_TYPE_AUDIO) == 0) {
 		memset(	object->frame.codec_frame.buffer,
@@ -29,7 +29,7 @@ static apt_bool_t mpf_bridge_process(mpf_object_t *object)
 				object->frame.codec_frame.size);
 	}
 
-	object->dest_stream->vtable->write_frame(object->dest_stream,&object->frame);
+	object->sink->vtable->write_frame(object->sink,&object->frame);
 	return TRUE;
 }
 
@@ -39,21 +39,21 @@ static apt_bool_t mpf_bridge_destroy(mpf_object_t *object)
 	return TRUE;
 }
 
-MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *src_stream, mpf_audio_stream_t *dest_stream, apr_pool_t *pool)
+MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
 {
 	mpf_object_t *bridge;
 	apr_size_t frame_size;
-	if(!src_stream || !dest_stream) {
+	if(!source || !sink) {
 		return NULL;
 	}
 	apt_log(APT_PRIO_DEBUG,"Create Audio Bridge");
 	bridge = apr_palloc(pool,sizeof(mpf_object_t));
-	bridge->src_stream = src_stream;
-	bridge->dest_stream = dest_stream;
+	bridge->source = source;
+	bridge->sink = sink;
 	bridge->process = mpf_bridge_process;
 	bridge->destroy = mpf_bridge_destroy;
 
-	frame_size = 2 * CODEC_FRAME_TIME_BASE * /*sampling_rate*/8000 / 1000;
+	frame_size = mpf_codec_linear_frame_size_calculate(8000,1);
 	bridge->frame.codec_frame.size = frame_size;
 	bridge->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
 	return bridge;

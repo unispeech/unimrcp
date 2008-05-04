@@ -101,10 +101,7 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(mpf_codec_manager_t *codec
 		return NULL;
 	}
 	if(codec) {
-		ret_codec = apr_palloc(pool,sizeof(mpf_codec_t));
-		ret_codec->vtable = codec->vtable;
-		ret_codec->def_descriptor = codec->def_descriptor;
-		ret_codec->descriptor = descriptor;
+		ret_codec = mpf_codec_clone(codec,pool);
 	}
 	return ret_codec;
 }

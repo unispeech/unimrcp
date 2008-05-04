@@ -57,7 +57,7 @@ struct mpf_audio_stream_vtable_t {
 
 	apt_bool_t (*open_tx)(mpf_audio_stream_t *stream);
 	apt_bool_t (*close_tx)(mpf_audio_stream_t *stream);
-	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, mpf_frame_t *frame);
+	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 };
 
 

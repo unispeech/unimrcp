@@ -33,6 +33,7 @@ typedef struct mpf_codec_vtable_t mpf_codec_vtable_t;
 /** Codec */
 struct mpf_codec_t {
 	const mpf_codec_vtable_t     *vtable;
+	const mpf_codec_attribs_t    *attribs;
 	const mpf_codec_descriptor_t *def_descriptor;
 	
 	mpf_codec_descriptor_t       *descriptor;
@@ -50,13 +51,29 @@ struct mpf_codec_vtable_t {
 	apr_size_t (*dissect)(mpf_codec_t *codec, void *buffer, apr_size_t size, mpf_codec_frame_t *frames, apr_size_t max_frames);
 };
 
-static APR_INLINE mpf_codec_t* mpf_codec_create(mpf_codec_vtable_t *vtable, mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
+static APR_INLINE mpf_codec_t* mpf_codec_create(
+									const mpf_codec_vtable_t *vtable, 
+									const mpf_codec_attribs_t *attribs, 
+									const mpf_codec_descriptor_t *descriptor, 
+									apr_pool_t *pool)
 {
 	mpf_codec_t *codec = apr_palloc(pool,sizeof(mpf_codec_t));
 	codec->vtable = vtable;
+	codec->attribs = attribs;
 	codec->def_descriptor = descriptor;
 	codec->descriptor = NULL;
 	codec->frame_size = 0;
+	return codec;
+}
+
+static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_t *pool)
+{
+	mpf_codec_t *codec = apr_palloc(pool,sizeof(mpf_codec_t));
+	codec->vtable = src_codec->vtable;
+	codec->attribs = src_codec->attribs;
+	codec->def_descriptor = src_codec->def_descriptor;
+	codec->descriptor = src_codec->descriptor;
+	codec->frame_size = src_codec->frame_size;
 	return codec;
 }
 
@@ -64,8 +81,7 @@ static APR_INLINE apt_bool_t mpf_codec_open(mpf_codec_t *codec)
 {
 	apt_bool_t rv = TRUE;
 	if(codec->descriptor) {
-		codec->frame_size = CODEC_FRAME_TIME_BASE * codec->descriptor->channel_count * 
-			codec->descriptor->sampling_rate / 1000;
+		codec->frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
 		if(codec->vtable->open) {
 			rv = codec->vtable->open(codec);
 		}

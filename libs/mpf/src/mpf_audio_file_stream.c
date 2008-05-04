@@ -72,10 +72,12 @@ static apt_bool_t mpf_audio_file_writer_close(mpf_audio_stream_t *stream)
 	return TRUE;
 }
 
-static apt_bool_t mpf_audio_file_frame_write(mpf_audio_stream_t *stream, mpf_frame_t *frame)
+static apt_bool_t mpf_audio_file_frame_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
-	fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->write_file);
+	if(file_stream->write_file) {
+		fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->write_file);
+	}
 	return TRUE;
 }
 
@@ -107,8 +109,7 @@ static void mpf_audio_file_capabilities_init(mpf_audio_stream_t *stream, mpf_str
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_reader_create(const char *file_name, apr_pool_t *pool)
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-//	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_RECEIVE,pool);
-	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_SEND,pool);
+	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_RECEIVE,pool);
 
 	file_stream->write_file = NULL;
 	file_stream->read_file = fopen(file_name,"rb");
@@ -118,8 +119,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_reader_create(const char *file_n
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_writer_create(const char *file_name, apr_pool_t *pool)
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-//	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_SEND,pool);
-	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_RECEIVE,pool);
+	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_SEND,pool);
 
 	file_stream->read_file = NULL;
 	file_stream->write_file = fopen(file_name,"wb");

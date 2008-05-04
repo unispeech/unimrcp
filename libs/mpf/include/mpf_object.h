@@ -31,8 +31,8 @@ APT_BEGIN_EXTERN_C
 typedef struct mpf_object_t mpf_object_t;
 
 struct mpf_object_t {
-	mpf_audio_stream_t *src_stream;
-	mpf_audio_stream_t *dest_stream;
+	mpf_audio_stream_t *source;
+	mpf_audio_stream_t *sink;
 
 	mpf_frame_t         frame;
 

@@ -119,15 +119,14 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 	return termination;
 }
 
-
-static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *dest_termination)
+static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination)
 {
 	mpf_object_t *object = NULL;
-	mpf_audio_stream_t *src_audio_stream = src_termination->audio_stream;
-	mpf_audio_stream_t *dest_audio_stream = dest_termination->audio_stream;
-	if(src_audio_stream && (src_audio_stream->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND &&
-		dest_audio_stream &&  (dest_audio_stream->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE) {
-		object = mpf_bridge_create(src_audio_stream,dest_audio_stream,context->pool);
+	mpf_audio_stream_t *source = src_termination->audio_stream;
+	mpf_audio_stream_t *sink = sink_termination->audio_stream;
+	if(source && (source->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE &&
+		sink && (sink->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
+		object = mpf_bridge_create(source,sink,context->pool);
 	}
 	return object;
 }

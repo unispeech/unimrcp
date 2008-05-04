@@ -28,12 +28,11 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create bridge for audio streams.
- * @param src_stream the source audio stream
- * @param dest_stream the destination audio stream
+ * @param source the source audio stream
+ * @param sink the sink audio stream
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *src_stream, mpf_audio_stream_t *dest_stream, apr_pool_t *pool);
-
+MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool);
 
 APT_END_EXTERN_C
 

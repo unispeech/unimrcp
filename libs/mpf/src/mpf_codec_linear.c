@@ -26,7 +26,11 @@ static mpf_codec_descriptor_t l16_descriptor = {
 	NULL
 };
 
+static mpf_codec_attribs_t l16_attribs = {
+	16 /* bits per sample */
+};
+
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool)
 {
-	return mpf_codec_create(&l16_vtable,&l16_descriptor,pool);
+	return mpf_codec_create(&l16_vtable,&l16_attribs,&l16_descriptor,pool);
 }

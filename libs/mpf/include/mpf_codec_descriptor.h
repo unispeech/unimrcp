@@ -27,6 +27,7 @@
 APT_BEGIN_EXTERN_C
 
 #define CODEC_FRAME_TIME_BASE 10 /*ms*/
+#define BYTES_PER_SAMPLE 2
 
 typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
 /** Codec descriptor */
@@ -53,15 +54,56 @@ struct mpf_codec_frame_t {
 	apr_size_t size;
 };
 
+typedef struct mpf_codec_attribs_t mpf_codec_attribs_t;
+/** Codec attributes */
+struct mpf_codec_attribs_t {
+	apr_byte_t   bits_per_samples;
+};
+
 /** Initialize codec descriptor */
-static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *codec_descriptor)
+static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descriptor)
 {
-	codec_descriptor->payload_type = 0;
-	codec_descriptor->name = NULL;
-	codec_descriptor->sampling_rate = 0;
-	codec_descriptor->channel_count = 0;
-	codec_descriptor->format = NULL;
+	descriptor->payload_type = 0;
+	descriptor->name = NULL;
+	descriptor->sampling_rate = 0;
+	descriptor->channel_count = 0;
+	descriptor->format = NULL;
 }
+
+/** Calculate encoded frame size in bytes */
+static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(const mpf_codec_descriptor_t *descriptor, const mpf_codec_attribs_t *attribs)
+{
+	return descriptor->channel_count * attribs->bits_per_samples * CODEC_FRAME_TIME_BASE * 
+			descriptor->sampling_rate / 1000 / 8; /* 1000 - msec per sec, 8 - bits per byte */
+}
+
+/** Calculate linear frame size in bytes */
+static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count)
+{
+	return channel_count * BYTES_PER_SAMPLE * CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
+}
+
+/** Match two codec descriptors */
+static APR_INLINE apr_size_t mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
+{
+	apt_bool_t match = FALSE;
+	if(descriptor1->payload_type < 96 && descriptor2->payload_type < 96) {
+		if(descriptor1->payload_type == descriptor2->payload_type) {
+			match = TRUE;
+		}
+	}
+	else {
+		if(descriptor1->name && descriptor2->name) {
+			if(apt_str_compare(descriptor1->name,descriptor2->name) == TRUE &&
+				descriptor1->sampling_rate == descriptor2->sampling_rate && 
+				descriptor1->channel_count == descriptor2->channel_count) {
+				match = TRUE;
+			}
+		}
+	}
+	return match;
+}
+
 
 /** Reset list of codec descriptors */
 static APR_INLINE void mpf_codec_list_reset(mpf_codec_list_t *codec_list)
