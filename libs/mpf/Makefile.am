@@ -25,7 +25,8 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_decoder.h \
                            include/mpf_jitter_buffer.h \
                            include/mpf_rtp_header.h \
-                           include/mpf_rtp_stream_descriptor.h
+                           include/mpf_rtp_stream_descriptor.h \
+                           include/mpf_rtp_stream.h
 
 libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_audio_file_stream.c \
@@ -38,4 +39,5 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_timer.c \
                            src/mpf_encoder.c \
                            src/mpf_decoder.c \
-                           src/mpf_jitter_buffer.c
+                           src/mpf_jitter_buffer.c \
+                           src/mpf_rtp_stream.c

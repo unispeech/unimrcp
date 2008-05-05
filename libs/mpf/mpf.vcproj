@@ -210,6 +210,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtp_stream.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_stream_descriptor.h"
 				>
 			</File>
@@ -264,6 +268,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_jitter_buffer.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_rtp_stream.c"
 				>
 			</File>
 			<File
