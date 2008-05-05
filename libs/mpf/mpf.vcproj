@@ -178,6 +178,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_decoder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_encoder.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_engine.h"
 				>
 			</File>
@@ -186,11 +194,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_jitter_buffer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_message.h"
 				>
 			</File>
 			<File
 				RelativePath=".\include\mpf_object.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_rtp_header.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_rtp_stream_descriptor.h"
 				>
 			</File>
 			<File
@@ -231,7 +251,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\mpf_decoder.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_encoder.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mpf_engine.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_jitter_buffer.c"
 				>
 			</File>
 			<File
