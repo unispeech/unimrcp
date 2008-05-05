@@ -77,6 +77,56 @@ static APR_INLINE void mpf_audio_stream_init(mpf_audio_stream_t *stream, const m
 	stream->tx_codec = NULL;
 }
 
+/** Destroy audio stream */
+static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream)
+{
+	if(stream->vtable->destroy)
+		return stream->vtable->destroy(stream);
+	return TRUE;
+}
+
+static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream)
+{
+	if(stream->vtable->open_rx)
+		return stream->vtable->open_rx(stream);
+	return TRUE;
+}
+
+static APR_INLINE apt_bool_t mpf_audio_stream_rx_close(mpf_audio_stream_t *stream)
+{
+	if(stream->vtable->close_rx)
+		return stream->vtable->close_rx(stream);
+	return TRUE;
+}
+
+static APR_INLINE apt_bool_t mpf_audio_stream_frame_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
+{
+	if(stream->vtable->read_frame)
+		return stream->vtable->read_frame(stream,frame);
+	return TRUE;
+}
+
+static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream)
+{
+	if(stream->vtable->open_tx)
+		return stream->vtable->open_tx(stream);
+	return TRUE;
+}
+
+static APR_INLINE apt_bool_t mpf_audio_stream_tx_close(mpf_audio_stream_t *stream)
+{
+	if(stream->vtable->close_tx)
+		return stream->vtable->close_tx(stream);
+	return TRUE;
+}
+
+static APR_INLINE apt_bool_t mpf_audio_stream_frame_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
+{
+	if(stream->vtable->write_frame)
+		return stream->vtable->write_frame(stream,frame);
+	return TRUE;
+}
+
 
 APT_END_EXTERN_C
 
