@@ -26,6 +26,12 @@
 
 APT_BEGIN_EXTERN_C
 
+typedef enum {
+	RTP_MEDIA_DESCRIPTOR_NONE   = 0x0,
+	RTP_MEDIA_DESCRIPTOR_LOCAL  = 0x1,
+	RTP_MEDIA_DESCRIPTOR_REMOTE = 0x2
+} mpf_rtp_media_descriptor_e;
+
 typedef struct mpf_rtp_media_descriptor_t mpf_rtp_media_descriptor_t;
 /** RTP media (local/remote) descriptor */
 struct mpf_rtp_media_descriptor_t {
@@ -38,6 +44,8 @@ struct mpf_rtp_media_descriptor_t {
 typedef struct mpf_rtp_stream_descriptor_t mpf_rtp_stream_descriptor_t;
 /** RTP stream descriptor */
 struct mpf_rtp_stream_descriptor_t {
+	mpf_stream_mode_e          mode;
+	mpf_rtp_media_descriptor_e mask;
 	mpf_rtp_media_descriptor_t local;
 	mpf_rtp_media_descriptor_t remote;
 };
@@ -49,6 +57,20 @@ struct mpf_rtp_termination_descriptor_t {
 	mpf_rtp_stream_descriptor_t video;
 };
 
+static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
+{
+	media->ip = NULL;
+	media->port = 0;
+	mpf_codec_list_reset(&media->codec_list);
+}
+
+static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_t *stream)
+{
+	stream->mode = STREAM_MODE_NONE;
+	stream->mask = RTP_MEDIA_DESCRIPTOR_NONE;
+	mpf_rtp_media_descriptor_init(&stream->local);
+	mpf_rtp_media_descriptor_init(&stream->remote);
+}
 
 APT_END_EXTERN_C
 

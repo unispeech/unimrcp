@@ -210,6 +210,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtp_stat.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_stream.h"
 				>
 			</File>
@@ -219,6 +223,10 @@
 			</File>
 			<File
 				RelativePath=".\include\mpf_stream.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_stream_mode.h"
 				>
 			</File>
 			<File

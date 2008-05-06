@@ -22,18 +22,11 @@
  * @brief MPF Bidirectional Stream
  */ 
 
+#include "mpf_stream_mode.h"
 #include "mpf_frame.h"
 #include "mpf_codec.h"
 
 APT_BEGIN_EXTERN_C
-
-typedef enum {
-	STREAM_MODE_NONE    = 0x0,
-	STREAM_MODE_SEND    = 0x1,
-	STREAM_MODE_RECEIVE = 0x2,
-
-	STREAM_MODE_SEND_RECEIVE = STREAM_MODE_SEND | STREAM_MODE_RECEIVE
-} mpf_stream_mode_e; 
 
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
 typedef struct mpf_audio_stream_t mpf_audio_stream_t;
