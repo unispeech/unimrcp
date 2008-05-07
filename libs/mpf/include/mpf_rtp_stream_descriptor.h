@@ -38,6 +38,7 @@ struct mpf_rtp_media_descriptor_t {
 	const char      *ip;
 	apr_port_t       port;
 
+	apr_uint16_t     ptime;
 	mpf_codec_list_t codec_list;
 };
 
@@ -61,6 +62,7 @@ static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t 
 {
 	media->ip = NULL;
 	media->port = 0;
+	media->ptime = 0;
 	mpf_codec_list_reset(&media->codec_list);
 }
 
