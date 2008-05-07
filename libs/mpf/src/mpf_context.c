@@ -15,17 +15,10 @@
  */
 
 #include "mpf_context.h"
+#include "mpf_termination.h"
 #include "mpf_stream.h"
 #include "mpf_bridge.h"
 #include "apt_log.h"
-
-struct mpf_termination_t {
-	apr_pool_t         *pool;
-	void               *obj;
-
-	mpf_audio_stream_t *audio_stream;
-	mpf_video_stream_t *video_stream;
-};
 
 static apt_bool_t mpf_context_topology_apply(mpf_context_t *context);
 static apt_bool_t mpf_context_topology_destroy(mpf_context_t *context);
@@ -102,21 +95,6 @@ MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context)
 		}
 	}
 	return TRUE;
-}
-
-
-MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
-										void *obj, 
-										mpf_audio_stream_t *audio_stream, 
-										mpf_video_stream_t *video_stream, 
-										apr_pool_t *pool)
-{
-	mpf_termination_t *termination = apr_palloc(pool,sizeof(mpf_termination_t));
-	termination->obj = obj;
-	termination->pool = pool;
-	termination->audio_stream = audio_stream;
-	termination->video_stream = video_stream;
-	return termination;
 }
 
 static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination)

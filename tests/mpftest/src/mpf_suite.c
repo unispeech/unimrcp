@@ -16,6 +16,7 @@
 
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
+#include "mpf_user.h"
 #include "mpf_audio_file_stream.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
@@ -43,7 +44,7 @@ static void task_on_start_complete(apt_task_t *task)
 	audio_stream = mpf_audio_file_reader_create("demo.pcm",pool);
 	
 	apt_log(APT_PRIO_INFO,"Create Termination [1]");
-	termination1 = mpf_termination_create(NULL,audio_stream,NULL,pool);
+	termination1 = mpf_termination_create(NULL,NULL,audio_stream,NULL,pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
 	msg = apt_task_msg_get(task);
@@ -58,7 +59,7 @@ static void task_on_start_complete(apt_task_t *task)
 	audio_stream = mpf_audio_file_writer_create("demo_out.pcm",pool);
 
 	apt_log(APT_PRIO_INFO,"Create Termination [2]");
-	termination2 = mpf_termination_create(NULL,audio_stream,NULL,pool);
+	termination2 = mpf_termination_create(NULL,NULL,audio_stream,NULL,pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
 	msg = apt_task_msg_get(task);

@@ -22,6 +22,7 @@
  * @brief MPF Bidirectional Stream
  */ 
 
+#include "mpf_types.h"
 #include "mpf_stream_mode.h"
 #include "mpf_frame.h"
 #include "mpf_codec.h"
@@ -29,18 +30,6 @@
 APT_BEGIN_EXTERN_C
 
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
-typedef struct mpf_audio_stream_t mpf_audio_stream_t;
-
-struct mpf_audio_stream_t {
-	const mpf_audio_stream_vtable_t *vtable;
-	mpf_stream_mode_e                mode;
-
-	mpf_codec_list_t                 codec_list;
-
-	mpf_codec_t                     *rx_codec;
-	mpf_codec_t                     *tx_codec;
-};
-
 struct mpf_audio_stream_vtable_t {
 	apt_bool_t (*destroy)(mpf_audio_stream_t *stream);
 
@@ -53,8 +42,16 @@ struct mpf_audio_stream_vtable_t {
 	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 };
 
+struct mpf_audio_stream_t {
+	const mpf_audio_stream_vtable_t *vtable;
+	mpf_stream_mode_e                mode;
 
-typedef struct mpf_video_stream_t mpf_video_stream_t;
+	mpf_codec_list_t                 codec_list;
+
+	mpf_codec_t                     *rx_codec;
+	mpf_codec_t                     *tx_codec;
+};
+
 struct mpf_video_stream_t {
 	mpf_stream_mode_e mode;
 };
@@ -119,7 +116,6 @@ static APR_INLINE apt_bool_t mpf_audio_stream_frame_write(mpf_audio_stream_t *st
 		return stream->vtable->write_frame(stream,frame);
 	return TRUE;
 }
-
 
 APT_END_EXTERN_C
 

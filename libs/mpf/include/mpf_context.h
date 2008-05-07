@@ -22,7 +22,6 @@
  * @brief MPF Context
  */ 
 
-#include "mpf_message.h"
 #include "mpf_object.h"
 #include "apt_obj_list.h"
 
@@ -40,18 +39,6 @@ struct mpf_context_t {
 	mpf_object_t      *objects[MAX_TERMINATION_COUNT];
 };
 
-/**
- * Create MPF context.
- * @param obj the external object associated with context
- * @param pool the pool to allocate memory from
- */
-MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool);
-
-/**
- * Destroy MPF context.
- * @param context the context to destroy
- */
-MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
 
 /**
  * Add termination to context.
@@ -73,17 +60,6 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context,
  */
 MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
 
-
-/**
- * Create MPF termination.
- * @param obj the external object associated with termination
- * @param pool the pool to allocate memory from
- */
-MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
-										void *obj, 
-										mpf_audio_stream_t *audio_stream, 
-										mpf_video_stream_t *video_stream, 
-										apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

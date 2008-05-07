@@ -22,7 +22,7 @@
  * @brief Media Processing Framework Message Definitions
  */ 
 
-#include "mpf.h"
+#include "mpf_types.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -47,12 +47,6 @@ typedef enum {
 	MPF_COMMAND_SUBTRACT,/**< subtract termination from context */ 
 	MPF_COMMAND_MOVE     /**< move termination to another context */
 } mpf_command_type_e;
-
-/** Opaque MPF context declaration */
-typedef struct mpf_context_t mpf_context_t;
-
-/** Opaque MPF termination declaration */
-typedef struct mpf_termination_t mpf_termination_t;
 
 /** MPF message declaration */
 typedef struct mpf_message_t mpf_message_t;

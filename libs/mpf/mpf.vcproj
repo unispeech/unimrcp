@@ -230,7 +230,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_termination.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_timer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_types.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_user.h"
 				>
 			</File>
 		</Filter>
@@ -280,6 +292,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_rtp_stream.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_termination.c"
 				>
 			</File>
 			<File

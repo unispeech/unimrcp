@@ -22,7 +22,7 @@
  * @brief MPF High Resolution Timer
  */ 
 
-#include <mpf.h>
+#include "mpf.h"
 
 APT_BEGIN_EXTERN_C
 

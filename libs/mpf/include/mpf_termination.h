@@ -14,36 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef __MPF_ENGINE_H__
-#define __MPF_ENGINE_H__
+#ifndef __MPF_TERMINATION_H__
+#define __MPF_TERMINATION_H__
 
 /**
- * @file mpf_engine.h
- * @brief Media Processing Framework Engine
+ * @file mpf_termination.h
+ * @brief MPF Termination
  */ 
 
-#include "apt_task.h"
-#include "mpf_message.h"
+#include "mpf_types.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MPF engine declaration */
-typedef struct mpf_engine_t mpf_engine_t;
+struct mpf_termination_t {
+	apr_pool_t                     *pool;
+	void                           *obj;
+	const mpf_termination_vtable_t *vtable;
 
+	mpf_audio_stream_t             *audio_stream;
+	mpf_video_stream_t             *video_stream;
+};
 
 /**
- * Create MPF engine.
- * @param pool the pool to allocate memory from
+ * Modify MPF termination.
+ * @param termination the termination to modify
+ * @param descriptor the termination specific descriptor
  */
-MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool);
-
-/**
- * Get task.
- * @param engine the engine to get task from
- */
-MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine);
-
+apt_bool_t mpf_termination_modify(mpf_termination_t *termination, void *descriptor);
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_ENGINE_H__*/
+#endif /*__MPF_TERMINATION_H__*/

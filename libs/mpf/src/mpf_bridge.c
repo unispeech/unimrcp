@@ -15,7 +15,7 @@
  */
 
 #include "mpf_bridge.h"
-#include "mpf_frame.h"
+#include "mpf_stream.h"
 #include "apt_log.h"
 
 static apt_bool_t mpf_bridge_process(mpf_object_t *object)

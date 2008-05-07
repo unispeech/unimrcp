@@ -15,6 +15,8 @@
  */
 
 #include "mpf_engine.h"
+#include "mpf_user.h"
+#include "mpf_context.h"
 #include "mpf_timer.h"
 #include "mpf_codec_descriptor.h"
 #include "mpf_codec_manager.h"

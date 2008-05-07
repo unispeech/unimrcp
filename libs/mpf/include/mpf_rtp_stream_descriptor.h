@@ -22,7 +22,9 @@
  * @brief MPF RTP Stream Descriptor
  */ 
 
-#include "mpf.h"
+#include <apr_network_io.h>
+#include "mpf_stream_mode.h"
+#include "mpf_codec_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 

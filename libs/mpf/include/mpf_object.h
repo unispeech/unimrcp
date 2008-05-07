@@ -22,9 +22,8 @@
  * @brief Media Processing Object (bridge, multiplexor, mixer, ...)
  */ 
 
-#include "mpf.h"
+#include "mpf_types.h"
 #include "mpf_frame.h"
-#include "mpf_stream.h"
 
 APT_BEGIN_EXTERN_C
 
