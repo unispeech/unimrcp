@@ -43,6 +43,14 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, apr_si
 	size_t i;
 	size_t frame_size;
 	mpf_jitter_buffer_t *jb = apr_palloc(pool,sizeof(mpf_jitter_buffer_t));
+	if(!jb_config) {
+		/* create default jb config */
+		jb_config = apr_palloc(pool,sizeof(mpf_jb_config_t));
+		jb_config->min_playout_delay = 10;
+		jb_config->initial_playout_delay = 50;
+		jb_config->max_playout_delay = 200;
+		jb_config->adaptive = 0;
+	}
 	jb->config = jb_config;
 
 	jb->frame_ts = CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
