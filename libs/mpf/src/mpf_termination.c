@@ -15,6 +15,7 @@
  */
 
 #include "mpf_termination.h"
+#include "mpf_stream.h"
 
 MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 										void *obj,
@@ -26,7 +27,14 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 	mpf_termination_t *termination = apr_palloc(pool,sizeof(mpf_termination_t));
 	termination->pool = pool;
 	termination->obj = obj;
+	termination->owner = NULL;
 	termination->vtable = vtable;
+	if(audio_stream) {
+		audio_stream->termination = termination;
+	}
+	if(video_stream) {
+		video_stream->termination = termination;
+	}
 	termination->audio_stream = audio_stream;
 	termination->video_stream = video_stream;
 	return termination;
@@ -39,6 +47,12 @@ MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination)
 	}
 	return TRUE;
 }
+
+MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination)
+{
+	return termination->obj;
+}
+
 
 apt_bool_t mpf_termination_modify(mpf_termination_t *termination, void *descriptor)
 {
@@ -64,7 +78,7 @@ static apt_bool_t mpf_rtp_termination_modify(mpf_termination_t *termination, voi
 	mpf_rtp_stream_t *rtp_stream;
 	if(!termination->audio_stream) {
 		if(rtp_descriptor->audio.mask != RTP_MEDIA_DESCRIPTOR_NONE) {
-			termination->audio_stream = mpf_rtp_stream_create(termination->pool);
+			termination->audio_stream = mpf_rtp_stream_create(termination,termination->pool);
 		}
 	}
 	rtp_stream = (mpf_rtp_stream_t *)termination->audio_stream;

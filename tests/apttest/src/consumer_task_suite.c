@@ -76,6 +76,7 @@ static apt_bool_t consumer_task_test_run(apt_test_suite_t *suite, int argc, cons
 
 	for(i=0; i<10; i++) {
 		msg = apt_task_msg_acquire(msg_pool);
+		msg->type = TASK_MSG_USER;
 		data = (sample_msg_data_t*) msg->data;
 
 		data->number = i;

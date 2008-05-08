@@ -29,6 +29,7 @@ APT_BEGIN_EXTERN_C
 struct mpf_termination_t {
 	apr_pool_t                     *pool;
 	void                           *obj;
+	void                           *owner;
 	const mpf_termination_vtable_t *vtable;
 
 	mpf_audio_stream_t             *audio_stream;

@@ -59,6 +59,7 @@ struct mpf_message_t {
 
 	mpf_context_t     *context;
 	mpf_termination_t *termination;
+	void              *descriptor;
 };
 
 

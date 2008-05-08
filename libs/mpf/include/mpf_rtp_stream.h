@@ -34,7 +34,7 @@ typedef struct mpf_rtp_stream_t mpf_rtp_stream_t;
  * Create RTP stream.
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(apr_pool_t *pool);
+MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, apr_pool_t *pool);
 
 /**
  * Modify RTP stream.

@@ -68,7 +68,7 @@ MPF_DECLARE(mpf_termination_t*) mpf_file_termination_create(
  * @param pool the pool to allocate memory from
  */
 MPF_DECLARE(mpf_termination_t*) mpf_rtp_termination_create(
-										void *obj, 
+										void *obj,
 										apr_pool_t *pool);
 
 /**
@@ -76,6 +76,12 @@ MPF_DECLARE(mpf_termination_t*) mpf_rtp_termination_create(
  * @param termination the termination to destroy
  */
 MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination);
+
+/**
+ * Get associated object.
+ * @param termination the termination to get object from
+ */
+MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination);
 
 
 APT_END_EXTERN_C

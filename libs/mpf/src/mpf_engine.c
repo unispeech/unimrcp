@@ -17,6 +17,8 @@
 #include "mpf_engine.h"
 #include "mpf_user.h"
 #include "mpf_context.h"
+#include "mpf_termination.h"
+#include "mpf_stream.h"
 #include "mpf_timer.h"
 #include "mpf_codec_descriptor.h"
 #include "mpf_codec_manager.h"
@@ -117,6 +119,38 @@ static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine)
 	return TRUE;
 }
 
+static apt_bool_t mpf_engine_event_raise(mpf_audio_stream_t *stream, int event_id, void *descriptor)
+{
+	apt_task_t *parent_task;
+	apt_task_msg_t *task_msg;
+	mpf_message_t *event_msg;
+	mpf_engine_t *engine;
+	if(!stream->termination) {
+		return FALSE;
+	}
+	engine = stream->termination->owner;
+	if(!engine) {
+		return FALSE;
+	}
+
+	parent_task = apt_task_parent_get(engine->base);
+	if(!parent_task) {
+		apt_log(APT_PRIO_WARNING,"No MPF Parent Task to Send Event");
+		return FALSE;
+	}
+
+	task_msg = apt_task_msg_get(engine->base);
+	event_msg = (mpf_message_t*) task_msg->data;
+	event_msg->command_id = event_id;
+	event_msg->message_type = MPF_MESSAGE_TYPE_EVENT;
+	event_msg->status_code = MPF_STATUS_CODE_SUCCESS;
+	event_msg->context = NULL;
+	event_msg->termination = stream->termination;
+	event_msg->descriptor = descriptor;
+	
+	return apt_task_msg_signal(parent_task,task_msg);
+}
+
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
@@ -141,19 +175,27 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 
 	parent_task = apt_task_parent_get(engine->base);
 	if(!parent_task) {
-		apt_log(APT_PRIO_WARNING,"No MPF Parent Task",request->message_type);
+		apt_log(APT_PRIO_WARNING,"No MPF Parent Task to Send Response");
 		return FALSE;
 	}
 
 	response_msg = apt_task_msg_get(engine->base);
 	response = (mpf_message_t*) response_msg->data;
 	*response = *request;
+	response->message_type = MPF_MESSAGE_TYPE_RESPONSE;
 	response->status_code = MPF_STATUS_CODE_SUCCESS;
 	switch(request->command_id) {
 		case MPF_COMMAND_ADD:
 		{
 			mpf_context_t *context = request->context;
 			mpf_termination_t *termination = request->termination;
+			if(request->descriptor) {
+				mpf_termination_modify(termination,request->descriptor);
+			}
+			termination->owner = engine;
+			if(termination->audio_stream) {
+				termination->audio_stream->event_handler = mpf_engine_event_raise;
+			}
 			if(mpf_context_termination_add(context,termination) == FALSE) {
 				response->status_code = MPF_STATUS_CODE_FAILURE;
 				break;

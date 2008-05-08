@@ -235,7 +235,7 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_rtp_stream_transmit
 };
 
-MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(apr_pool_t *pool)
+MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
 {
 	mpf_rtp_stream_t *rtp_stream = apr_palloc(pool,sizeof(mpf_rtp_stream_t));
 	rtp_stream->pool = pool;
@@ -245,6 +245,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(apr_pool_t *pool)
 	rtp_stream->local_sockaddr = NULL;
 	rtp_stream->remote_sockaddr = NULL;
 	mpf_audio_stream_init(&rtp_stream->base,&vtable);
+	rtp_stream->base.termination = termination;
 	rtp_receiver_init(&rtp_stream->receiver);
 	rtp_transmitter_init(&rtp_stream->transmitter);
 	rtp_stream->transmitter.ssrc = (apr_uint32_t)apr_time_now();
