@@ -76,25 +76,58 @@ static apt_bool_t mpf_rtp_termination_destroy(mpf_termination_t *termination)
 static apt_bool_t mpf_rtp_termination_modify(mpf_termination_t *termination, void *descriptor)
 {
 	mpf_rtp_termination_descriptor_t *rtp_descriptor = descriptor;
-	mpf_rtp_stream_t *rtp_stream;
-	if(!termination->audio_stream) {
-		if(rtp_descriptor->audio.mask != RTP_MEDIA_DESCRIPTOR_NONE) {
-			termination->audio_stream = mpf_rtp_stream_create(termination,termination->pool);
+	mpf_audio_stream_t *audio_stream = termination->audio_stream;
+	if(!audio_stream) {
+		audio_stream = mpf_rtp_stream_create(termination,termination->pool);
+		if(!audio_stream) {
+			return FALSE;
 		}
+		termination->audio_stream = audio_stream;
 	}
-	rtp_stream = (mpf_rtp_stream_t *)termination->audio_stream;
-	if(rtp_stream) {
-		mpf_rtp_stream_modify(rtp_stream,&rtp_descriptor->audio);
-	}
-	return TRUE;
+
+	return mpf_rtp_stream_modify(audio_stream,&rtp_descriptor->audio);
 }
 
-static const mpf_termination_vtable_t vtable = {
+static const mpf_termination_vtable_t rtp_vtable = {
 	mpf_rtp_termination_destroy,
 	mpf_rtp_termination_modify,
 };
 
 MPF_DECLARE(mpf_termination_t*) mpf_rtp_termination_create(void *obj, apr_pool_t *pool)
 {
-	return mpf_termination_create(obj,&vtable,NULL,NULL,pool);
+	return mpf_termination_create(obj,&rtp_vtable,NULL,NULL,pool);
+}
+
+
+
+
+#include "mpf_audio_file_stream.h"
+
+static apt_bool_t mpf_file_termination_destroy(mpf_termination_t *termination)
+{
+	return TRUE;
+}
+
+static apt_bool_t mpf_file_termination_modify(mpf_termination_t *termination, void *descriptor)
+{
+	mpf_audio_stream_t *audio_stream = termination->audio_stream;
+	if(!audio_stream) {
+		audio_stream = mpf_file_stream_create(termination,termination->pool);
+		if(!audio_stream) {
+			return FALSE;
+		}
+		termination->audio_stream = audio_stream;
+	}
+
+	return mpf_file_stream_modify(audio_stream,descriptor);
+}
+
+static const mpf_termination_vtable_t file_vtable = {
+	mpf_file_termination_destroy,
+	mpf_file_termination_modify,
+};
+
+MPF_DECLARE(mpf_termination_t*) mpf_file_termination_create(void *obj, apr_pool_t *pool)
+{
+	return mpf_termination_create(obj,&file_vtable,NULL,NULL,pool);
 }

@@ -279,36 +279,37 @@ static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_
 	return TRUE;
 }
 
-MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_rtp_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor)
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor)
 {
+	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
 	apt_bool_t status = TRUE;
 	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_LOCAL) {
 		/* update local media */
 		mpf_rtp_media_descriptor_t *local_media = &descriptor->local;
-		if(!stream->local_media || 
-			apt_str_compare(stream->local_media->ip,local_media->ip) == FALSE ||
-			stream->local_media->port != local_media->port) {
+		if(!rtp_stream->local_media || 
+			apt_str_compare(rtp_stream->local_media->ip,local_media->ip) == FALSE ||
+			rtp_stream->local_media->port != local_media->port) {
 
-			if(mpf_rtp_socket_create(stream,local_media) == FALSE) {
+			if(mpf_rtp_socket_create(rtp_stream,local_media) == FALSE) {
 				status = FALSE;
 			}
 		}
-		stream->local_media = local_media;
+		rtp_stream->local_media = local_media;
 	}
 	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_REMOTE) {
 		/* update remote media */
 		mpf_rtp_media_descriptor_t *remote_media = &descriptor->remote;
-		if(!stream->remote_media || 
-			apt_str_compare(stream->remote_media->ip,remote_media->ip) == FALSE ||
-			stream->remote_media->port != remote_media->port) {
+		if(!rtp_stream->remote_media || 
+			apt_str_compare(rtp_stream->remote_media->ip,remote_media->ip) == FALSE ||
+			rtp_stream->remote_media->port != remote_media->port) {
 
-			apr_sockaddr_info_get(&stream->remote_sockaddr,remote_media->ip,APR_INET,remote_media->port,0,stream->pool);
-			if(!stream->remote_sockaddr) {
+			apr_sockaddr_info_get(&rtp_stream->remote_sockaddr,remote_media->ip,APR_INET,remote_media->port,0,rtp_stream->pool);
+			if(!rtp_stream->remote_sockaddr) {
 				status = FALSE;
 			}
 		}
-		stream->remote_media = remote_media;
+		rtp_stream->remote_media = remote_media;
 	}
-	stream->base.mode = descriptor->mode;
+	stream->mode = descriptor->mode;
 	return TRUE;
 }

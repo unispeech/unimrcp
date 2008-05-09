@@ -23,26 +23,26 @@
  */ 
 
 #include "mpf_stream.h"
+#include "mpf_audio_file_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
 /** Opaque audio file stream declaration */
 typedef struct mpf_audio_file_stream_t mpf_audio_file_stream_t;
 
-/**
- * Create audio file reader stream.
- * @param file_name the file name (path) to stream audio from
- * @param pool the pool to allocate memory from
- */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_reader_create(const char *file_name, apr_pool_t *pool);
 
 /**
- * Create audio file writer stream.
- * @param file_name the file name (path) to stream audio to
+ * Create file stream.
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_writer_create(const char *file_name, apr_pool_t *pool);
+MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termination, apr_pool_t *pool);
 
+/**
+ * Modify file stream.
+ * @param stream file stream to modify
+ * @param descriptor the descriptor to modify stream according
+ */
+MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_audio_file_descriptor_t *descriptor);
 
 APT_END_EXTERN_C
 

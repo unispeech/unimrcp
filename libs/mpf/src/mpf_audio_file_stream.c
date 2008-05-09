@@ -21,8 +21,8 @@
 struct mpf_audio_file_stream_t {
 	mpf_audio_stream_t base;
 
-	FILE              *read_file;
-	FILE              *write_file;
+	FILE              *read_handle;
+	FILE              *write_handle;
 
 	apt_bool_t         eof;
 };
@@ -31,13 +31,13 @@ struct mpf_audio_file_stream_t {
 static apt_bool_t mpf_audio_file_destroy(mpf_audio_stream_t *stream)
 {
 	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
-	if(file_stream->read_file) {
-		fclose(file_stream->read_file);
-		file_stream->read_file = NULL;
+	if(file_stream->read_handle) {
+		fclose(file_stream->read_handle);
+		file_stream->read_handle = NULL;
 	}
-	if(file_stream->write_file) {
-		fclose(file_stream->write_file);
-		file_stream->write_file = NULL;
+	if(file_stream->write_handle) {
+		fclose(file_stream->write_handle);
+		file_stream->write_handle = NULL;
 	}
 	return TRUE;
 }
@@ -55,8 +55,8 @@ static apt_bool_t mpf_audio_file_reader_close(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_audio_file_frame_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
-	if(file_stream->read_file && file_stream->eof == FALSE) {
-		if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->read_file) == frame->codec_frame.size) {
+	if(file_stream->read_handle && file_stream->eof == FALSE) {
+		if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->read_handle) == frame->codec_frame.size) {
 			frame->type = MEDIA_FRAME_TYPE_AUDIO;
 		}
 		else {
@@ -83,8 +83,8 @@ static apt_bool_t mpf_audio_file_writer_close(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_audio_file_frame_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
-	if(file_stream->write_file && file_stream->eof == FALSE) {
-		fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->write_file);
+	if(file_stream->write_handle && file_stream->eof == FALSE) {
+		fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->write_handle);
 	}
 	return TRUE;
 }
@@ -99,39 +99,35 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_audio_file_frame_write
 };
 
-static void mpf_audio_file_capabilities_init(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apr_pool_t *pool)
+MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
 {
-	mpf_codec_descriptor_t *descriptor;
-	mpf_audio_stream_init(stream,&vtable);
-	stream->mode = mode;
-	mpf_codec_list_init(&stream->codec_list,1,pool);
-	descriptor = mpf_codec_list_add(&stream->codec_list);
-	if(descriptor) {
-		descriptor->payload_type = 11;
-		descriptor->name = "L16";
-		descriptor->sampling_rate = 8000;
-		descriptor->channel_count = 1;
+	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
+	mpf_audio_stream_init(&file_stream->base,&vtable);
+	file_stream->base.termination = termination;
+
+	file_stream->write_handle = NULL;
+	file_stream->read_handle = NULL;
+	file_stream->eof = FALSE;
+	return &file_stream->base;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_audio_file_descriptor_t *descriptor)
+{
+	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
+	if(descriptor->mask & FILE_READER) {
+		if(file_stream->read_handle) {
+			fclose(file_stream->read_handle);
+		}
+		file_stream->read_handle = descriptor->read_handle;
+		file_stream->eof = FALSE;
+		stream->mode |= FILE_READER;
 	}
-}
-
-MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_reader_create(const char *file_name, apr_pool_t *pool)
-{
-	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_RECEIVE,pool);
-
-	file_stream->write_file = NULL;
-	file_stream->read_file = fopen(file_name,"rb");
-	file_stream->eof = FALSE;
-	return &file_stream->base;
-}
-
-MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_file_writer_create(const char *file_name, apr_pool_t *pool)
-{
-	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-	mpf_audio_file_capabilities_init(&file_stream->base,STREAM_MODE_SEND,pool);
-
-	file_stream->read_file = NULL;
-	file_stream->write_file = fopen(file_name,"wb");
-	file_stream->eof = FALSE;
-	return &file_stream->base;
+	if(descriptor->mask & FILE_WRITER) {
+		if(file_stream->write_handle) {
+			fclose(file_stream->write_handle);
+		}
+		file_stream->write_handle = descriptor->write_handle;
+		stream->mode |= FILE_WRITER;
+	}
+	return TRUE;
 }

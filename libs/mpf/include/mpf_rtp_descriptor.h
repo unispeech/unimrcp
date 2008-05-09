@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __MPF_RTP_STREAM_DESCRIPTOR_H__
-#define __MPF_RTP_STREAM_DESCRIPTOR_H__
+#ifndef __MPF_RTP_DESCRIPTOR_H__
+#define __MPF_RTP_DESCRIPTOR_H__
 
 /**
- * @file mpf_rtp_stream_descriptor.h
+ * @file mpf_rtp_descriptor.h
  * @brief MPF RTP Stream Descriptor
  */ 
 
@@ -78,4 +78,4 @@ static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_RTP_STREAM_DESCRIPTOR_H__*/
+#endif /*__MPF_RTP_DESCRIPTOR_H__*/

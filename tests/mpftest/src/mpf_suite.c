@@ -18,8 +18,8 @@
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
 #include "mpf_user.h"
-#include "mpf_audio_file_stream.h"
-#include "mpf_rtp_stream_descriptor.h"
+#include "mpf_audio_file_descriptor.h"
+#include "mpf_rtp_descriptor.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -43,16 +43,36 @@ struct mpf_suite_engine_t {
 	apr_thread_mutex_t  *wait_object_mutex;
 };
 
-static mpf_termination_t* mpf_suite_file_reader_create(mpf_suite_session_t *session)
+static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_session_t *session)
 {
-	mpf_audio_stream_t *audio_stream = mpf_audio_file_reader_create("demo.pcm",session->pool);
-	return mpf_termination_create(session,NULL,audio_stream,NULL,session->pool);
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
+	descriptor->mask = FILE_READER;
+	descriptor->read_handle = fopen("demo.pcm","rb");
+	descriptor->write_handle = NULL;
+
+	codec_descriptor = &descriptor->codec_descriptor;
+	codec_descriptor->payload_type = 11;
+	codec_descriptor->name = "L16";
+	codec_descriptor->sampling_rate = 8000;
+	codec_descriptor->channel_count = 1;
+	return descriptor;
 }
 
-static mpf_termination_t* mpf_suite_file_writer_create(mpf_suite_session_t *session)
+static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_session_t *session)
 {
-	mpf_audio_stream_t *audio_stream = mpf_audio_file_writer_create("demo_out.pcm",session->pool);
-	return mpf_termination_create(session,NULL,audio_stream,NULL,session->pool);
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
+	descriptor->mask = FILE_WRITER;
+	descriptor->write_handle = fopen("demo_out.pcm","wb");
+	descriptor->read_handle = NULL;
+
+	codec_descriptor = &descriptor->codec_descriptor;
+	codec_descriptor->payload_type = 11;
+	codec_descriptor->name = "L16";
+	codec_descriptor->sampling_rate = 8000;
+	codec_descriptor->channel_count = 1;
+	return descriptor;
 }
 
 static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_session_t *session)
@@ -117,7 +137,7 @@ static void task_on_start_complete(apt_task_t *task)
 	session->context = mpf_context_create(session,2,pool);
 
 	apt_log(APT_PRIO_INFO,"Create Termination [1]");
-	session->termination1 = mpf_suite_file_reader_create(session);
+	session->termination1 = mpf_file_termination_create(session,session->pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
 	msg = apt_task_msg_get(task);
@@ -128,10 +148,11 @@ static void task_on_start_complete(apt_task_t *task)
 	mpf_message->command_id = MPF_COMMAND_ADD;
 	mpf_message->context = session->context;
 	mpf_message->termination = session->termination1;
+	mpf_message->descriptor = mpf_file_reader_descriptor_create(session);
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 
 	apt_log(APT_PRIO_INFO,"Create Termination [2]");
-//	session->termination2 = mpf_suite_file_writer_create(session);
+//	session->termination2 = mpf_file_termination_create(session,session->pool);
 	session->termination2 = mpf_rtp_termination_create(session,session->pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
@@ -143,6 +164,7 @@ static void task_on_start_complete(apt_task_t *task)
 	mpf_message->command_id = MPF_COMMAND_ADD;
 	mpf_message->context = session->context;
 	mpf_message->termination = session->termination2;
+//	mpf_message->descriptor = mpf_file_writer_descriptor_create(session);
 	mpf_message->descriptor = mpf_rtp_local_descriptor_create(session);
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 }

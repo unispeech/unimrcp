@@ -23,7 +23,7 @@
  */ 
 
 #include "mpf_stream.h"
-#include "mpf_rtp_stream_descriptor.h"
+#include "mpf_rtp_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -41,7 +41,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
  * @param stream RTP stream to modify
  * @param descriptor the descriptor to modify stream according
  */
-MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_rtp_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor);
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor);
 
 APT_END_EXTERN_C
 

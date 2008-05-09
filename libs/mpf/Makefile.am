@@ -9,6 +9,7 @@ noinst_LTLIBRARIES       = libmpf.la
 
 include_HEADERS          = codecs/g711/g711.h \
                            include/mpf.h \
+                           include/mpf_audio_file_descriptor.h \
                            include/mpf_audio_file_stream.h \
                            include/mpf_bridge.h \
                            include/mpf_codec.h \
@@ -28,8 +29,8 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_decoder.h \
                            include/mpf_jitter_buffer.h \
                            include/mpf_rtp_header.h \
+                           include/mpf_rtp_descriptor.h \
                            include/mpf_rtp_stream.h \
-                           include/mpf_rtp_stream_descriptor.h \
                            include/mpf_rtp_stat.h \
                            include/mpf_user.h
 

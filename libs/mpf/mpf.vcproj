@@ -154,6 +154,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_audio_file_descriptor.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_audio_file_stream.h"
 				>
 			</File>
@@ -206,6 +210,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtp_descriptor.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_header.h"
 				>
 			</File>
@@ -215,10 +223,6 @@
 			</File>
 			<File
 				RelativePath=".\include\mpf_rtp_stream.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\mpf_rtp_stream_descriptor.h"
 				>
 			</File>
 			<File

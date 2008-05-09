@@ -73,6 +73,15 @@ MPF_DECLARE(mpf_termination_t*) mpf_rtp_termination_create(
 										apr_pool_t *pool);
 
 /**
+ * Create MPF file termination.
+ * @param obj the external object associated with termination
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_termination_t*) mpf_file_termination_create(
+										void *obj,
+										apr_pool_t *pool);
+
+/**
  * Destroy MPF termination.
  * @param termination the termination to destroy
  */
