@@ -197,6 +197,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 			termination->owner = engine;
 			if(termination->audio_stream) {
 				termination->audio_stream->event_handler = mpf_engine_event_raise;
+				termination->audio_stream->codec_manager = engine->codec_manager;
 			}
 			if(mpf_context_termination_add(context,termination) == FALSE) {
 				response->status_code = MPF_STATUS_CODE_FAILURE;

@@ -47,11 +47,11 @@ struct mpf_audio_stream_vtable_t {
 struct mpf_audio_stream_t {
 	const mpf_audio_stream_vtable_t *vtable;
 	mpf_stream_event_handler_f       event_handler;
+	const mpf_codec_manager_t       *codec_manager;
 	mpf_termination_t               *termination;
+
 	mpf_stream_mode_e                mode;
-
 	mpf_codec_list_t                 codec_list;
-
 	mpf_codec_t                     *rx_codec;
 	mpf_codec_t                     *tx_codec;
 };
@@ -67,6 +67,7 @@ static APR_INLINE void mpf_audio_stream_init(mpf_audio_stream_t *stream, const m
 {
 	stream->vtable = vtable;
 	stream->event_handler = NULL;
+	stream->codec_manager = NULL;
 	stream->termination = NULL;
 	stream->mode = STREAM_MODE_NONE;
 	mpf_codec_list_reset(&stream->codec_list);
