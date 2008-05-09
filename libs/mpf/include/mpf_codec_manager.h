@@ -22,12 +22,10 @@
  * @brief MPF Codec Manager
  */ 
 
+#include "mpf_types.h"
 #include "mpf_codec.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Opaque codec manager declaration */
-typedef struct mpf_codec_manager_t mpf_codec_manager_t;
 
 /** Create codec manager */
 MPF_DECLARE(mpf_codec_manager_t*) mpf_codec_manager_create(apr_size_t max_codec_count, apr_pool_t *pool);

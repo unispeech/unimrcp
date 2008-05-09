@@ -26,6 +26,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Opaque codec manager declaration */
+typedef struct mpf_codec_manager_t mpf_codec_manager_t;
+
 /** Opaque MPF context declaration */
 typedef struct mpf_context_t mpf_context_t;
 
