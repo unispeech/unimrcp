@@ -22,6 +22,7 @@
  * @brief MPF Audio File Descriptor
  */ 
 
+#include <stdio.h>
 #include "mpf_stream_mode.h"
 #include "mpf_codec_descriptor.h"
 
