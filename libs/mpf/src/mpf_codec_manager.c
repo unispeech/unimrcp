@@ -68,7 +68,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *co
 	return TRUE;
 }
 
-MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(mpf_codec_manager_t *codec_manager, mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
+MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t *codec_manager, mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
 {
 	size_t i;
 	mpf_codec_t *codec = NULL;
@@ -102,11 +102,12 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(mpf_codec_manager_t *codec
 	}
 	if(codec) {
 		ret_codec = mpf_codec_clone(codec,pool);
+		ret_codec->descriptor = descriptor;
 	}
 	return ret_codec;
 }
 
-MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, apr_pool_t *pool)
+MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, apr_pool_t *pool)
 {
 	const mpf_codec_descriptor_t *def_descriptor;
 	mpf_codec_descriptor_t *descriptor;
