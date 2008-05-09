@@ -19,12 +19,12 @@
 
 static apt_bool_t g711_open(mpf_codec_t *codec)
 {
-	return APR_SUCCESS;
+	return TRUE;
 }
 
 static apt_bool_t g711_close(mpf_codec_t *codec)
 {
-	return APR_SUCCESS;
+	return TRUE;
 }
 
 static apt_bool_t g711u_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
@@ -42,7 +42,7 @@ static apt_bool_t g711u_encode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 		encode_buf[i] = linear_to_ulaw(decode_buf[i]);
 	}
 
-	return APR_SUCCESS;
+	return TRUE;
 }
 
 static apt_bool_t g711u_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
@@ -60,7 +60,7 @@ static apt_bool_t g711u_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 		decode_buf[i] = ulaw_to_linear(encode_buf[i]);
 	}
 
-	return APR_SUCCESS;
+	return TRUE;
 }
 
 static apt_bool_t g711a_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
@@ -78,7 +78,7 @@ static apt_bool_t g711a_encode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 		encode_buf[i] = linear_to_alaw(decode_buf[i]);
 	}
 
-	return APR_SUCCESS;
+	return TRUE;
 }
 
 static apt_bool_t g711a_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
@@ -96,7 +96,7 @@ static apt_bool_t g711a_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 		decode_buf[i] = alaw_to_linear(encode_buf[i]);
 	}
 
-	return APR_SUCCESS;
+	return TRUE;
 }
 
 static mpf_codec_vtable_t g711u_vtable = {
