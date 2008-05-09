@@ -26,10 +26,14 @@
 
 APT_BEGIN_EXTERN_C
 
+typedef apt_bool_t (*mpf_termination_event_handler_f)(mpf_termination_t *termination, int event_id, void *descriptor);
+
 struct mpf_termination_t {
 	apr_pool_t                     *pool;
 	void                           *obj;
-	void                           *owner;
+	void                           *event_handler_obj;
+	mpf_termination_event_handler_f event_handler;
+	const mpf_codec_manager_t      *codec_manager;
 	const mpf_termination_vtable_t *vtable;
 	apr_size_t                      slot;
 

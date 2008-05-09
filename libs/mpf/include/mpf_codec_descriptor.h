@@ -28,6 +28,7 @@ APT_BEGIN_EXTERN_C
 
 #define CODEC_FRAME_TIME_BASE 10 /*ms*/
 #define BYTES_PER_SAMPLE 2
+#define BITS_PER_SAMPLE 16
 
 typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
 /** Codec descriptor */

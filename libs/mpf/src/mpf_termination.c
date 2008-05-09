@@ -27,7 +27,9 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 	mpf_termination_t *termination = apr_palloc(pool,sizeof(mpf_termination_t));
 	termination->pool = pool;
 	termination->obj = obj;
-	termination->owner = NULL;
+	termination->event_handler_obj = NULL;
+	termination->event_handler = NULL;
+	termination->codec_manager = NULL;
 	termination->vtable = vtable;
 	termination->slot = 0;
 	if(audio_stream) {

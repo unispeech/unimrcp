@@ -77,7 +77,6 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 	decoder = apr_palloc(pool,sizeof(mpf_decoder_t));
 	mpf_audio_stream_init(&decoder->base,&vtable);
 	decoder->base.mode = STREAM_MODE_RECEIVE;
-	mpf_codec_list_reset(&decoder->base.codec_list);
 	decoder->source = source;
 
 	codec = source->rx_codec;

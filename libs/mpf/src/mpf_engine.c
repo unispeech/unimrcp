@@ -119,16 +119,13 @@ static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine)
 	return TRUE;
 }
 
-static apt_bool_t mpf_engine_event_raise(mpf_audio_stream_t *stream, int event_id, void *descriptor)
+static apt_bool_t mpf_engine_event_raise(mpf_termination_t *termination, int event_id, void *descriptor)
 {
 	apt_task_t *parent_task;
 	apt_task_msg_t *task_msg;
 	mpf_message_t *event_msg;
 	mpf_engine_t *engine;
-	if(!stream->termination) {
-		return FALSE;
-	}
-	engine = stream->termination->owner;
+	engine = termination->event_handler_obj;
 	if(!engine) {
 		return FALSE;
 	}
@@ -145,7 +142,7 @@ static apt_bool_t mpf_engine_event_raise(mpf_audio_stream_t *stream, int event_i
 	event_msg->message_type = MPF_MESSAGE_TYPE_EVENT;
 	event_msg->status_code = MPF_STATUS_CODE_SUCCESS;
 	event_msg->context = NULL;
-	event_msg->termination = stream->termination;
+	event_msg->termination = termination;
 	event_msg->descriptor = descriptor;
 	
 	return apt_task_msg_signal(parent_task,task_msg);
@@ -191,13 +188,11 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 	switch(request->command_id) {
 		case MPF_COMMAND_ADD:
 		{
+			termination->event_handler_obj = engine;
+			termination->event_handler = mpf_engine_event_raise;
+			termination->codec_manager = engine->codec_manager;
 			if(request->descriptor) {
 				mpf_termination_modify(termination,request->descriptor);
-			}
-			termination->owner = engine;
-			if(termination->audio_stream) {
-				termination->audio_stream->event_handler = mpf_engine_event_raise;
-				termination->audio_stream->codec_manager = engine->codec_manager;
 			}
 			if(mpf_context_termination_add(context,termination) == FALSE) {
 				response->status_code = MPF_STATUS_CODE_FAILURE;

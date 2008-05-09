@@ -17,6 +17,8 @@
 #include "mpf_context.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
+#include "mpf_encoder.h"
+#include "mpf_decoder.h"
 #include "mpf_bridge.h"
 #include "apt_log.h"
 
@@ -189,7 +191,21 @@ static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_t
 	mpf_audio_stream_t *sink = sink_termination->audio_stream;
 	if(source && (source->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE &&
 		sink && (sink->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
-		object = mpf_bridge_create(source,sink,context->pool);
+		mpf_codec_t *rx_codec = source->rx_codec;
+		mpf_codec_t *tx_codec = sink->tx_codec;
+		if(rx_codec && tx_codec) {
+			if(rx_codec->attribs->bits_per_samples != BITS_PER_SAMPLE) {
+				/* set decoder before bridge */
+				mpf_audio_stream_t *decoder = mpf_decoder_create(source,context->pool);
+				source = decoder;
+			}
+			if(tx_codec->attribs->bits_per_samples != BITS_PER_SAMPLE) {
+				/* set encoder after bridge */
+				mpf_audio_stream_t *encoder = mpf_encoder_create(sink,context->pool);
+				sink = encoder;
+			}
+			object = mpf_bridge_create(source,sink,context->pool);
+		}
 	}
 	return object;
 }

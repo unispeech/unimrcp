@@ -15,7 +15,9 @@
  */
 
 #include "mpf_audio_file_stream.h"
+#include "mpf_termination.h"
 #include "mpf_frame.h"
+#include "mpf_codec_manager.h"
 #include "apt_log.h"
 
 struct mpf_audio_file_stream_t {
@@ -61,8 +63,8 @@ static apt_bool_t mpf_audio_file_frame_read(mpf_audio_stream_t *stream, mpf_fram
 		}
 		else {
 			file_stream->eof = TRUE;
-			if(stream->event_handler) {
-				stream->event_handler(stream,0,NULL);
+			if(stream->termination->event_handler) {
+				stream->termination->event_handler(stream->termination,0,NULL);
 			}
 		}
 	}
@@ -121,6 +123,11 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 		file_stream->read_handle = descriptor->read_handle;
 		file_stream->eof = FALSE;
 		stream->mode |= FILE_READER;
+
+		stream->rx_codec = mpf_codec_manager_codec_get(
+								stream->termination->codec_manager,
+								&descriptor->codec_descriptor,
+								stream->termination->pool);
 	}
 	if(descriptor->mask & FILE_WRITER) {
 		if(file_stream->write_handle) {
@@ -128,6 +135,11 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 		}
 		file_stream->write_handle = descriptor->write_handle;
 		stream->mode |= FILE_WRITER;
+
+		stream->tx_codec = mpf_codec_manager_codec_get(
+								stream->termination->codec_manager,
+								&descriptor->codec_descriptor,
+								stream->termination->pool);
 	}
 	return TRUE;
 }

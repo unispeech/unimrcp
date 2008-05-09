@@ -77,7 +77,6 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, ap
 	encoder = apr_palloc(pool,sizeof(mpf_encoder_t));
 	mpf_audio_stream_init(&encoder->base,&vtable);
 	encoder->base.mode = STREAM_MODE_SEND;
-	mpf_codec_list_reset(&encoder->base.codec_list);
 	encoder->sink = sink;
 
 	codec = sink->tx_codec;

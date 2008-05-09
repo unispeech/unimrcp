@@ -29,8 +29,6 @@
 
 APT_BEGIN_EXTERN_C
 
-typedef apt_bool_t (*mpf_stream_event_handler_f)(mpf_audio_stream_t *stream, int event_id, void *descriptor);
-
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
 struct mpf_audio_stream_vtable_t {
 	apt_bool_t (*destroy)(mpf_audio_stream_t *stream);
@@ -46,12 +44,9 @@ struct mpf_audio_stream_vtable_t {
 
 struct mpf_audio_stream_t {
 	const mpf_audio_stream_vtable_t *vtable;
-	mpf_stream_event_handler_f       event_handler;
-	const mpf_codec_manager_t       *codec_manager;
 	mpf_termination_t               *termination;
 
 	mpf_stream_mode_e                mode;
-	mpf_codec_list_t                 codec_list;
 	mpf_codec_t                     *rx_codec;
 	mpf_codec_t                     *tx_codec;
 };
@@ -66,11 +61,8 @@ struct mpf_video_stream_t {
 static APR_INLINE void mpf_audio_stream_init(mpf_audio_stream_t *stream, const mpf_audio_stream_vtable_t *vtable)
 {
 	stream->vtable = vtable;
-	stream->event_handler = NULL;
-	stream->codec_manager = NULL;
 	stream->termination = NULL;
 	stream->mode = STREAM_MODE_NONE;
-	mpf_codec_list_reset(&stream->codec_list);
 	stream->rx_codec = NULL;
 	stream->tx_codec = NULL;
 }
