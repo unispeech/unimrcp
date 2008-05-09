@@ -20,20 +20,23 @@
 #include "mpf_bridge.h"
 #include "apt_log.h"
 
-static apt_bool_t mpf_context_topology_apply(mpf_context_t *context);
-static apt_bool_t mpf_context_topology_destroy(mpf_context_t *context);
+static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination);
 
-MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool)
+MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termination_count, apr_pool_t *pool)
 {
-	apr_size_t i;
+	apr_size_t i,j;
 	mpf_context_t *context = apr_palloc(pool,sizeof(mpf_context_t));
 	context->obj = obj;
 	context->pool = pool;
 	context->elem = NULL;
+	context->max_termination_count = max_termination_count;
 	context->termination_count = 0;
-	for(i=0; i<MAX_TERMINATION_COUNT; i++) {
-		context->terminations[i] = NULL;
-		context->objects[i] = NULL;
+	context->table = apr_palloc(pool,sizeof(table_item_t)*max_termination_count);
+	for(i=0; i<max_termination_count; i++) {
+		context->table[i] = apr_palloc(pool,sizeof(table_item_t)*max_termination_count);
+		for(j=0; j<max_termination_count; j++) {
+			context->table[i][j] = NULL;
+		}
 	}
 
 	return context;
@@ -42,13 +45,15 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool)
 MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context)
 {
 	apr_size_t i;
-	apr_size_t count = context->termination_count;
+	apr_size_t count = context->max_termination_count;
 	mpf_termination_t *termination;
 	for(i=0; i<count; i++){
-		termination = context->terminations[i];
-		mpf_context_termination_subtract(context,termination);
-		if(termination->audio_stream) {
-			termination->audio_stream->vtable->destroy(termination->audio_stream);
+		termination = context->table[i][i];
+		if(termination) {
+			mpf_context_termination_subtract(context,termination);
+			if(termination->audio_stream) {
+				mpf_audio_stream_destroy(termination->audio_stream);
+			}
 		}
 	}
 	return TRUE;
@@ -57,12 +62,13 @@ MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context)
 MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_termination_t *termination)
 {
 	apr_size_t i;
-	for(i=0; i<MAX_TERMINATION_COUNT; i++) {
-		if(!context->terminations[i]) {
+	apr_size_t count = context->max_termination_count;
+	for(i=0; i<count; i++) {
+		if(!context->table[i][i]) {
 			apt_log(APT_PRIO_INFO,"Add Termination");
-			context->terminations[i] = termination;
+			context->table[i][i] = termination;
+			termination->slot = i;
 			context->termination_count++;
-			mpf_context_topology_apply(context);
 			return TRUE;
 		}
 	}
@@ -71,27 +77,106 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
 
 MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context, mpf_termination_t *termination)
 {
-	apr_size_t i;
-	for(i=0; i<MAX_TERMINATION_COUNT; i++) {
-		if(context->terminations[i] == termination) {
-			mpf_context_topology_destroy(context);
-			apt_log(APT_PRIO_INFO,"Subtract Termination");
-			context->terminations[i] = NULL;
-			context->termination_count--;
-			return TRUE;
-		}
+	apr_size_t i = termination->slot;
+	if(i >= context->max_termination_count) {
+		return FALSE;
 	}
-	return FALSE;
+	if(context->table[i][i] != termination) {
+		return FALSE;
+	}
+
+	apt_log(APT_PRIO_INFO,"Subtract Termination");
+	context->table[i][i] = NULL;
+	termination->slot = (apr_size_t)-1;
+	context->termination_count--;
+	return TRUE;
 }
 
 MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context)
 {
 	mpf_object_t *object;
-	apr_size_t i;
-	for(i=0; i<context->termination_count; i++) {
-		object = context->objects[i];
-		if(object && object->process) {
-			object->process(object);
+	apr_size_t i,j;
+	for(i=0; i<context->max_termination_count; i++) {
+		for(j=0; j<context->max_termination_count; j++) {
+			if(i==j) continue;
+
+			object = context->table[i][j];
+			if(object && object->process) {
+				object->process(object);
+			}
+		}
+	}
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context, mpf_termination_t *termination)
+{
+	apr_size_t i,j;
+	mpf_object_t *object;
+	mpf_termination_t *sink_termination;
+	mpf_termination_t *source_termination;
+	if(context->termination_count <= 1) {
+		/* at least 2 terminations are required to apply topology on them */
+		return TRUE;
+	}
+
+	i = termination->slot;
+	for(j=0; j<context->max_termination_count; j++) {
+		if(i == j) continue;
+
+		sink_termination = context->table[j][j];
+		object = mpf_context_connection_create(context,termination,sink_termination);
+		if(object) {
+			context->table[i][j] = object;
+		}
+	}
+
+	j = termination->slot;
+	for(i=0; i<context->max_termination_count; i++) {
+		if(i == j) continue;
+
+		source_termination = context->table[i][i];
+		object = mpf_context_connection_create(context,source_termination,termination);
+		if(object) {
+			context->table[i][j] = object;
+		}
+	}
+
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context, mpf_termination_t *termination)
+{
+	apr_size_t i,j;
+	mpf_object_t *object;
+	if(context->termination_count <= 1) {
+		/* at least 2 terminations are required to destroy topology */
+		return TRUE;
+	}
+
+	i = termination->slot;
+	for(j=0; j<context->max_termination_count; j++) {
+		if(i == j) continue;
+
+		object = context->table[i][j];
+		if(object) {
+			if(object->destroy) {
+				object->destroy(object);
+			}
+			context->table[i][j] = NULL;
+		}
+	}
+
+	j = termination->slot;
+	for(i=0; i<context->max_termination_count; i++) {
+		if(i == j) continue;
+
+		object = context->table[i][j];
+		if(object) {
+			if(object->destroy) {
+				object->destroy(object);
+			}
+			context->table[i][j] = NULL;
 		}
 	}
 	return TRUE;
@@ -107,58 +192,4 @@ static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_t
 		object = mpf_bridge_create(source,sink,context->pool);
 	}
 	return object;
-}
-
-static apt_bool_t mpf_context_topology_apply(mpf_context_t *context)
-{
-	mpf_object_t *object;
-	if(context->termination_count <= 1) {
-		/* at least 2 terminations are required to apply topology on them */
-		return TRUE;
-	}
-
-	if(!context->terminations[0] || !context->terminations[1]) {
-		return FALSE;
-	}
-
-	object = mpf_context_connection_create(
-								context,
-								context->terminations[0],
-								context->terminations[1]);
-	if(object) {
-		context->objects[0] = object;
-	}
-
-	object = mpf_context_connection_create(
-								context,
-								context->terminations[1],
-								context->terminations[0]);
-	if(object) {
-		context->objects[1] = object;
-	}
-	return TRUE;
-}
-
-static apt_bool_t mpf_context_topology_destroy(mpf_context_t *context)
-{
-	mpf_object_t *object;
-	if(context->termination_count <= 1) {
-		/* at least 2 terminations are required to destroy topology */
-		return TRUE;
-	}
-	object = context->objects[0];
-	if(object) {
-		if(object->destroy) {
-			object->destroy(object);
-		}
-		context->objects[0] = NULL;
-	}
-	object = context->objects[1];
-	if(object) {
-		if(object->destroy) {
-			object->destroy(object);
-		}
-		context->objects[1] = NULL;
-	}
-	return TRUE;
 }

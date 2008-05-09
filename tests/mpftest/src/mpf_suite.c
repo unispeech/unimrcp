@@ -19,6 +19,7 @@
 #include "mpf_engine.h"
 #include "mpf_user.h"
 #include "mpf_audio_file_stream.h"
+#include "mpf_rtp_stream_descriptor.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -42,12 +43,61 @@ struct mpf_suite_engine_t {
 	apr_thread_mutex_t  *wait_object_mutex;
 };
 
+static mpf_termination_t* mpf_suite_file_reader_create(mpf_suite_session_t *session)
+{
+	mpf_audio_stream_t *audio_stream = mpf_audio_file_reader_create("demo.pcm",session->pool);
+	return mpf_termination_create(session,NULL,audio_stream,NULL,session->pool);
+}
+
+static mpf_termination_t* mpf_suite_file_writer_create(mpf_suite_session_t *session)
+{
+	mpf_audio_stream_t *audio_stream = mpf_audio_file_writer_create("demo_out.pcm",session->pool);
+	return mpf_termination_create(session,NULL,audio_stream,NULL,session->pool);
+}
+
+static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_session_t *session)
+{
+	mpf_rtp_stream_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_rtp_stream_descriptor_t));
+	mpf_rtp_stream_descriptor_init(descriptor);
+	descriptor->mode = STREAM_MODE_NONE;
+	descriptor->mask = RTP_MEDIA_DESCRIPTOR_LOCAL;
+	descriptor->local.ip = "127.0.0.1";
+	descriptor->local.port = 5000;
+	return descriptor;
+}
+
+static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_session_t *session)
+{
+	mpf_codec_list_t *codec_list;
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_rtp_stream_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_rtp_stream_descriptor_t));
+	mpf_rtp_stream_descriptor_init(descriptor);
+	descriptor->mode = STREAM_MODE_SEND_RECEIVE;
+	descriptor->mask = RTP_MEDIA_DESCRIPTOR_REMOTE;
+	descriptor->remote.ip = "127.0.0.1";
+	descriptor->remote.port = 5002;
+	codec_list = &descriptor->remote.codec_list;
+	mpf_codec_list_init(codec_list,2,session->pool);
+	codec_descriptor = mpf_codec_list_add(codec_list);
+	if(codec_descriptor) {
+		codec_descriptor->payload_type = 0;
+	}
+	codec_descriptor = mpf_codec_list_add(codec_list);
+	if(codec_descriptor) {
+		codec_descriptor->payload_type = 96;
+		codec_descriptor->name = "PCMU";
+		codec_descriptor->sampling_rate = 16000;
+		codec_descriptor->channel_count = 1;
+	}
+
+	return descriptor;
+}
+
 static void task_on_start_complete(apt_task_t *task)
 {
 	mpf_suite_session_t *session;
 	apt_task_t *consumer_task;
 	mpf_suite_engine_t *suite_engine;
-	mpf_audio_stream_t *audio_stream;
 	apt_task_msg_t *msg;
 	mpf_message_t *mpf_message;
 	apr_pool_t *pool = NULL;
@@ -64,12 +114,10 @@ static void task_on_start_complete(apt_task_t *task)
 	session->termination2 = NULL;
 
 	apt_log(APT_PRIO_INFO,"Create MPF Context");
-	session->context = mpf_context_create(session,pool);
+	session->context = mpf_context_create(session,2,pool);
 
-	audio_stream = mpf_audio_file_reader_create("demo.pcm",pool);
-	
 	apt_log(APT_PRIO_INFO,"Create Termination [1]");
-	session->termination1 = mpf_termination_create(session,NULL,audio_stream,NULL,pool);
+	session->termination1 = mpf_suite_file_reader_create(session);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
 	msg = apt_task_msg_get(task);
@@ -82,10 +130,9 @@ static void task_on_start_complete(apt_task_t *task)
 	mpf_message->termination = session->termination1;
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 
-	audio_stream = mpf_audio_file_writer_create("demo_out.pcm",pool);
-
 	apt_log(APT_PRIO_INFO,"Create Termination [2]");
-	session->termination2 = mpf_termination_create(session,NULL,audio_stream,NULL,pool);
+//	session->termination2 = mpf_suite_file_writer_create(session);
+	session->termination2 = mpf_rtp_termination_create(session,session->pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
 	msg = apt_task_msg_get(task);
@@ -96,6 +143,7 @@ static void task_on_start_complete(apt_task_t *task)
 	mpf_message->command_id = MPF_COMMAND_ADD;
 	mpf_message->context = session->context;
 	mpf_message->termination = session->termination2;
+	mpf_message->descriptor = mpf_rtp_local_descriptor_create(session);
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 }
 
@@ -111,6 +159,30 @@ static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		apt_log(APT_PRIO_DEBUG,"Process MPF Response");
 		if(mpf_message->command_id == MPF_COMMAND_ADD) {
 			apt_log(APT_PRIO_DEBUG,"On Add Termination");
+			if(mpf_message->termination) {
+				mpf_suite_session_t *session;
+				session = mpf_termination_object_get(mpf_message->termination);
+				if(session->termination2 == mpf_message->termination) {
+					apt_task_msg_t *msg;
+					mpf_message_t *request;
+					apt_task_t *consumer_task;
+					mpf_suite_engine_t *suite_engine;
+
+					consumer_task = apt_task_object_get(task);
+					suite_engine = apt_task_object_get(consumer_task);
+
+					msg = apt_task_msg_get(task);
+					msg->type = TASK_MSG_USER;
+					request = (mpf_message_t*) msg->data;
+
+					request->message_type = MPF_MESSAGE_TYPE_REQUEST;
+					request->command_id = MPF_COMMAND_MODIFY;
+					request->context = session->context;
+					request->termination = session->termination2;
+					request->descriptor = mpf_rtp_remote_descriptor_create(session);
+					apt_task_msg_signal(suite_engine->engine_task,msg);
+				}
+			}
 		}
 		else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
 			apt_log(APT_PRIO_DEBUG,"On Subtract Termination");

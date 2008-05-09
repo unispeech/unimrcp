@@ -27,16 +27,16 @@
 
 APT_BEGIN_EXTERN_C
 
-#define MAX_TERMINATION_COUNT 2
+typedef void* table_item_t;
 
 struct mpf_context_t {
 	apr_pool_t        *pool;
 	void              *obj;
 	apt_list_elem_t   *elem;
 
-	apr_size_t         termination_count;
-	mpf_termination_t *terminations[MAX_TERMINATION_COUNT];
-	mpf_object_t      *objects[MAX_TERMINATION_COUNT];
+	apr_size_t          max_termination_count;
+	apr_size_t          termination_count;
+	table_item_t      **table;
 };
 
 
@@ -53,6 +53,20 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
  * @param termination the termination to subtract
  */
 MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context, mpf_termination_t *termination);
+
+/**
+ * Apply topology.
+ * @param context the context which holds the termination
+ * @param termination the termination to apply toplogy for
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context, mpf_termination_t *termination);
+
+/**
+ * Destroy topology.
+ * @param context the context which holds the termination
+ * @param termination the termination to destroy toplogy for
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context, mpf_termination_t *termination);
 
 /**
  * Process context.

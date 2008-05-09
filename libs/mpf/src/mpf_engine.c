@@ -166,6 +166,8 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 	apt_task_t *parent_task;
 	apt_task_msg_t *response_msg;
 	mpf_message_t *response;
+	mpf_context_t *context;
+	mpf_termination_t *termination;
 	const mpf_message_t *request = (const mpf_message_t*) msg->data;
 	apt_log(APT_PRIO_DEBUG,"Process MPF Message");
 	if(request->message_type != MPF_MESSAGE_TYPE_REQUEST) {
@@ -184,11 +186,11 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 	*response = *request;
 	response->message_type = MPF_MESSAGE_TYPE_RESPONSE;
 	response->status_code = MPF_STATUS_CODE_SUCCESS;
+	context = request->context;
+	termination = request->termination;
 	switch(request->command_id) {
 		case MPF_COMMAND_ADD:
 		{
-			mpf_context_t *context = request->context;
-			mpf_termination_t *termination = request->termination;
 			if(request->descriptor) {
 				mpf_termination_modify(termination,request->descriptor);
 			}
@@ -200,6 +202,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 				response->status_code = MPF_STATUS_CODE_FAILURE;
 				break;
 			}
+			mpf_context_topology_apply(context,termination);
 			if(context->termination_count == 1) {
 				apt_log(APT_PRIO_INFO,"Add Context");
 				request->context->elem = apt_list_push_back(engine->contexts,context);
@@ -208,8 +211,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 		}
 		case MPF_COMMAND_SUBTRACT:
 		{
-			mpf_context_t *context = request->context;
-			mpf_termination_t *termination = request->termination;
+			mpf_context_topology_destroy(context,termination);
 			if(mpf_context_termination_subtract(context,termination) == FALSE) {
 				response->status_code = MPF_STATUS_CODE_FAILURE;
 				break;
@@ -218,6 +220,15 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 				apt_log(APT_PRIO_INFO,"Remove Context");
 				apt_list_elem_remove(engine->contexts,context->elem);
 				context->elem = NULL;
+			}
+			break;
+		}
+		case MPF_COMMAND_MODIFY:
+		{
+			if(request->descriptor) {
+				mpf_context_topology_destroy(context,termination);
+				mpf_termination_modify(termination,request->descriptor);
+				mpf_context_topology_apply(context,termination);
 			}
 			break;
 		}

@@ -29,6 +29,7 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 	termination->obj = obj;
 	termination->owner = NULL;
 	termination->vtable = vtable;
+	termination->slot = 0;
 	if(audio_stream) {
 		audio_stream->termination = termination;
 	}

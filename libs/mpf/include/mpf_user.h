@@ -29,9 +29,10 @@ APT_BEGIN_EXTERN_C
 /**
  * Create MPF context.
  * @param obj the external object associated with context
+ * @param max_termination_count the max number of terminations in context
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_pool_t *pool);
+MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termination_count, apr_pool_t *pool);
 
 /**
  * Destroy MPF context.

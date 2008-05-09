@@ -31,6 +31,7 @@ struct mpf_termination_t {
 	void                           *obj;
 	void                           *owner;
 	const mpf_termination_vtable_t *vtable;
+	apr_size_t                      slot;
 
 	mpf_audio_stream_t             *audio_stream;
 	mpf_video_stream_t             *video_stream;

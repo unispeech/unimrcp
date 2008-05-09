@@ -35,7 +35,10 @@ static apt_bool_t mpf_bridge_process(mpf_object_t *object)
 
 static apt_bool_t mpf_bridge_destroy(mpf_object_t *object)
 {
+	mpf_object_t *bridge = object;
 	apt_log(APT_PRIO_DEBUG,"Destroy Audio Bridge");
+	mpf_audio_stream_rx_close(bridge->source);
+	mpf_audio_stream_tx_close(bridge->sink);
 	return TRUE;
 }
 
@@ -52,6 +55,14 @@ MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_aud
 	bridge->sink = sink;
 	bridge->process = mpf_bridge_process;
 	bridge->destroy = mpf_bridge_destroy;
+
+	if(mpf_audio_stream_rx_open(source) == FALSE) {
+		return NULL;
+	}
+	if(mpf_audio_stream_tx_open(sink) == FALSE) {
+		mpf_audio_stream_rx_close(source);
+		return NULL;
+	}
 
 	frame_size = mpf_codec_linear_frame_size_calculate(8000,1);
 	bridge->frame.codec_frame.size = frame_size;
