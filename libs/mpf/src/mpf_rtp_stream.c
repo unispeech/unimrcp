@@ -362,7 +362,7 @@ static apt_bool_t rtp_rx_packet_receive(rtp_receiver_t *receiver, mpf_codec_t *c
 		return FALSE;
 	}
 
-	header->sequence = ntohl(header->sequence);
+	header->sequence = ntohs((apr_uint16_t)header->sequence);
 	header->timestamp = ntohl(header->timestamp);
 	header->ssrc = ntohl(header->ssrc);
 

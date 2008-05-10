@@ -137,7 +137,7 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, mpf_codec_t *codec,
 
 	while(available_frame_count && size) {
 		media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
-		media_frame->codec_frame.size = BYTES_PER_SAMPLE * jb->frame_ts;
+		media_frame->codec_frame.size = jb->frame_size;
 		if(mpf_codec_dissect(codec,&buffer,&size,&media_frame->codec_frame) == FALSE) {
 			break;
 		}
