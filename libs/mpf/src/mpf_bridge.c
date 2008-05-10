@@ -45,10 +45,12 @@ static apt_bool_t mpf_bridge_destroy(mpf_object_t *object)
 MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
 {
 	mpf_object_t *bridge;
+	mpf_codec_descriptor_t *descriptor;
 	apr_size_t frame_size;
 	if(!source || !sink) {
 		return NULL;
 	}
+
 	apt_log(APT_PRIO_DEBUG,"Create Audio Bridge");
 	bridge = apr_palloc(pool,sizeof(mpf_object_t));
 	bridge->source = source;
@@ -64,7 +66,8 @@ MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_aud
 		return NULL;
 	}
 
-	frame_size = mpf_codec_linear_frame_size_calculate(8000,1);
+	descriptor = source->rx_codec->descriptor;
+	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);
 	bridge->frame.codec_frame.size = frame_size;
 	bridge->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
 	return bridge;
