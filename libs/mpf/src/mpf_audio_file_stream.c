@@ -27,7 +27,11 @@ struct mpf_audio_file_stream_t {
 	FILE              *write_handle;
 
 	apt_bool_t         eof;
+	apr_size_t         max_write_size;
+	apr_size_t         cur_write_size;
 };
+
+static APR_INLINE void mpf_audio_file_event_raise(mpf_audio_stream_t *stream, int event_id, void *descriptor);
 
 
 static apt_bool_t mpf_audio_file_destroy(mpf_audio_stream_t *stream)
@@ -63,9 +67,7 @@ static apt_bool_t mpf_audio_file_frame_read(mpf_audio_stream_t *stream, mpf_fram
 		}
 		else {
 			file_stream->eof = TRUE;
-			if(stream->termination->event_handler) {
-				stream->termination->event_handler(stream->termination,0,NULL);
-			}
+			mpf_audio_file_event_raise(stream,0,NULL);
 		}
 	}
 	return TRUE;
@@ -85,8 +87,16 @@ static apt_bool_t mpf_audio_file_writer_close(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_audio_file_frame_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
-	if(file_stream->write_handle && file_stream->eof == FALSE) {
-		fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->write_handle);
+	if(file_stream->write_handle && 
+		(!file_stream->max_write_size || file_stream->cur_write_size < file_stream->max_write_size)) {
+		file_stream->cur_write_size += fwrite(
+										frame->codec_frame.buffer,
+										1,
+										frame->codec_frame.size,
+										file_stream->write_handle);
+		if(file_stream->cur_write_size >= file_stream->max_write_size) {
+			mpf_audio_file_event_raise(stream,0,NULL);
+		}
 	}
 	return TRUE;
 }
@@ -110,6 +120,8 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termi
 	file_stream->write_handle = NULL;
 	file_stream->read_handle = NULL;
 	file_stream->eof = FALSE;
+	file_stream->max_write_size = 0;
+	file_stream->cur_write_size = 0;
 	return &file_stream->base;
 }
 
@@ -134,6 +146,8 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 			fclose(file_stream->write_handle);
 		}
 		file_stream->write_handle = descriptor->write_handle;
+		file_stream->max_write_size = descriptor->max_write_size;
+		file_stream->cur_write_size = 0;
 		stream->mode |= FILE_WRITER;
 
 		stream->tx_codec = mpf_codec_manager_codec_get(
@@ -142,4 +156,11 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 								stream->termination->pool);
 	}
 	return TRUE;
+}
+
+static APR_INLINE void mpf_audio_file_event_raise(mpf_audio_stream_t *stream, int event_id, void *descriptor)
+{
+	if(stream->termination->event_handler) {
+		stream->termination->event_handler(stream->termination,event_id,descriptor);
+	}
 }

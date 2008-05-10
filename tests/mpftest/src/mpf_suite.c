@@ -64,6 +64,7 @@ static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_
 	mpf_codec_descriptor_t *codec_descriptor;
 	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
 	descriptor->mask = FILE_WRITER;
+	descriptor->max_write_size = 500000; /* 500Kb */
 	descriptor->write_handle = fopen("demo_out.pcm","wb");
 	descriptor->read_handle = NULL;
 

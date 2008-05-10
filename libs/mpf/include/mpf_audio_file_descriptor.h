@@ -36,9 +36,10 @@ typedef struct mpf_audio_file_descriptor_t mpf_audio_file_descriptor_t;
 struct mpf_audio_file_descriptor_t {
 	mpf_stream_mode_e      mask;
 
+	mpf_codec_descriptor_t codec_descriptor;
 	FILE                  *read_handle;
 	FILE                  *write_handle;
-	mpf_codec_descriptor_t codec_descriptor;
+	apr_size_t             max_write_size;
 };
 
 APT_END_EXTERN_C
