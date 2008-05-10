@@ -271,13 +271,13 @@ static apt_bool_t mpf_engine_codec_manager_create(mpf_engine_t *engine)
 	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(20,engine->pool);
 	if(codec_manager) {
 		mpf_codec_t *codec;
-		codec = mpf_codec_l16_create(engine->pool);
-		mpf_codec_manager_codec_register(codec_manager,codec);
-
 		codec = mpf_codec_g711u_create(engine->pool);
 		mpf_codec_manager_codec_register(codec_manager,codec);
 
 		codec = mpf_codec_g711a_create(engine->pool);
+		mpf_codec_manager_codec_register(codec_manager,codec);
+
+		codec = mpf_codec_l16_create(engine->pool);
 		mpf_codec_manager_codec_register(codec_manager,codec);
 	}
 	engine->codec_manager = codec_manager;
