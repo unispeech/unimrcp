@@ -28,7 +28,7 @@
 APT_BEGIN_EXTERN_C
 
 typedef void* table_item_t;
-
+/** Media processing context */
 struct mpf_context_t {
 	apr_pool_t        *pool;
 	void              *obj;
@@ -73,7 +73,6 @@ MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context, mpf
  * @param context the context
  */
 MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
-
 
 
 APT_END_EXTERN_C

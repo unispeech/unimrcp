@@ -39,6 +39,7 @@ typedef struct rtp_rx_periodic_history_t rtp_rx_periodic_history_t;
 typedef struct rtp_receiver_t rtp_receiver_t;
 typedef struct rtp_transmitter_t rtp_transmitter_t;
 
+/** RTP receive history */
 struct rtp_rx_history_t {
 	apr_uint32_t           seq_cycles;
 
@@ -55,6 +56,7 @@ struct rtp_rx_history_t {
 	apr_byte_t             ssrc_probation;
 };
 
+/** RTP receive periodic history */
 struct rtp_rx_periodic_history_t {
 	apr_uint32_t           received_prior;
 	apr_uint32_t           discarded_prior;
@@ -63,17 +65,19 @@ struct rtp_rx_periodic_history_t {
 	apr_uint32_t           jitter_max;
 };
 
+/** Reset RTP receive history */
 static APR_INLINE void mpf_rtp_rx_history_reset(rtp_rx_history_t *rx_history)
 {
 	memset(rx_history,0,sizeof(rtp_rx_history_t));
 }
 
+/** Reset RTP receive periodic history */
 static APR_INLINE void mpf_rtp_rx_periodic_history_reset(rtp_rx_periodic_history_t *rx_periodic_history)
 {
 	memset(rx_periodic_history,0,sizeof(rtp_rx_periodic_history_t));
 }
 
-
+/** RTP receiver */
 struct rtp_receiver_t {
 	apr_byte_t                event_pt;
 
@@ -84,6 +88,7 @@ struct rtp_receiver_t {
 	rtp_rx_periodic_history_t periodic_history;
 };
 
+/** Initialize RTP receiver */
 static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
 {
 	receiver->event_pt = 0;
@@ -96,6 +101,7 @@ static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
 }
 
 
+/** RTP transmitter */
 struct rtp_transmitter_t {
 	apr_uint32_t    ssrc;
 	apr_byte_t      event_pt;
@@ -115,6 +121,7 @@ struct rtp_transmitter_t {
 	rtp_tx_stat_t   stat;
 };
 
+/** Initialize RTP transmitter */
 static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 {
 	transmitter->ssrc = 0;
@@ -134,7 +141,6 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 
 	mpf_rtp_tx_stat_reset(&transmitter->stat);
 }
-
 
 APT_END_EXTERN_C
 

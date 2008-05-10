@@ -29,19 +29,10 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Opaque stream virtual table declaration */
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
-struct mpf_audio_stream_vtable_t {
-	apt_bool_t (*destroy)(mpf_audio_stream_t *stream);
 
-	apt_bool_t (*open_rx)(mpf_audio_stream_t *stream);
-	apt_bool_t (*close_rx)(mpf_audio_stream_t *stream);
-	apt_bool_t (*read_frame)(mpf_audio_stream_t *stream, mpf_frame_t *frame);
-
-	apt_bool_t (*open_tx)(mpf_audio_stream_t *stream);
-	apt_bool_t (*close_tx)(mpf_audio_stream_t *stream);
-	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
-};
-
+/** Audio stream */
 struct mpf_audio_stream_t {
 	const mpf_audio_stream_vtable_t *vtable;
 	mpf_termination_t               *termination;
@@ -51,9 +42,30 @@ struct mpf_audio_stream_t {
 	mpf_codec_t                     *tx_codec;
 };
 
+/** Video stream */
 struct mpf_video_stream_t {
 	mpf_termination_t               *termination;
 	mpf_stream_mode_e                mode;
+};
+
+/** Table of audio stream virtual methods */
+struct mpf_audio_stream_vtable_t {
+	/** Virtual destroy method */
+	apt_bool_t (*destroy)(mpf_audio_stream_t *stream);
+
+	/** Virtual open receiver method */
+	apt_bool_t (*open_rx)(mpf_audio_stream_t *stream);
+	/** Virtual close receiver method */
+	apt_bool_t (*close_rx)(mpf_audio_stream_t *stream);
+	/** Virtual read frame method */
+	apt_bool_t (*read_frame)(mpf_audio_stream_t *stream, mpf_frame_t *frame);
+
+	/** Virtual open transmitter method */
+	apt_bool_t (*open_tx)(mpf_audio_stream_t *stream);
+	/** Virtual close transmitter method */
+	apt_bool_t (*close_tx)(mpf_audio_stream_t *stream);
+	/** Virtual write frame method */
+	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 };
 
 
@@ -75,6 +87,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream
 	return TRUE;
 }
 
+/** Open audio stream receive */
 static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->open_rx)
@@ -82,6 +95,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream
 	return TRUE;
 }
 
+/** Close audio stream receive */
 static APR_INLINE apt_bool_t mpf_audio_stream_rx_close(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->close_rx)
@@ -89,6 +103,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_rx_close(mpf_audio_stream_t *strea
 	return TRUE;
 }
 
+/** Read frame */
 static APR_INLINE apt_bool_t mpf_audio_stream_frame_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	if(stream->vtable->read_frame)
@@ -96,6 +111,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_frame_read(mpf_audio_stream_t *str
 	return TRUE;
 }
 
+/** Open audio stream transmit */
 static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->open_tx)
@@ -103,6 +119,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream
 	return TRUE;
 }
 
+/** Close audio stream transmit */
 static APR_INLINE apt_bool_t mpf_audio_stream_tx_close(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->close_tx)
@@ -110,6 +127,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_tx_close(mpf_audio_stream_t *strea
 	return TRUE;
 }
 
+/** Write frame */
 static APR_INLINE apt_bool_t mpf_audio_stream_frame_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	if(stream->vtable->write_frame)

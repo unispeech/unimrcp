@@ -28,7 +28,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** FILE_READER is defined as STREAM_MODE_RECEIVE */
 #define FILE_READER STREAM_MODE_RECEIVE
+/** FILE_WRITER is defined as STREAM_MODE_SEND */
 #define FILE_WRITER STREAM_MODE_SEND
 
 typedef struct mpf_audio_file_descriptor_t mpf_audio_file_descriptor_t;

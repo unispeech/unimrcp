@@ -32,7 +32,6 @@ typedef struct apt_consumer_task_t apt_consumer_task_t;
 /**
  * Create consumer task.
  * @param obj the external object to associate with the task
- * @param base_vtable the table of virtual methods of the task base
  * @param vtable the table of virtual methods of the composite task
  * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from

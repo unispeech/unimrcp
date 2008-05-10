@@ -19,7 +19,7 @@
 
 /**
  * @file mpf_object.h
- * @brief Media Processing Object (bridge, multiplexor, mixer, ...)
+ * @brief Media Processing Object Base (bridge, multiplexor, mixer, ...)
  */ 
 
 #include "mpf_types.h"
@@ -28,7 +28,7 @@
 APT_BEGIN_EXTERN_C
 
 typedef struct mpf_object_t mpf_object_t;
-
+/** Base for media processing objects */
 struct mpf_object_t {
 	mpf_audio_stream_t *source;
 	mpf_audio_stream_t *sink;
