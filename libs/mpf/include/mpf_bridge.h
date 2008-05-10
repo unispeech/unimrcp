@@ -18,7 +18,7 @@
 #define __MPF_BRIDGE_H__
 
 /**
- * @file mpf_brifge.h
+ * @file mpf_bridge.h
  * @brief MPF Stream Bridge
  */ 
 
