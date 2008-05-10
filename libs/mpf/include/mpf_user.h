@@ -18,7 +18,7 @@
 #define __MPF_USER_H__
 
 /**
- * @file mpf_types.h
+ * @file mpf_user.h
  * @brief MPF User Interface
  */ 
 
@@ -43,6 +43,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
 /**
  * Create MPF termination.
  * @param obj the external object associated with termination
+ * @param vtable the table of virtual functions of termination
  * @param audio_stream the audio stream
  * @param video_stream the video stream
  * @param pool the pool to allocate memory from

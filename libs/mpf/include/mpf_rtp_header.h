@@ -18,7 +18,7 @@
 #define __MPF_RTP_HEADER_H__
 
 /**
- * @file mpf_rtp.h
+ * @file mpf_rtp_header.h
  * @brief RTP Header Definition
  */ 
 

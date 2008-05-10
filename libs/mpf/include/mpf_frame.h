@@ -18,8 +18,8 @@
 #define __MPF_FRAME_H__
 
 /**
- * @file mpf_codec_descriptor.h
- * @brief MPF Audio/Video/Event Frame
+ * @file mpf_frame.h
+ * @brief MPF Audio/Video/Named-event Frame
  */ 
 
 #include "mpf_codec_descriptor.h"
@@ -62,4 +62,4 @@ struct mpf_frame_t {
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_CODEC_DESCRIPTOR_H__*/
+#endif /*__MPF_FRAME_H__*/

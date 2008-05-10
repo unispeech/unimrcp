@@ -19,7 +19,7 @@
 
 /**
  * @file mpf_encoder.h
- * @brief MPF Encoded Stream
+ * @brief MPF Stream Encoder
  */ 
 
 #include "mpf_stream.h"

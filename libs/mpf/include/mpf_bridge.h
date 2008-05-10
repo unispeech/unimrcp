@@ -18,8 +18,8 @@
 #define __MPF_BRIDGE_H__
 
 /**
- * @file mpf_audio_file_stream.h
- * @brief MPF Audio FIle Stream
+ * @file mpf_brifge.h
+ * @brief MPF Stream Bridge
  */ 
 
 #include "mpf_object.h"
@@ -27,7 +27,7 @@
 APT_BEGIN_EXTERN_C
 
 /**
- * Create bridge for audio streams.
+ * Create bridge of audio streams.
  * @param source the source audio stream
  * @param sink the sink audio stream
  * @param pool the pool to allocate memory from

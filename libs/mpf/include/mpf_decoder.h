@@ -18,8 +18,8 @@
 #define __MPF_DECODER_H__
 
 /**
- * @file mpf_encoder.h
- * @brief MPF Decoded Stream
+ * @file mpf_decoder.h
+ * @brief MPF Stream Decoder
  */ 
 
 #include "mpf_stream.h"
