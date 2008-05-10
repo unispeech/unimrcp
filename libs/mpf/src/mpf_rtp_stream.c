@@ -16,118 +16,11 @@
 
 #include <apr_network_io.h>
 #include "mpf_rtp_stream.h"
-#include "mpf_rtp_stat.h"
-#include "mpf_jitter_buffer.h"
+#include "mpf_termination.h"
+#include "mpf_codec_manager.h"
+#include "mpf_rtp_header.h"
+#include "mpf_rtp_defs.h"
 #include "apt_log.h"
-
-#define RTP_SEQ_MOD (1 << 16)
-#define MAX_DROPOUT 3000
-#define MAX_MISORDER 100
-
-#define DISCARDED_TO_RECEIVED_RATIO_THRESHOLD 30 /* 30% */
-#define DEVIATION_THRESHOLD 4000
-
-typedef struct rtp_rx_history_t rtp_rx_history_t;
-typedef struct rtp_rx_periodic_history_t rtp_rx_periodic_history_t;
-typedef struct rtp_receiver_t rtp_receiver_t;
-typedef struct rtp_transmitter_t rtp_transmitter_t;
-
-struct rtp_rx_history_t {
-	apr_uint32_t           seq_cycles;
-
-	apr_uint16_t           seq_num_base;
-	apr_uint16_t           seq_num_max;
-
-	apr_uint32_t           ts_last;
-	apr_time_t             time_last;
-
-	apr_uint32_t           jitter_min;
-	apr_uint32_t           jitter_max;
-
-	apr_uint32_t           ssrc_new;
-	apr_byte_t             ssrc_probation;
-};
-
-struct rtp_rx_periodic_history_t {
-	apr_uint32_t           received_prior;
-	apr_uint32_t           discarded_prior;
-
-	apr_uint32_t           jitter_min;
-	apr_uint32_t           jitter_max;
-};
-
-static APR_INLINE void mpf_rtp_rx_history_init(rtp_rx_history_t *rx_history)
-{
-	memset(rx_history,0,sizeof(rtp_rx_history_t));
-}
-
-static APR_INLINE void mpf_rtp_rx_periodic_history_init(rtp_rx_periodic_history_t *rx_periodic_history)
-{
-	memset(rx_periodic_history,0,sizeof(rtp_rx_periodic_history_t));
-}
-
-
-struct rtp_receiver_t {
-	apr_byte_t                event_pt;
-
-	mpf_jitter_buffer_t      *jb;
-
-	rtp_rx_stat_t             stat;
-	rtp_rx_history_t          history;
-	rtp_rx_periodic_history_t periodic_history;
-};
-
-static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
-{
-	receiver->event_pt = 0;
-
-	receiver->jb = NULL;
-
-	mpf_rtp_rx_stat_init(&receiver->stat);
-	mpf_rtp_rx_history_init(&receiver->history);
-	mpf_rtp_rx_periodic_history_init(&receiver->periodic_history);
-}
-
-
-struct rtp_transmitter_t {
-	apr_uint32_t    ssrc;
-	apr_byte_t      event_pt;
-	apr_uint16_t    ptime;
-
-	apr_uint16_t    packet_frames;
-	apr_uint16_t    current_frames;
-	apr_uint32_t    samples_per_frame;
-
-	apr_byte_t      marker;
-	apr_uint16_t    last_seq_num;
-	apr_uint32_t    timestamp;
-
-	char           *packet_data;
-	apr_size_t      packet_size;
-
-	rtp_tx_stat_t   stat;
-};
-
-static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
-{
-	transmitter->ssrc = 0;
-	transmitter->event_pt = 0;
-	transmitter->ptime = 0;
-
-	transmitter->packet_frames = 0;
-	transmitter->current_frames = 0;
-	transmitter->samples_per_frame = 0;
-
-	transmitter->marker = 0;
-	transmitter->last_seq_num = 0;
-	transmitter->timestamp = 0;
-
-	transmitter->packet_data = NULL;
-	transmitter->packet_size = 0;
-
-	mpf_rtp_tx_stat_init(&transmitter->stat);
-}
-
 
 
 struct mpf_rtp_stream_t {
@@ -146,6 +39,95 @@ struct mpf_rtp_stream_t {
 	apr_pool_t                 *pool;
 };
 
+static apt_bool_t mpf_rtp_stream_destroy(mpf_audio_stream_t *stream);
+static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream);
+static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream);
+static apt_bool_t mpf_rtp_stream_receive(mpf_audio_stream_t *stream, mpf_frame_t *frame);
+static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream);
+static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream);
+static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
+
+static const mpf_audio_stream_vtable_t vtable = {
+	mpf_rtp_stream_destroy,
+	mpf_rtp_rx_stream_open,
+	mpf_rtp_rx_stream_close,
+	mpf_rtp_stream_receive,
+	mpf_rtp_tx_stream_open,
+	mpf_rtp_tx_stream_close,
+	mpf_rtp_stream_transmit
+};
+
+static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media);
+
+
+MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
+{
+	mpf_rtp_stream_t *rtp_stream = apr_palloc(pool,sizeof(mpf_rtp_stream_t));
+	rtp_stream->pool = pool;
+	rtp_stream->local_media = NULL;
+	rtp_stream->remote_media = NULL;
+	rtp_stream->socket = NULL;
+	rtp_stream->local_sockaddr = NULL;
+	rtp_stream->remote_sockaddr = NULL;
+	mpf_audio_stream_init(&rtp_stream->base,&vtable);
+	rtp_stream->base.termination = termination;
+	rtp_receiver_init(&rtp_stream->receiver);
+	rtp_transmitter_init(&rtp_stream->transmitter);
+	rtp_stream->transmitter.ssrc = (apr_uint32_t)apr_time_now();
+
+	return &rtp_stream->base;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor)
+{
+	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
+	apt_bool_t status = TRUE;
+	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_LOCAL) {
+		/* update local media */
+		mpf_rtp_media_descriptor_t *local_media = &descriptor->local;
+		if(!rtp_stream->local_media || 
+			apt_str_compare(rtp_stream->local_media->ip,local_media->ip) == FALSE ||
+			rtp_stream->local_media->port != local_media->port) {
+
+			if(mpf_rtp_socket_create(rtp_stream,local_media) == FALSE) {
+				status = FALSE;
+			}
+		}
+		if(!local_media->codec_list.count) {
+			mpf_codec_manager_codec_list_get(
+				stream->termination->codec_manager,
+				&local_media->codec_list,
+				stream->termination->pool);
+		}
+		stream->rx_codec = mpf_codec_manager_codec_get(
+								stream->termination->codec_manager,
+								local_media->codec_list.codecs,
+								stream->termination->pool);
+		rtp_stream->local_media = local_media;
+	}
+	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_REMOTE) {
+		/* update remote media */
+		mpf_rtp_media_descriptor_t *remote_media = &descriptor->remote;
+		if(!rtp_stream->remote_media || 
+			apt_str_compare(rtp_stream->remote_media->ip,remote_media->ip) == FALSE ||
+			rtp_stream->remote_media->port != remote_media->port) {
+
+			apr_sockaddr_info_get(&rtp_stream->remote_sockaddr,remote_media->ip,APR_INET,remote_media->port,0,rtp_stream->pool);
+			if(!rtp_stream->remote_sockaddr) {
+				status = FALSE;
+			}
+		}
+		stream->tx_codec = mpf_codec_manager_codec_get(
+								stream->termination->codec_manager,
+								remote_media->codec_list.codecs,
+								stream->termination->pool);
+		rtp_stream->transmitter.samples_per_frame = 
+			mpf_codec_frame_samples_calculate(stream->tx_codec->descriptor);
+		rtp_stream->remote_media = remote_media;
+	}
+	stream->mode = descriptor->mode;
+	return TRUE;
+}
 
 static apt_bool_t mpf_rtp_stream_destroy(mpf_audio_stream_t *stream)
 {
@@ -168,7 +150,7 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream)
 
 	receiver->jb = mpf_jitter_buffer_create(
 						NULL,
-						rtp_stream->local_media->codec_list.codecs[0].sampling_rate,
+						stream->rx_codec,
 						rtp_stream->pool);
 	return TRUE;
 }
@@ -190,10 +172,281 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 	return TRUE;
 }
 
-static apt_bool_t mpf_rtp_stream_receive(mpf_audio_stream_t *stream, mpf_frame_t *frame)
+
+static APR_INLINE void rtp_rx_overall_stat_reset(rtp_receiver_t *receiver)
 {
+	memset(&receiver->stat,0,sizeof(receiver->stat));
+	memset(&receiver->history,0,sizeof(receiver->history));
+	memset(&receiver->periodic_history,0,sizeof(receiver->periodic_history));
+}
+
+static APR_INLINE void rtp_rx_stat_init(rtp_receiver_t *receiver, rtp_header_t *header, apr_time_t *time)
+{
+	receiver->stat.ssrc = header->ssrc;
+	receiver->history.seq_num_base = receiver->history.seq_num_max = (apr_uint16_t)header->sequence;
+	receiver->history.ts_last = header->timestamp;
+	receiver->history.time_last = *time;
+}
+
+static APR_INLINE void rtp_rx_restart(rtp_receiver_t *receiver)
+{
+	apr_byte_t restarts = ++receiver->stat.restarts;
+	rtp_rx_overall_stat_reset(receiver);
+	mpf_jitter_buffer_restart(receiver->jb);
+	receiver->stat.restarts = restarts;
+}
+
+static rtp_header_t* rtp_rx_header_skip(void **buffer, apr_size_t *size)
+{
+	apr_size_t offset = 0;
+	rtp_header_t *header = (rtp_header_t*)*buffer;
+
+    /* RTP header validity check */
+	if(header->version != RTP_VERSION) {
+		return NULL;
+	}
+
+    /* calculate payload offset */
+	offset = sizeof(rtp_header_t) + (header->count * sizeof(apr_uint32_t));
+
+	/* additional offset in case of RTP extension */
+	if(header->extension) {
+		rtp_extension_header_t *ext_header = (rtp_extension_header_t*)(((apr_byte_t*)*buffer)+offset);
+		offset += (ntohs(ext_header->length) * sizeof(apr_uint32_t));
+	}
+
+	if (offset >= *size) {
+		return NULL;
+	}
+
+	/* skip to payload */
+	*buffer = (apr_byte_t*)*buffer + offset;
+	*size = *size - offset;
+
+	return header;
+}
+
+typedef enum {
+	RTP_SSRC_UPDATE,
+	RTP_SSRC_PROBATION,
+	RTP_SSRC_RESTART
+} rtp_ssrc_result_e;
+
+static APR_INLINE rtp_ssrc_result_e rtp_rx_ssrc_update(rtp_receiver_t *receiver, apr_uint32_t ssrc)
+{
+	if(receiver->stat.ssrc == ssrc) {
+		/* known ssrc */
+		if(receiver->history.ssrc_probation) {
+			/* reset the probation for new ssrc */
+			receiver->history.ssrc_probation = 0;
+			receiver->history.ssrc_new = 0;
+		}
+	}
+	else {
+		if(receiver->history.ssrc_new == ssrc) {
+			if(--receiver->history.ssrc_probation == 0) {
+				/* restart with new ssrc */
+				receiver->stat.ssrc = ssrc;
+				return RTP_SSRC_RESTART;
+			}
+			else {
+				return RTP_SSRC_PROBATION;
+			}
+		}
+		else {
+			/* start probation for new ssrc */
+			receiver->history.ssrc_new = ssrc;
+			receiver->history.ssrc_probation = 5;
+			return RTP_SSRC_PROBATION;
+		}
+	}
+	return RTP_SSRC_UPDATE;
+}
+
+typedef enum {
+	RTP_SEQ_UPDATE,
+	RTP_SEQ_MISORDER,
+	RTP_SEQ_DRIFT
+} rtp_seq_result_e;
+
+static APR_INLINE rtp_seq_result_e rtp_rx_seq_update(rtp_receiver_t *receiver, apr_uint16_t seq_num)
+{
+	rtp_seq_result_e result = RTP_SEQ_UPDATE;
+	apr_uint16_t seq_delta = seq_num - receiver->history.seq_num_max;
+	if(seq_delta < MAX_DROPOUT) {
+		if(seq_num < receiver->history.seq_num_max) {
+			/* sequence number wrapped */
+			receiver->history.seq_cycles += RTP_SEQ_MOD;
+		}
+		receiver->history.seq_num_max = seq_num;
+	}
+	else if(seq_delta <= RTP_SEQ_MOD - MAX_MISORDER) {
+		/* sequence number made a very large jump */
+		result = RTP_SEQ_DRIFT;
+	}
+	else {
+		/* duplicate or misordered packet */
+		result = RTP_SEQ_MISORDER;
+	}
+	receiver->stat.received_packets++;
+
+	if(receiver->stat.received_packets - receiver->periodic_history.received_prior >= 50) {
+		receiver->periodic_history.received_prior = receiver->stat.received_packets;
+		receiver->periodic_history.discarded_prior = receiver->stat.discarded_packets;
+		receiver->periodic_history.jitter_min = receiver->stat.jitter;
+		receiver->periodic_history.jitter_max = receiver->stat.jitter;
+	}
+	return result;
+}
+
+typedef enum {
+	RTP_TS_UPDATE,
+	RTP_TS_DRIFT
+} rtp_ts_result_e;
+
+static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf_codec_descriptor_t *descriptor, apr_time_t *time, apr_uint32_t ts)
+{
+	apr_int32_t deviation;
+
+	/* arrival time diff in samples */
+	deviation = (apr_int32_t)apr_time_as_msec(*time - receiver->history.time_last) * 
+		descriptor->channel_count * descriptor->sampling_rate / 1000;
+	/* arrival timestamp diff */
+	deviation -= ts - receiver->history.ts_last;
+
+	if(deviation < 0) {
+		deviation = -deviation;
+	}
+
+	if(deviation > DEVIATION_THRESHOLD) {
+		return RTP_TS_DRIFT;
+	}
+
+	receiver->stat.jitter += deviation - ((receiver->stat.jitter + 8) >> 4);
+#if PRINT_RTP_PACKET_STAT
+	printf("jitter=%d deviation=%d\n",receiver->stat.jitter,deviation);
+#endif
+	receiver->history.time_last = *time;
+	receiver->history.ts_last = ts;
+
+	if(receiver->stat.jitter < receiver->periodic_history.jitter_min) {
+		receiver->periodic_history.jitter_min = receiver->stat.jitter;
+	}
+	if(receiver->stat.jitter > receiver->periodic_history.jitter_max) {
+		receiver->periodic_history.jitter_max = receiver->stat.jitter;
+	}
+	return RTP_TS_UPDATE;
+}
+
+static APR_INLINE void rtp_rx_failure_threshold_check(rtp_receiver_t *receiver)
+{
+	apr_uint32_t received;
+	apr_uint32_t discarded;
+	received = receiver->stat.received_packets - receiver->periodic_history.received_prior;
+	discarded = receiver->stat.discarded_packets - receiver->periodic_history.discarded_prior;
+
+	if(discarded * 100 > received * DISCARDED_TO_RECEIVED_RATIO_THRESHOLD) {
+		/* failure threshold hired, restart */
+		rtp_rx_restart(receiver);
+	}
+}
+
+static apt_bool_t rtp_rx_packet_receive(rtp_receiver_t *receiver, mpf_codec_t *codec, void *buffer, apr_size_t size)
+{
+	apr_time_t time;
+	rtp_ssrc_result_e ssrc_result;
+	rtp_header_t *header = rtp_rx_header_skip(&buffer,&size);
+	if(!header) {
+		/* invalid RTP packet */
+		receiver->stat.invalid_packets++;
+		return FALSE;
+	}
+
+	header->sequence = ntohl(header->sequence);
+	header->timestamp = ntohl(header->timestamp);
+	header->ssrc = ntohl(header->ssrc);
+
+	time = apr_time_now();
+
+#if PRINT_RTP_PACKET_STAT
+	printf("RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u size=%lu\n",
+					(apr_uint32_t)apr_time_usec(time),
+					header->ssrc, header->type, header->marker ? '*' : ' ',
+					header->timestamp, header->sequence, size);
+#endif
+	if(!receiver->stat.received_packets) {
+		/* initialization */
+		rtp_rx_stat_init(receiver,header,&time);
+	}
+
+	ssrc_result = rtp_rx_ssrc_update(receiver,header->ssrc);
+	if(ssrc_result == RTP_SSRC_PROBATION) {
+		receiver->stat.invalid_packets++;
+		return FALSE;
+	}
+	else if(ssrc_result == RTP_SSRC_RESTART) {
+		rtp_rx_restart(receiver);
+		rtp_rx_stat_init(receiver,header,&time);
+	}
+
+	rtp_rx_seq_update(receiver,(apr_uint16_t)header->sequence);
+	
+	if(rtp_rx_ts_update(receiver,codec->descriptor,&time,header->timestamp) == RTP_TS_DRIFT) {
+		rtp_rx_restart(receiver);
+		return FALSE;
+	}
+	
+	if(header->type == codec->descriptor->payload_type) {
+		/* codec */
+		if(mpf_jitter_buffer_write(receiver->jb,codec,buffer,size,header->timestamp) != JB_OK) {
+			receiver->stat.discarded_packets++;
+			rtp_rx_failure_threshold_check(receiver);
+		}
+	}
+	else if(header->type == receiver->event_pt) {
+		/* named event */
+		mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t *)buffer;
+		if(mpf_jitter_buffer_write_named_event(receiver->jb,named_event,header->timestamp) != JB_OK) {
+			receiver->stat.discarded_packets++;
+			rtp_rx_failure_threshold_check(receiver);
+		}
+	}
+	else if(header->type == 13 || header->type == 19) {
+		/* CN packet*/
+		receiver->stat.ignored_packets++;
+	}
+	else {
+		/* invalid payload type */
+		receiver->stat.ignored_packets++;
+	}
+	
 	return TRUE;
 }
+
+static apt_bool_t rtp_rx_process(mpf_rtp_stream_t *rtp_stream)
+{
+	char buffer[1500];
+	apr_size_t size = sizeof(buffer);
+	apr_size_t max_count = 5;
+	while(max_count && apr_socket_recvfrom(rtp_stream->remote_sockaddr,rtp_stream->socket,0,buffer,&size) == APR_SUCCESS) {
+		rtp_rx_packet_receive(&rtp_stream->receiver,rtp_stream->base.rx_codec,buffer,size);
+
+		size = sizeof(buffer);
+		max_count--;
+	}
+	return TRUE;
+}
+
+static apt_bool_t mpf_rtp_stream_receive(mpf_audio_stream_t *stream, mpf_frame_t *frame)
+{
+	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
+	rtp_rx_process(rtp_stream);
+
+	return mpf_jitter_buffer_read(rtp_stream->receiver.jb,frame);
+}
+
+
+
 
 
 static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
@@ -209,7 +462,9 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 	}
 	transmitter->packet_frames = transmitter->ptime / CODEC_FRAME_TIME_BASE;
 	transmitter->current_frames = 0;
-//	transmitter->samples_per_frame = CODEC_FRAME_TIME_BASE * transmitter->codec.descriptor->sampling_rate / 1000;
+
+	transmitter->packet_data = apr_palloc(rtp_stream->pool,
+		mpf_codec_frame_size_calculate(stream->tx_codec->descriptor,stream->tx_codec->attribs));
 	
 	transmitter->marker = 1;
 	return TRUE;
@@ -220,39 +475,53 @@ static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 	return TRUE;
 }
 
+
+static APR_INLINE void rtp_header_prepare(rtp_transmitter_t *transmitter, apr_byte_t payload_type)
+{
+	rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
+
+	header->version = RTP_VERSION;
+	header->padding = 0;
+	header->extension = 0;
+	header->count = 0;
+	header->marker = transmitter->marker;
+	header->type = payload_type;
+	header->sequence = htons(++transmitter->last_seq_num);
+	header->timestamp = htonl(transmitter->timestamp);
+	header->ssrc = htonl(transmitter->ssrc);
+
+	if(transmitter->marker) {
+		transmitter->marker = 0;
+	}
+
+	transmitter->packet_size = sizeof(rtp_header_t);
+}
+
 static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
+	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
+	rtp_transmitter_t *transmitter = &rtp_stream->transmitter;
+
+	transmitter->timestamp += transmitter->samples_per_frame;
+
+	if(transmitter->current_frames == 0) {
+		rtp_header_prepare(transmitter,stream->tx_codec->descriptor->payload_type);
+	}
+		
+	memcpy(transmitter->packet_data + transmitter->packet_size,
+			frame->codec_frame.buffer,
+			frame->codec_frame.size);
+	transmitter->packet_size += frame->codec_frame.size;
+
+	if(++transmitter->current_frames == transmitter->packet_frames) {
+		apr_socket_sendto(rtp_stream->socket,rtp_stream->remote_sockaddr,0,
+			transmitter->packet_data,&transmitter->packet_size);
+		transmitter->stat.sent_packets++;
+		transmitter->current_frames = 0;
+	}
+
 	return TRUE;
 }
-
-static const mpf_audio_stream_vtable_t vtable = {
-	mpf_rtp_stream_destroy,
-	mpf_rtp_rx_stream_open,
-	mpf_rtp_rx_stream_close,
-	mpf_rtp_stream_receive,
-	mpf_rtp_tx_stream_open,
-	mpf_rtp_tx_stream_close,
-	mpf_rtp_stream_transmit
-};
-
-MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
-{
-	mpf_rtp_stream_t *rtp_stream = apr_palloc(pool,sizeof(mpf_rtp_stream_t));
-	rtp_stream->pool = pool;
-	rtp_stream->local_media = NULL;
-	rtp_stream->remote_media = NULL;
-	rtp_stream->socket = NULL;
-	rtp_stream->local_sockaddr = NULL;
-	rtp_stream->remote_sockaddr = NULL;
-	mpf_audio_stream_init(&rtp_stream->base,&vtable);
-	rtp_stream->base.termination = termination;
-	rtp_receiver_init(&rtp_stream->receiver);
-	rtp_transmitter_init(&rtp_stream->transmitter);
-	rtp_stream->transmitter.ssrc = (apr_uint32_t)apr_time_now();
-
-	return &rtp_stream->base;
-}
-
 
 static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media)
 {
@@ -276,40 +545,5 @@ static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_
 	if(apr_socket_bind(stream->socket,stream->local_sockaddr) != APR_SUCCESS) {
 		return FALSE;
 	}
-	return TRUE;
-}
-
-MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor)
-{
-	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
-	apt_bool_t status = TRUE;
-	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_LOCAL) {
-		/* update local media */
-		mpf_rtp_media_descriptor_t *local_media = &descriptor->local;
-		if(!rtp_stream->local_media || 
-			apt_str_compare(rtp_stream->local_media->ip,local_media->ip) == FALSE ||
-			rtp_stream->local_media->port != local_media->port) {
-
-			if(mpf_rtp_socket_create(rtp_stream,local_media) == FALSE) {
-				status = FALSE;
-			}
-		}
-		rtp_stream->local_media = local_media;
-	}
-	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_REMOTE) {
-		/* update remote media */
-		mpf_rtp_media_descriptor_t *remote_media = &descriptor->remote;
-		if(!rtp_stream->remote_media || 
-			apt_str_compare(rtp_stream->remote_media->ip,remote_media->ip) == FALSE ||
-			rtp_stream->remote_media->port != remote_media->port) {
-
-			apr_sockaddr_info_get(&rtp_stream->remote_sockaddr,remote_media->ip,APR_INET,remote_media->port,0,rtp_stream->pool);
-			if(!rtp_stream->remote_sockaddr) {
-				status = FALSE;
-			}
-		}
-		rtp_stream->remote_media = remote_media;
-	}
-	stream->mode = descriptor->mode;
 	return TRUE;
 }

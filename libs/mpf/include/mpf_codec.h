@@ -37,7 +37,6 @@ struct mpf_codec_t {
 	const mpf_codec_descriptor_t *def_descriptor;
 	
 	mpf_codec_descriptor_t       *descriptor;
-	apr_size_t                    frame_size;
 };
 
 /** Codec manipulator interface */
@@ -48,7 +47,7 @@ struct mpf_codec_vtable_t {
 	apt_bool_t (*encode)(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out);
 	apt_bool_t (*decode)(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out);
 
-	apr_size_t (*dissect)(mpf_codec_t *codec, void *buffer, apr_size_t size, mpf_codec_frame_t *frames, apr_size_t max_frames);
+	apt_bool_t (*dissect)(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame);
 };
 
 static APR_INLINE mpf_codec_t* mpf_codec_create(
@@ -62,7 +61,6 @@ static APR_INLINE mpf_codec_t* mpf_codec_create(
 	codec->attribs = attribs;
 	codec->def_descriptor = descriptor;
 	codec->descriptor = NULL;
-	codec->frame_size = 0;
 	return codec;
 }
 
@@ -73,7 +71,6 @@ static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_
 	codec->attribs = src_codec->attribs;
 	codec->def_descriptor = src_codec->def_descriptor;
 	codec->descriptor = src_codec->descriptor;
-	codec->frame_size = src_codec->frame_size;
 	return codec;
 }
 
@@ -81,7 +78,6 @@ static APR_INLINE apt_bool_t mpf_codec_open(mpf_codec_t *codec)
 {
 	apt_bool_t rv = TRUE;
 	if(codec->descriptor) {
-		codec->frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
 		if(codec->vtable->open) {
 			rv = codec->vtable->open(codec);
 		}
@@ -119,25 +115,26 @@ static APR_INLINE apt_bool_t mpf_codec_decode(mpf_codec_t *codec, const mpf_code
 	return rv;
 }
 
-static APR_INLINE apr_size_t mpf_codec_dissect(mpf_codec_t *codec, void *buffer, apr_size_t size, mpf_codec_frame_t *frames, apr_size_t max_frames)
+static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame)
 {
-	apr_size_t frame_count = 0;
+	apt_bool_t rv = TRUE;
 	if(codec->vtable->dissect) {
 		/* custom dissector for codecs like G.729, G.723 */
-		frame_count = codec->vtable->dissect(codec,buffer,size,frames,max_frames);
+		rv = codec->vtable->dissect(codec,buffer,size,frame);
 	}
 	else {
-		/* default dissector, which should serve well for most of the codecs */
-		while(size >= codec->frame_size && frame_count < max_frames) {
-			frames[frame_count].buffer = buffer;
-			frames[frame_count].size = codec->frame_size;
-			frame_count++;
+		/* default dissector */
+		if(*size >= frame->size && frame->size) {
+			memcpy(frame->buffer,buffer,frame->size);
 			
-			buffer = (char*)buffer + codec->frame_size;
-			size -= codec->frame_size;
+			*buffer = (char*)(*buffer) + frame->size;
+			*size -= frame->size;
+		}
+		else {
+			rv = FALSE;
 		}
 	}
-	return frame_count;
+	return rv;
 }
 
 APT_END_EXTERN_C

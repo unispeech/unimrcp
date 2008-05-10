@@ -25,6 +25,7 @@ struct mpf_jitter_buffer_t {
 	mpf_frame_t     *frames;
 	apr_size_t       frame_count;
 	apr_size_t       frame_ts;
+	apr_size_t       frame_size;
 
 	apr_size_t       playout_delay_ts;
 
@@ -38,32 +39,32 @@ struct mpf_jitter_buffer_t {
 };
 
 
-mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, apr_size_t sampling_rate, apr_pool_t *pool)
+mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_t *codec, apr_pool_t *pool)
 {
 	size_t i;
-	size_t frame_size;
 	mpf_jitter_buffer_t *jb = apr_palloc(pool,sizeof(mpf_jitter_buffer_t));
 	if(!jb_config) {
 		/* create default jb config */
 		jb_config = apr_palloc(pool,sizeof(mpf_jb_config_t));
-		jb_config->min_playout_delay = 10;
-		jb_config->initial_playout_delay = 50;
-		jb_config->max_playout_delay = 200;
+		jb_config->min_playout_delay = 10; /* ms */
+		jb_config->initial_playout_delay = 50; /* ms */
+		jb_config->max_playout_delay = 200; /* ms */
 		jb_config->adaptive = 0;
 	}
 	jb->config = jb_config;
 
-	jb->frame_ts = CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
-	frame_size = /*pcm16*/2 * jb->frame_ts;
+	jb->frame_ts = mpf_codec_frame_samples_calculate(codec->descriptor);
+	jb->frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
 	jb->frame_count = jb->config->max_playout_delay / CODEC_FRAME_TIME_BASE;
-	jb->raw_data = apr_palloc(pool,frame_size*jb->frame_count);
+	jb->raw_data = apr_palloc(pool,jb->frame_size*jb->frame_count);
 	jb->frames = apr_palloc(pool,sizeof(mpf_frame_t)*jb->frame_count);
 	for(i=0; i<jb->frame_count; i++) {
 		jb->frames[i].type = MEDIA_FRAME_TYPE_NONE;
-		jb->frames[i].codec_frame.buffer = jb->raw_data + i*frame_size;
+		jb->frames[i].codec_frame.buffer = jb->raw_data + i*jb->frame_size;
 	}
 
-	jb->playout_delay_ts = jb->config->initial_playout_delay * sampling_rate / 1000;
+	jb->playout_delay_ts = jb->config->initial_playout_delay *
+		codec->descriptor->channel_count * codec->descriptor->sampling_rate / 1000;
 
 	jb->write_sync = 1;
 	jb->write_ts_offset = 0;
@@ -90,7 +91,8 @@ static APR_INLINE mpf_frame_t* mpf_jitter_buffer_frame_get(mpf_jitter_buffer_t *
 	return &jb->frames[index];
 }
 
-static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_t *jb, apr_uint32_t ts, apr_size_t *write_ts)
+static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_t *jb, apr_uint32_t ts, 
+												apr_size_t *write_ts, apr_size_t *available_frame_count)
 {
 	jb_result_t result = JB_OK;
 	if(jb->write_sync) {
@@ -119,47 +121,34 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 			result = JB_DISCARD_TOO_LATE;
 		}
 	}
+	*available_frame_count = (*write_ts - jb->read_ts)/jb->frame_ts;
 	return result;
 }
 
 jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, mpf_codec_t *codec, void *buffer, apr_size_t size, apr_uint32_t ts)
 {
 	mpf_frame_t *media_frame;
-	mpf_codec_frame_t frames[MAX_DISSECT_FRAME_COUNT];
-	apr_size_t frame_count;
-	apr_size_t i;
-
 	apr_size_t write_ts;
-	jb_result_t result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts);
+	apr_size_t available_frame_count = 0;
+	jb_result_t result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts,&available_frame_count);
 	if(result != JB_OK) {
 		return result;
 	}
 
-	/* dissect codec frames */
-	frame_count = mpf_codec_dissect(
-									codec,
-									buffer,
-									size,
-									frames,
-									MAX_DISSECT_FRAME_COUNT);
-	if(frame_count + (write_ts - jb->read_ts)/jb->frame_ts > jb->frame_count) {
-		/* too early */
-		apr_size_t count = (write_ts - jb->read_ts)/jb->frame_ts;
-		result = JB_DISCARD_TOO_EARLY;
-		if(jb->frame_count > count) {
-			frame_count = jb->frame_count - count;
-		}
-		else {
-			frame_count = 0;
-		}
-	}
-	for(i=0; i<frame_count; i++) {
+	while(available_frame_count && size) {
 		media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
-		if(mpf_codec_decode(codec,&frames[i],&media_frame->codec_frame) == TRUE) {
-			media_frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+		media_frame->codec_frame.size = BYTES_PER_SAMPLE * jb->frame_ts;
+		if(mpf_codec_dissect(codec,&buffer,&size,&media_frame->codec_frame) == FALSE) {
+			break;
 		}
-		
+
+		media_frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 		write_ts += jb->frame_ts;
+		available_frame_count--;
+	}
+
+	if(size) {
+		/* no frame available to write, but some data remains in buffer (partialy too early) */
 	}
 
 	if(write_ts > jb->write_ts) {

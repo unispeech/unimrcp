@@ -78,6 +78,12 @@ static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(const mpf_codec_desc
 			descriptor->sampling_rate / 1000 / 8; /* 1000 - msec per sec, 8 - bits per byte */
 }
 
+/** Calculate samples of the frame (ts) */
+static APR_INLINE apr_size_t mpf_codec_frame_samples_calculate(const mpf_codec_descriptor_t *descriptor)
+{
+	return descriptor->channel_count * CODEC_FRAME_TIME_BASE * descriptor->sampling_rate / 1000;
+}
+
 /** Calculate linear frame size in bytes */
 static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count)
 {

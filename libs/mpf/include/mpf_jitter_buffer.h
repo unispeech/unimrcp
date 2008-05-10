@@ -48,7 +48,7 @@ struct mpf_jb_config_t {
 typedef struct mpf_jitter_buffer_t mpf_jitter_buffer_t;
 
 /** Create jitter buffer */
-mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, apr_size_t sampling_rate, apr_pool_t *pool);
+mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_t *codec, apr_pool_t *pool);
 
 /** Destroy jitter buffer */
 void mpf_jitter_buffer_destroy(mpf_jitter_buffer_t *jb);

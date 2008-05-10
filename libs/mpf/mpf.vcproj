@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtp_defs.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_descriptor.h"
 				>
 			</File>

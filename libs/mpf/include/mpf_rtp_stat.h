@@ -61,12 +61,12 @@ struct rtp_rx_stat_t {
 	apr_uint32_t           ssrc;
 };
 
-static APR_INLINE void mpf_rtp_tx_stat_init(rtp_tx_stat_t *tx_stat)
+static APR_INLINE void mpf_rtp_tx_stat_reset(rtp_tx_stat_t *tx_stat)
 {
 	memset(tx_stat,0,sizeof(rtp_tx_stat_t));
 }
 
-static APR_INLINE void mpf_rtp_rx_stat_init(rtp_rx_stat_t *rx_stat)
+static APR_INLINE void mpf_rtp_rx_stat_reset(rtp_rx_stat_t *rx_stat)
 {
 	memset(rx_stat,0,sizeof(rtp_rx_stat_t));
 }
