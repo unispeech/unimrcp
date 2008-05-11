@@ -26,16 +26,19 @@
 #include <apr_pools.h>
 #include <apr_strings.h>
 
-/* extern "C" defines */
 #ifdef __cplusplus
+/** Begin of extern "C" block */
 #define APT_BEGIN_EXTERN_C       extern "C" {
+/** End of extern "C" block */
 #define APT_END_EXTERN_C         }
 #else
+/** Begin of extern "C" block */
 #define APT_BEGIN_EXTERN_C
+/** End of extern "C" block */
 #define APT_END_EXTERN_C
 #endif 
 
-/** lib export/import defines (win32) */
+/** Lib export/import defines (win32) */
 #ifdef WIN32
 #ifdef APT_STATIC_LIB
 #define APT_DECLARE(type)   type __stdcall
@@ -53,6 +56,7 @@
 /** Boolean value */
 typedef int apt_bool_t;
 
+/** Compare two strings. Return TRUE if equal, FALSE otherwise */
 static APR_INLINE apt_bool_t apt_str_compare(const char *str1, const char *str2)
 {
 	return (strcasecmp(str1,str2) == 0) ? TRUE : FALSE;
