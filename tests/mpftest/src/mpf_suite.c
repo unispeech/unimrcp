@@ -24,97 +24,117 @@
 #include "apt_log.h"
 
 typedef struct mpf_suite_session_t mpf_suite_session_t;
+typedef struct mpf_suite_engine_t mpf_suite_engine_t;
 
+
+/** Test suite session */
 struct mpf_suite_session_t {
+	/** Pool to allocate memory from */
 	apr_pool_t        *pool;
 
+	/** Media context associated with the session */
 	mpf_context_t     *context;
+	/** The first termination in the context */
 	mpf_termination_t *termination1;
+	/** The second termination in the context */
 	mpf_termination_t *termination2;
 };
 
-typedef struct mpf_suite_engine_t mpf_suite_engine_t;
-
+/** Test suite engine */
 struct mpf_suite_engine_t {
+	/** The main task of the test engine, which sends messages to MPF engine and 
+	 * process responses and events from it */
 	apt_consumer_task_t *consumer_task;
+	/** MPF engine */
 	apt_task_t          *engine_task;
 
+	/** Wait object, which is signalled to indicate shutdown */
 	apr_thread_cond_t   *wait_object;
+	/** Mutex of the wait object */
 	apr_thread_mutex_t  *wait_object_mutex;
 };
 
-static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_session_t *session)
-{
-	mpf_codec_descriptor_t *codec_descriptor;
-	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
-	descriptor->mask = FILE_READER;
-	descriptor->read_handle = fopen("demo.pcm","rb");
-	descriptor->write_handle = NULL;
+static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv);
 
-	codec_descriptor = &descriptor->codec_descriptor;
-	codec_descriptor->payload_type = 11;
-	codec_descriptor->name = "L16";
-	codec_descriptor->sampling_rate = 8000;
-	codec_descriptor->channel_count = 1;
-	return descriptor;
+static void mpf_suite_on_start_complete(apt_task_t *task);
+static void mpf_suite_on_terminate_complete(apt_task_t *task);
+static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+
+static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_session_t *session);
+static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_session_t *session);
+static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_session_t *session);
+static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_session_t *session);
+
+
+/** Create MPF test suite */
+apt_test_suite_t* mpf_suite_create(apr_pool_t *pool)
+{
+	apt_test_suite_t *suite = apt_test_suite_create(pool,"mpf",NULL,mpf_test_run);
+	return suite;
 }
 
-static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_session_t *session)
+/** Run MPF test suite */
+static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
 {
-	mpf_codec_descriptor_t *codec_descriptor;
-	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
-	descriptor->mask = FILE_WRITER;
-	descriptor->max_write_size = 500000; /* 500Kb */
-	descriptor->write_handle = fopen("demo_out.pcm","wb");
-	descriptor->read_handle = NULL;
+	mpf_suite_engine_t *suite_engine;
+	mpf_engine_t *engine;
 
-	codec_descriptor = &descriptor->codec_descriptor;
-	codec_descriptor->payload_type = 11;
-	codec_descriptor->name = "L16";
-	codec_descriptor->sampling_rate = 8000;
-	codec_descriptor->channel_count = 1;
-	return descriptor;
-}
+	apt_task_t *task;
+	apt_task_vtable_t vtable;
+	apt_task_msg_pool_t *msg_pool;
 
-static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_session_t *session)
-{
-	mpf_rtp_stream_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_rtp_stream_descriptor_t));
-	mpf_rtp_stream_descriptor_init(descriptor);
-	descriptor->mode = STREAM_MODE_NONE;
-	descriptor->mask = RTP_MEDIA_DESCRIPTOR_LOCAL;
-	descriptor->local.ip = "127.0.0.1";
-	descriptor->local.port = 5000;
-	return descriptor;
-}
+	suite_engine = apr_palloc(suite->pool,sizeof(mpf_suite_engine_t));
 
-static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_session_t *session)
-{
-	mpf_codec_list_t *codec_list;
-	mpf_codec_descriptor_t *codec_descriptor;
-	mpf_rtp_stream_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_rtp_stream_descriptor_t));
-	mpf_rtp_stream_descriptor_init(descriptor);
-	descriptor->mode = STREAM_MODE_SEND_RECEIVE;
-	descriptor->mask = RTP_MEDIA_DESCRIPTOR_REMOTE;
-	descriptor->remote.ip = "127.0.0.1";
-	descriptor->remote.port = 5002;
-	codec_list = &descriptor->remote.codec_list;
-	mpf_codec_list_init(codec_list,2,session->pool);
-	codec_descriptor = mpf_codec_list_add(codec_list);
-	if(codec_descriptor) {
-		codec_descriptor->payload_type = 0;
+	engine = mpf_engine_create(suite->pool);
+	if(!engine) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create MPF Engine");
+		return FALSE;
 	}
-	codec_descriptor = mpf_codec_list_add(codec_list);
-	if(codec_descriptor) {
-		codec_descriptor->payload_type = 96;
-		codec_descriptor->name = "PCMU";
-		codec_descriptor->sampling_rate = 16000;
-		codec_descriptor->channel_count = 1;
+	suite_engine->engine_task = mpf_task_get(engine);
+
+	apt_task_vtable_reset(&vtable);
+	vtable.process_msg = mpf_suite_msg_process;
+	vtable.on_start_complete = mpf_suite_on_start_complete;
+	vtable.on_terminate_complete = mpf_suite_on_terminate_complete;
+
+	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),suite->pool);
+
+	apt_log(APT_PRIO_NOTICE,"Create Consumer Task");
+	suite_engine->consumer_task = apt_consumer_task_create(suite_engine,&vtable,msg_pool,suite->pool);
+	if(!suite_engine->consumer_task) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create Consumer Task");
+		return FALSE;
+	}
+	task = apt_consumer_task_base_get(suite_engine->consumer_task);
+
+	apt_task_add(task,suite_engine->engine_task);
+
+	apr_thread_mutex_create(&suite_engine->wait_object_mutex,APR_THREAD_MUTEX_UNNESTED,suite->pool);
+	apr_thread_cond_create(&suite_engine->wait_object,suite->pool);
+
+	apt_log(APT_PRIO_INFO,"Start Task");
+	if(apt_task_start(task) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Failed to Start Task");
+		apt_task_destroy(task);
+		return FALSE;
 	}
 
-	return descriptor;
+	apr_thread_mutex_lock(suite_engine->wait_object_mutex);
+	apr_thread_cond_wait(suite_engine->wait_object,suite_engine->wait_object_mutex);
+	apr_thread_mutex_unlock(suite_engine->wait_object_mutex);
+	
+	apt_log(APT_PRIO_INFO,"Terminate Task [wait till complete]");
+	apt_task_terminate(task,TRUE);
+	apt_log(APT_PRIO_NOTICE,"Destroy Task");
+	apt_task_destroy(task);
+
+	apr_thread_cond_destroy(suite_engine->wait_object);
+	apr_thread_mutex_destroy(suite_engine->wait_object_mutex);
+	return TRUE;
 }
 
-static void task_on_start_complete(apt_task_t *task)
+/** Start execution of MPF test suite scenario  */
+static void mpf_suite_on_start_complete(apt_task_t *task)
 {
 	mpf_suite_session_t *session;
 	apt_task_t *consumer_task;
@@ -126,7 +146,7 @@ static void task_on_start_complete(apt_task_t *task)
 	consumer_task = apt_task_object_get(task);
 	suite_engine = apt_task_object_get(consumer_task);
 
-	apt_log(APT_PRIO_INFO,"On Task Start");
+	apt_log(APT_PRIO_INFO,"On MPF Suite Start");
 	apr_pool_create(&pool,NULL);
 	session = apr_palloc(pool,sizeof(mpf_suite_session_t));
 	session->pool = pool;
@@ -140,7 +160,7 @@ static void task_on_start_complete(apt_task_t *task)
 	apt_log(APT_PRIO_INFO,"Create Termination [1]");
 	session->termination1 = mpf_file_termination_create(session,session->pool);
 
-	apt_log(APT_PRIO_INFO,"Add Termination [1] to Context");
+	apt_log(APT_PRIO_INFO,"Add Termination [1]");
 	msg = apt_task_msg_get(task);
 	msg->type = TASK_MSG_USER;
 	mpf_message = (mpf_message_t*) msg->data;
@@ -156,7 +176,7 @@ static void task_on_start_complete(apt_task_t *task)
 //	session->termination2 = mpf_file_termination_create(session,session->pool);
 	session->termination2 = mpf_rtp_termination_create(session,session->pool);
 
-	apt_log(APT_PRIO_INFO,"Add Termination [2] to Context");
+	apt_log(APT_PRIO_INFO,"Add Termination [2]");
 	msg = apt_task_msg_get(task);
 	msg->type = TASK_MSG_USER;
 	mpf_message = (mpf_message_t*) msg->data;
@@ -170,12 +190,14 @@ static void task_on_start_complete(apt_task_t *task)
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 }
 
-static void task_on_terminate_complete(apt_task_t *task)
+/** Execution of MPF test suite scenario is terminated  */
+static void mpf_suite_on_terminate_complete(apt_task_t *task)
 {
-	apt_log(APT_PRIO_INFO,"On Task Terminate");
+	apt_log(APT_PRIO_INFO,"On MPF Suite Terminate");
 }
 
-static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
+/** Process task messages  */
+static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	const mpf_message_t *mpf_message = (const mpf_message_t*) msg->data;
 	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
@@ -248,7 +270,7 @@ static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		if(mpf_message->termination) {
 			session = mpf_termination_object_get(mpf_message->termination);
 			if(session->termination1) {
-				apt_log(APT_PRIO_INFO,"Subtract Termination [1] from Context");
+				apt_log(APT_PRIO_INFO,"Subtract Termination [1]");
 				msg = apt_task_msg_get(task);
 				msg->type = TASK_MSG_USER;
 				request = (mpf_message_t*) msg->data;
@@ -263,7 +285,7 @@ static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				apt_task_msg_signal(suite_engine->engine_task,msg);
 			}
 			if(session->termination2) {
-				apt_log(APT_PRIO_INFO,"Subtract Termination [2] from Context");
+				apt_log(APT_PRIO_INFO,"Subtract Termination [2]");
 				msg = apt_task_msg_get(task);
 				msg->type = TASK_MSG_USER;
 				request = (mpf_message_t*) msg->data;
@@ -283,67 +305,77 @@ static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	return TRUE;
 }
 
-static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
+/** Create sample file reader descriptor */
+static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_session_t *session)
 {
-	mpf_suite_engine_t *suite_engine;
-	mpf_engine_t *engine;
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
+	descriptor->mask = FILE_READER;
+	descriptor->read_handle = fopen("demo.pcm","rb");
+	descriptor->write_handle = NULL;
 
-	apt_task_t *task;
-	apt_task_vtable_t vtable;
-	apt_task_msg_pool_t *msg_pool;
-
-	suite_engine = apr_palloc(suite->pool,sizeof(mpf_suite_engine_t));
-
-	engine = mpf_engine_create(suite->pool);
-	if(!engine) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create MPF Engine");
-		return FALSE;
-	}
-	suite_engine->engine_task = mpf_task_get(engine);
-
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = task_msg_process;
-	vtable.on_start_complete = task_on_start_complete;
-	vtable.on_terminate_complete = task_on_terminate_complete;
-
-	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),suite->pool);
-
-	apt_log(APT_PRIO_NOTICE,"Create Consumer Task");
-	suite_engine->consumer_task = apt_consumer_task_create(suite_engine,&vtable,msg_pool,suite->pool);
-	if(!suite_engine->consumer_task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Consumer Task");
-		return FALSE;
-	}
-	task = apt_consumer_task_base_get(suite_engine->consumer_task);
-
-	apt_task_add(task,suite_engine->engine_task);
-
-	apr_thread_mutex_create(&suite_engine->wait_object_mutex,APR_THREAD_MUTEX_UNNESTED,suite->pool);
-	apr_thread_cond_create(&suite_engine->wait_object,suite->pool);
-
-	apt_log(APT_PRIO_INFO,"Start Task");
-	if(apt_task_start(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Task");
-		apt_task_destroy(task);
-		return FALSE;
-	}
-
-	apr_thread_mutex_lock(suite_engine->wait_object_mutex);
-	apr_thread_cond_wait(suite_engine->wait_object,suite_engine->wait_object_mutex);
-	apr_thread_mutex_unlock(suite_engine->wait_object_mutex);
-	
-	apt_log(APT_PRIO_INFO,"Terminate Task [wait till complete]");
-	apt_task_terminate(task,TRUE);
-	apt_log(APT_PRIO_NOTICE,"Destroy Task");
-	apt_task_destroy(task);
-
-	apr_thread_cond_destroy(suite_engine->wait_object);
-	apr_thread_mutex_destroy(suite_engine->wait_object_mutex);
-	return TRUE;
+	codec_descriptor = &descriptor->codec_descriptor;
+	codec_descriptor->payload_type = 11;
+	codec_descriptor->name = "L16";
+	codec_descriptor->sampling_rate = 8000;
+	codec_descriptor->channel_count = 1;
+	return descriptor;
 }
 
-apt_test_suite_t* mpf_suite_create(apr_pool_t *pool)
+/** Create sample file writer descriptor */
+static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_session_t *session)
 {
-	apt_test_suite_t *suite = apt_test_suite_create(pool,"mpf",NULL,mpf_test_run);
-	return suite;
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
+	descriptor->mask = FILE_WRITER;
+	descriptor->max_write_size = 500000; /* 500Kb */
+	descriptor->write_handle = fopen("demo_out.pcm","wb");
+	descriptor->read_handle = NULL;
+
+	codec_descriptor = &descriptor->codec_descriptor;
+	codec_descriptor->payload_type = 11;
+	codec_descriptor->name = "L16";
+	codec_descriptor->sampling_rate = 8000;
+	codec_descriptor->channel_count = 1;
+	return descriptor;
+}
+
+/** Create sample RTP local descriptor */
+static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_session_t *session)
+{
+	mpf_rtp_stream_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_rtp_stream_descriptor_t));
+	mpf_rtp_stream_descriptor_init(descriptor);
+	descriptor->mode = STREAM_MODE_NONE;
+	descriptor->mask = RTP_MEDIA_DESCRIPTOR_LOCAL;
+	descriptor->local.ip = "127.0.0.1";
+	descriptor->local.port = 5000;
+	return descriptor;
+}
+
+/** Create sample RTP remote descriptor */
+static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_session_t *session)
+{
+	mpf_codec_list_t *codec_list;
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_rtp_stream_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_rtp_stream_descriptor_t));
+	mpf_rtp_stream_descriptor_init(descriptor);
+	descriptor->mode = STREAM_MODE_SEND_RECEIVE;
+	descriptor->mask = RTP_MEDIA_DESCRIPTOR_REMOTE;
+	descriptor->remote.ip = "127.0.0.1";
+	descriptor->remote.port = 5002;
+	codec_list = &descriptor->remote.codec_list;
+	mpf_codec_list_init(codec_list,2,session->pool);
+	codec_descriptor = mpf_codec_list_add(codec_list);
+	if(codec_descriptor) {
+		codec_descriptor->payload_type = 0;
+	}
+	codec_descriptor = mpf_codec_list_add(codec_list);
+	if(codec_descriptor) {
+		codec_descriptor->payload_type = 96;
+		codec_descriptor->name = "PCMU";
+		codec_descriptor->sampling_rate = 16000;
+		codec_descriptor->channel_count = 1;
+	}
+
+	return descriptor;
 }
