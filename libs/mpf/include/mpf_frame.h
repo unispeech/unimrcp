@@ -28,34 +28,45 @@ APT_BEGIN_EXTERN_C
 
 /** Media frame types */
 typedef enum {
-	MEDIA_FRAME_TYPE_NONE  = 0x0,
-	MEDIA_FRAME_TYPE_AUDIO = 0x1,
-	MEDIA_FRAME_TYPE_VIDEO = 0x2,
-	MEDIA_FRAME_TYPE_EVENT = 0x4
+	MEDIA_FRAME_TYPE_NONE  = 0x0, /**< none */
+	MEDIA_FRAME_TYPE_AUDIO = 0x1, /**< audio frame */
+	MEDIA_FRAME_TYPE_VIDEO = 0x2, /**< video frame */
+	MEDIA_FRAME_TYPE_EVENT = 0x4  /**< named event frame (RFC2833) */
 } mpf_frame_type_e;
 
+/** Named event (RFC2833, out-of-band DTMF) */
 typedef struct mpf_named_event_frame_t mpf_named_event_frame_t;
-/** Named event (rfc2833, out-of-band DTMF) */
 struct mpf_named_event_frame_t {
+	/** event (DTMF, tone) identifier */
 	apr_uint32_t event_id: 8;
 #if (APR_IS_BIGENDIAN == 1)
+	/** end of event */
 	apr_uint32_t edge:     1;
+	/** reserved */
 	apr_uint32_t reserved: 1;
+	/** tone volume */
 	apr_uint32_t volume:   6;
 #else
+	/** tone volume */
 	apr_uint32_t volume:   6;
+	/** reserved */
 	apr_uint32_t reserved: 1;
+	/** end of event */
 	apr_uint32_t edge:     1;
 #endif
+	/** event duration */
 	apr_uint32_t duration: 16;
 };
 
-typedef struct mpf_frame_t mpf_frame_t;
 /** Media frame */
+typedef struct mpf_frame_t mpf_frame_t;
 struct mpf_frame_t {
+	/** frame type (audio/video/named-event)*/
 	mpf_frame_type_e        type;
 
+	/** codec frame */
 	mpf_codec_frame_t       codec_frame;
+	/** named-event frame */
 	mpf_named_event_frame_t event_frame;
 };
 

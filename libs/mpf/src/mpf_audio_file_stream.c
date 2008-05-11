@@ -20,6 +20,8 @@
 #include "mpf_codec_manager.h"
 #include "apt_log.h"
 
+/** Audio file stream */
+typedef struct mpf_audio_file_stream_t mpf_audio_file_stream_t;
 struct mpf_audio_file_stream_t {
 	mpf_audio_stream_t base;
 

@@ -29,18 +29,22 @@ APT_BEGIN_EXTERN_C
 
 /** Jitter buffer write result */
 typedef enum {
-	JB_OK,
-	JB_DISCARD_NOT_ALLIGNED,
-	JB_DISCARD_TOO_LATE,
-	JB_DISCARD_TOO_EARLY,
+	JB_OK,                   /**< successful write */
+	JB_DISCARD_NOT_ALLIGNED, /**< discarded write (frame isn't alligned to CODEC_FRAME_TIME_BASE) */
+	JB_DISCARD_TOO_LATE,     /**< discarded write (frame is arrived too late) */
+	JB_DISCARD_TOO_EARLY,    /**< discarded write (frame is arrived too early, buffer is full) */
 } jb_result_t;
 
-typedef struct mpf_jb_config_t mpf_jb_config_t;
 /** Jitter buffer configuration */
+typedef struct mpf_jb_config_t mpf_jb_config_t;
 struct mpf_jb_config_t {
+	/** Min playout delay in msec (used in case of adaptive jitter buffer) */
 	apr_size_t min_playout_delay;
+	/** Initial playout delay in msec */
 	apr_size_t initial_playout_delay;
+	/** Max playout delay in msec (used in case of adaptive jitter buffer) */
 	apr_size_t max_playout_delay;
+	/** Static - 0, adaptive - 1 jitter buffer */
 	apr_byte_t adaptive;
 };
 

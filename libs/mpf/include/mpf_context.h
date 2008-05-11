@@ -27,15 +27,23 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Definition of table item used in context */
 typedef void* table_item_t;
+
 /** Media processing context */
 struct mpf_context_t {
+    /** Pool to allocate memory from */
 	apr_pool_t        *pool;
+    /** External object */
 	void              *obj;
+    /** Set when context is addded to the list to ensure quick find on delete */
 	apt_list_elem_t   *elem;
 
+	/** Max number of terminations */
 	apr_size_t          max_termination_count;
+	/** Current number of terminations */
 	apr_size_t          termination_count;
+	/** Table, which holds terminations and topology */
 	table_item_t      **table;
 };
 
@@ -77,4 +85,4 @@ MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_ENGINE_H__*/
+#endif /*__MPF_CONTEXT_H__*/

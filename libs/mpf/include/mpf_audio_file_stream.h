@@ -27,12 +27,9 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque audio file stream declaration */
-typedef struct mpf_audio_file_stream_t mpf_audio_file_stream_t;
-
-
 /**
  * Create file stream.
+ * @param termination the back pointer to hold
  * @param pool the pool to allocate memory from
  */
 MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termination, apr_pool_t *pool);

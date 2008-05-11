@@ -26,38 +26,52 @@
 
 APT_BEGIN_EXTERN_C
 
-#define CODEC_FRAME_TIME_BASE 10 /*ms*/
+/** Codec frame time base in msec */
+#define CODEC_FRAME_TIME_BASE 10
+/** Bytes per sample for linear pcm */
 #define BYTES_PER_SAMPLE 2
+/** Bits per sample for linear pcm */
 #define BITS_PER_SAMPLE 16
 
-typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
 /** Codec descriptor */
+typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
 struct mpf_codec_descriptor_t {
+	/** Payload type used in RTP packet */
 	apr_byte_t   payload_type;
+	/** Codec name */
 	const char  *name;
+	/** Sampling rate */
 	apr_uint16_t sampling_rate;
+	/** Channel count */
 	apr_byte_t   channel_count;
+	/** Codec dependent additional format */
 	const char  *format;
 };
 
-typedef struct mpf_codec_list_t mpf_codec_list_t;
 /** List of codec descriptors */
+typedef struct mpf_codec_list_t mpf_codec_list_t;
 struct mpf_codec_list_t {
+	/** Dynamically allocated array of codec descriptors */
 	mpf_codec_descriptor_t *codecs;
+	/** Bounds of allocated array */
 	apr_size_t              max_count;
+	/** Number of descriptors already appended to the list */
 	apr_size_t              count;
 };
 
-typedef struct mpf_codec_frame_t mpf_codec_frame_t;
 /** Codec frame */
+typedef struct mpf_codec_frame_t mpf_codec_frame_t;
 struct mpf_codec_frame_t {
+	/** Raw buffer, which may contain encoded or decoded data */
 	void      *buffer;
+	/** Buffer size */
 	apr_size_t size;
 };
 
-typedef struct mpf_codec_attribs_t mpf_codec_attribs_t;
 /** Codec attributes */
+typedef struct mpf_codec_attribs_t mpf_codec_attribs_t;
 struct mpf_codec_attribs_t {
+	/** Bits per sample */
 	apr_byte_t   bits_per_samples;
 };
 

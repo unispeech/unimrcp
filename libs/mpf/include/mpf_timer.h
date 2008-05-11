@@ -35,7 +35,7 @@ typedef void (*mpf_timer_proc_f)(mpf_timer_t *timer, void *obj);
 /** Start periodic timer */
 MPF_DECLARE(mpf_timer_t*) mpf_timer_start(unsigned long timeout, mpf_timer_proc_f timer_proc, void *obj, apr_pool_t *pool);
 
-/** Stop media timer */
+/** Stop timer */
 MPF_DECLARE(void) mpf_timer_stop(mpf_timer_t *timer);
 
 

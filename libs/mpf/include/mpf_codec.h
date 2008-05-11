@@ -26,30 +26,46 @@
 
 APT_BEGIN_EXTERN_C
 
-typedef struct mpf_codec_t mpf_codec_t;
+/** Opaque codec virtual table declaration */
 typedef struct mpf_codec_vtable_t mpf_codec_vtable_t;
 
-
 /** Codec */
+typedef struct mpf_codec_t mpf_codec_t;
 struct mpf_codec_t {
+	/** Codec manipulators (encode,decode,dissect) */
 	const mpf_codec_vtable_t     *vtable;
+	/** Codec attributes */
 	const mpf_codec_attribs_t    *attribs;
+	/** Default codec descriptor */
 	const mpf_codec_descriptor_t *def_descriptor;
 	
+	/** Negotiated codec descriptor */
 	mpf_codec_descriptor_t       *descriptor;
 };
 
-/** Codec manipulator interface */
+/** Table of codec virtual methods */
 struct mpf_codec_vtable_t {
+	/** Virtual open method */
 	apt_bool_t (*open)(mpf_codec_t *codec);
+	/** Virtual close method */
 	apt_bool_t (*close)(mpf_codec_t *codec);
 
+	/** Virtual encode method */
 	apt_bool_t (*encode)(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out);
+	/** Virtual decode method */
 	apt_bool_t (*decode)(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out);
 
+	/** Virtual dissect method */
 	apt_bool_t (*dissect)(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame);
 };
 
+/**
+ * Create codec.
+ * @param vtable the table of virtual mthods
+ * @param attribs the codec attributes
+ * @param descriptor the codec descriptor
+ * @param pool the pool to allocate memory from
+ */
 static APR_INLINE mpf_codec_t* mpf_codec_create(
 									const mpf_codec_vtable_t *vtable, 
 									const mpf_codec_attribs_t *attribs, 
@@ -64,6 +80,11 @@ static APR_INLINE mpf_codec_t* mpf_codec_create(
 	return codec;
 }
 
+/**
+ * Close codec.
+ * @param src_codec the source (original) codec to clone
+ * @param pool the pool to allocate memory from
+ */
 static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_t *pool)
 {
 	mpf_codec_t *codec = apr_palloc(pool,sizeof(mpf_codec_t));
@@ -74,6 +95,7 @@ static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_
 	return codec;
 }
 
+/** Open codec */
 static APR_INLINE apt_bool_t mpf_codec_open(mpf_codec_t *codec)
 {
 	apt_bool_t rv = TRUE;
@@ -88,6 +110,7 @@ static APR_INLINE apt_bool_t mpf_codec_open(mpf_codec_t *codec)
 	return rv;
 }
 
+/** Close codec */
 static APR_INLINE apt_bool_t mpf_codec_close(mpf_codec_t *codec)
 {
 	apt_bool_t rv = TRUE;
@@ -97,6 +120,7 @@ static APR_INLINE apt_bool_t mpf_codec_close(mpf_codec_t *codec)
 	return rv;
 }
 
+/** Encode codec frame */
 static APR_INLINE apt_bool_t mpf_codec_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	apt_bool_t rv = TRUE;
@@ -106,6 +130,7 @@ static APR_INLINE apt_bool_t mpf_codec_encode(mpf_codec_t *codec, const mpf_code
 	return rv;
 }
 
+/** Decode codec frame */
 static APR_INLINE apt_bool_t mpf_codec_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	apt_bool_t rv = TRUE;
@@ -115,6 +140,7 @@ static APR_INLINE apt_bool_t mpf_codec_decode(mpf_codec_t *codec, const mpf_code
 	return rv;
 }
 
+/** Dissect codec frame (navigate through codec frames in a buffer, which may contain multiple frames) */
 static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame)
 {
 	apt_bool_t rv = TRUE;

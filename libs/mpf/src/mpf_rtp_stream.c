@@ -23,6 +23,8 @@
 #include "apt_log.h"
 
 
+/** RTP stream */
+typedef struct mpf_rtp_stream_t mpf_rtp_stream_t;
 struct mpf_rtp_stream_t {
 	mpf_audio_stream_t          base;
 

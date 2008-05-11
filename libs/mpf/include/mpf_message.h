@@ -53,15 +53,20 @@ typedef struct mpf_message_t mpf_message_t;
 
 /** MPF message definition */
 struct mpf_message_t {
+	/** Message type (request/response/event) */
 	mpf_message_type_e message_type;
+	/** Command identifier (add, modify, subtract, ...) */
 	mpf_command_type_e command_id;
+	/** Status code used in responses */
 	mpf_status_code_e  status_code;
 
+	/** Context */
 	mpf_context_t     *context;
+	/** Termination */
 	mpf_termination_t *termination;
+	/** Termination type dependent descriptor */
 	void              *descriptor;
 };
-
 
 APT_END_EXTERN_C
 

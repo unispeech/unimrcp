@@ -33,14 +33,18 @@ APT_BEGIN_EXTERN_C
 /** FILE_WRITER is defined as STREAM_MODE_SEND */
 #define FILE_WRITER STREAM_MODE_SEND
 
-typedef struct mpf_audio_file_descriptor_t mpf_audio_file_descriptor_t;
 /** Audio file descriptor */
+typedef struct mpf_audio_file_descriptor_t mpf_audio_file_descriptor_t;
 struct mpf_audio_file_descriptor_t {
+	/** Indicate what descriptor for (reader and/or write) */
 	mpf_stream_mode_e      mask;
-
+	/** Codec descriptor to use for audio file read/write */
 	mpf_codec_descriptor_t codec_descriptor;
+	/** File handle to read audio stream */
 	FILE                  *read_handle;
+	/** File handle to write audio stream */
 	FILE                  *write_handle;
+	/** Max size of file  */
 	apr_size_t             max_write_size;
 };
 
