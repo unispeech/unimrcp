@@ -38,6 +38,8 @@ struct mpf_suite_session_t {
 	mpf_termination_t *termination1;
 	/** The second termination in the context */
 	mpf_termination_t *termination2;
+	/** RTP or file termination mode */
+	apt_bool_t         rtp_mode;
 };
 
 /** Test suite engine */
@@ -153,6 +155,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	session->context = NULL;
 	session->termination1 = NULL;
 	session->termination2 = NULL;
+	session->rtp_mode = TRUE;
 
 	apt_log(APT_PRIO_INFO,"Create MPF Context");
 	session->context = mpf_context_create(session,2,pool);
@@ -173,8 +176,12 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 
 	apt_log(APT_PRIO_INFO,"Create Termination [2]");
-//	session->termination2 = mpf_file_termination_create(session,session->pool);
-	session->termination2 = mpf_rtp_termination_create(session,session->pool);
+	if(session->rtp_mode == TRUE) {
+		session->termination2 = mpf_rtp_termination_create(session,session->pool);
+	}
+	else {
+		session->termination2 = mpf_file_termination_create(session,session->pool);
+	}
 
 	apt_log(APT_PRIO_INFO,"Add Termination [2]");
 	msg = apt_task_msg_get(task);
@@ -185,8 +192,12 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	mpf_message->command_id = MPF_COMMAND_ADD;
 	mpf_message->context = session->context;
 	mpf_message->termination = session->termination2;
-//	mpf_message->descriptor = mpf_file_writer_descriptor_create(session);
-	mpf_message->descriptor = mpf_rtp_local_descriptor_create(session);
+	if(session->rtp_mode == TRUE) {
+		mpf_message->descriptor = mpf_rtp_local_descriptor_create(session);
+	}
+	else {
+		mpf_message->descriptor = mpf_file_writer_descriptor_create(session);
+	}
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 }
 
@@ -207,7 +218,7 @@ static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			if(mpf_message->termination) {
 				mpf_suite_session_t *session;
 				session = mpf_termination_object_get(mpf_message->termination);
-				if(session->termination2 == mpf_message->termination) {
+				if(session->termination2 == mpf_message->termination && session->rtp_mode == TRUE) {
 					apt_task_msg_t *msg;
 					mpf_message_t *request;
 					apt_task_t *consumer_task;
