@@ -29,8 +29,13 @@ APT_BEGIN_EXTERN_C
 /** Protocol version. */
 #define RTP_VERSION 2
 
+/** RTP header declaration */
 typedef struct rtp_header_t rtp_header_t;
-/** RTP header. */
+/** RTP extension header declaration */
+typedef struct rtp_extension_header_t rtp_extension_header_t;
+
+
+/** RTP header */
 struct rtp_header_t {
 #if (APR_IS_BIGENDIAN == 1)
 	/** protocol version */
@@ -68,8 +73,7 @@ struct rtp_header_t {
 	apr_uint32_t ssrc;
 };
 
-typedef struct rtp_extension_header_t rtp_extension_header_t;
-/** RTP extension header. */
+/** RTP extension header */
 struct rtp_extension_header_t
 {
 	/** profile */

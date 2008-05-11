@@ -35,8 +35,13 @@ typedef enum {
 	JB_DISCARD_TOO_EARLY,    /**< discarded write (frame is arrived too early, buffer is full) */
 } jb_result_t;
 
-/** Jitter buffer configuration */
+/** Jitter buffer configuration declaration */
 typedef struct mpf_jb_config_t mpf_jb_config_t;
+/** Opaque jitter buffer declaration */
+typedef struct mpf_jitter_buffer_t mpf_jitter_buffer_t;
+
+
+/** Jitter buffer configuration */
 struct mpf_jb_config_t {
 	/** Min playout delay in msec (used in case of adaptive jitter buffer) */
 	apr_size_t min_playout_delay;
@@ -48,8 +53,6 @@ struct mpf_jb_config_t {
 	apr_byte_t adaptive;
 };
 
-/** Opaque jitter buffer declaration */
-typedef struct mpf_jitter_buffer_t mpf_jitter_buffer_t;
 
 /** Create jitter buffer */
 mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_t *codec, apr_pool_t *pool);

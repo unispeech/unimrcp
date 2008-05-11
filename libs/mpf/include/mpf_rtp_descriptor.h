@@ -35,8 +35,15 @@ typedef enum {
 	RTP_MEDIA_DESCRIPTOR_REMOTE = 0x2  /**< remote media descriptor */
 } mpf_rtp_media_descriptor_e;
 
-/** RTP media (local/remote) descriptor */
+/** RTP media descriptor declaration */
 typedef struct mpf_rtp_media_descriptor_t mpf_rtp_media_descriptor_t;
+/** RTP stream descriptor declaration */
+typedef struct mpf_rtp_stream_descriptor_t mpf_rtp_stream_descriptor_t;
+/** RTP termination descriptor declaration */
+typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t;
+
+
+/** RTP media (local/remote) descriptor */
 struct mpf_rtp_media_descriptor_t {
 	/** IP address */
 	const char      *ip;
@@ -50,7 +57,6 @@ struct mpf_rtp_media_descriptor_t {
 };
 
 /** RTP stream descriptor */
-typedef struct mpf_rtp_stream_descriptor_t mpf_rtp_stream_descriptor_t;
 struct mpf_rtp_stream_descriptor_t {
 	/** Stream mode (send/receive) */
 	mpf_stream_mode_e          mode;
@@ -63,7 +69,6 @@ struct mpf_rtp_stream_descriptor_t {
 };
 
 /** RTP termination descriptor */
-typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t;
 struct mpf_rtp_termination_descriptor_t {
 	/** Audio stream descriptor */
 	mpf_rtp_stream_descriptor_t audio;

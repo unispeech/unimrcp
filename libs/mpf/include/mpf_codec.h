@@ -26,11 +26,12 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque codec virtual table declaration */
+/** Codec virtual table declaration */
 typedef struct mpf_codec_vtable_t mpf_codec_vtable_t;
+/** Codec declaration*/
+typedef struct mpf_codec_t mpf_codec_t;
 
 /** Codec */
-typedef struct mpf_codec_t mpf_codec_t;
 struct mpf_codec_t {
 	/** Codec manipulators (encode,decode,dissect) */
 	const mpf_codec_vtable_t     *vtable;

@@ -27,8 +27,10 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Base for media processing objects */
+/** MPF object declaration */
 typedef struct mpf_object_t mpf_object_t;
+
+/** Base for media processing objects */
 struct mpf_object_t {
 	/** Audio stream source */
 	mpf_audio_stream_t *source;

@@ -26,8 +26,13 @@
 
 APT_BEGIN_EXTERN_C
 
-/** RTP transmit statistics */
+/** RTP transmit statistics declaration */
 typedef struct rtp_tx_stat_t rtp_tx_stat_t;
+/** RTP receive statistics declaration */
+typedef struct rtp_rx_stat_t rtp_rx_stat_t;
+
+
+/** RTP transmit statistics */
 struct rtp_tx_stat_t {
 	/** number of RTP packets received */
 	apr_uint32_t    sent_packets;
@@ -36,7 +41,6 @@ struct rtp_tx_stat_t {
 };
 
 /** RTP receive statistics */
-typedef struct rtp_rx_stat_t rtp_rx_stat_t;
 struct rtp_rx_stat_t {
 	/** number of valid RTP packets received */
 	apr_uint32_t           received_packets;
@@ -60,6 +64,7 @@ struct rtp_rx_stat_t {
 	/** source id of received RTP stream */
 	apr_uint32_t           ssrc;
 };
+
 
 /** Reset RTP transmit statistics */
 static APR_INLINE void mpf_rtp_tx_stat_reset(rtp_tx_stat_t *tx_stat)

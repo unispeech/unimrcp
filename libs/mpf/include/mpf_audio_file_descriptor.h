@@ -33,8 +33,10 @@ APT_BEGIN_EXTERN_C
 /** FILE_WRITER is defined as STREAM_MODE_SEND */
 #define FILE_WRITER STREAM_MODE_SEND
 
-/** Audio file descriptor */
+/** Audio file descriptor declaration */
 typedef struct mpf_audio_file_descriptor_t mpf_audio_file_descriptor_t;
+
+/** Audio file descriptor */
 struct mpf_audio_file_descriptor_t {
 	/** Indicate what descriptor for (reader and/or write) */
 	mpf_stream_mode_e      mask;

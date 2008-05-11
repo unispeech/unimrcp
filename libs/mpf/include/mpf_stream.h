@@ -38,7 +38,6 @@ struct mpf_audio_stream_t {
 	const mpf_audio_stream_vtable_t *vtable;
 	/** Back pointer */
 	mpf_termination_t               *termination;
-
 	/** Stream mode (send/receive) */
 	mpf_stream_mode_e                mode;
 	/** Receive codec */
@@ -49,7 +48,9 @@ struct mpf_audio_stream_t {
 
 /** Video stream */
 struct mpf_video_stream_t {
+	/** Back pointer */
 	mpf_termination_t               *termination;
+	/** Stream mode (send/receive) */
 	mpf_stream_mode_e                mode;
 };
 

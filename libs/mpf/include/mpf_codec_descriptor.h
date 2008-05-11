@@ -33,8 +33,17 @@ APT_BEGIN_EXTERN_C
 /** Bits per sample for linear pcm */
 #define BITS_PER_SAMPLE 16
 
-/** Codec descriptor */
+/** Codec descriptor declaration */
 typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
+/** Codec list declaration */
+typedef struct mpf_codec_list_t mpf_codec_list_t;
+/** Codec frame declaration */
+typedef struct mpf_codec_frame_t mpf_codec_frame_t;
+/** Codec attributes declaration */
+typedef struct mpf_codec_attribs_t mpf_codec_attribs_t;
+
+
+/** Codec descriptor */
 struct mpf_codec_descriptor_t {
 	/** Payload type used in RTP packet */
 	apr_byte_t   payload_type;
@@ -49,7 +58,6 @@ struct mpf_codec_descriptor_t {
 };
 
 /** List of codec descriptors */
-typedef struct mpf_codec_list_t mpf_codec_list_t;
 struct mpf_codec_list_t {
 	/** Dynamically allocated array of codec descriptors */
 	mpf_codec_descriptor_t *codecs;
@@ -60,7 +68,6 @@ struct mpf_codec_list_t {
 };
 
 /** Codec frame */
-typedef struct mpf_codec_frame_t mpf_codec_frame_t;
 struct mpf_codec_frame_t {
 	/** Raw buffer, which may contain encoded or decoded data */
 	void      *buffer;
@@ -69,11 +76,11 @@ struct mpf_codec_frame_t {
 };
 
 /** Codec attributes */
-typedef struct mpf_codec_attribs_t mpf_codec_attribs_t;
 struct mpf_codec_attribs_t {
 	/** Bits per sample */
 	apr_byte_t   bits_per_samples;
 };
+
 
 /** Initialize codec descriptor */
 static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descriptor)

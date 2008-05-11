@@ -34,8 +34,13 @@ typedef enum {
 	MEDIA_FRAME_TYPE_EVENT = 0x4  /**< named event frame (RFC2833) */
 } mpf_frame_type_e;
 
-/** Named event (RFC2833, out-of-band DTMF) */
+/** Named event declaration */
 typedef struct mpf_named_event_frame_t mpf_named_event_frame_t;
+/** Media frame declaration */
+typedef struct mpf_frame_t mpf_frame_t;
+
+
+/** Named event (RFC2833, out-of-band DTMF) */
 struct mpf_named_event_frame_t {
 	/** event (DTMF, tone) identifier */
 	apr_uint32_t event_id: 8;
@@ -59,7 +64,6 @@ struct mpf_named_event_frame_t {
 };
 
 /** Media frame */
-typedef struct mpf_frame_t mpf_frame_t;
 struct mpf_frame_t {
 	/** frame type (audio/video/named-event)*/
 	mpf_frame_type_e        type;

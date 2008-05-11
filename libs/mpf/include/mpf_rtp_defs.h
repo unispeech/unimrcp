@@ -41,9 +41,13 @@ APT_BEGIN_EXTERN_C
 /** Deviation threshold is used to trigger drift in timestamps */
 #define DEVIATION_THRESHOLD 4000
 
+/** RTP receive history declaration */
 typedef struct rtp_rx_history_t rtp_rx_history_t;
+/** RTP receive periodic history declaration */
 typedef struct rtp_rx_periodic_history_t rtp_rx_periodic_history_t;
+/** RTP receiver declaration */
 typedef struct rtp_receiver_t rtp_receiver_t;
+/** RTP transmitter declaration */
 typedef struct rtp_transmitter_t rtp_transmitter_t;
 
 /** History of RTP receive */
@@ -108,18 +112,6 @@ struct rtp_receiver_t {
 	rtp_rx_periodic_history_t periodic_history;
 };
 
-/** Initialize RTP receiver */
-static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
-{
-	receiver->event_pt = 0;
-
-	receiver->jb = NULL;
-
-	mpf_rtp_rx_stat_reset(&receiver->stat);
-	mpf_rtp_rx_history_reset(&receiver->history);
-	mpf_rtp_rx_periodic_history_reset(&receiver->periodic_history);
-}
-
 
 /** RTP transmitter */
 struct rtp_transmitter_t {
@@ -152,6 +144,19 @@ struct rtp_transmitter_t {
 	/** RTP transmit statistics to report */
 	rtp_tx_stat_t   stat;
 };
+
+
+/** Initialize RTP receiver */
+static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
+{
+	receiver->event_pt = 0;
+
+	receiver->jb = NULL;
+
+	mpf_rtp_rx_stat_reset(&receiver->stat);
+	mpf_rtp_rx_history_reset(&receiver->history);
+	mpf_rtp_rx_periodic_history_reset(&receiver->periodic_history);
+}
 
 /** Initialize RTP transmitter */
 static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
