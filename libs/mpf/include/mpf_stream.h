@@ -29,16 +29,21 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque stream virtual table declaration */
+/** Opaque audio stream virtual table declaration */
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
 
 /** Audio stream */
 struct mpf_audio_stream_t {
+	/** Table of virtual methods */
 	const mpf_audio_stream_vtable_t *vtable;
+	/** Back pointer */
 	mpf_termination_t               *termination;
 
+	/** Stream mode (send/receive) */
 	mpf_stream_mode_e                mode;
+	/** Receive codec */
 	mpf_codec_t                     *rx_codec;
+	/** Transmit codec */
 	mpf_codec_t                     *tx_codec;
 };
 

@@ -31,15 +31,24 @@ typedef apt_bool_t (*mpf_termination_event_handler_f)(mpf_termination_t *termina
 
 /** MPF Termination */
 struct mpf_termination_t {
+	/** Pool to allocate memory from */
 	apr_pool_t                     *pool;
+	/** External object */
 	void                           *obj;
+	/** Object to send events to */
 	void                           *event_handler_obj;
+	/** Event handler */
 	mpf_termination_event_handler_f event_handler;
+	/** Codec manager */
 	const mpf_codec_manager_t      *codec_manager;
+	/** Table of virtual methods */
 	const mpf_termination_vtable_t *vtable;
+	/** Slot in context */
 	apr_size_t                      slot;
 
+	/** Audio stream */
 	mpf_audio_stream_t             *audio_stream;
+	/** Video stream */
 	mpf_video_stream_t             *video_stream;
 };
 

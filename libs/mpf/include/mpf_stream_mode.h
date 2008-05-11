@@ -27,11 +27,11 @@
 APT_BEGIN_EXTERN_C
 
 typedef enum {
-	STREAM_MODE_NONE    = 0x0,
-	STREAM_MODE_SEND    = 0x1,
-	STREAM_MODE_RECEIVE = 0x2,
+	STREAM_MODE_NONE    = 0x0, /**< none */
+	STREAM_MODE_SEND    = 0x1, /**< send */
+	STREAM_MODE_RECEIVE = 0x2, /**< receive */
 
-	STREAM_MODE_SEND_RECEIVE = STREAM_MODE_SEND | STREAM_MODE_RECEIVE
+	STREAM_MODE_SEND_RECEIVE = STREAM_MODE_SEND | STREAM_MODE_RECEIVE /**< send and receive */
 } mpf_stream_mode_e; 
 
 

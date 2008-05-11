@@ -28,38 +28,51 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Enumeration of RTP media descriptor types */
 typedef enum {
-	RTP_MEDIA_DESCRIPTOR_NONE   = 0x0,
-	RTP_MEDIA_DESCRIPTOR_LOCAL  = 0x1,
-	RTP_MEDIA_DESCRIPTOR_REMOTE = 0x2
+	RTP_MEDIA_DESCRIPTOR_NONE   = 0x0, /**< no media descriptor */
+	RTP_MEDIA_DESCRIPTOR_LOCAL  = 0x1, /**< local media descriptor */
+	RTP_MEDIA_DESCRIPTOR_REMOTE = 0x2  /**< remote media descriptor */
 } mpf_rtp_media_descriptor_e;
 
-typedef struct mpf_rtp_media_descriptor_t mpf_rtp_media_descriptor_t;
 /** RTP media (local/remote) descriptor */
+typedef struct mpf_rtp_media_descriptor_t mpf_rtp_media_descriptor_t;
 struct mpf_rtp_media_descriptor_t {
+	/** IP address */
 	const char      *ip;
+	/** network port */
 	apr_port_t       port;
 
+	/** packetization time */
 	apr_uint16_t     ptime;
+	/** codec list */
 	mpf_codec_list_t codec_list;
 };
 
-typedef struct mpf_rtp_stream_descriptor_t mpf_rtp_stream_descriptor_t;
 /** RTP stream descriptor */
+typedef struct mpf_rtp_stream_descriptor_t mpf_rtp_stream_descriptor_t;
 struct mpf_rtp_stream_descriptor_t {
+	/** Stream mode (send/receive) */
 	mpf_stream_mode_e          mode;
+	/** Stream mask (local/remote) */
 	mpf_rtp_media_descriptor_e mask;
+	/** Local media descriptor */
 	mpf_rtp_media_descriptor_t local;
+	/** Remote media descriptor */
 	mpf_rtp_media_descriptor_t remote;
 };
 
-typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t;
 /** RTP termination descriptor */
+typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t;
 struct mpf_rtp_termination_descriptor_t {
+	/** Audio stream descriptor */
 	mpf_rtp_stream_descriptor_t audio;
+	/** Video stream descriptor */
 	mpf_rtp_stream_descriptor_t video;
 };
 
+
+/** Initialize media descriptor */
 static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
 {
 	media->ip = NULL;
@@ -68,6 +81,7 @@ static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t 
 	mpf_codec_list_reset(&media->codec_list);
 }
 
+/** Initialize stream descriptor */
 static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_t *stream)
 {
 	stream->mode = STREAM_MODE_NONE;
