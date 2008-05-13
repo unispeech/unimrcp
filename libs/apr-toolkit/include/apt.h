@@ -56,10 +56,4 @@
 /** Boolean value */
 typedef int apt_bool_t;
 
-/** Compare two strings. Return TRUE if equal, FALSE otherwise */
-static APR_INLINE apt_bool_t apt_str_compare(const char *str1, const char *str2)
-{
-	return (strcasecmp(str1,str2) == 0) ? TRUE : FALSE;
-}
-
 #endif /*__APT_H__*/

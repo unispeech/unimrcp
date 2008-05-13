@@ -28,7 +28,7 @@ APT_DECLARE(apt_test_suite_t*) apt_test_suite_create(apr_pool_t *pool, const cha
 {
 	apt_test_suite_t *suite = apr_palloc(pool,sizeof(apt_test_suite_t));
 	suite->pool = pool;
-	suite->name = name;
+	apt_string_assign(&suite->name,name,pool);
 	suite->obj = obj;
 	suite->tester = tester;
 	return suite;
@@ -94,9 +94,11 @@ APT_DECLARE(apt_bool_t) apt_test_framework_run(apt_test_framework_t *framework, 
 	else {
 		/* walk through the list of test suites find appropriate one and run it */
 		apt_bool_t found = FALSE;
+		apt_str_t name;
+		apt_string_set(&name,argv[1]);
 		while(elem) {
 			suite = apt_list_elem_object_get(elem);
-			if(suite && apt_str_compare(suite->name,argv[1]) == TRUE) {
+			if(suite && apt_string_compare(&suite->name,&name) == TRUE) {
 				found = TRUE;
 				break;
 			}

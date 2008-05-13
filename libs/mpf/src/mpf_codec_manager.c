@@ -53,13 +53,13 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *co
 		return FALSE;
 	}
 
-	if(!codec || !codec->def_descriptor || !codec->def_descriptor->name) {
+	if(!codec || !codec->def_descriptor || !codec->def_descriptor->name.buf) {
 		return FALSE;
 	}
 
 	apt_log(APT_PRIO_INFO,"Register Codec %d [%s/%hu/%d]",
 					codec->def_descriptor->payload_type,
-					codec->def_descriptor->name,
+					codec->def_descriptor->name.buf,
 					codec->def_descriptor->sampling_rate,
 					codec->def_descriptor->channel_count);
 
@@ -88,10 +88,8 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 			}
 		}
 		else {
-			if(descriptor->name) {
-				if(apt_str_compare(codec->def_descriptor->name,descriptor->name) == TRUE) {
-					break;
-				}
+			if(apt_string_compare(&codec->def_descriptor->name,&descriptor->name) == TRUE) {
+				break;
 			}
 		}
 	}

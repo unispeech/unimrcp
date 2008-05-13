@@ -17,6 +17,12 @@
 #include "mpf_codec.h"
 #include "g711/g711.h"
 
+#define G711u_CODEC_NAME        "PCMU"
+#define G711u_CODEC_NAME_LENGTH (sizeof(G711u_CODEC_NAME)-1)
+
+#define G711a_CODEC_NAME        "PCMA"
+#define G711a_CODEC_NAME_LENGTH (sizeof(G711a_CODEC_NAME)-1)
+
 static apt_bool_t g711_open(mpf_codec_t *codec)
 {
 	return TRUE;
@@ -117,7 +123,8 @@ static mpf_codec_vtable_t g711a_vtable = {
 
 static mpf_codec_descriptor_t g711u_descriptor = {
 	0,
-	"PCMU",
+	G711u_CODEC_NAME,
+	G711u_CODEC_NAME_LENGTH,
 	8000,
 	1,
 	NULL
@@ -125,7 +132,8 @@ static mpf_codec_descriptor_t g711u_descriptor = {
 
 static mpf_codec_descriptor_t g711a_descriptor = {
 	8,
-	"PCMA",
+	G711a_CODEC_NAME,
+	G711a_CODEC_NAME_LENGTH,
 	8000,
 	1,
 	NULL

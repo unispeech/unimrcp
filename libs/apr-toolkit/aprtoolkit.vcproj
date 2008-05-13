@@ -146,6 +146,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_string.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_task.h"
 				>
 			</File>

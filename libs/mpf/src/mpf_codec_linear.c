@@ -16,11 +16,15 @@
 
 #include "mpf_codec.h"
 
+#define L16_CODEC_NAME        "L16"
+#define L16_CODEC_NAME_LENGTH (sizeof(L16_CODEC_NAME)-1)
+
 static mpf_codec_vtable_t l16_vtable;
 
 static mpf_codec_descriptor_t l16_descriptor = {
 	11,
-	"L16",
+	L16_CODEC_NAME,
+	L16_CODEC_NAME_LENGTH,
 	8000,
 	1,
 	NULL

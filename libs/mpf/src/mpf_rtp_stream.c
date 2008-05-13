@@ -88,7 +88,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		/* update local media */
 		mpf_rtp_media_descriptor_t *local_media = &descriptor->local;
 		if(!rtp_stream->local_media || 
-			apt_str_compare(rtp_stream->local_media->ip,local_media->ip) == FALSE ||
+			apt_string_compare(&rtp_stream->local_media->ip,&local_media->ip) == FALSE ||
 			rtp_stream->local_media->port != local_media->port) {
 
 			if(mpf_rtp_socket_create(rtp_stream,local_media) == FALSE) {
@@ -111,10 +111,10 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		/* update remote media */
 		mpf_rtp_media_descriptor_t *remote_media = &descriptor->remote;
 		if(!rtp_stream->remote_media || 
-			apt_str_compare(rtp_stream->remote_media->ip,remote_media->ip) == FALSE ||
+			apt_string_compare(&rtp_stream->remote_media->ip,&remote_media->ip) == FALSE ||
 			rtp_stream->remote_media->port != remote_media->port) {
 
-			apr_sockaddr_info_get(&rtp_stream->remote_sockaddr,remote_media->ip,APR_INET,remote_media->port,0,rtp_stream->pool);
+			apr_sockaddr_info_get(&rtp_stream->remote_sockaddr,remote_media->ip.buf,APR_INET,remote_media->port,0,rtp_stream->pool);
 			if(!rtp_stream->remote_sockaddr) {
 				status = FALSE;
 			}
@@ -532,7 +532,7 @@ static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_
 		stream->socket = NULL;
 	}
 	
-	apr_sockaddr_info_get(&stream->local_sockaddr,local_media->ip,APR_INET,local_media->port,0,stream->pool);
+	apr_sockaddr_info_get(&stream->local_sockaddr,local_media->ip.buf,APR_INET,local_media->port,0,stream->pool);
 	if(!stream->local_sockaddr) {
 		return FALSE;
 	}

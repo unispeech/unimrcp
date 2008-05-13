@@ -22,7 +22,7 @@
  * @brief Test Suite and Framework Definitions
  */ 
 
-#include "apt.h"
+#include "apt_string.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -37,8 +37,8 @@ typedef apt_bool_t (*apt_test_f)(apt_test_suite_t *suite, int argc, const char *
 struct apt_test_suite_t {
 	/** Memory pool to allocate memory from */
 	apr_pool_t *pool;
-	/** Test suite unique name */
-	const char *name;
+	/** Unique name of the test suite */
+	apt_str_t   name;
 	/** External object associated with the test suite */
 	void       *obj;
 	/** Test function to execute */

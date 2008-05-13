@@ -22,6 +22,7 @@
  * @brief MPF Codec Descriptor
  */ 
 
+#include "apt_string.h"
 #include "mpf.h"
 
 APT_BEGIN_EXTERN_C
@@ -48,7 +49,7 @@ struct mpf_codec_descriptor_t {
 	/** Payload type used in RTP packet */
 	apr_byte_t   payload_type;
 	/** Codec name */
-	const char  *name;
+	apt_str_t    name;
 	/** Sampling rate */
 	apr_uint16_t sampling_rate;
 	/** Channel count */
@@ -86,7 +87,7 @@ struct mpf_codec_attribs_t {
 static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descriptor)
 {
 	descriptor->payload_type = 0;
-	descriptor->name = NULL;
+	apt_string_reset(&descriptor->name);
 	descriptor->sampling_rate = 0;
 	descriptor->channel_count = 0;
 	descriptor->format = NULL;
@@ -121,9 +122,8 @@ static APR_INLINE apr_size_t mpf_codec_descriptor_match(const mpf_codec_descript
 		}
 	}
 	else {
-		if(descriptor1->name && descriptor2->name) {
-			if(apt_str_compare(descriptor1->name,descriptor2->name) == TRUE &&
-				descriptor1->sampling_rate == descriptor2->sampling_rate && 
+		if(apt_string_compare(&descriptor1->name,&descriptor2->name) == TRUE) {
+			if(descriptor1->sampling_rate == descriptor2->sampling_rate && 
 				descriptor1->channel_count == descriptor2->channel_count) {
 				match = TRUE;
 			}

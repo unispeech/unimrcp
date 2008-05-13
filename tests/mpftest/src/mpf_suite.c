@@ -327,7 +327,7 @@ static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_
 
 	codec_descriptor = &descriptor->codec_descriptor;
 	codec_descriptor->payload_type = 11;
-	codec_descriptor->name = "L16";
+	apt_string_set(&codec_descriptor->name,"L16");
 	codec_descriptor->sampling_rate = 8000;
 	codec_descriptor->channel_count = 1;
 	return descriptor;
@@ -345,7 +345,7 @@ static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_
 
 	codec_descriptor = &descriptor->codec_descriptor;
 	codec_descriptor->payload_type = 11;
-	codec_descriptor->name = "L16";
+	apt_string_set(&codec_descriptor->name,"L16");
 	codec_descriptor->sampling_rate = 8000;
 	codec_descriptor->channel_count = 1;
 	return descriptor;
@@ -358,7 +358,7 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_se
 	mpf_rtp_stream_descriptor_init(descriptor);
 	descriptor->mode = STREAM_MODE_NONE;
 	descriptor->mask = RTP_MEDIA_DESCRIPTOR_LOCAL;
-	descriptor->local.ip = "127.0.0.1";
+	apt_string_set(&descriptor->local.ip,"127.0.0.1");
 	descriptor->local.port = 5000;
 	return descriptor;
 }
@@ -372,7 +372,7 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_s
 	mpf_rtp_stream_descriptor_init(descriptor);
 	descriptor->mode = STREAM_MODE_SEND_RECEIVE;
 	descriptor->mask = RTP_MEDIA_DESCRIPTOR_REMOTE;
-	descriptor->remote.ip = "127.0.0.1";
+	apt_string_set(&descriptor->remote.ip,"127.0.0.1");
 	descriptor->remote.port = 5002;
 	codec_list = &descriptor->remote.codec_list;
 	mpf_codec_list_init(codec_list,2,session->pool);
@@ -383,7 +383,7 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_s
 	codec_descriptor = mpf_codec_list_add(codec_list);
 	if(codec_descriptor) {
 		codec_descriptor->payload_type = 96;
-		codec_descriptor->name = "PCMU";
+		apt_string_set(&codec_descriptor->name,"PCMU");
 		codec_descriptor->sampling_rate = 16000;
 		codec_descriptor->channel_count = 1;
 	}

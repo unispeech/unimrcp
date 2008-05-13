@@ -46,7 +46,7 @@ typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t
 /** RTP media (local/remote) descriptor */
 struct mpf_rtp_media_descriptor_t {
 	/** IP address */
-	const char      *ip;
+	apt_str_t        ip;
 	/** network port */
 	apr_port_t       port;
 
@@ -80,7 +80,7 @@ struct mpf_rtp_termination_descriptor_t {
 /** Initialize media descriptor */
 static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
 {
-	media->ip = NULL;
+	apt_string_reset(&media->ip);
 	media->port = 0;
 	media->ptime = 0;
 	mpf_codec_list_reset(&media->codec_list);
