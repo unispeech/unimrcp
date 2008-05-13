@@ -165,6 +165,10 @@
 				RelativePath=".\include\apt_test_suite.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\apt_text_stream.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
@@ -196,6 +200,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_test_suite.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_text_stream.c"
 				>
 			</File>
 		</Filter>
