@@ -123,8 +123,7 @@ static mpf_codec_vtable_t g711a_vtable = {
 
 static mpf_codec_descriptor_t g711u_descriptor = {
 	0,
-	G711u_CODEC_NAME,
-	G711u_CODEC_NAME_LENGTH,
+	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},
 	8000,
 	1,
 	NULL
@@ -132,8 +131,7 @@ static mpf_codec_descriptor_t g711u_descriptor = {
 
 static mpf_codec_descriptor_t g711a_descriptor = {
 	8,
-	G711a_CODEC_NAME,
-	G711a_CODEC_NAME_LENGTH,
+	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},
 	8000,
 	1,
 	NULL
