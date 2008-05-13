@@ -68,6 +68,7 @@ AC_CONFIG_FILES([
   tests/Makefile
   tests/apttest/Makefile
   tests/mpftest/Makefile
+  tests/strtablegen/Makefile
 ])
 
 AC_OUTPUT

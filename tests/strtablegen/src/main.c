@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "apt_string_table.h"
 #include "apt_text_stream.h"
 

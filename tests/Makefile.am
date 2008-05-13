@@ -1,3 +1,3 @@
 MAINTAINERCLEANFILES   = Makefile.in
 
-SUBDIRS                = apttest mpftest
+SUBDIRS                = apttest mpftest strtablegen
