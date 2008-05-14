@@ -41,18 +41,18 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *text_stream, apt_s
 }
 
 /* Navigate through the fields of the line */
-APT_DECLARE(apt_bool_t) apt_text_field_read(apt_str_t *line, char separator, apt_bool_t skip_spaces, apt_str_t *field)
+APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *text_stream, char separator, apt_bool_t skip_spaces, apt_str_t *field)
 {
-	const char *pos = line->buf;
+	char *pos = text_stream->pos;
 	if(skip_spaces == TRUE) {
-		while(pos < line->buf + line->length && *pos == APT_TOKEN_SP) {
+		while(pos < text_stream->text.buf + text_stream->text.length && *pos == APT_TOKEN_SP) {
 			pos++;
 		}
 	}
 
 	field->buf = pos;
 	field->length = 0;
-	while(pos < line->buf + line->length)	{
+	while(pos < text_stream->text.buf + text_stream->text.length) {
 		if(*pos == separator) {
 			field->length = pos - field->buf;
 			pos++;
@@ -60,7 +60,51 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_str_t *line, char separator, apt
 		}
 		pos++;
 	}
-	line->length -= pos - line->buf;
-	line->buf = pos;
+	text_stream->pos = pos;
+	return TRUE;
+}
+
+
+/** Parse name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_value_parse(apt_text_stream_t *text_stream, apt_name_value_t *pair)
+{
+	apt_text_field_read(text_stream,':',TRUE,&pair->name);
+	while(text_stream->pos < text_stream->text.buf + text_stream->text.length && *text_stream->pos == APT_TOKEN_SP) {
+		text_stream->pos++;
+	}
+	pair->value.buf = text_stream->pos;
+	pair->value.length = text_stream->text.length - (text_stream->pos - text_stream->text.buf);
+	return TRUE;
+}
+
+/** Generate name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_value_generate(apt_text_stream_t *text_stream, const apt_name_value_t *pair)
+{
+	return apt_name_and_value_generate(text_stream,&pair->name,&pair->value);
+}
+
+/** Generate name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_and_value_generate(apt_text_stream_t *text_stream, const apt_str_t *name, const apt_str_t *value)
+{
+	char *pos = text_stream->pos;
+	memcpy(pos,name->buf,name->length);
+	pos += name->length;
+	*pos = ':';
+	pos++;
+	memcpy(pos,value->buf,value->length);
+	pos += value->length;
+	text_stream->pos = pos;
+	return TRUE;
+}
+
+/** Generate only the name part ("name:") of the name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_value_name_generate(apt_text_stream_t *text_stream, const apt_str_t *name)
+{
+	char *pos = text_stream->pos;
+	memcpy(pos,name->buf,name->length);
+	pos += name->length;
+	*pos = ':';
+	pos++;
+	text_stream->pos = pos;
 	return TRUE;
 }

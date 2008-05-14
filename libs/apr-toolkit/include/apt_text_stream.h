@@ -36,6 +36,7 @@ APT_BEGIN_EXTERN_C
 #define APT_TOKEN_LF 0x0A
 
 typedef struct apt_text_stream_t apt_text_stream_t;
+typedef struct apt_name_value_t apt_name_value_t;
 
 /** Text stream is used for message parsing and generation */
 struct apt_text_stream_t {
@@ -43,6 +44,12 @@ struct apt_text_stream_t {
 	apt_str_t text;
 	/** Current position in the buffer */
 	char     *pos;
+};
+
+/* Generic name-value pair definition */
+struct apt_name_value_t {
+	apt_str_t name;
+	apt_str_t value;
 };
 
 /** 
@@ -59,7 +66,31 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *text_stream, apt_s
  * @param skip_spaces whether to skip spaces or not
  * @param field the returned field
  */
-APT_DECLARE(apt_bool_t) apt_text_field_read(apt_str_t *line, char separator, apt_bool_t skip_spaces, apt_str_t *field);
+APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *text_stream, char separator, apt_bool_t skip_spaces, apt_str_t *field);
+
+
+
+/** Parse name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_value_parse(apt_text_stream_t *text_stream, apt_name_value_t *pair);
+
+/** Generate name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_value_generate(apt_text_stream_t *text_stream, const apt_name_value_t *pair);
+
+/** Generate name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_and_value_generate(apt_text_stream_t *text_stream, const apt_str_t *name, const apt_str_t *value);
+
+/** Generate only the name part ("name":) of the name-value pair */
+APT_DECLARE(apt_bool_t) apt_name_value_name_generate(apt_text_stream_t *text_stream, const apt_str_t *name);
+
+
+/** Insert end of the line symbol(s) */
+static APR_INLINE void apt_text_eol_insert(apt_text_stream_t *text_stream)
+{
+	*text_stream->pos = APT_TOKEN_CR;
+	text_stream->pos++;
+	*text_stream->pos = APT_TOKEN_LF;
+	text_stream->pos++;
+}
 
 
 APT_END_EXTERN_C
