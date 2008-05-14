@@ -8,6 +8,6 @@ INCLUDES                 = -I$(top_srcdir)/libs/mrcp/include \
 noinst_LTLIBRARIES       = libmrcp.la
 
 include_HEADERS          = include/mrcp.h \
-                           parser/include/mrcp_parser.h
+                           parser/include/mrcp_header_accessor.h
 
-libmrcp_la_SOURCES       = parser/src/mrcp_parser.c
+libmrcp_la_SOURCES       = parser/src/mrcp_header_accessor.c

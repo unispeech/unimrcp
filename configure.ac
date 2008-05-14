@@ -65,6 +65,7 @@ AC_CONFIG_FILES([
   libs/Makefile
   libs/apr-toolkit/Makefile
   libs/mpf/Makefile
+  libs/mrcp/Makefile
   tests/Makefile
   tests/apttest/Makefile
   tests/mpftest/Makefile
