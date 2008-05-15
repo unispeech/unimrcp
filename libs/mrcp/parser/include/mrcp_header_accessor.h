@@ -37,16 +37,16 @@ typedef struct mrcp_header_vtable_t mrcp_header_vtable_t;
 /** MRCP header accessor interface */
 struct mrcp_header_vtable_t {
 	/** Allocate actual header data */
-	void* (*allocator)(mrcp_header_accessor_t *header, apr_pool_t *pool);
+	void* (*allocate)(mrcp_header_accessor_t *accessor, apr_pool_t *pool);
 	/** Destroy header data */
-	void (*destructor)(mrcp_header_accessor_t *header);
+	void (*destroy)(mrcp_header_accessor_t *accessor);
 
 	/** Parse header field */
-	apt_bool_t (*field_parser)(mrcp_header_accessor_t *header, apr_size_t id, const apt_str_t *value, apr_pool_t *pool);
+	apt_bool_t (*parse_field)(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value, apr_pool_t *pool);
 	/** Generate header field */
-	apt_bool_t (*field_generator)(mrcp_header_accessor_t *header, apr_size_t id, apt_str_t *value);
+	apt_bool_t (*generate_field)(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value);
 	/** Duplicate header field */
-	apt_bool_t (*field_duplicator)(mrcp_header_accessor_t *header, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool);
+	apt_bool_t (*duplicate_field)(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool);
 
 	/** Table of fields  */
 	const apt_str_table_item_t *field_table;
@@ -58,11 +58,11 @@ struct mrcp_header_vtable_t {
 /** Initialize header vtable */
 static APR_INLINE void mrcp_header_vtable_init(mrcp_header_vtable_t *vtable)
 {
-	vtable->allocator = NULL;
-	vtable->destructor = NULL;
-	vtable->field_parser = NULL;
-	vtable->field_generator = NULL;
-	vtable->field_duplicator = NULL;
+	vtable->allocate = NULL;
+	vtable->destroy = NULL;
+	vtable->parse_field = NULL;
+	vtable->generate_field = NULL;
+	vtable->duplicate_field = NULL;
 	vtable->field_table = NULL;
 	vtable->field_count = 0;
 }
@@ -70,9 +70,9 @@ static APR_INLINE void mrcp_header_vtable_init(mrcp_header_vtable_t *vtable)
 /** Validate header vtable */
 static APR_INLINE apt_bool_t mrcp_header_vtable_validate(const mrcp_header_vtable_t *vtable)
 {
-	return (vtable->allocator && vtable->destructor && 
-		vtable->field_parser && vtable->field_generator &&
-		vtable->field_duplicator && vtable->field_table && 
+	return (vtable->allocate && vtable->destroy && 
+		vtable->parse_field && vtable->generate_field &&
+		vtable->duplicate_field && vtable->field_table && 
 		vtable->field_count) ?	TRUE : FALSE;
 }
 
@@ -90,47 +90,47 @@ struct mrcp_header_accessor_t {
 };
 
 /** Initialize header accessor */
-static APR_INLINE void mrcp_header_accessor_init(mrcp_header_accessor_t *header)
+static APR_INLINE void mrcp_header_accessor_init(mrcp_header_accessor_t *accessor)
 {
-	header->data = NULL;
-	header->property_set = 0;
-	header->vtable = NULL;
+	accessor->data = NULL;
+	accessor->property_set = 0;
+	accessor->vtable = NULL;
 }
 
 
 /** Allocate header data */
-static APR_INLINE void* mrcp_header_allocate(mrcp_header_accessor_t *header, apr_pool_t *pool)
+static APR_INLINE void* mrcp_header_allocate(mrcp_header_accessor_t *accessor, apr_pool_t *pool)
 {
-	if(header->data) {
-		return header->data;
+	if(accessor->data) {
+		return accessor->data;
 	}
-	if(!header->vtable || !header->vtable->allocator) {
+	if(!accessor->vtable || !accessor->vtable->allocate) {
 		return NULL;
 	}
-	return header->vtable->allocator(header,pool);
+	return accessor->vtable->allocate(accessor,pool);
 }
 
 /** Destroy header data */
-static APR_INLINE void mrcp_header_destroy(mrcp_header_accessor_t *header)
+static APR_INLINE void mrcp_header_destroy(mrcp_header_accessor_t *accessor)
 {
-	if(!header->vtable || !header->vtable->destructor) {
+	if(!accessor->vtable || !accessor->vtable->destroy) {
 		return;
 	}
-	header->vtable->destructor(header);
+	accessor->vtable->destroy(accessor);
 }
 
 
 /** Parse header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *header, apt_name_value_t *name_value, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, apt_str_t *name, apt_text_stream_t *value, apr_pool_t *pool);
 
 /** Generate header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *header, apt_text_stream_t *text_stream);
+MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, apt_text_stream_t *text_stream);
 
 /** Set header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *header, const mrcp_header_accessor_t *src, mrcp_header_property_t mask, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, mrcp_header_property_t mask, apr_pool_t *pool);
 
 /** Inherit header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_inherit(mrcp_header_accessor_t *header, const mrcp_header_accessor_t *parent, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_inherit(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *parent, apr_pool_t *pool);
 
 
 
