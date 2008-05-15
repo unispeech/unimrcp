@@ -22,6 +22,8 @@
  * @brief Generic String Table
  */ 
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "apt_string.h"
 
 APT_BEGIN_EXTERN_C
