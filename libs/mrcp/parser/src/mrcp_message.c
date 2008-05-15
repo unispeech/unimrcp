@@ -35,9 +35,9 @@
 
 /** String table of MRCP request-states (mrcp_request_state_t) */
 static const apt_str_table_item_t mrcp_request_state_string_table[] = {
-	{"COMPLETE",    8,0},
-	{"IN-PROGRESS",11,0},
-	{"PENDING",     7,0}
+	{{"COMPLETE",    8},0},
+	{{"IN-PROGRESS",11},0},
+	{{"PENDING",     7},0}
 };
 
 

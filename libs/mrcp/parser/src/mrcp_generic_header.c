@@ -19,17 +19,17 @@
 
 /** String table of mrcp generic-header fields (mrcp_generic_header_id) */
 static const apt_str_table_item_t generic_header_string_table[] = {
-	{"Active-Request-Id-List",22,2},
-	{"Proxy-Sync-Id",         13,0},
-	{"Accept-Charset",        14,3},
-	{"Content-Type",          12,9},
-	{"Content-Id",            10,8},
-	{"Content-Base",          12,8},
-	{"Content-Encoding",      16,8},
-	{"Content-Location",      16,9},
-	{"Content-Length",        14,9},
-	{"Cache-Control",         13,1},
-	{"Logging-Tag",           11,0}, 
+	{{"Active-Request-Id-List",22},2},
+	{{"Proxy-Sync-Id",         13},0},
+	{{"Accept-Charset",        14},3},
+	{{"Content-Type",          12},9},
+	{{"Content-Id",            10},8},
+	{{"Content-Base",          12},8},
+	{{"Content-Encoding",      16},8},
+	{{"Content-Location",      16},9},
+	{{"Content-Length",        14},9},
+	{{"Cache-Control",         13},1},
+	{{"Logging-Tag",           11},0}, 
 };
 
 
