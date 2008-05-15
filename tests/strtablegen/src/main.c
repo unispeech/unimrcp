@@ -86,7 +86,7 @@ static apt_bool_t string_table_write(const apt_str_table_item_t table[], apr_siz
 	const apt_str_table_item_t *item;
 	for(i=0; i<count; i++) {
 		item = &table[i];
-		fprintf(file,"{\"%s\",%"APR_SIZE_T_FMT",%"APR_SIZE_T_FMT"},\r\n",
+		fprintf(file,"{{\"%s\",%"APR_SIZE_T_FMT"},%"APR_SIZE_T_FMT"},\r\n",
 			item->value.buf, item->value.length, item->key);
 	}
 	return TRUE;

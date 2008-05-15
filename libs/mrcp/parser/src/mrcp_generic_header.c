@@ -29,7 +29,7 @@ static const apt_str_table_item_t generic_header_string_table[] = {
 	{{"Content-Location",      16},9},
 	{{"Content-Length",        14},9},
 	{{"Cache-Control",         13},1},
-	{{"Logging-Tag",           11},0}, 
+	{{"Logging-Tag",           11},0}
 };
 
 
