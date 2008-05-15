@@ -30,7 +30,7 @@ typedef struct apt_str_t apt_str_t;
 /** String representation */
 struct apt_str_t {
 	/** String buffer (might be not NULL terminated) */
-	const char *buf;
+	char *buf;
 	/** Length of the string (not counting terminating NULL character if exists) */
 	apr_size_t  length;
 }; 
@@ -49,7 +49,7 @@ static APR_INLINE void apt_string_reset(apt_str_t *str)
  */
 static APR_INLINE void apt_string_set(apt_str_t *str, const char *src)
 {
-	str->buf = src;
+	str->buf = (char*)src;
 	str->length = src ? strlen(src) : 0;
 }
 
@@ -69,17 +69,32 @@ static APR_INLINE void apt_string_assign(apt_str_t *str, const char *src, apr_po
 }
 
 /**
+ * Assign (copy) n characters from the src string. 
+ * @param str the destination string
+ * @param src the NULL terminated string to copy
+ * @param pool the pool to allocate memory from
+ */
+static APR_INLINE void apt_string_assign_n(apt_str_t *str, const char *src, apr_size_t length, apr_pool_t *pool)
+{
+	str->buf = NULL;
+	str->length = length;
+	if(str->length) {
+		str->buf = apr_pstrmemdup(pool,src,str->length);
+	}
+}
+
+/**
  * Copy string. 
  * @param dest_str the destination string
  * @param src_str the source string
  * @param pool the pool to allocate memory from
  */
-static APR_INLINE void apt_string_copy(apt_str_t *dest_str, const apt_str_t *src_str, apr_pool_t *pool)
+static APR_INLINE void apt_string_copy(apt_str_t *str, const apt_str_t *src_str, apr_pool_t *pool)
 {
-	dest_str->buf = NULL;
-	dest_str->length = src_str->length;
-	if(dest_str->length) {
-		dest_str->buf = apr_pstrmemdup(pool,src_str->buf,src_str->length);
+	str->buf = NULL;
+	str->length = src_str->length;
+	if(str->length) {
+		str->buf = apr_pstrmemdup(pool,src_str->buf,src_str->length);
 	}
 }
 
