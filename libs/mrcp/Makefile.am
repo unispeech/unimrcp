@@ -10,14 +10,14 @@ noinst_LTLIBRARIES       = libmrcp.la
 
 include_HEADERS          = include/mrcp.h \
                            include/mrcp_types.h \
-                           parser/include/mrcp_header_accessor.h \
-                           parser/include/mrcp_generic_header.h \
-                           parser/include/mrcp_message.h \
+                           message/include/mrcp_header_accessor.h \
+                           message/include/mrcp_generic_header.h \
+                           message/include/mrcp_message.h \
                            control/include/mrcp_control_channel.h \
                            control/include/mrcp_resource.h \
                            control/include/mrcp_resource_factory.h
 
-libmrcp_la_SOURCES       = parser/src/mrcp_header_accessor.c \
-                           parser/src/mrcp_generic_header.c \
-                           parser/src/mrcp_message.c \
+libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
+                           message/src/mrcp_generic_header.c \
+                           message/src/mrcp_message.c \
                            control/src/mrcp_resource_factory.c
