@@ -87,15 +87,6 @@ static void* mrcp_generic_header_allocate(mrcp_header_accessor_t *accessor, apr_
 	return accessor->data;
 }
 
-/** Destroy generic-header */
-static void mrcp_generic_header_destroy(mrcp_header_accessor_t *accessor)
-{
-	if(accessor->data) {
-		mrcp_generic_header_destroy(accessor->data);
-		accessor->data = NULL;
-	}
-}
-
 /** Parse generic-header */
 static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value, apr_pool_t *pool)
 {
@@ -240,7 +231,7 @@ static apt_bool_t mrcp_generic_header_duplicate(mrcp_header_accessor_t *accessor
 
 static const mrcp_header_vtable_t vtable = {
 	mrcp_generic_header_allocate,
-	mrcp_generic_header_destroy,
+	NULL, /* nothing to destroy */
 	mrcp_generic_header_parse,
 	mrcp_generic_header_generate,
 	mrcp_generic_header_duplicate,
