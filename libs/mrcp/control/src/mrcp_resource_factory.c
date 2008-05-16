@@ -21,6 +21,7 @@
 
 static APR_INLINE const apt_str_t* mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id);
 static APR_INLINE mrcp_resource_id mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name);
+static APR_INLINE void mrcp_header_accessor_set(mrcp_message_t *message, mrcp_resource_t *resource);
 static apt_bool_t mrcp_message_associate_resource_by_id(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
 static apt_bool_t mrcp_message_associate_resource_by_name(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
 
@@ -32,9 +33,6 @@ struct mrcp_resource_factory_t {
 	apr_size_t                  resource_count;
 	/** String table of MRCP resources */
 	const apt_str_table_item_t *string_table;
-
-	/** MRCP generic header accessor interface (common/shared among the resources) */
-	const mrcp_header_vtable_t *header_vtable;
 };
 
 /** Create MRCP resource factory */
@@ -55,8 +53,6 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_create(apr_size_t r
 	}
 	
 	resource_factory->string_table = string_table;
-
-	resource_factory->header_vtable = mrcp_generic_header_vtable_get();
 	return resource_factory;
 }
 
@@ -67,8 +63,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_factory_destroy(mrcp_resource_factory_t *
 		resource_factory->resource_array = NULL;
 	}
 	resource_factory->resource_count = 0;
-
-	resource_factory->header_vtable = NULL;
 	return TRUE;
 }
 
@@ -187,9 +181,7 @@ static apt_bool_t mrcp_message_associate_resource_by_id(mrcp_resource_factory_t 
 		message->start_line.method_name = *name;
 	}
 
-	/* set header accessors for the entire message */
-	message->header.resource_header_accessor.vtable = resource->header_vtable;
-	message->header.generic_header_accessor.vtable = resource_factory->header_vtable;
+	mrcp_header_accessor_set(message,resource);
 	return TRUE;
 }
 
@@ -227,10 +219,16 @@ static apt_bool_t mrcp_message_associate_resource_by_name(mrcp_resource_factory_
 		}
 	}
 
-	/* sets header accessors for the entire message */
-	message->header.resource_header_accessor.vtable = resource->header_vtable;
-	message->header.generic_header_accessor.vtable = resource_factory->header_vtable;
+	mrcp_header_accessor_set(message,resource);
 	return TRUE;
+}
+
+/** Set header accessor interface */
+static APR_INLINE void mrcp_header_accessor_set(mrcp_message_t *message, mrcp_resource_t *resource)
+{
+	mrcp_message_header_t *header = &message->header;
+	header->resource_header_accessor.vtable = resource->header_vtable;
+	header->generic_header_accessor.vtable = mrcp_generic_header_vtable_get(message->start_line.version);
 }
 
 /** Get resource name associated with specified resource id */

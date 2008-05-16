@@ -83,10 +83,6 @@ struct mrcp_generic_header_t {
 	apt_str_t              logging_tag;
 };
 
-
-/** Get generic header vtable */
-MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get();
-
 /** Append generic header active request id list */
 static APR_INLINE apt_bool_t active_request_id_list_append(mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
 {
@@ -96,6 +92,10 @@ static APR_INLINE apt_bool_t active_request_id_list_append(mrcp_generic_header_t
 	generic_header->active_request_id_list.ids[generic_header->active_request_id_list.count++] = request_id;
 	return TRUE;
 }
+
+/** Get generic header vtable */
+MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get(mrcp_version_e version);
+
 
 APT_END_EXTERN_C
 

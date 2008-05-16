@@ -93,8 +93,7 @@ static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, si
 	apt_bool_t status = TRUE;
 	mrcp_generic_header_t *generic_header = accessor->data;
 	apr_size_t length = value->text.length - (value->pos - value->text.buf);
-	switch(id)
-	{
+	switch(id) {
 		case GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST:
 			mrcp_request_id_list_parse(&generic_header->active_request_id_list,value);
 			break;
@@ -189,8 +188,7 @@ static apt_bool_t mrcp_generic_header_duplicate(mrcp_header_accessor_t *accessor
 		return FALSE;
 	}
 
-	switch(id)
-	{
+	switch(id) {
 		case GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST:
 			break;
 		case GENERIC_HEADER_PROXY_SYNC_ID:
@@ -240,7 +238,7 @@ static const mrcp_header_vtable_t vtable = {
 };
 
 
-MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get()
+MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get(mrcp_version_e version)
 {
 	return &vtable;
 }

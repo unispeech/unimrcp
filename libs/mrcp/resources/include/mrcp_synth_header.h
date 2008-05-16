@@ -210,7 +210,7 @@ struct mrcp_synth_header_t {
 };
 
 /** Get synthesizer header vtable */
-MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get();
+MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_synth_header_vtable_get(mrcp_version_e version);
 
 
 APT_END_EXTERN_C

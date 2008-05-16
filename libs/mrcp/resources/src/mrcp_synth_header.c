@@ -195,7 +195,7 @@ static apt_bool_t mrcp_completion_cause_generate(mrcp_synth_completion_cause_e c
 	if(!name) {
 		return FALSE;
 	}
-	length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT,completion_cause);
+	length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT" ",completion_cause);
 	if(length <= 0) {
 		return FALSE;
 	}
@@ -249,8 +249,7 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 	apt_bool_t status = TRUE;
 	mrcp_synth_header_t *synth_header = accessor->data;
 	apr_size_t length = value->text.length - (value->pos - value->text.buf);
-	switch(id)
-	{
+	switch(id) {
 		case SYNTHESIZER_HEADER_JUMP_SIZE:
 			mrcp_speech_length_value_parse(&synth_header->jump_size,value,pool);
 			break;
@@ -327,8 +326,7 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 static apt_bool_t mrcp_synth_header_generate(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value)
 {
 	mrcp_synth_header_t *synth_header = accessor->data;
-	switch(id)
-	{
+	switch(id) {
 		case SYNTHESIZER_HEADER_JUMP_SIZE:
 			mrcp_speech_length_generate(&synth_header->jump_size,value);
 			break;
@@ -411,8 +409,7 @@ static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, 
 		return FALSE;
 	}
 
-	switch(id)
-	{
+	switch(id) {
 		case SYNTHESIZER_HEADER_JUMP_SIZE:
 			synth_header->jump_size = src_synth_header->jump_size;
 			break;
@@ -495,7 +492,7 @@ static const mrcp_header_vtable_t vtable = {
 	SYNTHESIZER_HEADER_COUNT
 };
 
-MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_synth_header_vtable_get()
+MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_synth_header_vtable_get(mrcp_version_e version)
 {
 	return &vtable;
 }
