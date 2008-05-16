@@ -15,9 +15,11 @@ include_HEADERS          = include/mrcp.h \
                            message/include/mrcp_message.h \
                            control/include/mrcp_control_channel.h \
                            control/include/mrcp_resource.h \
-                           control/include/mrcp_resource_factory.h
+                           control/include/mrcp_resource_factory.h \
+                           resources/include/mrcp_synth_header.h
 
 libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            message/src/mrcp_generic_header.c \
                            message/src/mrcp_message.c \
-                           control/src/mrcp_resource_factory.c
+                           control/src/mrcp_resource_factory.c \
+                           resources/src/mrcp_synth_header.h

@@ -215,11 +215,19 @@
 				Name="include"
 				Filter="h;hpp;hxx;hm;inl;inc;xsd"
 				>
+				<File
+					RelativePath=".\resources\include\mrcp_synth_header.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="src"
 				Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 				>
+				<File
+					RelativePath=".\resources\src\mrcp_synth_header.c"
+					>
+				</File>
 			</Filter>
 		</Filter>
 	</Files>
