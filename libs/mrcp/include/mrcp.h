@@ -39,21 +39,4 @@
 #define MRCP_DECLARE(type) type
 #endif
 
-/** Protocol version */
-typedef enum {
-	/** Unknown version */
-	MRCP_VERSION_UNKNOWN = 0, 
-	/** MRCPv1 (RFC4463) */
-	MRCP_VERSION_1 = 1, 
-	/** MRCPv2 (draft-ietf-speechsc-mrcpv2-15) */
-	MRCP_VERSION_2 = 2  
-} mrcp_version_t;
-
-/** Message identifier used in request/response/event messages. */
-typedef apr_size_t  mrcp_request_id;
-/** Method identifier associated with method name. */
-typedef size_t mrcp_method_id;
-/** Resource identifier associated with resource name. */
-typedef size_t mrcp_resource_id;
-
 #endif /*__MRCP_H__*/

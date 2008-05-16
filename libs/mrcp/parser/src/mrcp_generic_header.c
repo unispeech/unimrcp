@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "apt_string_table.h"
 #include "mrcp_generic_header.h"
 
 /** String table of mrcp generic-header fields (mrcp_generic_header_id) */

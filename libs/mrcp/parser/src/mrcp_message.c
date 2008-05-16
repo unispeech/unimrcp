@@ -16,7 +16,6 @@
 
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
-#include "apt_string_table.h"
 #include "apt_log.h"
 
 /** Protocol name used in version string */
@@ -42,9 +41,9 @@ static const apt_str_table_item_t mrcp_request_state_string_table[] = {
 
 
 /** Parse MRCP version */
-static mrcp_version_t mrcp_version_parse(apt_text_stream_t *stream)
+static mrcp_version_e mrcp_version_parse(apt_text_stream_t *stream)
 {
-	mrcp_version_t version = MRCP_VERSION_UNKNOWN;
+	mrcp_version_e version = MRCP_VERSION_UNKNOWN;
 	apt_str_t field;
 	apt_text_field_read(stream,MRCP_NAME_VERSION_SEPARATOR,TRUE,&field);
 	if(field.length && strncasecmp(field.buf,MRCP_NAME,MRCP_NAME_LENGTH) == 0) {
@@ -62,7 +61,7 @@ static mrcp_version_t mrcp_version_parse(apt_text_stream_t *stream)
 }
 
 /** Generate MRCP version */
-static apt_bool_t mrcp_version_generate(mrcp_version_t version, apt_text_stream_t *stream)
+static apt_bool_t mrcp_version_generate(mrcp_version_e version, apt_text_stream_t *stream)
 {
 	int ret = sprintf(stream->pos,"%s%c%d%c0",MRCP_NAME,MRCP_NAME_VERSION_SEPARATOR,version,MRCP_VERSION_MAJOR_MINOR_SEPARATOR);
 	if(ret <= 0) {
@@ -73,13 +72,13 @@ static apt_bool_t mrcp_version_generate(mrcp_version_t version, apt_text_stream_
 }
 
 /** Parse MRCP request-state used in MRCP response and event */
-static APR_INLINE mrcp_request_state_t mrcp_request_state_parse(const apt_str_t *request_state_str)
+static APR_INLINE mrcp_request_state_e mrcp_request_state_parse(const apt_str_t *request_state_str)
 {
 	return apt_string_table_id_find(mrcp_request_state_string_table,MRCP_REQUEST_STATE_COUNT,request_state_str);
 }
 
 /** Generate MRCP request-state used in MRCP response and event */
-static apt_bool_t mrcp_request_state_generate(mrcp_request_state_t request_state, apt_text_stream_t *stream)
+static apt_bool_t mrcp_request_state_generate(mrcp_request_state_e request_state, apt_text_stream_t *stream)
 {
 	const apt_str_t *name;
 	name = apt_string_table_str_get(mrcp_request_state_string_table,MRCP_REQUEST_STATE_COUNT,request_state);
@@ -97,18 +96,20 @@ static APR_INLINE mrcp_request_id mrcp_request_id_parse(const apt_str_t *field)
 	return apt_size_value_parse(field->buf);
 }
 
-/* generates MRCP request-id */
+/** Generate MRCP request-id */
 static APR_INLINE apt_bool_t mrcp_request_id_generate(mrcp_request_id request_id, apt_text_stream_t *stream)
 {
 	return apt_size_value_generate(request_id,stream);
 }
 
-static APR_INLINE mrcp_status_code_t mrcp_status_code_parse(const apt_str_t *field)
+/** Parse MRCP status-code */
+static APR_INLINE mrcp_status_code_e mrcp_status_code_parse(const apt_str_t *field)
 {
 	return apt_size_value_parse(field->buf);
 }
 
-static APR_INLINE size_t  mrcp_status_code_generate(mrcp_status_code_t status_code, apt_text_stream_t *stream)
+/** Generate MRCP status-code */
+static APR_INLINE size_t  mrcp_status_code_generate(mrcp_status_code_e status_code, apt_text_stream_t *stream)
 {
 	return apt_size_value_generate(status_code,stream);
 }
@@ -670,3 +671,23 @@ MRCP_DECLARE(void) mrcp_message_destroy(mrcp_message_t *message)
 	apt_string_reset(&message->body);
 	mrcp_message_header_destroy(&message->header);
 }
+
+/** Validate MRCP message */
+MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message)
+{
+	if(message->body.length) {
+		/* content length must be specified */
+		mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
+		if(!generic_header) {
+			return FALSE;
+		}
+		if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_LENGTH) != TRUE ||
+		  !generic_header->content_length) {
+			generic_header->content_length = message->body.length;
+			mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_LENGTH);
+		}
+	}
+
+	return TRUE;
+}
+

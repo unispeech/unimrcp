@@ -22,6 +22,7 @@
  * @brief MRCP Message Definition
  */ 
 
+#include "mrcp_types.h"
 #include "mrcp_header_accessor.h"
 
 APT_BEGIN_EXTERN_C
@@ -39,7 +40,7 @@ typedef enum {
 	MRCP_REQUEST_STATE_COUNT,
 	/** Unknown request state */
 	MRCP_REQUEST_STATE_UNKNOWN = MRCP_REQUEST_STATE_COUNT
-} mrcp_request_state_t;
+} mrcp_request_state_e;
 
 /* Status codes */
 typedef enum {
@@ -58,7 +59,7 @@ typedef enum {
 	MRCP_STATUS_CODE_UNRECOGNIZED_MESSAGE      = 408,
 	MRCP_STATUS_CODE_UNSUPPORTED_PARAM_VALUE   = 409,
 	MRCP_STATUS_CODE_RESOURCE_SPECIFIC_FAILURE = 421
-} mrcp_status_code_t;
+} mrcp_status_code_e;
 
 /* MRCP message types */
 typedef enum {
@@ -66,21 +67,20 @@ typedef enum {
 	MRCP_MESSAGE_TYPE_REQUEST,
 	MRCP_MESSAGE_TYPE_RESPONSE,
 	MRCP_MESSAGE_TYPE_EVENT
-} mrcp_message_type;
+} mrcp_message_type_e;
 
 
 typedef struct mrcp_start_line_t mrcp_start_line_t;
 typedef struct mrcp_channel_id mrcp_channel_id;
 typedef struct mrcp_message_header_t mrcp_message_header_t;
-typedef struct mrcp_message_t mrcp_message_t;
 
 
 /** Start-line of MRCP message */
 struct mrcp_start_line_t {
 	/** MRCP message type */
-	mrcp_message_type    message_type;
+	mrcp_message_type_e  message_type;
 	/** Version of protocol in use */
-	mrcp_version_t       version;
+	mrcp_version_e       version;
 	/** Specify the length of the message, including the start-line (v2) */
 	size_t               length;
 	/** Unique identifier among client and server */
@@ -90,9 +90,9 @@ struct mrcp_start_line_t {
 	/** MRCP method id (associated with method name) */
 	mrcp_method_id       method_id;
 	/** Success or failure or other status of the request */
-	mrcp_status_code_t   status_code;
+	mrcp_status_code_e   status_code;
 	/* The state of the job initiated by the request */
-	mrcp_request_state_t request_state;
+	mrcp_request_state_e request_state;
 };
 
 /** Initialize MRCP start-line */
@@ -195,6 +195,9 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_method_id method_id, apr_
 MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request_message, apr_pool_t *pool);
 /** Create MRCP event message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_event_create(const mrcp_message_t *request_message, mrcp_method_id event_id, apr_pool_t *pool);
+
+/** Validate MRCP message */
+MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message);
 
 /** Destroy MRCP message */
 MRCP_DECLARE(void) mrcp_message_destroy(mrcp_message_t *message);

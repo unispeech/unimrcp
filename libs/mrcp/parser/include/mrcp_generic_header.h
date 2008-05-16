@@ -22,6 +22,7 @@
  * @brief MRCP Generic Header
  */ 
 
+#include "mrcp_types.h"
 #include "mrcp_header_accessor.h"
 
 APT_BEGIN_EXTERN_C
