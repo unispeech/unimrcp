@@ -18,11 +18,15 @@ include_HEADERS          = include/mrcp.h \
                            control/include/mrcp_resource.h \
                            control/include/mrcp_resource_factory.h \
                            resources/include/mrcp_synth_header.h \
-                           resources/include/mrcp_recog_header.h
+                           resources/include/mrcp_synth_resource.h \
+                           resources/include/mrcp_recog_header.h \
+                           resources/include/mrcp_recog_resource.h
 
 libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            message/src/mrcp_generic_header.c \
                            message/src/mrcp_message.c \
                            control/src/mrcp_resource_factory.c \
                            resources/src/mrcp_synth_header.c \
-                           resources/src/mrcp_recog_header.c
+                           resources/src/mrcp_synth_resource.c \
+                           resources/src/mrcp_recog_header.c \
+                           resources/src/mrcp_recog_resource.c

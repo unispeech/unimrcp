@@ -220,7 +220,15 @@
 					>
 				</File>
 				<File
+					RelativePath=".\resources\include\mrcp_recog_resource.h"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\include\mrcp_synth_header.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resources\include\mrcp_synth_resource.h"
 					>
 				</File>
 			</Filter>
@@ -233,7 +241,15 @@
 					>
 				</File>
 				<File
+					RelativePath=".\resources\src\mrcp_recog_resource.c"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\src\mrcp_synth_header.c"
+					>
+				</File>
+				<File
+					RelativePath=".\resources\src\mrcp_synth_resource.c"
 					>
 				</File>
 			</Filter>
