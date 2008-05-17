@@ -48,7 +48,7 @@ typedef enum {
 } mrcp_recognizer_event_id;
 
 /** Create MRCP recognizer resource */
-MRCP_DECLARE(mrcp_resource_t*) mrcp_recog_resource_create(mrcp_version_e version, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_resource_t*) mrcp_recog_resource_create(apr_pool_t *pool);
 
 APT_END_EXTERN_C
 
