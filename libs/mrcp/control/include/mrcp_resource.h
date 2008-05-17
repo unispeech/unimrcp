@@ -35,36 +35,25 @@ struct mrcp_resource_t {
 	/** MRCP resource name */
 	const apt_str_t            *name;
 
-	/** MRCP methods registered in the resource */
-	const apt_str_table_item_t *method_table;
-	/** Number of MRCP methods registered in the resource */
-	size_t                      method_count;
-
-	/** MRCP events registered in the resource */
-	const apt_str_table_item_t *event_table;
-	/** Number of MRCP events registered in the resource */
-	size_t                      event_count;
-
-	/** MRCP resource header accessor interface */
-	const mrcp_header_vtable_t *header_vtable;
+	/** Set resource specific data in a message by resource id */
+	apt_bool_t (*resourcify_message_by_id)(mrcp_resource_t *resource, mrcp_message_t *message);
+	/** Set resource specific data in a message by resource name */
+	apt_bool_t (*resourcify_message_by_name)(mrcp_resource_t *resource, mrcp_message_t *message);
 };
 
 /** Initialize MRCP resource */
 static APR_INLINE void mrcp_resource_init(mrcp_resource_t *resource)
 {
-	resource->method_count = 0;
-	resource->method_table = NULL;
-	resource->event_count = 0;
-	resource->event_table = NULL;
-	resource->header_vtable = NULL;
+	resource->name = NULL;
+	resource->resourcify_message_by_id = NULL;
+	resource->resourcify_message_by_name = NULL;
 }
 
 /** Validate MRCP resource */
 static APR_INLINE apt_bool_t mrcp_resource_validate(mrcp_resource_t *resource)
 {
-	return (resource->name && resource->method_table && resource->method_count && 
-		resource->event_table && resource->event_count && 
-		resource->header_vtable) ? TRUE : FALSE;
+	return (resource->name && resource->resourcify_message_by_id && 
+		resource->resourcify_message_by_name) ? TRUE : FALSE;
 }
 
 APT_END_EXTERN_C

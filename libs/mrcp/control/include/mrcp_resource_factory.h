@@ -38,7 +38,7 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_create(apr_size_t r
 MRCP_DECLARE(apt_bool_t) mrcp_resource_factory_destroy(mrcp_resource_factory_t *resource_factory);
 
 /** Register MRCP resource */
-MRCP_DECLARE(apt_bool_t) mrcp_resource_register(mrcp_resource_factory_t *resource_factory, mrcp_resource_t *resource);
+MRCP_DECLARE(apt_bool_t) mrcp_resource_register(mrcp_resource_factory_t *resource_factory, mrcp_resource_t *resource, mrcp_resource_id resource_id);
 
 /** Get MRCP resource by resource id */
 MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id);

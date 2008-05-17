@@ -16,25 +16,6 @@
 
 #include "mrcp_synth_header.h"
 
-
-/** String table of MRCP synthesizer methods (mrcp_synthesizer_method_id) */
-static const apt_str_table_item_t synth_method_string_table[] = {
-	{{"SET-PARAMS",       10},10},
-	{{"GET-PARAMS",       10},0},
-	{{"SPEAK",             5},1},
-	{{"STOP",              4},1},
-	{{"PAUSE",             5},0},
-	{{"RESUME",            6},0},
-	{{"BARGE-IN-OCCURRED",17},0},
-	{{"CONTROL",           7},0}
-};
-
-/** String table of MRCP synthesizer events (mrcp_synthesizer_event_id) */
-static const apt_str_table_item_t synth_event_string_table[] = {
-	{{"SPEECH-MARKER", 13},3},
-	{{"SPEAK-COMPLETE",14},3}
-};
-
 /** String table of MRCP synthesizer headers (mrcp_synthesizer_header_id) */
 static const apt_str_table_item_t synth_header_string_table[] = {
 	{{"Jump-Size",            9},0},

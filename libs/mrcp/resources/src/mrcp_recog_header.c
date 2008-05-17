@@ -16,40 +16,6 @@
 
 #include "mrcp_recog_header.h"
 
-/** String table of MRCP recognizer methods (mrcp_recognizer_method_id) */
-static const apt_str_table_item_t v1_recog_method_string_table[] = {
-	{{"SET-PARAMS",               10},10},
-	{{"GET-PARAMS",               10},10},
-	{{"DEFINE-GRAMMAR",           14},0},
-	{{"RECOGNIZE",                 9},7},
-	{{"GET-RESULT",               10},4},
-	{{"RECOGNITION-START-TIMERS", 24},7},
-	{{"STOP",                      4},1}
-};
-
-/** String table of mrcpv2 recognizer methods (mrcp_recognizer_method_id) */
-static const apt_str_table_item_t v2_recog_method_string_table[] = {
-	{{"SET-PARAMS",               10},10},
-	{{"GET-PARAMS",               10},10},
-	{{"DEFINE-GRAMMAR",           14},0},
-	{{"RECOGNIZE",                 9},7},
-	{{"GET-RESULT",               10},4},
-	{{"START-INPUT-TIMERS",       18},2},
-	{{"STOP",                      4},2}
-};
-
-/** String table of MRCP recognizer events (mrcp_recognizer_event_id) */
-static const apt_str_table_item_t v1_recog_event_string_table[] = {
-	{{"START-OF-SPEECH",          15},0},
-	{{"RECOGNITION-COMPLETE",     20},0}
-};
-
-/** String table of mrcpv2 recognizer events (mrcp_recognizer_event_id) */
-static const apt_str_table_item_t v2_recog_event_string_table[] = {
-	{{"START-OF-INPUT",           14},0},
-	{{"RECOGNITION-COMPLETE",     20},0}
-};
-
 /** String table of MRCP recognizer headers (mrcp_recog_header_id) */
 static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},7},
@@ -553,23 +519,6 @@ static APR_INLINE const apt_str_table_item_t* recog_header_string_table_get(mrcp
 	}
 	return v2_recog_header_string_table;
 }
-
-static APR_INLINE const apt_str_table_item_t* recog_method_string_table_get(mrcp_version_e version)
-{
-	if(version == MRCP_VERSION_1) {
-		return v1_recog_method_string_table;
-	}
-	return v2_recog_method_string_table;
-}
-
-static APR_INLINE const apt_str_table_item_t* recog_event_string_table_get(mrcp_version_e version)
-{
-	if(version == MRCP_VERSION_1) {
-		return v1_recog_event_string_table;
-	}
-	return v2_recog_event_string_table;
-}
-
 
 static const mrcp_header_vtable_t v1_vtable = {
 	mrcp_recog_header_allocate,
