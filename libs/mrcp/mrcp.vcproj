@@ -216,6 +216,10 @@
 				Filter="h;hpp;hxx;hm;inl;inc;xsd"
 				>
 				<File
+					RelativePath=".\resources\include\mrcp_default_factory.h"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\include\mrcp_recog_header.h"
 					>
 				</File>
@@ -236,6 +240,10 @@
 				Name="src"
 				Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 				>
+				<File
+					RelativePath=".\resources\src\mrcp_default_factory.c"
+					>
+				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_recog_header.c"
 					>
