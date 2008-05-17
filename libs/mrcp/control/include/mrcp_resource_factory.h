@@ -32,10 +32,13 @@ APT_BEGIN_EXTERN_C
 typedef struct mrcp_resource_factory_t mrcp_resource_factory_t;
 
 /** Create MRCP resource factory */
-MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_create(apr_size_t resource_count, const apt_str_table_item_t *string_table, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_create(apr_size_t resource_count, apr_pool_t *pool);
 
 /** Destroy MRCP resource factory */
 MRCP_DECLARE(apt_bool_t) mrcp_resource_factory_destroy(mrcp_resource_factory_t *resource_factory);
+
+/** Set MRCP resource string table */
+MRCP_DECLARE(apt_bool_t) mrcp_resource_string_table_set(mrcp_resource_factory_t *resource_factory, const apt_str_table_item_t *string_table, mrcp_version_e version);
 
 /** Register MRCP resource */
 MRCP_DECLARE(apt_bool_t) mrcp_resource_register(mrcp_resource_factory_t *resource_factory, mrcp_resource_t *resource, mrcp_resource_id resource_id);

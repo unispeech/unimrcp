@@ -32,8 +32,6 @@ APT_BEGIN_EXTERN_C
 struct mrcp_resource_t {
 	/** MRCP resource identifier */
 	mrcp_resource_id            id;
-	/** MRCP resource name */
-	const apt_str_t            *name;
 
 	/** Set resource specific data in a message by resource id */
 	apt_bool_t (*resourcify_message_by_id)(mrcp_resource_t *resource, mrcp_message_t *message);
@@ -44,7 +42,6 @@ struct mrcp_resource_t {
 /** Initialize MRCP resource */
 static APR_INLINE void mrcp_resource_init(mrcp_resource_t *resource)
 {
-	resource->name = NULL;
 	resource->resourcify_message_by_id = NULL;
 	resource->resourcify_message_by_name = NULL;
 }
@@ -52,7 +49,7 @@ static APR_INLINE void mrcp_resource_init(mrcp_resource_t *resource)
 /** Validate MRCP resource */
 static APR_INLINE apt_bool_t mrcp_resource_validate(mrcp_resource_t *resource)
 {
-	return (resource->name && resource->resourcify_message_by_id && 
+	return (resource->resourcify_message_by_id && 
 		resource->resourcify_message_by_name) ? TRUE : FALSE;
 }
 
