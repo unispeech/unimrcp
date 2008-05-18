@@ -91,7 +91,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_register(mrcp_resource_factory_t *resourc
 		/* invalid params */
 		return FALSE;
 	}
-	if(resource_factory->resource_array[resource->id]) {
+	if(resource_factory->resource_array[resource_id]) {
 		/* resource with specified id already exists */
 		return FALSE;
 	}
@@ -133,7 +133,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_parse(mrcp_resource_factory_t *resource_fa
 	}
 
 	mrcp_body_parse(message,text_stream,message->pool);
-
 	return TRUE;
 }
 
