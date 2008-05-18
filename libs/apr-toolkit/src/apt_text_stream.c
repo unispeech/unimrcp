@@ -16,52 +16,55 @@
 
 #include "apt_text_stream.h"
 
-/* Navigate through the lines of the text stream (message) */
+/** Navigate through the lines of the text stream (message) */
 APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t *line)
 {
+	char *pos = stream->pos;
+	const char *end = stream->text.buf + stream->text.length;
 	line->length = 0;
-	line->buf = stream->pos;
-	while(stream->pos < stream->text.buf + stream->text.length) {
-		if(*stream->pos == APT_TOKEN_CR) {
-			line->length = stream->pos - line->buf;
-			stream->pos++;
-			if(stream->pos < stream->text.buf + stream->text.length && *stream->pos == APT_TOKEN_LF) {
-				stream->pos++;
+	line->buf = pos;
+	while(pos < end) {
+		if(*pos == APT_TOKEN_CR) {
+			line->length = pos - line->buf;
+			pos++;
+			if(pos < end && *pos == APT_TOKEN_LF) {
+				pos++;
 			}
 			break;
 		}
-		else if(*stream->pos == APT_TOKEN_LF) {
-			line->length = stream->pos - line->buf;
-			stream->pos++;
-			break;
-		}
-		stream->pos++;
-	}
-	return TRUE;
-}
-
-/* Navigate through the fields of the line */
-APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field)
-{
-	char *pos = stream->pos;
-	if(skip_spaces == TRUE) {
-		while(pos < stream->text.buf + stream->text.length && *pos == APT_TOKEN_SP) {
-			pos++;
-		}
-	}
-
-	field->buf = pos;
-	field->length = 0;
-	while(pos < stream->text.buf + stream->text.length) {
-		if(*pos == separator) {
-			field->length = pos - field->buf;
+		else if(*pos == APT_TOKEN_LF) {
+			line->length = pos - line->buf;
 			pos++;
 			break;
 		}
 		pos++;
 	}
+
 	stream->pos = pos;
-	return TRUE;
+	return line->length ? TRUE : FALSE;
+}
+
+/** Navigate through the fields of the line */
+APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field)
+{
+	char *pos = stream->pos;
+	const char *end = stream->text.buf + stream->text.length;
+	if(skip_spaces == TRUE) {
+		while(pos < end && *pos == APT_TOKEN_SP) pos++;
+	}
+
+	field->buf = pos;
+	field->length = 0;
+	while(pos < end && *pos != separator) pos++;
+
+	field->length = pos - field->buf;
+	if(pos < end) {
+		/* skip the separator */
+		pos++;
+	}
+
+	stream->pos = pos;
+	return field->length ? TRUE : FALSE;
 }
 
 
@@ -69,9 +72,7 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 APT_DECLARE(apt_bool_t) apt_name_value_parse(apt_text_stream_t *stream, apt_name_value_t *pair)
 {
 	apt_text_field_read(stream,':',TRUE,&pair->name);
-	while(stream->pos < stream->text.buf + stream->text.length && *stream->pos == APT_TOKEN_SP) {
-		stream->pos++;
-	}
+	apt_text_spaces_skip(stream);
 	pair->value.buf = stream->pos;
 	pair->value.length = stream->text.length - (stream->pos - stream->text.buf);
 	return TRUE;

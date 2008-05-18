@@ -67,9 +67,6 @@ static size_t string_table_read(apt_str_table_item_t table[], apr_size_t max_cou
 		if(apt_text_line_read(&text_stream,&line) == FALSE) {
 			break;
 		}
-		if(line.length == 0) {
-			break;
-		}
 		item = &table[count];
 		apt_string_copy(&item->value,&line,pool);
 		item->key = 0;

@@ -37,12 +37,12 @@ static apt_bool_t mrcp_request_id_list_parse(mrcp_request_id_list_t *request_id_
 {
 	apt_str_t field;
 	request_id_list->count = 0;
-	while(stream->pos < stream->text.buf + stream->text.length && request_id_list->count < MAX_ACTIVE_REQUEST_ID_COUNT) {
-		apt_text_field_read(stream,',',TRUE,&field);
-		if(field.length) {
-			request_id_list->ids[request_id_list->count] = apt_size_value_parse(field.buf);
-			request_id_list->count++;
+	while(request_id_list->count < MAX_ACTIVE_REQUEST_ID_COUNT) {
+		if(apt_text_field_read(stream,',',TRUE,&field) == FALSE) {
+			break;
 		}
+		request_id_list->ids[request_id_list->count] = apt_size_value_parse(field.buf);
+		request_id_list->count++;
 	}
 	return TRUE;
 }

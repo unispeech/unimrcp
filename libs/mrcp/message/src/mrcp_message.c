@@ -41,20 +41,22 @@ static const apt_str_table_item_t mrcp_request_state_string_table[] = {
 
 
 /** Parse MRCP version */
-static mrcp_version_e mrcp_version_parse(apt_text_stream_t *stream)
+static mrcp_version_e mrcp_version_parse(const apt_str_t *field)
 {
 	mrcp_version_e version = MRCP_VERSION_UNKNOWN;
-	apt_str_t field;
-	apt_text_field_read(stream,MRCP_NAME_VERSION_SEPARATOR,TRUE,&field);
-	if(field.length && strncasecmp(field.buf,MRCP_NAME,MRCP_NAME_LENGTH) == 0) {
-		apt_text_field_read(stream,MRCP_VERSION_MAJOR_MINOR_SEPARATOR,TRUE,&field);
-		if(field.length) {
-			switch(*field.buf)
-			{
-				case '1': version = MRCP_VERSION_1; break;
-				case '2': version = MRCP_VERSION_2; break;
-				default: ;
-			}
+	const char *pos;
+	if(field->length <= MRCP_NAME_LENGTH || strncasecmp(field->buf,MRCP_NAME,MRCP_NAME_LENGTH) != 0) {
+		/* unexpected protocol name */
+		return version;
+	}
+
+	pos = field->buf + MRCP_NAME_LENGTH;
+	if(*pos == MRCP_NAME_VERSION_SEPARATOR) {
+		pos++;
+		switch(*pos) {
+			case '1': version = MRCP_VERSION_1; break;
+			case '2': version = MRCP_VERSION_2; break;
+			default: ;
 		}
 	}
 	return version;
@@ -63,11 +65,12 @@ static mrcp_version_e mrcp_version_parse(apt_text_stream_t *stream)
 /** Generate MRCP version */
 static apt_bool_t mrcp_version_generate(mrcp_version_e version, apt_text_stream_t *stream)
 {
-	int ret = sprintf(stream->pos,"%s%c%d%c0",MRCP_NAME,MRCP_NAME_VERSION_SEPARATOR,version,MRCP_VERSION_MAJOR_MINOR_SEPARATOR);
-	if(ret <= 0) {
-		return FALSE;
-	}
-	stream->pos += ret;
+	memcpy(stream->pos,MRCP_NAME,MRCP_NAME_LENGTH);
+	stream->pos += MRCP_NAME_LENGTH;
+	*stream->pos++ = MRCP_NAME_VERSION_SEPARATOR;
+	apt_size_value_generate(version,stream);
+	*stream->pos++ = MRCP_VERSION_MAJOR_MINOR_SEPARATOR;
+	*stream->pos++ = '0';
 	return TRUE;
 }
 
@@ -119,16 +122,14 @@ static APR_INLINE size_t  mrcp_status_code_generate(mrcp_status_code_e status_co
 static apt_bool_t mrcp_request_line_parse(mrcp_start_line_t *start_line, apt_text_stream_t *stream)
 {
 	apt_str_t field;
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in request-line \n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in request-line");
 		return FALSE;
 	}
 	start_line->request_id = mrcp_request_id_parse(&field);
 
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse mrcp-version in request-line \n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse mrcp-version in request-line");
 		return FALSE;
 	}
 
@@ -141,14 +142,17 @@ static apt_bool_t mrcp_request_line_parse(mrcp_start_line_t *start_line, apt_tex
 		/* event line */
 		start_line->message_type = MRCP_MESSAGE_TYPE_EVENT;
 
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+			apt_log(APT_PRIO_WARNING,"Cannot parse mrcp-version in request-line");
+			return FALSE;
+		}
 	}
 
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse mrcp-version in request-line \n");
+	start_line->version = mrcp_version_parse(&field);
+	if(start_line->version == MRCP_VERSION_UNKNOWN) {
+		apt_log(APT_PRIO_WARNING,"Unknown mrcp-version");
 		return FALSE;
 	}
-	start_line->version = mrcp_version_parse(stream);
 	return TRUE;
 }
 
@@ -183,31 +187,27 @@ static apt_bool_t mrcp_response_line_parse(mrcp_start_line_t *start_line, apt_te
 	apt_str_t field;
 	start_line->length = 0;
 	if(start_line->version == MRCP_VERSION_2) {
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-		if(!field.length) {
-			apt_log(APT_PRIO_WARNING,"Cannot parse message-length in response-line \n");
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+			apt_log(APT_PRIO_WARNING,"Cannot parse message-length in response-line");
 			return FALSE;
 		}
 		start_line->length = apt_size_value_parse(field.buf);
 	}
 
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in response-line \n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in response-line");
 		return FALSE;
 	}
 	start_line->request_id = mrcp_request_id_parse(&field);
 
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse status-code in response-line \n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse status-code in response-line");
 		return FALSE;
 	}
 	start_line->status_code = mrcp_status_code_parse(&field);
 
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse request-state in response-line \n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse request-state in response-line");
 		return FALSE;
 	}
 	start_line->request_state = mrcp_request_state_parse(&field);
@@ -234,16 +234,14 @@ static apt_bool_t mrcp_response_line_generate(mrcp_start_line_t *start_line, apt
 static apt_bool_t mrcp_v2_start_line_parse(mrcp_start_line_t *start_line, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	apt_str_t field;
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse message-length in v2 start-line\n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse message-length in v2 start-line");
 		return FALSE;
 	}
 	start_line->length = apt_size_value_parse(field.buf);
 
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in v2 start-line\n");
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in v2 start-line");
 		return FALSE;
 	}
 	start_line->request_id = mrcp_request_id_parse(&field);
@@ -252,19 +250,13 @@ static apt_bool_t mrcp_v2_start_line_parse(mrcp_start_line_t *start_line, apt_te
 		start_line->message_type = MRCP_MESSAGE_TYPE_REQUEST;
 		apt_string_copy(&start_line->method_name,&field,pool);
 
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-		if(!field.length) {
-			apt_log(APT_PRIO_WARNING,"Cannot parse request-id in v2 start-line\n");
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+			apt_log(APT_PRIO_WARNING,"Cannot parse request-id in v2 start-line");
 			return FALSE;
 		}
 		start_line->request_id = mrcp_request_id_parse(&field);
 
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-		if(!field.length) {
-			apt_log(APT_PRIO_WARNING,"Cannot parse request-state in v2 start-line\n");
-			return FALSE;
-		}
-		if(*field.buf != '\0') {
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == TRUE) {
 			start_line->request_state = mrcp_request_state_parse(&field);
 			start_line->message_type = MRCP_MESSAGE_TYPE_EVENT;
 		}
@@ -273,16 +265,14 @@ static apt_bool_t mrcp_v2_start_line_parse(mrcp_start_line_t *start_line, apt_te
 		/* parsing MRCP v2 response */
 		start_line->message_type = MRCP_MESSAGE_TYPE_RESPONSE;
 
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-		if(!field.length) {
-			apt_log(APT_PRIO_WARNING,"Cannot parse status-code in v2 start-line \n");
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+			apt_log(APT_PRIO_WARNING,"Cannot parse status-code in v2 start-line");
 			return FALSE;
 		}
 		start_line->status_code = mrcp_status_code_parse(&field);
 
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-		if(!field.length) {
-			apt_log(APT_PRIO_WARNING,"Cannot parse request-state in v2 start-line \n");
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+			apt_log(APT_PRIO_WARNING,"Cannot parse request-state in v2 start-line");
 			return FALSE;
 		}
 		start_line->request_state = mrcp_request_state_parse(&field);
@@ -346,21 +336,19 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, ap
 	apt_str_t field;
 	apt_bool_t status = TRUE;
 	start_line->message_type = MRCP_MESSAGE_TYPE_UNKNOWN;
-	apt_text_line_read(text_stream,&line.text);
-	if(!line.text.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot parse MRCP start-line\n");
+	if(apt_text_line_read(text_stream,&line.text) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse MRCP start-line");
 		return FALSE;
 	}
 	line.pos = line.text.buf;
 
-	apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
-		apt_log(APT_PRIO_WARNING,"Cannot read the first field in start-line\n");
+	if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot read the first field in start-line");
 		return FALSE;
 	}
 
 	if(field.buf == strstr(field.buf,MRCP_NAME)) {
-		start_line->version = mrcp_version_parse(&line);
+		start_line->version = mrcp_version_parse(&field);
 
 		if(start_line->version == MRCP_VERSION_1) {
 			/* parsing MRCP v1 response */
@@ -372,7 +360,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, ap
 			status = mrcp_v2_start_line_parse(start_line,&line,pool);
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"unknown MRCP version\n");
+			apt_log(APT_PRIO_WARNING,"Unknown MRCP version");
 			return FALSE;
 		}
 	}
@@ -455,8 +443,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_
 	apt_str_t field;
 
 	do {
-		apt_text_line_read(text_stream,&line.text);
-		if(!line.text.length) {
+		if(apt_text_line_read(text_stream,&line.text) == FALSE) {
 			return FALSE;
 		}
 		line.pos = line.text.buf;
@@ -511,9 +498,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *messag
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);
 
 	do {
-		apt_text_line_read(text_stream,&line.text);
-		if(!line.text.length) {
-			return FALSE;
+		if(apt_text_line_read(text_stream,&line.text) == FALSE) {
+			break;
 		}
 		line.pos = line.text.buf;
 		apt_text_field_read(&line,':',TRUE,&name);

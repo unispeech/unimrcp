@@ -57,7 +57,8 @@ struct apt_name_value_t {
 /** 
  * Navigate through the lines of the text stream (message).
  * @param text_stream the text stream to navigate
- * @param line the returned line
+ * @param line the read line to return
+ * @return TRUE if the length of the line > 0, otherwise FALSE
  */
 APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t *line);
 
@@ -66,7 +67,8 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
  * @param line the line to navigate
  * @param separator the field separator
  * @param skip_spaces whether to skip spaces or not
- * @param field the returned field
+ * @param field the read field to return
+ * @return TRUE if the length of the field > 0, otherwise FALSE
  */
 APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field);
 
@@ -152,9 +154,8 @@ static APR_INLINE void apt_text_space_insert(apt_text_stream_t *stream)
 /** Skip spaces */
 static APR_INLINE void apt_text_spaces_skip(apt_text_stream_t *stream)
 {
-	while(stream->pos < stream->text.buf + stream->text.length && *stream->pos == APT_TOKEN_SP) {
-		stream->pos++;
-	}
+	const char *end = stream->text.buf + stream->text.length;
+	while(stream->pos < end && *stream->pos == APT_TOKEN_SP) stream->pos++;
 }
 
 /** Generate value plus the length (number of digits) of the value itself */

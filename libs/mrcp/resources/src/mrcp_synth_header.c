@@ -94,8 +94,7 @@ static const apt_str_table_item_t completion_cause_string_table[] = {
 static APR_INLINE apr_size_t apt_string_table_value_parse(const apt_str_table_item_t *string_table, size_t count, apt_text_stream_t *stream)
 {
 	apt_str_t field;
-	apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field);
-	if(!field.length) {
+	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 		return count;
 	}
 	return apt_string_table_id_find(string_table,count,&field);
@@ -124,8 +123,7 @@ static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *spe
 
 	if(speech_length->type == SPEECH_LENGTH_TYPE_TEXT) {
 		apt_str_t str;
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&str);
-		if(!str.length) {
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
 			return FALSE;
 		}
 		apt_string_copy(&speech_length->value.tag,&str,pool);
@@ -133,8 +131,7 @@ static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *spe
 	else {
 		apt_str_t str;
 		stream->pos++;
-		apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&str);
-		if(!str.length) {
+		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
 			return FALSE;
 		}
 		speech_length->value.numeric.length = apt_size_value_parse(str.buf);
