@@ -17,7 +17,7 @@
 #include <apr_time.h>
 #include "apt_log.h"
 
-#define MAX_LOG_ENTRY_SIZE 1024
+#define MAX_LOG_ENTRY_SIZE 4096
 #define MAX_PRIORITY_NAME_LENGTH 9
 
 static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
