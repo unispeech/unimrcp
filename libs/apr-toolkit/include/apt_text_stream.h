@@ -54,13 +54,21 @@ struct apt_name_value_t {
 	apt_str_t value;
 };
 
-/** 
+/**
  * Navigate through the lines of the text stream (message).
  * @param text_stream the text stream to navigate
  * @param line the read line to return
  * @return TRUE if the length of the line > 0, otherwise FALSE
  */
 APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t *line);
+
+/**
+ * Navigate through the headers (name:value pairs) of the text stream (message).
+ * @param text_stream the text stream to navigate
+ * @param pair the read pair to return
+ * @return TRUE if the length of the line > 0, otherwise FALSE
+ */
+APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name_value_t *pair);
 
 /**
  * Navigate through the fields of the line.
@@ -74,31 +82,25 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 
 
 
-/** Parse name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_value_parse(apt_text_stream_t *text_stream, apt_name_value_t *pair);
+/** Generate header */
+APT_DECLARE(apt_bool_t) apt_text_header_generate(const apt_name_value_t *pair, apt_text_stream_t *text_stream);
 
-/** Generate name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_value_generate(const apt_name_value_t *pair, apt_text_stream_t *text_stream);
-
-/** Generate name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_and_value_generate(const apt_str_t *name, const apt_str_t *value, apt_text_stream_t *text_stream);
-
-/** Generate only the name part ("name":) of the name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_value_name_generate(const apt_str_t *name, apt_text_stream_t *text_stream);
+/** Generate only the name ("name:") of the header */
+APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt_text_stream_t *text_stream);
 
 
 
 /** Parse boolean-value */
-APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const char *str, apt_bool_t *value);
+APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value);
 
 /** Generate boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_text_stream_t *str);
 
 
 /** Parse size_t value */
-static APR_INLINE apr_size_t apt_size_value_parse(const char *str)
+static APR_INLINE apr_size_t apt_size_value_parse(const apt_str_t *str)
 {
-	return atol(str);
+	return atol(str->buf);
 }
 
 /** Generate apr_size_t value */

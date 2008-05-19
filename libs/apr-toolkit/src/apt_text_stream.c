@@ -23,8 +23,10 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 	const char *end = stream->text.buf + stream->text.length;
 	line->length = 0;
 	line->buf = pos;
+	/* while not end of stream */
 	while(pos < end) {
 		if(*pos == APT_TOKEN_CR) {
+			/* end of line detected */
 			line->length = pos - line->buf;
 			pos++;
 			if(pos < end && *pos == APT_TOKEN_LF) {
@@ -33,6 +35,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 			break;
 		}
 		else if(*pos == APT_TOKEN_LF) {
+			/* end of line detected */
 			line->length = pos - line->buf;
 			pos++;
 			break;
@@ -43,6 +46,68 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 	stream->pos = pos;
 	return line->length ? TRUE : FALSE;
 }
+
+/** Navigate through the headers (name:value pairs) of the text stream (message) */
+APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name_value_t *pair)
+{
+	char *pos = stream->pos;
+	const char *end = stream->text.buf + stream->text.length;
+	apt_string_reset(&pair->name);
+	apt_string_reset(&pair->value);
+	/* while not end of stream */
+	while(pos < end) {
+		if(*pos == APT_TOKEN_CR) {
+			/* end of line detected */
+			if(pair->value.buf) {
+				/* set length of the value */
+				pair->value.length = pos - pair->value.buf;
+			}
+			else if(pair->name.buf) {
+				/* set length of the name (malformed header, no ':' found) */
+				pair->name.length = pos - pair->name.buf;
+			}
+			pos++;
+			if(pos < end && *pos == APT_TOKEN_LF) {
+				pos++;
+			}
+			break;
+		}
+		else if(*pos == APT_TOKEN_LF) {
+			/* end of line detected */
+			if(pair->value.buf) {
+				/* set length of the value */
+				pair->value.length = pos - pair->value.buf;
+			}
+			else if(pair->name.buf) {
+				/* set length of the name (malformed header) */
+				pair->name.length = pos - pair->name.buf;
+			}
+			pos++;
+			break;
+		}
+		else if(!pair->name.length) {
+			/* skip initial spaces and read name */
+			if(!pair->name.buf && *pos != APT_TOKEN_SP) {
+				pair->name.buf = pos;
+			}
+			if(*pos == ':') {
+				/* set length of the name */
+				pair->name.length = pos - pair->name.buf;
+			}
+		}
+		else if(!pair->value.length) {
+			/* skip initial spaces and read value */
+			if(!pair->value.buf && *pos != APT_TOKEN_SP) {
+				pair->value.buf = pos;
+			}
+		}
+		pos++;
+	}
+
+	stream->pos = pos;
+	return (pair->name.length && pair->value.length) ? TRUE : FALSE;
+}
+
 
 /** Navigate through the fields of the line */
 APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field)
@@ -68,44 +133,26 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 }
 
 
-/** Parse name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_value_parse(apt_text_stream_t *stream, apt_name_value_t *pair)
-{
-	apt_text_field_read(stream,':',TRUE,&pair->name);
-	apt_text_spaces_skip(stream);
-	pair->value.buf = stream->pos;
-	pair->value.length = stream->text.length - (stream->pos - stream->text.buf);
-	return TRUE;
-}
-
-/** Generate name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_value_generate(const apt_name_value_t *pair, apt_text_stream_t *stream)
-{
-	return apt_name_and_value_generate(&pair->name,&pair->value,stream);
-}
-
-/** Generate name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_and_value_generate(const apt_str_t *name, const apt_str_t *value, apt_text_stream_t *stream)
+/** Generate header */
+APT_DECLARE(apt_bool_t) apt_header_generate(const apt_name_value_t *pair, apt_text_stream_t *stream)
 {
 	char *pos = stream->pos;
-	memcpy(pos,name->buf,name->length);
-	pos += name->length;
-	*pos = ':';
-	pos++;
-	memcpy(pos,value->buf,value->length);
-	pos += value->length;
+	memcpy(pos,pair->name.buf,pair->name.length);
+	pos += pair->name.length;
+	*pos++ = ':';
+	memcpy(pos,pair->value.buf,pair->value.length);
+	pos += pair->value.length;
 	stream->pos = pos;
 	return TRUE;
 }
 
-/** Generate only the name part ("name:") of the name-value pair */
-APT_DECLARE(apt_bool_t) apt_name_value_name_generate(const apt_str_t *name, apt_text_stream_t *stream)
+/** Generate only the name ("name":) of the header */
+APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt_text_stream_t *stream)
 {
 	char *pos = stream->pos;
 	memcpy(pos,name->buf,name->length);
 	pos += name->length;
-	*pos = ':';
-	pos++;
+	*pos++ = ':';
 	stream->pos = pos;
 	return TRUE;
 }
@@ -117,13 +164,13 @@ APT_DECLARE(apt_bool_t) apt_name_value_name_generate(const apt_str_t *name, apt_
 #define TOKEN_FALSE_LENGTH (sizeof(TOKEN_FALSE)-1)
 
 /** Parse boolean-value */
-APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const char *str, apt_bool_t *value)
+APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value)
 {
-	if(strncasecmp(str,TOKEN_TRUE,TOKEN_TRUE_LENGTH) == 0) {
+	if(strncasecmp(str->buf,TOKEN_TRUE,TOKEN_TRUE_LENGTH) == 0) {
 		*value = TRUE;
 		return TRUE;
 	}
-	if(strncasecmp(str,TOKEN_FALSE,TOKEN_FALSE_LENGTH) == 0) {
+	if(strncasecmp(str->buf,TOKEN_FALSE,TOKEN_FALSE_LENGTH) == 0) {
 		*value = FALSE;
 		return TRUE;
 	}

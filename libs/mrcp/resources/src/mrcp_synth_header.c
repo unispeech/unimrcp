@@ -91,13 +91,9 @@ static const apt_str_table_item_t completion_cause_string_table[] = {
 };
 
 
-static APR_INLINE apr_size_t apt_string_table_value_parse(const apt_str_table_item_t *string_table, size_t count, apt_text_stream_t *stream)
+static APR_INLINE apr_size_t apt_string_table_value_parse(const apt_str_table_item_t *string_table, size_t count, const apt_str_t *value)
 {
-	apt_str_t field;
-	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
-		return count;
-	}
-	return apt_string_table_id_find(string_table,count,&field);
+	return apt_string_table_id_find(string_table,count,value);
 }
 
 static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *string_table, size_t count, size_t id, apt_text_stream_t *stream)
@@ -113,30 +109,33 @@ static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *st
 }
 
 /** Parse MRCP speech-length value */
-static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *speech_length, apt_text_stream_t *stream, apr_pool_t *pool)
+static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *speech_length, const apt_str_t *value, apr_pool_t *pool)
 {
-	switch(*stream->pos) {
+	switch(*value->buf) {
 		case '+': speech_length->type = SPEECH_LENGTH_TYPE_NUMERIC_POSITIVE; break;
 		case '-': speech_length->type = SPEECH_LENGTH_TYPE_NUMERIC_NEGATIVE; break;
 		default : speech_length->type = SPEECH_LENGTH_TYPE_TEXT;
 	}
 
 	if(speech_length->type == SPEECH_LENGTH_TYPE_TEXT) {
-		apt_str_t str;
-		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
-			return FALSE;
-		}
-		apt_string_copy(&speech_length->value.tag,&str,pool);
+		apt_string_copy(&speech_length->value.tag,value,pool);
 	}
 	else {
+		mrcp_numeric_speech_length_t *numeric = &speech_length->value.numeric;
 		apt_str_t str;
-		stream->pos++;
-		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
+		apt_text_stream_t stream;
+		stream.text = *value;
+		stream.pos = stream.text.buf;
+		stream.pos++;
+		if(apt_text_field_read(&stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
 			return FALSE;
 		}
-		speech_length->value.numeric.length = apt_size_value_parse(str.buf);
+		numeric->length = apt_size_value_parse(&str);
 
-		speech_length->value.numeric.unit = apt_string_table_value_parse(speech_unit_string_table,SPEECH_UNIT_COUNT,stream);
+		if(apt_text_field_read(&stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
+			return FALSE;
+		}
+		numeric->unit = apt_string_table_value_parse(speech_unit_string_table,SPEECH_UNIT_COUNT,&str);
 	}
 	return TRUE;
 }
@@ -222,38 +221,37 @@ static void* mrcp_synth_header_allocate(mrcp_header_accessor_t *accessor, apr_po
 }
 
 /** Parse MRCP synthesizer header */
-static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_bool_t status = TRUE;
 	mrcp_synth_header_t *synth_header = accessor->data;
-	apr_size_t length = value->text.length - (value->pos - value->text.buf);
 	switch(id) {
 		case SYNTHESIZER_HEADER_JUMP_SIZE:
 			mrcp_speech_length_value_parse(&synth_header->jump_size,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_KILL_ON_BARGE_IN:
-			apt_boolean_value_parse(value->pos,&synth_header->kill_on_barge_in);
+			apt_boolean_value_parse(value,&synth_header->kill_on_barge_in);
 			break;
 		case SYNTHESIZER_HEADER_SPEAKER_PROFILE:
-			apt_string_assign_n(&synth_header->speaker_profile,value->pos,length,pool);
+			apt_string_copy(&synth_header->speaker_profile,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
-			synth_header->completion_cause = apt_size_value_parse(value->pos);
+			synth_header->completion_cause = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_REASON:
-			apt_string_assign_n(&synth_header->completion_reason,value->pos,length,pool);
+			apt_string_copy(&synth_header->completion_reason,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_GENDER:
 			synth_header->voice_param.gender = apt_string_table_value_parse(voice_gender_string_table,VOICE_GENDER_COUNT,value);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_AGE:
-			synth_header->voice_param.age = apt_size_value_parse(value->pos);
+			synth_header->voice_param.age = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_VARIANT:
-			synth_header->voice_param.variant = apt_size_value_parse(value->pos);
+			synth_header->voice_param.variant = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_NAME:
-			apt_string_assign_n(&synth_header->voice_param.name,value->pos,length,pool);
+			apt_string_copy(&synth_header->voice_param.name,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
 			synth_header->prosody_param.volume = apt_string_table_value_parse(prosody_volume_string_table,PROSODY_VOLUME_COUNT,value);
@@ -262,37 +260,37 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			synth_header->prosody_param.rate = apt_string_table_value_parse(prosody_rate_string_table,PROSODY_RATE_COUNT,value);
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_MARKER:
-			apt_string_assign_n(&synth_header->speech_marker,value->pos,length,pool);
+			apt_string_copy(&synth_header->speech_marker,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_assign_n(&synth_header->speech_language,value->pos,length,pool);
+			apt_string_copy(&synth_header->speech_language,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_FETCH_HINT:
-			apt_string_assign_n(&synth_header->fetch_hint,value->pos,length,pool);
+			apt_string_copy(&synth_header->fetch_hint,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
-			apt_string_assign_n(&synth_header->audio_fetch_hint,value->pos,length,pool);
+			apt_string_copy(&synth_header->audio_fetch_hint,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_FETCH_TIMEOUT:
-			synth_header->fetch_timeout = apt_size_value_parse(value->pos);
+			synth_header->fetch_timeout = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI:
-			apt_string_assign_n(&synth_header->failed_uri,value->pos,length,pool);
+			apt_string_copy(&synth_header->failed_uri,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_assign_n(&synth_header->failed_uri_cause,value->pos,length,pool);
+			apt_string_copy(&synth_header->failed_uri_cause,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_RESTART:
-			apt_boolean_value_parse(value->pos,&synth_header->speak_restart);
+			apt_boolean_value_parse(value,&synth_header->speak_restart);
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_LENGTH:
 			mrcp_speech_length_value_parse(&synth_header->speak_length,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_LOAD_LEXICON:
-			apt_boolean_value_parse(value->pos,&synth_header->load_lexicon);
+			apt_boolean_value_parse(value,&synth_header->load_lexicon);
 			break;
 		case SYNTHESIZER_HEADER_LEXICON_SEARCH_ORDER:
-			apt_string_assign_n(&synth_header->lexicon_search_order,value->pos,length,pool);
+			apt_string_copy(&synth_header->lexicon_search_order,value,pool);
 			break;
 		default:
 			status = FALSE;

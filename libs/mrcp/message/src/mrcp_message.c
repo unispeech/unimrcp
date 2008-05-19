@@ -96,7 +96,7 @@ static apt_bool_t mrcp_request_state_generate(mrcp_request_state_e request_state
 /** Parse MRCP request-id */
 static APR_INLINE mrcp_request_id mrcp_request_id_parse(const apt_str_t *field)
 {
-	return apt_size_value_parse(field->buf);
+	return apt_size_value_parse(field);
 }
 
 /** Generate MRCP request-id */
@@ -108,7 +108,7 @@ static APR_INLINE apt_bool_t mrcp_request_id_generate(mrcp_request_id request_id
 /** Parse MRCP status-code */
 static APR_INLINE mrcp_status_code_e mrcp_status_code_parse(const apt_str_t *field)
 {
-	return apt_size_value_parse(field->buf);
+	return apt_size_value_parse(field);
 }
 
 /** Generate MRCP status-code */
@@ -191,7 +191,7 @@ static apt_bool_t mrcp_response_line_parse(mrcp_start_line_t *start_line, apt_te
 			apt_log(APT_PRIO_WARNING,"Cannot parse message-length in response-line");
 			return FALSE;
 		}
-		start_line->length = apt_size_value_parse(field.buf);
+		start_line->length = apt_size_value_parse(&field);
 	}
 
 	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
@@ -238,7 +238,7 @@ static apt_bool_t mrcp_v2_start_line_parse(mrcp_start_line_t *start_line, apt_te
 		apt_log(APT_PRIO_WARNING,"Cannot parse message-length in v2 start-line");
 		return FALSE;
 	}
-	start_line->length = apt_size_value_parse(field.buf);
+	start_line->length = apt_size_value_parse(&field);
 
 	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 		apt_log(APT_PRIO_WARNING,"Cannot parse request-id in v2 start-line");
@@ -257,6 +257,7 @@ static apt_bool_t mrcp_v2_start_line_parse(mrcp_start_line_t *start_line, apt_te
 		start_line->request_id = mrcp_request_id_parse(&field);
 
 		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == TRUE) {
+			/* parsing MRCP v2 event */
 			start_line->request_state = mrcp_request_state_parse(&field);
 			start_line->message_type = MRCP_MESSAGE_TYPE_EVENT;
 		}
@@ -430,37 +431,49 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line,
 /** Initialize MRCP channel-identifier */
 MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)
 {
-	channel_id->session_id.buf = NULL;
-	channel_id->session_id.length = 0;
+	apt_string_reset(&channel_id->session_id);
 	apt_string_reset(&channel_id->resource_name);
 	channel_id->resource_id = 0;
+}
+
+/** Parse MRCP channel-identifier value */
+static apt_bool_t mrcp_channel_id_value_parse(mrcp_channel_id *channel_id, const apt_str_t *value, apr_pool_t *pool)
+{
+	apt_str_t field = *value;
+	const char *pos = strchr(value->buf,'@');
+	if(!pos) {
+		return FALSE;
+	}
+
+	field.length = pos - field.buf;
+	if(field.length >= value->length) {
+		return FALSE;
+	}
+	apt_string_copy(&channel_id->session_id,&field,pool);
+	field.buf += field.length + 1;
+	field.length = value->length - (field.length + 1);
+	apt_string_copy(&channel_id->resource_name,&field,pool);
+	return TRUE;
 }
 
 /** Parse MRCP channel-identifier */
 MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
-	apt_text_stream_t line;
-	apt_str_t field;
-
+	apt_name_value_t pair;
 	do {
-		if(apt_text_line_read(text_stream,&line.text) == FALSE) {
+		if(apt_text_header_read(text_stream,&pair) == FALSE) {
 			return FALSE;
 		}
-		line.pos = line.text.buf;
-		
-		apt_text_field_read(&line,':',TRUE,&field);
-		if(strncasecmp(field.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
+
+		if(strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
+			mrcp_channel_id_value_parse(channel_id,&pair.value,pool);
 			break;
 		}
-
-		/* skipping header, expected channel identifier first */
+		
+		/* skip this header, expecting channel identifier first */
 	}
-	while(line.text.length);
+	while(pair.name.length);
 
-	apt_text_field_read(&line,'@',TRUE,&field);
-	apt_string_copy(&channel_id->session_id,&field,pool);
-	channel_id->resource_name.length = line.text.length - (line.pos-line.text.buf);
-	channel_id->resource_name.buf = apr_pstrmemdup(pool,line.pos,channel_id->resource_name.length);
 	return TRUE;
 }
 
@@ -491,25 +504,23 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 /** Parse MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
-	apt_text_stream_t line;
-	apt_str_t name;
+	apt_name_value_t pair;
 
 	mrcp_header_allocate(&message_header->generic_header_accessor,pool);
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);
 
 	do {
-		if(apt_text_line_read(text_stream,&line.text) == FALSE) {
+		if(apt_text_header_read(text_stream,&pair) == FALSE) {
 			break;
 		}
-		line.pos = line.text.buf;
-		apt_text_field_read(&line,':',TRUE,&name);
-		if(mrcp_header_parse(&message_header->resource_header_accessor,&name,&line,pool) != TRUE) {
-			if(mrcp_header_parse(&message_header->generic_header_accessor,&name,&line,pool) != TRUE) {
+
+		if(mrcp_header_parse(&message_header->resource_header_accessor,&pair,pool) != TRUE) {
+			if(mrcp_header_parse(&message_header->generic_header_accessor,&pair,pool) != TRUE) {
 				/* unknown MRCP header */
 			}
 		}
 	}
-	while(line.text.length);
+	while(pair.name.length);
 	return TRUE;
 }
 
@@ -569,9 +580,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_body_parse(mrcp_message_t *message, apt_text_strea
 		if(generic_header && generic_header->content_length) {
 			apt_str_t *body = &message->body;
 			body->length = generic_header->content_length;
-			body->buf = apr_palloc(pool,body->length+1);
-			memcpy(body->buf,text_stream->pos,body->length);
-			body->buf[body->length] = '\0';
+			if(body->length > (text_stream->text.length - (text_stream->pos - text_stream->text.buf))) {
+				body->length = text_stream->text.length - (text_stream->pos - text_stream->text.buf);
+			}
+			body->buf = apr_pstrmemdup(pool,text_stream->pos,body->length);
 			text_stream->pos += body->length;
 		}
 	}
@@ -676,4 +688,5 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message)
 
 	return TRUE;
 }
+
 

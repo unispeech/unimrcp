@@ -33,15 +33,18 @@ static const apt_str_table_item_t generic_header_string_table[] = {
 
 
 /** Parse mrcp request-id list */
-static apt_bool_t mrcp_request_id_list_parse(mrcp_request_id_list_t *request_id_list, apt_text_stream_t *stream)
+static apt_bool_t mrcp_request_id_list_parse(mrcp_request_id_list_t *request_id_list, const apt_str_t *value)
 {
 	apt_str_t field;
+	apt_text_stream_t stream;
+	stream.text = *value;
+	stream.pos = stream.text.buf;
 	request_id_list->count = 0;
 	while(request_id_list->count < MAX_ACTIVE_REQUEST_ID_COUNT) {
-		if(apt_text_field_read(stream,',',TRUE,&field) == FALSE) {
+		if(apt_text_field_read(&stream,',',TRUE,&field) == FALSE) {
 			break;
 		}
-		request_id_list->ids[request_id_list->count] = apt_size_value_parse(field.buf);
+		request_id_list->ids[request_id_list->count] = apt_size_value_parse(&field);
 		request_id_list->count++;
 	}
 	return TRUE;
@@ -88,44 +91,43 @@ static void* mrcp_generic_header_allocate(mrcp_header_accessor_t *accessor, apr_
 }
 
 /** Parse generic-header */
-static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_bool_t status = TRUE;
 	mrcp_generic_header_t *generic_header = accessor->data;
-	apr_size_t length = value->text.length - (value->pos - value->text.buf);
 	switch(id) {
 		case GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST:
 			mrcp_request_id_list_parse(&generic_header->active_request_id_list,value);
 			break;
 		case GENERIC_HEADER_PROXY_SYNC_ID:
-			apt_string_assign_n(&generic_header->proxy_sync_id,value->pos,length,pool);
+			apt_string_copy(&generic_header->proxy_sync_id,value,pool);
 			break;
 		case GENERIC_HEADER_ACCEPT_CHARSET:
-			apt_string_assign_n(&generic_header->accept_charset,value->pos,length,pool);
+			apt_string_copy(&generic_header->accept_charset,value,pool);
 			break;
 		case GENERIC_HEADER_CONTENT_TYPE:
-			apt_string_assign_n(&generic_header->content_type,value->pos,length,pool);
+			apt_string_copy(&generic_header->content_type,value,pool);
 			break;
 		case GENERIC_HEADER_CONTENT_ID:
-			apt_string_assign_n(&generic_header->content_id,value->pos,length,pool);
+			apt_string_copy(&generic_header->content_id,value,pool);
 			break;
 		case GENERIC_HEADER_CONTENT_BASE:
-			apt_string_assign_n(&generic_header->content_base,value->pos,length,pool);
+			apt_string_copy(&generic_header->content_base,value,pool);
 			break;
 		case GENERIC_HEADER_CONTENT_ENCODING:
-			apt_string_assign_n(&generic_header->content_encoding,value->pos,length,pool);
+			apt_string_copy(&generic_header->content_encoding,value,pool);
 			break;
 		case GENERIC_HEADER_CONTENT_LOCATION:
-			apt_string_assign_n(&generic_header->content_location,value->pos,length,pool);
+			apt_string_copy(&generic_header->content_location,value,pool);
 			break;
 		case GENERIC_HEADER_CONTENT_LENGTH:
-			generic_header->content_length = apt_size_value_parse(value->pos);
+			generic_header->content_length = apt_size_value_parse(value);
 			break;
 		case GENERIC_HEADER_CACHE_CONTROL:
-			apt_string_assign_n(&generic_header->cache_control,value->pos,length,pool);
+			apt_string_copy(&generic_header->cache_control,value,pool);
 			break;
 		case GENERIC_HEADER_LOGGING_TAG:
-			apt_string_assign_n(&generic_header->logging_tag,value->pos,length,pool);
+			apt_string_copy(&generic_header->logging_tag,value,pool);
 			break;
 		default:
 			status = FALSE;

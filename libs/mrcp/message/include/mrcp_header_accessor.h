@@ -42,7 +42,7 @@ struct mrcp_header_vtable_t {
 	void (*destroy)(mrcp_header_accessor_t *accessor);
 
 	/** Parse header field */
-	apt_bool_t (*parse_field)(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value, apr_pool_t *pool);
+	apt_bool_t (*parse_field)(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool);
 	/** Generate header field */
 	apt_bool_t (*generate_field)(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value);
 	/** Duplicate header field */
@@ -121,7 +121,7 @@ static APR_INLINE void mrcp_header_destroy(mrcp_header_accessor_t *accessor)
 
 
 /** Parse header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, apt_str_t *name, apt_text_stream_t *value, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_name_value_t *pair, apr_pool_t *pool);
 
 /** Generate header */
 MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, apt_text_stream_t *text_stream);

@@ -16,19 +16,19 @@
 
 #include "mrcp_header_accessor.h"
 
-MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, apt_str_t *name, apt_text_stream_t *value, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_name_value_t *pair, apr_pool_t *pool)
 {
 	size_t id;
 	if(!accessor->vtable) {
 		return FALSE;
 	}
 
-	id = apt_string_table_id_find(accessor->vtable->field_table,accessor->vtable->field_count,name);
+	id = apt_string_table_id_find(accessor->vtable->field_table,accessor->vtable->field_count,&pair->name);
 	if(id >= accessor->vtable->field_count) {
 		return FALSE;
 	}
 
-	if(accessor->vtable->parse_field(accessor,id,value,pool) == FALSE) {
+	if(accessor->vtable->parse_field(accessor,id,&pair->value,pool) == FALSE) {
 		return FALSE;
 	}
 	
@@ -54,7 +54,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, 
 				continue;
 			}
 			
-			apt_name_value_name_generate(name,text_stream);
+			apt_text_header_name_generate(name,text_stream);
 			accessor->vtable->generate_field(accessor,i,text_stream);
 			apt_text_eol_insert(text_stream);
 			
