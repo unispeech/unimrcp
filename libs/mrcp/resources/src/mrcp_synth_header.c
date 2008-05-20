@@ -111,6 +111,10 @@ static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *st
 /** Parse MRCP speech-length value */
 static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *speech_length, const apt_str_t *value, apr_pool_t *pool)
 {
+	if(!value->length) {
+		return FALSE;
+	}
+
 	switch(*value->buf) {
 		case '+': speech_length->type = SPEECH_LENGTH_TYPE_NUMERIC_POSITIVE; break;
 		case '-': speech_length->type = SPEECH_LENGTH_TYPE_NUMERIC_NEGATIVE; break;

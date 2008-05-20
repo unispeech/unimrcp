@@ -62,10 +62,6 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name
 				/* set length of the value */
 				pair->value.length = pos - pair->value.buf;
 			}
-			else if(pair->name.buf) {
-				/* set length of the name (malformed header, no ':' found) */
-				pair->name.length = pos - pair->name.buf;
-			}
 			pos++;
 			if(pos < end && *pos == APT_TOKEN_LF) {
 				pos++;
@@ -77,10 +73,6 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name
 			if(pair->value.buf) {
 				/* set length of the value */
 				pair->value.length = pos - pair->value.buf;
-			}
-			else if(pair->name.buf) {
-				/* set length of the name (malformed header) */
-				pair->name.length = pos - pair->name.buf;
 			}
 			pos++;
 			break;
@@ -105,7 +97,7 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name
 	}
 
 	stream->pos = pos;
-	return (pair->name.length && pair->value.length) ? TRUE : FALSE;
+	return (pair->name.length) ? TRUE : FALSE;
 }
 
 
@@ -166,6 +158,9 @@ APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt
 /** Parse boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value)
 {
+	if(!str->buf) {
+		return FALSE;
+	}
 	if(strncasecmp(str->buf,TOKEN_TRUE,TOKEN_TRUE_LENGTH) == 0) {
 		*value = TRUE;
 		return TRUE;

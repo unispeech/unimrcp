@@ -176,7 +176,7 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size
 	mrcp_recog_header_t *recog_header = accessor->data;
 	switch(id) {
 		case RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD:
-			recog_header->confidence_threshold = apt_float_value_parse(value->buf);
+			recog_header->confidence_threshold = apt_float_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_SENSITIVITY_LEVEL:
 			recog_header->sensitivity_level = apt_size_value_parse(value);

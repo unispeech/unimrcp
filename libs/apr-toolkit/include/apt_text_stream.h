@@ -66,7 +66,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
  * Navigate through the headers (name:value pairs) of the text stream (message).
  * @param text_stream the text stream to navigate
  * @param pair the read pair to return
- * @return TRUE if the length of the line > 0, otherwise FALSE
+ * @return TRUE if the length of the read name > 0, otherwise FALSE
  */
 APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name_value_t *pair);
 
@@ -100,7 +100,7 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_text_st
 /** Parse size_t value */
 static APR_INLINE apr_size_t apt_size_value_parse(const apt_str_t *str)
 {
-	return atol(str->buf);
+	return str->buf ? atol(str->buf) : 0;
 }
 
 /** Generate apr_size_t value */
@@ -115,9 +115,9 @@ static APR_INLINE apt_bool_t apt_size_value_generate(apr_size_t value, apt_text_
 }
 
 /** Parse float value */
-static APR_INLINE float apt_float_value_parse(const char *str)
+static APR_INLINE float apt_float_value_parse(const apt_str_t *str)
 {
-	return (float)atof(str);
+	return str->buf ? (float)atof(str->buf) : 0;
 }
 
 /** Generate float value */
@@ -134,8 +134,10 @@ static APR_INLINE apt_bool_t apt_float_value_generate(float value, apt_text_stre
 /** Generate string value */
 static APR_INLINE apt_bool_t apt_string_value_generate(const apt_str_t *str, apt_text_stream_t *stream)
 {
-	memcpy(stream->pos,str->buf,str->length);
-	stream->pos += str->length;
+	if(str->length) {
+		memcpy(stream->pos,str->buf,str->length);
+		stream->pos += str->length;
+	}
 	return TRUE;
 }
 
