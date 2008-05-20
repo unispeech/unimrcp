@@ -459,22 +459,20 @@ static apt_bool_t mrcp_channel_id_value_parse(mrcp_channel_id *channel_id, const
 /** Parse MRCP channel-identifier */
 MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
+	apt_bool_t match = FALSE;
 	apt_name_value_t pair;
 	do {
-		if(apt_text_header_read(text_stream,&pair) == FALSE) {
-			return FALSE;
+		if(apt_text_header_read(text_stream,&pair) == TRUE) {
+			if(strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
+				match = TRUE;
+				mrcp_channel_id_value_parse(channel_id,&pair.value,pool);
+				break;
+			}
+			/* skip this header, expecting channel identifier first */
 		}
-
-		if(strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
-			mrcp_channel_id_value_parse(channel_id,&pair.value,pool);
-			break;
-		}
-		
-		/* skip this header, expecting channel identifier first */
 	}
-	while(pair.name.length);
-
-	return TRUE;
+	while(pair.name.length || pair.name.buf);
+	return match;
 }
 
 /** Generate MRCP channel-identifier */
@@ -510,17 +508,18 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *messag
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);
 
 	do {
-		if(apt_text_header_read(text_stream,&pair) == FALSE) {
-			break;
-		}
-
-		if(mrcp_header_parse(&message_header->resource_header_accessor,&pair,pool) != TRUE) {
-			if(mrcp_header_parse(&message_header->generic_header_accessor,&pair,pool) != TRUE) {
-				/* unknown MRCP header */
+		if(apt_text_header_read(text_stream,&pair) == TRUE) {
+			/* normal header */
+			if(mrcp_header_parse(&message_header->resource_header_accessor,&pair,pool) != TRUE) {
+				if(mrcp_header_parse(&message_header->generic_header_accessor,&pair,pool) != TRUE) {
+					/* unknown MRCP header */
+				}
 			}
 		}
+		/* length == 0 && !buf -> empty header, exit */
+		/* length == 0 && buf -> malformed header, skip to the next one */
 	}
-	while(pair.name.length);
+	while(pair.name.length || pair.name.buf);
 	return TRUE;
 }
 
