@@ -84,6 +84,8 @@ struct mrcp_header_accessor_t {
 	void                       *data;
 	/** Property set explicitly shows which fields are present(set) in entire header */
 	mrcp_header_property_t      property_set;
+	/** Indicates that only name of the header is required ("name:"), no value needed */
+	apt_bool_t                  empty_values;
 	
 	/** Header accessor interface */
 	const mrcp_header_vtable_t *vtable;
@@ -94,6 +96,7 @@ static APR_INLINE void mrcp_header_accessor_init(mrcp_header_accessor_t *accesso
 {
 	accessor->data = NULL;
 	accessor->property_set = 0;
+	accessor->empty_values = FALSE;
 	accessor->vtable = NULL;
 }
 

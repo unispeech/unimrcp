@@ -83,6 +83,11 @@ static apt_bool_t recog_message_resourcify_by_id(mrcp_resource_t *resource, mrcp
 			return FALSE;
 		}
 		message->start_line.method_name = *name;
+		if(message->start_line.method_id == RECOGNIZER_GET_PARAMS) {
+			/* no values needed for GET-PARAMS */
+			message->header.generic_header_accessor.empty_values = TRUE;
+			message->header.resource_header_accessor.empty_values = TRUE;
+		}
 	}
 	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
 		const apt_str_t *name = apt_string_table_str_get(

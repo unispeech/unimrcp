@@ -55,7 +55,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, 
 			}
 			
 			apt_text_header_name_generate(name,text_stream);
-			accessor->vtable->generate_field(accessor,i,text_stream);
+			if(accessor->empty_values == FALSE) {
+				accessor->vtable->generate_field(accessor,i,text_stream);
+			}
 			apt_text_eol_insert(text_stream);
 			
 			mrcp_header_property_remove(&property_set,i);
