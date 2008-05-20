@@ -26,55 +26,64 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 {
 	apr_file_t *file;
 	char buf_in[1500];
-	apt_text_stream_t stream;
+	apt_text_stream_t stream_in;
 	mrcp_message_t *message;
+	apt_str_t resource_name;
 
 	if(apr_file_open(&file,file_path,APR_FOPEN_READ | APR_FOPEN_BINARY,APR_OS_DEFAULT,suite->pool) != APR_SUCCESS) {
 		return FALSE;
 	}
 
-	stream.text.length = sizeof(buf_in)-1;
-	stream.text.buf = buf_in;
-	stream.pos = stream.text.buf;
-	if(apr_file_read(file,stream.text.buf,&stream.text.length) != APR_SUCCESS) {
+	stream_in.text.length = sizeof(buf_in)-1;
+	stream_in.text.buf = buf_in;
+	stream_in.pos = stream_in.text.buf;
+	if(apr_file_read(file,stream_in.text.buf,&stream_in.text.length) != APR_SUCCESS) {
 		return FALSE;
 	}
-	stream.text.buf[stream.text.length]='\0';
+	stream_in.text.buf[stream_in.text.length]='\0';
 
-	message = mrcp_message_create(suite->pool);
 	if(version == MRCP_VERSION_1) {
 		/* skip the first line in a test file, which indicates resource name */
-		if(*stream.pos =='/' && *(stream.pos+1)=='/') {
-			stream.pos += 2;
-			apt_text_line_read(&stream,&message->channel_id.resource_name);
-			stream.text.length -= stream.pos - stream.text.buf;
-			stream.text.buf = stream.pos;
+		if(*stream_in.pos =='/' && *(stream_in.pos+1)=='/') {
+			stream_in.pos += 2;
+			apt_text_line_read(&stream_in,&resource_name);
+			stream_in.text.length -= stream_in.pos - stream_in.text.buf;
+			stream_in.text.buf = stream_in.pos;
 		}
 	}
-	apt_log(APT_PRIO_INFO,"Open File [%s] [%d bytes]\n%s",file_path,stream.text.length,stream.text.buf);
+	apt_log(APT_PRIO_INFO,"Open File [%s] [%d bytes]\n%s",file_path,stream_in.text.length,stream_in.text.buf);
 
-	if(mrcp_message_parse(factory,message,&stream) == TRUE) {
-		char buf_out[1500];
-		apt_log(APT_PRIO_INFO,"Parsed Stream [%d bytes]",stream.pos - stream.text.buf);
+	do {
+		const char *pos = stream_in.pos;
+		message = mrcp_message_create(suite->pool);
+		if(version == MRCP_VERSION_1) {
+			message->channel_id.resource_name = resource_name;
+		}
+		if(mrcp_message_parse(factory,message,&stream_in) == TRUE) {
+			char buf_out[1500];
+			apt_text_stream_t stream_out;
+			apt_log(APT_PRIO_INFO,"Parsed Stream [%d bytes]",stream_in.pos - pos);
 
-		stream.text.length = sizeof(buf_out)-1;
-		stream.text.buf = buf_out;
-		stream.pos = stream.text.buf;
-		message->start_line.length = 0;
-		if(mrcp_message_generate(factory,message,&stream) == TRUE) {
-			*stream.pos = '\0';
-			apt_log(APT_PRIO_INFO,"Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+			stream_out.text.length = sizeof(buf_out)-1;
+			stream_out.text.buf = buf_out;
+			stream_out.pos = stream_out.text.buf;
+			message->start_line.length = 0;
+			if(mrcp_message_generate(factory,message,&stream_out) == TRUE) {
+				*stream_out.pos = '\0';
+				apt_log(APT_PRIO_INFO,"Generated Stream [%d bytes]\n%s",stream_out.text.length,stream_out.text.buf);
+			}
+			else {
+				apt_log(APT_PRIO_WARNING,"Failed to Generate Message");
+			}
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"Failed to Generate Message");
+			apt_log(APT_PRIO_WARNING,"Failed to Parse Message");
 		}
+		getchar();
 	}
-	else {
-		apt_log(APT_PRIO_WARNING,"Failed to Parse Message");
-	}
+	while(stream_in.pos < stream_in.text.buf + stream_in.text.length);
 	apr_file_close(file);
 
-//	getchar();
 	return TRUE;
 }
 
