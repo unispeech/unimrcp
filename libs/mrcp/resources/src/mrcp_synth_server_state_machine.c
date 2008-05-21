@@ -25,14 +25,14 @@ typedef enum {
 	SYNTHESIZER_STATE_IDLE,
 	SYNTHESIZER_STATE_SPEAKING,
 	SYNTHESIZER_STATE_PAUSED
-} mrcp_synth_state_t;
+} mrcp_synth_state_e;
 
 typedef struct mrcp_synth_state_machine_t mrcp_synth_state_machine_t;
 struct mrcp_synth_state_machine_t {
 	/** state machine base */
 	mrcp_state_machine_t  base;
 	/** synthesizer state */
-	mrcp_synth_state_t    state;
+	mrcp_synth_state_e    state;
 	/** request sent to synthesizer engine and waiting for the response to be received */
 	mrcp_message_t       *active_request;
 	/** in-progress speak request */
