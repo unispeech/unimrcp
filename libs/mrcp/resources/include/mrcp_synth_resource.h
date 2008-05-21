@@ -18,7 +18,7 @@
 #define __MRCP_SYNTH_RESOURCE_H__
 
 /**
- * @file mrcp_synth_server_resource.h
+ * @file mrcp_synth_resource.h
  * @brief MRCP Synthesizer Resource
  */ 
 

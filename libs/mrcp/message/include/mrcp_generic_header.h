@@ -27,8 +27,6 @@
 
 APT_BEGIN_EXTERN_C
 
-#define MAX_ACTIVE_REQUEST_ID_COUNT 5
-
 /** Enumaration of MRCP generic headers */
 typedef enum {
 	GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST,
@@ -46,9 +44,13 @@ typedef enum {
 	GENERIC_HEADER_COUNT
 } mrcp_generic_header_id;
 
+/** MRCP request identifiers list declaration */
 typedef struct mrcp_request_id_list_t mrcp_request_id_list_t;
+/** MRCP generic header declaration */
 typedef struct mrcp_generic_header_t mrcp_generic_header_t;
 
+/** Max number of request ids in active request id list */
+#define MAX_ACTIVE_REQUEST_ID_COUNT 5
 /** List (array) of MRCP request identifiers */
 struct mrcp_request_id_list_t {
 	mrcp_request_id ids[MAX_ACTIVE_REQUEST_ID_COUNT];
