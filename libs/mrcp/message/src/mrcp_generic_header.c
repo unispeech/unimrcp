@@ -244,3 +244,28 @@ MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get(mrcp_ve
 {
 	return &vtable;
 }
+
+
+/** Append active request id list */
+MRCP_DECLARE(apt_bool_t) active_request_id_list_append(mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
+{
+	mrcp_request_id_list_t *request_id_list = &generic_header->active_request_id_list;
+	if(request_id_list->count >= MAX_ACTIVE_REQUEST_ID_COUNT) {
+		return FALSE;
+	}
+	request_id_list->ids[request_id_list->count++] = request_id;
+	return TRUE;
+}
+
+/** Find request id in active request id list */
+MRCP_DECLARE(apt_bool_t) active_request_id_list_find(mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
+{
+	size_t i;
+	mrcp_request_id_list_t *request_id_list = &generic_header->active_request_id_list;
+	for(i=0; i<request_id_list->count; i++) {
+		if(request_id_list->ids[i] == request_id) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}

@@ -83,18 +83,14 @@ struct mrcp_generic_header_t {
 	apt_str_t              logging_tag;
 };
 
-/** Append generic header active request id list */
-static APR_INLINE apt_bool_t active_request_id_list_append(mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
-{
-	if(generic_header->active_request_id_list.count >= MAX_ACTIVE_REQUEST_ID_COUNT) {
-		return FALSE;
-	}
-	generic_header->active_request_id_list.ids[generic_header->active_request_id_list.count++] = request_id;
-	return TRUE;
-}
-
 /** Get generic header vtable */
 MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get(mrcp_version_e version);
+
+
+/** Append active request id list */
+MRCP_DECLARE(apt_bool_t) active_request_id_list_append(mrcp_generic_header_t *generic_header, mrcp_request_id request_id);
+/** Find request id in active request id list */
+MRCP_DECLARE(apt_bool_t) active_request_id_list_find(mrcp_generic_header_t *generic_header, mrcp_request_id request_id);
 
 
 APT_END_EXTERN_C
