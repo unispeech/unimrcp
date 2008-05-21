@@ -26,7 +26,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** String declaration */
 typedef struct apt_str_t apt_str_t;
+
 /** String representation */
 struct apt_str_t {
 	/** String buffer (might be not NULL terminated) */

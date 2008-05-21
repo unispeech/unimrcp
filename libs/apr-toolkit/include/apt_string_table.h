@@ -27,8 +27,10 @@
 APT_BEGIN_EXTERN_C
 
 
+/** String table item declaration */
 typedef struct apt_str_table_item_t apt_str_table_item_t;
-/** Definition of string table item. */
+
+/** String table item definition */
 struct apt_str_table_item_t {
 	/** String value associated with id */
 	apt_str_t  value;

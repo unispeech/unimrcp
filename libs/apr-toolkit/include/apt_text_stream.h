@@ -18,8 +18,8 @@
 #define __APT_TEXT_STREAM_H__
 
 /**
- * @file apt_string_table.h
- * @brief Generic String Table
+ * @file apt_text_stream.h
+ * @brief Text Stream Parse/Generate Routine
  */ 
 
 #include <stdlib.h>
@@ -37,7 +37,9 @@ APT_BEGIN_EXTERN_C
 /** Line feed */
 #define APT_TOKEN_LF 0x0A
 
+/** Text stream declaration */
 typedef struct apt_text_stream_t apt_text_stream_t;
+/** Name-value declaration */
 typedef struct apt_name_value_t apt_name_value_t;
 
 /** Text stream is used for message parsing and generation */
@@ -48,9 +50,11 @@ struct apt_text_stream_t {
 	char     *pos;
 };
 
-/* Generic name-value pair definition */
+/* Generic name-value pair definition ("name:value") */
 struct apt_name_value_t {
+	/** The name */
 	apt_str_t name;
+	/** The value */
 	apt_str_t value;
 };
 
