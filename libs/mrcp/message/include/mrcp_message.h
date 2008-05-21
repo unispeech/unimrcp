@@ -29,7 +29,8 @@ APT_BEGIN_EXTERN_C
 
 /** Request-states used in MRCP response message */
 typedef enum {
-	/** The request was processed to completion and there will be no	more events from that resource to the client with that request-id */
+	/** The request was processed to completion and there will be no	
+	    more events from that resource to the client with that request-id */
 	MRCP_REQUEST_STATE_COMPLETE,
 	/** The job has been placed on a queue and will be processed in first-in-first-out order */
 	MRCP_REQUEST_STATE_INPROGRESS,
@@ -42,7 +43,7 @@ typedef enum {
 	MRCP_REQUEST_STATE_UNKNOWN = MRCP_REQUEST_STATE_COUNT
 } mrcp_request_state_e;
 
-/* Status codes */
+/** Status codes */
 typedef enum {
 	MRCP_STATUS_CODE_UNKNOWN                   = 0,
 	/* success codes (2xx) */
@@ -61,7 +62,7 @@ typedef enum {
 	MRCP_STATUS_CODE_RESOURCE_SPECIFIC_FAILURE = 421
 } mrcp_status_code_e;
 
-/* MRCP message types */
+/** MRCP message types */
 typedef enum {
 	MRCP_MESSAGE_TYPE_UNKNOWN,
 	MRCP_MESSAGE_TYPE_REQUEST,
@@ -70,8 +71,11 @@ typedef enum {
 } mrcp_message_type_e;
 
 
+/** MRCP start-line declaration */
 typedef struct mrcp_start_line_t mrcp_start_line_t;
+/** MRCP channel-id declaration */
 typedef struct mrcp_channel_id mrcp_channel_id;
+/** MRCP message header declaration */
 typedef struct mrcp_message_header_t mrcp_message_header_t;
 
 

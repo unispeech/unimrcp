@@ -87,6 +87,7 @@ typedef enum {
 
 
 
+/** MRCP recognizer-header declaration */
 typedef struct mrcp_recog_header_t mrcp_recog_header_t;
 
 /** MRCP recognizer-header */

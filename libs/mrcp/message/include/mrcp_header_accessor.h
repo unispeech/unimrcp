@@ -31,7 +31,9 @@ APT_BEGIN_EXTERN_C
 /** Bit field masks are used to define properties */
 typedef int mrcp_header_property_t;
 
+/** MRCP header accessor declaration */
 typedef struct mrcp_header_accessor_t mrcp_header_accessor_t;
+/** MRCP header vtable declaration */
 typedef struct mrcp_header_vtable_t mrcp_header_vtable_t;
 
 /** MRCP header accessor interface */
