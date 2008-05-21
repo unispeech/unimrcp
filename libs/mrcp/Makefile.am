@@ -22,6 +22,7 @@ include_HEADERS          = include/mrcp.h \
                            resources/include/mrcp_synth_state_machine.h \
                            resources/include/mrcp_recog_header.h \
                            resources/include/mrcp_recog_resource.h \
+                           resources/include/mrcp_recog_state_machine.h \
                            resources/include/mrcp_default_factory.h
 
 libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
@@ -34,4 +35,6 @@ libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            resources/src/mrcp_synth_client_state_machine.c \
                            resources/src/mrcp_recog_header.c \
                            resources/src/mrcp_recog_resource.c \
+                           resources/src/mrcp_recog_server_state_machine.c \
+                           resources/src/mrcp_recog_client_state_machine.c \
                            resources/src/mrcp_default_factory.c

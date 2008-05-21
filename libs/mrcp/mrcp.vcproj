@@ -228,6 +228,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\resources\include\mrcp_recog_state_machine.h"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\include\mrcp_synth_header.h"
 					>
 				</File>
@@ -249,11 +253,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\resources\src\mrcp_recog_client_state_machine.c"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\src\mrcp_recog_header.c"
 					>
 				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_recog_resource.c"
+					>
+				</File>
+				<File
+					RelativePath=".\resources\src\mrcp_recog_server_state_machine.c"
 					>
 				</File>
 				<File
