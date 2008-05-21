@@ -50,7 +50,7 @@ struct apt_text_stream_t {
 	char     *pos;
 };
 
-/* Generic name-value pair definition ("name:value") */
+/** Generic name-value pair definition ("name:value") */
 struct apt_name_value_t {
 	/** The name */
 	apt_str_t name;
@@ -60,7 +60,7 @@ struct apt_name_value_t {
 
 /**
  * Navigate through the lines of the text stream (message).
- * @param text_stream the text stream to navigate
+ * @param stream the text stream to navigate
  * @param line the read line to return
  * @return TRUE if the length of the line > 0, otherwise FALSE
  */
@@ -68,7 +68,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 
 /**
  * Navigate through the headers (name:value pairs) of the text stream (message).
- * @param text_stream the text stream to navigate
+ * @param stream the text stream to navigate
  * @param pair the read pair to return
  * @return TRUE if the length of the read name > 0, otherwise FALSE
  */
@@ -76,7 +76,7 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name
 
 /**
  * Navigate through the fields of the line.
- * @param line the line to navigate
+ * @param stream the text stream to navigate
  * @param separator the field separator
  * @param skip_spaces whether to skip spaces or not
  * @param field the read field to return
