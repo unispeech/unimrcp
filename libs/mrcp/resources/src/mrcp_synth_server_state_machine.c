@@ -212,6 +212,7 @@ MRCP_DECLARE(mrcp_state_machine_t*) mrcp_synth_server_state_machine_create(void 
 {
 	mrcp_synth_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_synth_state_machine_t));
 	mrcp_state_machine_init(&state_machine->base,obj,dispatcher);
+	state_machine->base.update = synth_state_update;
 	state_machine->state = SYNTHESIZER_STATE_IDLE;
 	state_machine->active_request = NULL;
 	state_machine->speaker = NULL;

@@ -200,6 +200,7 @@ MRCP_DECLARE(mrcp_state_machine_t*) mrcp_recog_server_state_machine_create(void 
 {
 	mrcp_recog_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_recog_state_machine_t));
 	mrcp_state_machine_init(&state_machine->base,obj,dispatcher);
+	state_machine->base.update = recog_state_update;
 	state_machine->state = RECOGNIZER_STATE_IDLE;
 	state_machine->active_request = NULL;
 	state_machine->recog = NULL;

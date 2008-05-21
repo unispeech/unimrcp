@@ -31,5 +31,6 @@ MRCP_DECLARE(mrcp_state_machine_t*) mrcp_recog_client_state_machine_create(void 
 {
 	mrcp_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_state_machine_t));
 	mrcp_state_machine_init(state_machine,obj,dispatcher);
+	state_machine->update = recog_state_update;
 	return state_machine;
 }
