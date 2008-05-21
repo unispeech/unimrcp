@@ -186,15 +186,15 @@
 				Filter="h;hpp;hxx;hm;inl;inc;xsd"
 				>
 				<File
-					RelativePath=".\control\include\mrcp_control_channel.h"
-					>
-				</File>
-				<File
 					RelativePath=".\control\include\mrcp_resource.h"
 					>
 				</File>
 				<File
 					RelativePath=".\control\include\mrcp_resource_factory.h"
+					>
+				</File>
+				<File
+					RelativePath=".\control\include\mrcp_state_machine.h"
 					>
 				</File>
 			</Filter>
@@ -235,6 +235,10 @@
 					RelativePath=".\resources\include\mrcp_synth_resource.h"
 					>
 				</File>
+				<File
+					RelativePath=".\resources\include\mrcp_synth_state_machine.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="src"
@@ -253,11 +257,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\resources\src\mrcp_synth_client_state_machine.c"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\src\mrcp_synth_header.c"
 					>
 				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_synth_resource.c"
+					>
+				</File>
+				<File
+					RelativePath=".\resources\src\mrcp_synth_server_state_machine.c"
 					>
 				</File>
 			</Filter>

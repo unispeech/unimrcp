@@ -14,11 +14,12 @@ include_HEADERS          = include/mrcp.h \
                            message/include/mrcp_header_accessor.h \
                            message/include/mrcp_generic_header.h \
                            message/include/mrcp_message.h \
-                           control/include/mrcp_control_channel.h \
+                           control/include/mrcp_state_machine.h \
                            control/include/mrcp_resource.h \
                            control/include/mrcp_resource_factory.h \
                            resources/include/mrcp_synth_header.h \
                            resources/include/mrcp_synth_resource.h \
+                           resources/include/mrcp_synth_state_machine.h \
                            resources/include/mrcp_recog_header.h \
                            resources/include/mrcp_recog_resource.h \
                            resources/include/mrcp_default_factory.h
@@ -29,6 +30,8 @@ libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            control/src/mrcp_resource_factory.c \
                            resources/src/mrcp_synth_header.c \
                            resources/src/mrcp_synth_resource.c \
+                           resources/src/mrcp_synth_server_state_machine.c \
+                           resources/src/mrcp_synth_client_state_machine.c \
                            resources/src/mrcp_recog_header.c \
                            resources/src/mrcp_recog_resource.c \
                            resources/src/mrcp_default_factory.c
