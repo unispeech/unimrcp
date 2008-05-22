@@ -53,7 +53,9 @@ typedef struct mrcp_generic_header_t mrcp_generic_header_t;
 #define MAX_ACTIVE_REQUEST_ID_COUNT 5
 /** List (array) of MRCP request identifiers */
 struct mrcp_request_id_list_t {
+	/** Array request identifiers */
 	mrcp_request_id ids[MAX_ACTIVE_REQUEST_ID_COUNT];
+	/** Number of request identifiers */
 	size_t          count;
 };
 

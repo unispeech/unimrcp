@@ -128,11 +128,15 @@ typedef enum {
 } mrcp_synth_completion_cause_e;
 
 
-
+/** Speech-length value declaration */
 typedef struct mrcp_speech_length_value_t mrcp_speech_length_value_t;
+/** Numeric speech-length declaration */
 typedef struct mrcp_numeric_speech_length_t mrcp_numeric_speech_length_t;
+/** Prosody-param declaration */
 typedef struct mrcp_prosody_param_t mrcp_prosody_param_t;
+/** Voice-param declaration */
 typedef struct mrcp_voice_param_t mrcp_voice_param_t;
+/** MRCP synthesizer-header declaration */
 typedef struct mrcp_synth_header_t mrcp_synth_header_t;
 
 /** Numeric speech-length */
