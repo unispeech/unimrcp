@@ -93,7 +93,7 @@ typedef struct mrcp_recog_header_t mrcp_recog_header_t;
 /** MRCP recognizer-header */
 struct mrcp_recog_header_t {
 	/** Tells the recognizer resource what confidence level the client considers a
-    successful match.*/
+    successful match */
 	float                         confidence_threshold;
 	/** To filter out background noise and not mistake it for speech */
 	apr_size_t                    sensitivity_level;
@@ -120,6 +120,7 @@ struct mrcp_recog_header_t {
 	/** MAY be sent as part of the RECOGNIZE request. A value of false tells
 	the recognizer to start recognition, but not to start the no-input timer yet */
 	apt_bool_t                    start_input_timers;
+	/** Vendor specific header */
 	apt_str_t                     vendor_specific;
 	/** Specifies the length of silence required following user
     speech before the speech recognizer finalizes a result */
@@ -136,6 +137,8 @@ struct mrcp_recog_header_t {
 	/** Specifies the terminating DTMF character for DTMF input
     recognition */
 	char                          dtmf_term_char;
+	/** Defines the timeout for content that the server may
+    need to fetch over the network */
 	apr_size_t                    fetch_timeout;
 	/** When a recognizer needs to fetch or access a URI and the access fails
     the server SHOULD provide the failed URI in this header in the method response*/

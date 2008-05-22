@@ -95,7 +95,7 @@ struct mrcp_start_line_t {
 	mrcp_method_id       method_id;
 	/** Success or failure or other status of the request */
 	mrcp_status_code_e   status_code;
-	/* The state of the job initiated by the request */
+	/** The state of the job initiated by the request */
 	mrcp_request_state_e request_state;
 };
 

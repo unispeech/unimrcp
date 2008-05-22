@@ -147,46 +147,96 @@ struct mrcp_numeric_speech_length_t {
 
 /** Definition of speech-length value */
 struct mrcp_speech_length_value_t {
+	/** Speech-length type (numeric/text)*/
 	mrcp_speech_length_type_e type;
 	union {
+		/** Text speech-length */
 		apt_str_t                    tag;
+		/** Numeric speech-length */
 		mrcp_numeric_speech_length_t numeric;
 	} value;
 };
 
 /** MRCP voice-param */
 struct mrcp_voice_param_t {
+	/** Voice gender (male/femaile/neutral)*/
 	mrcp_voice_gender_e gender;
+	/** Voice age */
 	apr_size_t          age;
+	/** Voice variant */
 	apr_size_t          variant;
+	/** Voice name */
 	apt_str_t           name;
 };
 
 /** MRCP prosody-param */
 struct mrcp_prosody_param_t {
+	/** Prosofy volume */
 	mrcp_prosody_volume_e volume;
+	/** Prosofy rate */
 	mrcp_prosody_rate_e   rate;
 };
 
 /** MRCP synthesizer-header */
 struct mrcp_synth_header_t {
+	/** MAY be specified in a CONTROL method and controls the
+    amount to jump forward or backward in an active "SPEAK" request */
 	mrcp_speech_length_value_t    jump_size;
+	/** MAY be sent as part of the "SPEAK" method to enable kill-
+    on-barge-in support */
 	apt_bool_t                    kill_on_barge_in;
+	/** MAY be part of the "SET-PARAMS"/"GET-PARAMS" or "SPEAK"
+    request from the client to the server and specifies a URI which
+    references the profile of the speaker */
 	apt_str_t                     speaker_profile;
+	/** MUST be specified in a "SPEAK-COMPLETE" event coming from
+    the synthesizer resource to the client */
 	mrcp_synth_completion_cause_e completion_cause;
+	/** MAY be specified in a "SPEAK-COMPLETE" event coming from
+    the synthesizer resource to the client */
 	apt_str_t                     completion_reason;
+	/** This set of headers defines the voice of the speaker */
 	mrcp_voice_param_t            voice_param;
+	/** This set of headers defines the prosody of the speech */
 	mrcp_prosody_param_t          prosody_param;
+	/** Contains timestamp information in a "timestamp" field */
 	apt_str_t                     speech_marker;
+	/** specifies the default language of the speech data if the
+    language is not specified in the markup */
 	apt_str_t                     speech_language;
+	/** When the synthesizer needs to fetch documents or other resources like
+    speech markup or audio files, this header controls the corresponding
+    URI access properties */
 	apt_str_t                     fetch_hint;
+	/** When the synthesizer needs to fetch documents or other resources like
+    speech audio files, this header controls the corresponding URI access
+    properties */
 	apt_str_t                     audio_fetch_hint;
+	/** Defines the timeout for content that the server may
+    need to fetch over the network */
 	apr_size_t                    fetch_timeout;
+	/** When a synthesizer method needs a synthesizer to fetch or access a
+    URI and the access fails, the server SHOULD provide the failed URI in
+    this header in the method response */
 	apt_str_t                     failed_uri;
+	/** When a synthesizer method needs a synthesizer to fetch or access a
+    URI and the access fails the server MUST provide the URI specific or
+    protocol specific response code for the URI in the Failed-URI header
+    in the method response through this header */
 	apt_str_t                     failed_uri_cause;
+	/** When a CONTROL request to jump backward is issued to a currently
+    speaking synthesizer resource, and the target jump point is before
+    the start of the current "SPEAK" request, the current "SPEAK" request
+    MUST restart */
 	apt_bool_t                    speak_restart;
+	/** MAY be specified in a CONTROL method to control the
+    length of speech to speak, relative to the current speaking point in
+    the currently active "SPEAK" request */
 	mrcp_speech_length_value_t    speak_length;
+	/** Used to indicate whether a lexicon has to be loaded or unloaded */
 	apt_bool_t                    load_lexicon;
+	/** used to specify a list of active Lexicon URIs and the
+    search order among the active lexicons */
 	apt_str_t                     lexicon_search_order;
 };
 
