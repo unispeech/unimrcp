@@ -141,7 +141,9 @@ typedef struct mrcp_synth_header_t mrcp_synth_header_t;
 
 /** Numeric speech-length */
 struct mrcp_numeric_speech_length_t {
+	/** The length */
 	apr_size_t         length;
+	/** The unit (second/word/sentence/paragraph) */
 	mrcp_speech_unit_e unit;
 };
 
@@ -149,6 +151,7 @@ struct mrcp_numeric_speech_length_t {
 struct mrcp_speech_length_value_t {
 	/** Speech-length type (numeric/text)*/
 	mrcp_speech_length_type_e type;
+	/** Speech-length value (either numeric or text) */
 	union {
 		/** Text speech-length */
 		apt_str_t                    tag;
