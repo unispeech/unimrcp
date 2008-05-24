@@ -28,9 +28,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MRCP resource factory declaration */
-typedef struct mrcp_resource_factory_t mrcp_resource_factory_t;
-
 /** Create MRCP resource factory */
 MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_create(apr_size_t resource_count, apr_pool_t *pool);
 

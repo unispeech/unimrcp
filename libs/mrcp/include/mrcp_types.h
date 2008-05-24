@@ -48,6 +48,8 @@ typedef apr_size_t mrcp_resource_id;
 typedef struct mrcp_message_t mrcp_message_t;
 /** Opaque MRCP resource declaration */
 typedef struct mrcp_resource_t mrcp_resource_t;
+/** Opaque MRCP resource factory declaration */
+typedef struct mrcp_resource_factory_t mrcp_resource_factory_t;
 
 
 APT_END_EXTERN_C
