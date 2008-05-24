@@ -14,7 +14,7 @@ MAINTAINERCLEANFILES 	= Makefile.in aclocal.m4 configure $(AUX_DIST)
 
 ACLOCAL			= aclocal -I $(macrodir)
 
-SUBDIRS                 = libs tests
+SUBDIRS                 = libs platforms tests
 
 
 dox:

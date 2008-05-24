@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "unimrcp_server.h"
 
 int main(int argc, const char * const *argv)

@@ -66,6 +66,11 @@ AC_CONFIG_FILES([
   libs/apr-toolkit/Makefile
   libs/mpf/Makefile
   libs/mrcp/Makefile
+  libs/mrcp-signaling/Makefile
+  libs/mrcp-server/Makefile
+  platforms/Makefile
+  platforms/libunimrcp-server/Makefile
+  platforms/unimrcp-server/Makefile
   tests/Makefile
   tests/apttest/Makefile
   tests/mpftest/Makefile
