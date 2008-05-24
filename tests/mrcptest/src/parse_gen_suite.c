@@ -42,6 +42,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 	}
 	stream_in.text.buf[stream_in.text.length]='\0';
 
+	apt_string_reset(&resource_name);
 	if(version == MRCP_VERSION_1) {
 		/* skip the first line in a test file, which indicates resource name */
 		if(*stream_in.pos =='/' && *(stream_in.pos+1)=='/') {

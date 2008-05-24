@@ -124,7 +124,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 								remote_media->codec_list.codecs,
 								stream->termination->pool);
 		rtp_stream->transmitter.samples_per_frame = 
-			mpf_codec_frame_samples_calculate(stream->tx_codec->descriptor);
+			(apr_uint32_t)mpf_codec_frame_samples_calculate(stream->tx_codec->descriptor);
 		rtp_stream->remote_media = remote_media;
 	}
 	stream->mode = descriptor->mode;
