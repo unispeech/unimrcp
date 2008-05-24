@@ -10,7 +10,6 @@
 		PreprocessorDefinitions="NDEBUG;"
 		RuntimeLibrary="2"
 		UsePrecompiledHeader="0"
-		Detect64BitPortabilityProblems="true"
 		DebugInformationFormat="3"
 	/>
 </VisualStudioPropertySheet>
