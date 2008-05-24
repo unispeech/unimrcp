@@ -3,11 +3,11 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="mrcp"
-	InheritedPropertySheets=".\mpf.vsprops;.\mrcp.vsprops"
+	InheritedPropertySheets=".\mrcpsignaling.vsprops"
 	>
 	<Tool
 		Name="VCCLCompilerTool"
-		AdditionalIncludeDirectories="&quot;$(ProjectRootDir)libs\mrcp-signaling\include&quot;"
+		AdditionalIncludeDirectories="&quot;$(ProjectRootDir)libs\mrcp-server\include&quot;"
 	/>
 	<Tool
 		Name="VCLinkerTool"
