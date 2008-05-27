@@ -49,6 +49,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "platforms", "platforms", "{
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libunimrcpserver", "platforms\libunimrcp-server\libunimrcpserver.vcproj", "{C98AF157-352E-4737-BD30-A24E2647F5AE}"
 	ProjectSection(ProjectDependencies) = postProject
+		{746F3632-5BB2-4570-9453-31D6D58A7D8E} = {746F3632-5BB2-4570-9453-31D6D58A7D8E}
 		{18B1F35A-10F8-4287-9B37-2D10501B0B38} = {18B1F35A-10F8-4287-9B37-2D10501B0B38}
 	EndProjectSection
 EndProject
