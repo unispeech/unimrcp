@@ -57,6 +57,10 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 	task->pool = pool;
 	task->msg_pool = msg_pool;
 
+	if(!task->msg_pool) {
+		task->msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
+	}
+
 	task->state = TASK_STATE_IDLE;
 	task->thread_handle = NULL;
 	if(apr_thread_mutex_create(&task->data_guard, APR_THREAD_MUTEX_DEFAULT, task->pool) != APR_SUCCESS) {
@@ -289,10 +293,12 @@ APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task)
 			task->vtable.on_start_complete(task);
 		}
 		if(task->parent_task) {
-			apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-			/* signal start-complete message */
-			msg->type = TASK_MSG_START_COMPLETE;
-			apt_task_msg_signal(task->parent_task,msg);
+			if(task->msg_pool) {
+				apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
+				/* signal start-complete message */
+				msg->type = TASK_MSG_START_COMPLETE;
+				apt_task_msg_signal(task->parent_task,msg);
+			}
 		}
 	}
 	return TRUE;
@@ -320,10 +326,12 @@ APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task)
 			task->vtable.on_terminate_complete(task);
 		}
 		if(task->parent_task) {
-			apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-			/* signal terminate-complete message */
-			msg->type = TASK_MSG_TERMINATE_COMPLETE;
-			apt_task_msg_signal(task->parent_task,msg);
+			if(task->msg_pool) {
+				apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
+				/* signal terminate-complete message */
+				msg->type = TASK_MSG_TERMINATE_COMPLETE;
+				apt_task_msg_signal(task->parent_task,msg);
+			}
 		}
 	}
 	return TRUE;
