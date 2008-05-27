@@ -36,6 +36,8 @@ typedef struct mrcp_session_event_vtable_t mrcp_session_event_vtable_t;
 struct mrcp_session_t {
 	/** Memory pool to allocate memory from */
 	apr_pool_t *pool;
+	/** External object associated with agent */
+	void       *obj;
 	/** Session identifier */
 	apt_str_t   session_id;
 
@@ -53,9 +55,6 @@ struct mrcp_session_method_vtable_t {
 	apt_bool_t (*answer)(mrcp_session_t *session);
 	/** Terminate session */
 	apt_bool_t (*terminate)(mrcp_session_t *session);
-
-	/** Destroy session (session must be terminated prior to destruction) */
-	apt_bool_t (*destroy)(mrcp_session_t *session);
 };
 
 /** MRCP session events vtable */
@@ -67,6 +66,67 @@ struct mrcp_session_event_vtable_t {
 	/** On terminate session */
 	apt_bool_t (*on_terminate)(mrcp_session_t *session);
 };
+
+/** Create new memory pool and allocate session object from. */
+MRCP_DECLARE(mrcp_session_t*) mrcp_session_create();
+
+/** Destroy session and assosiated memory pool. */
+MRCP_DECLARE(void) mrcp_session_destroy(mrcp_session_t *session);
+
+
+/** Offer */
+static APR_INLINE apt_bool_t mrcp_session_offer(mrcp_session_t *session)
+{
+	if(session->method_vtable->offer) {
+		return session->method_vtable->offer(session);
+	}
+	return FALSE;
+}
+
+/** Answer */
+static APR_INLINE apt_bool_t mrcp_session_answer(mrcp_session_t *session)
+{
+	if(session->method_vtable->answer) {
+		return session->method_vtable->answer(session);
+	}
+	return FALSE;
+}
+
+/** Terminate */
+static APR_INLINE apt_bool_t mrcp_session_terminate(mrcp_session_t *session)
+{
+	if(session->method_vtable->terminate) {
+		return session->method_vtable->terminate(session);
+	}
+	return FALSE;
+}
+
+/** On offer */
+static APR_INLINE apt_bool_t mrcp_session_on_offer(mrcp_session_t *session)
+{
+	if(session->event_vtable->on_offer) {
+		return session->event_vtable->on_offer(session);
+	}
+	return FALSE;
+}
+
+/** On answer */
+static APR_INLINE apt_bool_t mrcp_session_on_answer(mrcp_session_t *session)
+{
+	if(session->event_vtable->on_answer) {
+		return session->event_vtable->on_answer(session);
+	}
+	return FALSE;
+}
+
+/** Terminate */
+static APR_INLINE apt_bool_t mrcp_session_on_terminate(mrcp_session_t *session)
+{
+	if(session->event_vtable->on_terminate) {
+		return session->event_vtable->on_terminate(session);
+	}
+	return FALSE;
+}
 
 APT_END_EXTERN_C
 

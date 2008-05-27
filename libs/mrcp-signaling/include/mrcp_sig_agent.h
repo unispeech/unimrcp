@@ -41,6 +41,9 @@ struct mrcp_sig_agent_t {
 	mrcp_session_t* (*create_session)();
 };
 
+/** Create signaling agent. */
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(apr_pool_t *pool);
+
 APT_END_EXTERN_C
 
 #endif /*__MRCP_SIG_AGENT_H__*/

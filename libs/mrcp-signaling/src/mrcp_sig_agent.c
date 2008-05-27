@@ -17,5 +17,36 @@
 #include "mrcp_sig_agent.h"
 #include "mrcp_session.h"
 #include "mrcp_connection.h"
-#include "apt_log.h"
 
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(apr_pool_t *pool)
+{
+	mrcp_sig_agent_t *sig_agent = apr_palloc(pool,sizeof(mrcp_sig_agent_t));
+	sig_agent->pool = pool;
+	sig_agent->obj = NULL;
+	sig_agent->task = NULL;
+	sig_agent->create_session = NULL;
+	return sig_agent;
+}
+
+MRCP_DECLARE(mrcp_session_t*) mrcp_session_create()
+{
+	mrcp_session_t *session;
+	apr_pool_t *pool;
+	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+		return NULL;
+	}
+	session = apr_palloc(pool,sizeof(mrcp_session_t));
+	session->pool = pool;
+	session->obj = NULL;
+	session->event_vtable = NULL;
+	session->method_vtable = NULL;
+	apt_string_reset(&session->session_id);
+	return session;
+}
+
+MRCP_DECLARE(void) mrcp_session_destroy(mrcp_session_t *session)
+{
+	if(session->pool) {
+		apr_pool_destroy(session->pool);
+	}
+}
