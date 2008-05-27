@@ -27,6 +27,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include <sofia-sip/sdp.h>
 
 #include "mrcp_sofiasip_agent.h"
+#include "mrcp_session.h"
 #include "apt_log.h"
 
 struct mrcp_sofia_agent_t {
@@ -37,22 +38,32 @@ struct mrcp_sofia_agent_t {
 	nua_t               *nua;
 };
 
+struct mrcp_sofia_session_t {
+	mrcp_session_t *session;
+	su_home_t      *home;
+	nua_handle_t   *nh;
+};
+
 
 static apt_bool_t mrcp_sofia_task_run(apt_task_t *task);
 static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task);
+static void mrcp_sofia_event_callback( nua_event_t           nua_event,
+									   int                   status,
+									   char const           *phrase,
+									   nua_t                *nua,
+									   mrcp_sofia_agent_t   *sofia_agent,
+									   nua_handle_t         *nh,
+									   mrcp_sofia_session_t *sofia_session,
+									   sip_t const          *sip,
+									   tagi_t                tags[]);
 
 /** Create Sofia-SIP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *config, apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
 	mrcp_sofia_agent_t *sofia_agent;
-	mrcp_sig_agent_t *sig_agent = apr_palloc(pool,sizeof(mrcp_sig_agent_t));
-	sig_agent->pool = pool;
-	sig_agent->obj = NULL;
-	sig_agent->task = NULL;
-
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
-	sofia_agent->sig_agent = sig_agent;
+	sofia_agent->sig_agent = mrcp_signaling_agent_create(pool);
 	sofia_agent->config = config;
 	sofia_agent->root = NULL;
 	sofia_agent->nua = NULL;
@@ -60,9 +71,9 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *
 	apt_task_vtable_reset(&vtable);
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
-	sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
+	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
 
-	return sig_agent;
+	return sofia_agent->sig_agent;
 }
 
 /** Allocate Sofia-SIP config */
@@ -77,35 +88,6 @@ MRCP_DECLARE(mrcp_sofia_config_t*) mrcp_sofiasip_config_alloc(apr_pool_t *pool)
 	config->user_name = NULL;
 	config->user_agent_name = NULL;
 	return config;
-}
-
-/* This callback will be called by SIP stack to process incoming events */
-static void mrcp_sofia_event_callback( nua_event_t                  nua_event,
-									   int                          status,
-									   char const                  *phrase,
-									   nua_t                       *nua,
-									   mrcp_sofia_agent_t          *sofia_agent,
-									   nua_handle_t                *nh,
-									   mrcp_sofia_session_t        *sofia_session,
-									   sip_t const                 *sip,
-									   tagi_t                       tags[])
-{
-	apt_log(APT_PRIO_INFO,"Recieve SIP Event [%s] Status %d %s\n",nua_event_name(nua_event),status,phrase);
-
-	switch(nua_event) {
-		case nua_i_state:
-//			mrcp_sofia_on_state_change(sofia_event);
-			break;
-		case nua_i_options:
-//			mrcp_sofia_on_resource_discover(sofia_event);
-			break;
-		case nua_r_shutdown:
-			/* break main loop of sofia thread */
-			su_root_break(sofia_agent->root);
-			break;
-		default: 
-			break;
-	}
 }
 
 static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
@@ -156,8 +138,161 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 {
 	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
 	if(sofia_agent->nua) {
-		apt_log(APT_PRIO_DEBUG,"Send Shutdown Signal to NUA\n");
+		apt_log(APT_PRIO_DEBUG,"Send Shutdown Signal to NUA");
 		nua_shutdown(sofia_agent->nua);
 	}
 	return TRUE;
+}
+
+
+
+static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
+{
+	return TRUE;
+}
+
+static const mrcp_session_event_vtable_t session_event_vtable = {
+	NULL, /*on_offer*/
+	mrcp_sofia_on_session_answer,
+	mrcp_sofia_on_session_terminate
+};
+
+
+
+static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia_agent, nua_handle_t *nh)
+{
+	mrcp_sofia_session_t *sofia_session;
+	mrcp_session_t* session = sofia_agent->sig_agent->create_session();
+	session->event_vtable = &session_event_vtable;
+
+	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
+	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
+	sofia_session->session = session;
+	session->obj = sofia_session;
+	
+	nua_handle_bind(nh, sofia_session);
+	sofia_session->nh = nh;
+	return sofia_session;
+}
+
+
+static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
+									   nua_handle_t         *nh,
+									   mrcp_sofia_session_t *sofia_session,
+									   sip_t const          *sip,
+									   tagi_t                tags[])
+{
+	int offer_recv = 0, answer_recv = 0, offer_sent = 0, answer_sent = 0;
+	const char *local_sdp_str = NULL, *remote_sdp_str = NULL;
+	sdp_parser_t *parser = NULL;
+	sdp_session_t *sdp = NULL;
+
+	tl_gets(tags, 
+			NUTAG_OFFER_RECV_REF(offer_recv),
+			NUTAG_ANSWER_RECV_REF(answer_recv),
+			NUTAG_OFFER_SENT_REF(offer_sent),
+			NUTAG_ANSWER_SENT_REF(answer_sent),
+			SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
+			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
+			TAG_END());
+	
+	if(!sofia_session) {
+		sofia_session = mrcp_sofia_session_create(sofia_agent,nh);
+		if(!sofia_session) {
+			return;
+		}
+	}
+
+	local_sdp_str = NULL;
+	if(remote_sdp_str) {
+		apt_log(APT_PRIO_INFO,"Remote SDP\n[%s]", remote_sdp_str);
+
+		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
+		sdp = sdp_session(parser);
+		
+/*		mrcp_descriptor_generate_by_sdp_offer(
+							&sofia_session->channel->remote_descriptor,
+							sdp,
+							sofia_session->channel->pool);
+*/
+		sdp_parser_free(parser);
+	}
+
+	mrcp_session_offer(sofia_session->session);
+}
+
+static void mrcp_sofia_on_call_terminate(mrcp_sofia_agent_t          *sofia_agent,
+									     nua_handle_t                *nh,
+									     mrcp_sofia_session_t        *sofia_session,
+									     sip_t const                 *sip,
+									     tagi_t                       tags[])
+{
+	if(sofia_session) {
+		mrcp_session_terminate(sofia_session->session);
+	}
+}
+
+static void mrcp_sofia_on_state_change(mrcp_sofia_agent_t   *sofia_agent,
+									   nua_handle_t         *nh,
+									   mrcp_sofia_session_t *sofia_session,
+									   sip_t const          *sip,
+									   tagi_t                tags[])
+{
+	int ss_state = nua_callstate_init;
+	tl_gets(tags, 
+			NUTAG_CALLSTATE_REF(ss_state),
+			TAG_END()); 
+	
+	apt_log(APT_PRIO_NOTICE,"SIP Call State [%s]", nua_callstate_name(ss_state));
+
+	switch(ss_state) {
+		case nua_callstate_received:
+			mrcp_sofia_on_call_receive(sofia_agent,nh,sofia_session,sip,tags);
+			break;
+		case nua_callstate_terminated:
+			mrcp_sofia_on_call_terminate(sofia_agent,nh,sofia_session,sip,tags);
+			break;
+	}
+}
+
+static void mrcp_sofia_on_resource_discover(mrcp_sofia_agent_t   *sofia_agent,
+									        nua_handle_t         *nh,
+									        mrcp_sofia_session_t *sofia_session,
+									        sip_t const          *sip,
+									        tagi_t                tags[])
+{
+}
+
+/** This callback will be called by SIP stack to process incoming events */
+static void mrcp_sofia_event_callback( nua_event_t           nua_event,
+									   int                   status,
+									   char const           *phrase,
+									   nua_t                *nua,
+									   mrcp_sofia_agent_t   *sofia_agent,
+									   nua_handle_t         *nh,
+									   mrcp_sofia_session_t *sofia_session,
+									   sip_t const          *sip,
+									   tagi_t                tags[])
+{
+	apt_log(APT_PRIO_INFO,"Recieve SIP Event [%s] Status %d %s",nua_event_name(nua_event),status,phrase);
+
+	switch(nua_event) {
+		case nua_i_state:
+			mrcp_sofia_on_state_change(sofia_agent,nh,sofia_session,sip,tags);
+			break;
+		case nua_i_options:
+			mrcp_sofia_on_resource_discover(sofia_agent,nh,sofia_session,sip,tags);
+			break;
+		case nua_r_shutdown:
+			/* break main loop of sofia thread */
+			su_root_break(sofia_agent->root);
+			break;
+		default: 
+			break;
+	}
 }

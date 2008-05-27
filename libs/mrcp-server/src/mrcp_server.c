@@ -18,6 +18,7 @@
 #include "mrcp_server.h"
 #include "mrcp_resource_factory.h"
 #include "mrcp_sig_agent.h"
+#include "mrcp_session.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -43,7 +44,7 @@ struct mrcp_server_t {
 static void mrcp_server_on_start_complete(apt_task_t *task);
 static void mrcp_server_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
-
+static mrcp_session_t* mrcp_server_session_create();
 
 /** Create MRCP server instance */
 MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
@@ -155,6 +156,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 	if(!signaling_agent) {
 		return FALSE;
 	}
+	signaling_agent->create_session = mrcp_server_session_create;
 	server->signaling_agent = signaling_agent;
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
@@ -181,5 +183,35 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
+	return TRUE;
+}
+
+
+
+static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session);
+static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session);
+
+static const mrcp_session_method_vtable_t session_method_vtable = {
+	mrcp_server_session_offer,
+	NULL, /* answer */
+	mrcp_server_session_terminate
+};
+
+static mrcp_session_t* mrcp_server_session_create()
+{
+	mrcp_session_t *session = mrcp_session_create();
+	session->method_vtable = &session_method_vtable;
+	return session;
+}
+
+static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session)
+{
+	apt_log(APT_PRIO_INFO,"Session Offer");
+	return TRUE;
+}
+
+static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session)
+{
+	apt_log(APT_PRIO_INFO,"Session Terminate");
 	return TRUE;
 }
