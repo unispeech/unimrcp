@@ -1,6 +1,7 @@
 MAINTAINERCLEANFILES 	    = Makefile.in
 
 INCLUDES                    = -I$(top_srcdir)/platforms/libunimrcp-server/include \
+                              -I$(top_srcdir)/modules/mrcp-sofiasip/include \
                               -I$(top_srcdir)/libs/mrcp-server/include \
                               -I$(top_srcdir)/libs/mrcp-signaling/include \
                               -I$(top_srcdir)/libs/mrcp/include \
@@ -17,7 +18,8 @@ include_HEADERS             = include/unimrcp_server.h
 
 libunimrcpserver_la_SOURCES = src/unimrcp_server.c
 
-libunimrcpserver_la_LIBADD  = $(top_builddir)/libs/mrcp-server/libmrcpserver.la \
+libunimrcpserver_la_LIBADD  = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofiasip.la \
+                              $(top_builddir)/libs/mrcp-server/libmrcpserver.la \
                               $(top_builddir)/libs/mrcp-signaling/libmrcpsignaling.la \
                               $(top_builddir)/libs/mrcp/libmrcp.la \
                               $(top_builddir)/libs/mpf/libmpf.la \
