@@ -22,14 +22,40 @@
  * @brief Implementation of MRCP Signaling Interface using Sofia-SIP
  */ 
 
+#include <apr_network_io.h>
 #include "mrcp_sig_agent.h"
 
 APT_BEGIN_EXTERN_C
 
+/** Sofia-SIP config declaration */
+typedef struct mrcp_sofia_config_t mrcp_sofia_config_t;
+
+/** Sofia-SIP config */
+struct mrcp_sofia_config_t {
+	/** Local IP address to bind to */
+	char      *local_ip;
+	/** Local port to bind to */
+	apr_port_t local_port;
+	/** Remote IP address */
+	char      *remote_ip;
+	/** Remote port */
+	apr_port_t remote_port;
+
+	/** SIP user name */
+	char      *user_name;
+	/** User agent name */
+	char      *user_agent_name;
+};
+
 /**
- * Create Sofia-SIP Signaling Agent.
+ * Create Sofia-SIP signaling agent.
  */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *config, apr_pool_t *pool);
+
+/**
+ * Allocate Sofia-SIP config.
+ */
+MRCP_DECLARE(mrcp_sofia_config_t*) mrcp_sofiasip_config_alloc(apr_pool_t *pool);
 
 APT_END_EXTERN_C
 
