@@ -124,6 +124,26 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 	return field->length ? TRUE : FALSE;
 }
 
+/** Parse id@resource string */
+APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separator, apt_str_t *id, apt_str_t *resource, apr_pool_t *pool)
+{
+	apt_str_t field = *str;
+	const char *pos = strchr(str->buf,separator);
+	if(!pos) {
+		return FALSE;
+	}
+
+	field.length = pos - field.buf;
+	if(field.length >= str->length) {
+		return FALSE;
+	}
+	apt_string_copy(id,&field,pool);
+	field.buf += field.length + 1;
+	field.length = str->length - (field.length + 1);
+	apt_string_copy(resource,&field,pool);
+	return TRUE;
+}
+
 
 /** Generate header */
 APT_DECLARE(apt_bool_t) apt_header_generate(const apt_name_value_t *pair, apt_text_stream_t *stream)

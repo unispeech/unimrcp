@@ -436,26 +436,6 @@ MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)
 	channel_id->resource_id = 0;
 }
 
-/** Parse MRCP channel-identifier value */
-static apt_bool_t mrcp_channel_id_value_parse(mrcp_channel_id *channel_id, const apt_str_t *value, apr_pool_t *pool)
-{
-	apt_str_t field = *value;
-	const char *pos = strchr(value->buf,'@');
-	if(!pos) {
-		return FALSE;
-	}
-
-	field.length = pos - field.buf;
-	if(field.length >= value->length) {
-		return FALSE;
-	}
-	apt_string_copy(&channel_id->session_id,&field,pool);
-	field.buf += field.length + 1;
-	field.length = value->length - (field.length + 1);
-	apt_string_copy(&channel_id->resource_name,&field,pool);
-	return TRUE;
-}
-
 /** Parse MRCP channel-identifier */
 MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
@@ -465,7 +445,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
 			if(strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
 				match = TRUE;
-				mrcp_channel_id_value_parse(channel_id,&pair.value,pool);
+				apt_id_resource_parse(&pair.value,'@',&channel_id->session_id,&channel_id->resource_name,pool);
 				break;
 			}
 			/* skip this header, expecting channel identifier first */
