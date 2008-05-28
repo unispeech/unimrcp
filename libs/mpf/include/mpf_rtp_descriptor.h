@@ -22,8 +22,8 @@
  * @brief MPF RTP Stream Descriptor
  */ 
 
-#include <apr_network_io.h>
 #include "mpf_stream_mode.h"
+#include "mpf_media_descriptor.h"
 #include "mpf_codec_descriptor.h"
 
 APT_BEGIN_EXTERN_C
@@ -45,15 +45,15 @@ typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t
 
 /** RTP media (local/remote) descriptor */
 struct mpf_rtp_media_descriptor_t {
-	/** IP address */
-	apt_str_t        ip;
-	/** network port */
-	apr_port_t       port;
+	/** Media descriptor base */
+	mpf_media_descriptor_t base;
 
 	/** packetization time */
 	apr_uint16_t     ptime;
 	/** codec list */
 	mpf_codec_list_t codec_list;
+	/** media identifier */
+	apr_size_t       mid;
 };
 
 /** RTP stream descriptor */
@@ -80,10 +80,10 @@ struct mpf_rtp_termination_descriptor_t {
 /** Initialize media descriptor */
 static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
 {
-	apt_string_reset(&media->ip);
-	media->port = 0;
+	mpf_media_descriptor_init(&media->base);
 	media->ptime = 0;
 	mpf_codec_list_reset(&media->codec_list);
+	media->mid = 0;
 }
 
 /** Initialize stream descriptor */
