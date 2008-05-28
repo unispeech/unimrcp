@@ -32,6 +32,9 @@ typedef struct mrcp_sig_agent_t mrcp_sig_agent_t;
 /** Opaque MRCP session declaration */
 typedef struct mrcp_session_t mrcp_session_t;
 
+/** Opaque MRCP session descriptor declaration */
+typedef struct mrcp_session_descriptor_t mrcp_session_descriptor_t;
+
 /** Opaque MRCP connection declaration */
 typedef struct mrcp_connection_t mrcp_connection_t;
 

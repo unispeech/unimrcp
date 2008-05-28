@@ -134,7 +134,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_control_descriptor.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_session.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mrcp_session_descriptor.h"
 				>
 			</File>
 			<File
@@ -150,6 +158,10 @@
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\mrcp_control_descriptor.c"
+				>
+			</File>
 			<File
 				RelativePath=".\src\mrcp_sig_agent.c"
 				>

@@ -50,9 +50,9 @@ struct mrcp_session_t {
 /** MRCP session methods vtable */
 struct mrcp_session_method_vtable_t {
 	/** Offer local description to remote party */
-	apt_bool_t (*offer)(mrcp_session_t *session);
+	apt_bool_t (*offer)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 	/** Answer to offer, by setting up local description according to the remote one */
-	apt_bool_t (*answer)(mrcp_session_t *session);
+	apt_bool_t (*answer)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 	/** Terminate session */
 	apt_bool_t (*terminate)(mrcp_session_t *session);
 };
@@ -60,14 +60,14 @@ struct mrcp_session_method_vtable_t {
 /** MRCP session events vtable */
 struct mrcp_session_event_vtable_t {
 	/** Receive offer from remote party */
-	apt_bool_t (*on_offer)(mrcp_session_t *session);
+	apt_bool_t (*on_offer)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 	/** Receive answer from remote party */
-	apt_bool_t (*on_answer)(mrcp_session_t *session);
+	apt_bool_t (*on_answer)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 	/** On terminate session */
 	apt_bool_t (*on_terminate)(mrcp_session_t *session);
 };
 
-/** Create new memory pool and allocate session object from. */
+/** Create new memory pool and allocate session object from the pool. */
 MRCP_DECLARE(mrcp_session_t*) mrcp_session_create();
 
 /** Destroy session and assosiated memory pool. */
@@ -75,19 +75,19 @@ MRCP_DECLARE(void) mrcp_session_destroy(mrcp_session_t *session);
 
 
 /** Offer */
-static APR_INLINE apt_bool_t mrcp_session_offer(mrcp_session_t *session)
+static APR_INLINE apt_bool_t mrcp_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	if(session->method_vtable->offer) {
-		return session->method_vtable->offer(session);
+		return session->method_vtable->offer(session,descriptor);
 	}
 	return FALSE;
 }
 
 /** Answer */
-static APR_INLINE apt_bool_t mrcp_session_answer(mrcp_session_t *session)
+static APR_INLINE apt_bool_t mrcp_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	if(session->method_vtable->answer) {
-		return session->method_vtable->answer(session);
+		return session->method_vtable->answer(session,descriptor);
 	}
 	return FALSE;
 }
@@ -102,24 +102,24 @@ static APR_INLINE apt_bool_t mrcp_session_terminate(mrcp_session_t *session)
 }
 
 /** On offer */
-static APR_INLINE apt_bool_t mrcp_session_on_offer(mrcp_session_t *session)
+static APR_INLINE apt_bool_t mrcp_session_on_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	if(session->event_vtable->on_offer) {
-		return session->event_vtable->on_offer(session);
+		return session->event_vtable->on_offer(session,descriptor);
 	}
 	return FALSE;
 }
 
 /** On answer */
-static APR_INLINE apt_bool_t mrcp_session_on_answer(mrcp_session_t *session)
+static APR_INLINE apt_bool_t mrcp_session_on_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	if(session->event_vtable->on_answer) {
-		return session->event_vtable->on_answer(session);
+		return session->event_vtable->on_answer(session,descriptor);
 	}
 	return FALSE;
 }
 
-/** Terminate */
+/** On terminate */
 static APR_INLINE apt_bool_t mrcp_session_on_terminate(mrcp_session_t *session)
 {
 	if(session->event_vtable->on_terminate) {

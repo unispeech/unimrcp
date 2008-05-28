@@ -188,7 +188,7 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 
 
 
-static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session);
+static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session);
 
 static const mrcp_session_method_vtable_t session_method_vtable = {
@@ -204,7 +204,7 @@ static mrcp_session_t* mrcp_server_session_create()
 	return session;
 }
 
-static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session)
+static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	apt_log(APT_PRIO_INFO,"Session Offer");
 	return TRUE;
