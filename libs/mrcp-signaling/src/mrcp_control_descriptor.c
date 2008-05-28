@@ -80,7 +80,7 @@ MRCP_DECLARE(const apt_str_t*) mrcp_setup_type_get(mrcp_setup_type_e setup_type)
 	return apt_string_table_str_get(mrcp_setup_value_table,MRCP_SETUP_TYPE_COUNT,setup_type);
 }
 
-MRCP_DECLARE(mrcp_setup_type_e) mrcp_setup_type_id_find(const apt_str_t *attrib)
+MRCP_DECLARE(mrcp_setup_type_e) mrcp_setup_type_find(const apt_str_t *attrib)
 {
 	return apt_string_table_id_find(mrcp_setup_value_table,MRCP_SETUP_TYPE_COUNT,attrib);
 }
@@ -90,7 +90,7 @@ MRCP_DECLARE(const apt_str_t*) mrcp_connection_type_get(mrcp_connection_type_e c
 	return apt_string_table_str_get(mrcp_connection_value_table,MRCP_CONNECTION_TYPE_COUNT,connection_type);
 }
 
-MRCP_DECLARE(mrcp_connection_type_e) mrcp_connection_type_id_find(const apt_str_t *attrib)
+MRCP_DECLARE(mrcp_connection_type_e) mrcp_connection_type_find(const apt_str_t *attrib)
 {
 	return apt_string_table_id_find(mrcp_connection_value_table,MRCP_CONNECTION_TYPE_COUNT,attrib);
 }
