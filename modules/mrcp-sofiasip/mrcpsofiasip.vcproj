@@ -132,6 +132,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\include\mrcp_sdp.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_sofiasip_agent.h"
 				>
 			</File>
@@ -140,6 +144,10 @@
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\mrcp_sdp.c"
+				>
+			</File>
 			<File
 				RelativePath=".\src\mrcp_sofiasip_agent.c"
 				>

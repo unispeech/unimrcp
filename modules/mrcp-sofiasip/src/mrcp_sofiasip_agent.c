@@ -28,6 +28,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 
 #include "mrcp_sofiasip_agent.h"
 #include "mrcp_session.h"
+#include "mrcp_sdp.h"
 #include "apt_log.h"
 
 struct mrcp_sofia_agent_t {
@@ -146,7 +147,7 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 
 
 
-static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session)
+static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	return TRUE;
 }
@@ -191,6 +192,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 	const char *local_sdp_str = NULL, *remote_sdp_str = NULL;
 	sdp_parser_t *parser = NULL;
 	sdp_session_t *sdp = NULL;
+	mrcp_session_descriptor_t *descriptor = NULL;
 
 	tl_gets(tags, 
 			NUTAG_OFFER_RECV_REF(offer_recv),
@@ -208,22 +210,17 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 		}
 	}
 
-	local_sdp_str = NULL;
 	if(remote_sdp_str) {
 		apt_log(APT_PRIO_INFO,"Remote SDP\n[%s]", remote_sdp_str);
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 		sdp = sdp_session(parser);
 		
-/*		mrcp_descriptor_generate_by_sdp_offer(
-							&sofia_session->channel->remote_descriptor,
-							sdp,
-							sofia_session->channel->pool);
-*/
+//		mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,sofia_session->session->pool);
 		sdp_parser_free(parser);
 	}
 
-	mrcp_session_offer(sofia_session->session);
+	mrcp_session_offer(sofia_session->session,descriptor);
 }
 
 static void mrcp_sofia_on_call_terminate(mrcp_sofia_agent_t          *sofia_agent,

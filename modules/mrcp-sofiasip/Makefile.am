@@ -12,5 +12,8 @@ INCLUDES                   = -Iinclude \
 
 noinst_LTLIBRARIES         = libmrcpsofiasip.la
 
-libmrcpsofiasip_la_SOURCES = src/mrcp_sofiasip_agent.c
+include_HEADERS            = include/mrcp_sdp.h \
+                             include/mrcp_sofiasip_agent.h
+libmrcpsofiasip_la_SOURCES = src/mrcp_sdp.c \
+                             src/mrcp_sofiasip_agent.c
 libmrcpsofiasip_la_LIBADD  = $(UNIMRCP_SOFIA_LIBS)
