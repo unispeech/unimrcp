@@ -48,6 +48,12 @@ APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
  */
 APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task);
 
+/**
+ * Get consumer task object.
+ * @param task the consumer task to get object from
+ */
+APT_DECLARE(void*) apt_consumer_task_object_get(apt_consumer_task_t *task);
+
 APT_END_EXTERN_C
 
 #endif /*__APT_CONSUMER_TASK_H__*/

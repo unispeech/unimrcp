@@ -56,6 +56,11 @@ APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task)
 	return task->base;
 }
 
+APT_DECLARE(void*) apt_consumer_task_object_get(apt_consumer_task_t *task)
+{
+	return task->obj;
+}
+
 static apt_bool_t apt_consumer_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
