@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <apr_uuid.h>
 #include "apt_text_stream.h"
 
 /** Navigate through the lines of the text stream (message) */
@@ -241,5 +242,31 @@ APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_siz
 		return FALSE;
 	}
 	str->length = length;
+	return TRUE;
+}
+
+
+/** Generate unique identifier (hex string) */
+APT_DECLARE(apt_bool_t) apt_unique_id_generate(apt_str_t *id, apr_size_t length, apr_pool_t *pool)
+{
+	char *hex_str;
+	apr_size_t i;
+	apr_size_t count;
+	apr_uuid_t uuid;
+	apr_uuid_get(&uuid);
+	
+	hex_str = apr_palloc(pool,length+1);
+	
+	count = length / 2;
+	if(count > sizeof(uuid)) {
+		count = sizeof(uuid);
+	}
+	for(i=0; i<count; i++) {
+		sprintf(hex_str+i*2,"%02x",uuid.data[i]);
+	}
+	hex_str[length] = '\0';
+
+	id->buf = hex_str;
+	id->length = length;
 	return TRUE;
 }

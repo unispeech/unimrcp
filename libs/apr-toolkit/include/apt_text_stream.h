@@ -172,6 +172,16 @@ APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separat
 /** Generate value plus the length (number of digits) of the value itself */
 APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_size_t max_count, apt_str_t *str);
 
+
+/**
+ * Generate unique identifier (hex string)
+ * @param id the id to generate
+ * @param length the length of hex string to generate
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_bool_t) apt_unique_id_generate(apt_str_t *id, apr_size_t length, apr_pool_t *pool);
+
+
 APT_END_EXTERN_C
 
 #endif /*__APT_TEXT_STREAM_H__*/
