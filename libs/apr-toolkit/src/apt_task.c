@@ -199,6 +199,18 @@ APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *ms
 	return FALSE;
 }
 
+APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_msg_t *msg)
+{
+	apt_task_t *parent_task = task->parent_task;
+	if(parent_task) {
+		if(parent_task->vtable.signal_msg) {
+			return parent_task->vtable.signal_msg(parent_task,msg);
+		}
+	}
+	return FALSE;
+}
+
+
 APT_DECLARE(apt_bool_t) apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_bool_t running = TRUE;

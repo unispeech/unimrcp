@@ -109,6 +109,13 @@ APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task);
 APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 
 /**
+ * Signal (post) message to the parent of the specified task.
+ * @param task the task to signal message to
+ * @param msg the message to signal
+ */
+APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_msg_t *msg);
+
+/**
  * Process message signaled to the task.
  * @param task the task to process message
  * @param msg the message to process
