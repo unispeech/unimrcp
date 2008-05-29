@@ -26,15 +26,19 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Enumeration of base task messages */
+/** Enumeration of task message types */
 typedef enum {
-	TASK_MSG_NONE,              /**< indefinite message */
-	TASK_MSG_START_COMPLETE,    /**< start-complete message */
-	TASK_MSG_TERMINATE_REQUEST, /**< terminate-request message */
-	TASK_MSG_TERMINATE_COMPLETE,/**< terminate-complete message */
-
-	TASK_MSG_USER,              /**< user defined messages start from */
+	TASK_MSG_CORE,                   /**< core task message type */
+	TASK_MSG_USER                    /**< user defined task messages start from here */
 } apt_task_msg_type_e;
+
+/** Enumeration of core task messages */
+typedef enum {
+	CORE_TASK_MSG_NONE,              /**< indefinite message */
+	CORE_TASK_MSG_START_COMPLETE,    /**< start-complete message */
+	CORE_TASK_MSG_TERMINATE_REQUEST, /**< terminate-request message */
+	CORE_TASK_MSG_TERMINATE_COMPLETE /**< terminate-complete message */
+} apt_core_task_msg_type_e;
 
 /** Opaque task message declaration */
 typedef struct apt_task_msg_t apt_task_msg_t;
@@ -45,8 +49,10 @@ typedef struct apt_task_msg_pool_t apt_task_msg_pool_t;
 struct apt_task_msg_t {
 	/** Message pool the task message is allocated from */
 	apt_task_msg_pool_t *msg_pool;
-	/** One of apt_task_msg_type_e */
+	/** Task msg type */
 	apt_task_msg_type_e  type;
+	/** Task msg sub type */
+	int                  sub_type;
 	/** Context specific data */
 	char                 data[1];
 };
