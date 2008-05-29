@@ -100,10 +100,13 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 }
 
 /** Generate MRCP descriptor by SDP session */
-MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t *descriptor, const sdp_session_t *sdp, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
 	mpf_media_descriptor_t *base;
+	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
+	mrcp_session_descriptor_init(descriptor);
+
 	if(sdp->sdp_connection) {
 		apt_string_assign(&descriptor->ip,sdp->sdp_connection->c_address,pool);
 	}
@@ -143,7 +146,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 			mpf_media_generate(base,sdp_media,&descriptor->ip,pool);
 		}
 	}
-	return TRUE;
+	return descriptor;
 }
 
 

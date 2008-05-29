@@ -214,9 +214,8 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 		apt_log(APT_PRIO_INFO,"Remote SDP\n[%s]", remote_sdp_str);
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
-		sdp = sdp_session(parser);
-		
-//		mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,sofia_session->session->pool);
+		sdp = sdp_session(parser);		
+		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,sofia_session->session->pool);
 		sdp_parser_free(parser);
 	}
 
