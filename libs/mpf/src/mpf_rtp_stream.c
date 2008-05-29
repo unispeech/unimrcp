@@ -95,7 +95,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 				status = FALSE;
 			}
 		}
-		if(!local_media->codec_list.count) {
+		if(mpf_codec_list_is_empty(&local_media->codec_list) == TRUE) {
 			mpf_codec_manager_codec_list_get(
 				stream->termination->codec_manager,
 				&local_media->codec_list,
@@ -103,7 +103,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		}
 		stream->rx_codec = mpf_codec_manager_codec_get(
 								stream->termination->codec_manager,
-								local_media->codec_list.codecs,
+								mpf_codec_get(&local_media->codec_list,0),
 								stream->termination->pool);
 		rtp_stream->local_media = local_media;
 	}
@@ -127,7 +127,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		}
 		stream->tx_codec = mpf_codec_manager_codec_get(
 								stream->termination->codec_manager,
-								remote_media->codec_list.codecs,
+								mpf_codec_get(&remote_media->codec_list,0),
 								stream->termination->pool);
 		rtp_stream->transmitter.samples_per_frame = 
 			(apr_uint32_t)mpf_codec_frame_samples_calculate(stream->tx_codec->descriptor);

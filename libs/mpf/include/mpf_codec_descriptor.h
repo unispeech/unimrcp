@@ -22,6 +22,7 @@
  * @brief MPF Codec Descriptor
  */ 
 
+#include <apr_tables.h>
 #include "apt_string.h"
 #include "mpf.h"
 
@@ -60,12 +61,8 @@ struct mpf_codec_descriptor_t {
 
 /** List of codec descriptors */
 struct mpf_codec_list_t {
-	/** Dynamically allocated array of codec descriptors */
-	mpf_codec_descriptor_t *codecs;
-	/** Bounds of allocated array */
-	apr_size_t              max_count;
-	/** Number of descriptors already appended to the list */
-	apr_size_t              count;
+	/** Dynamic array */
+	apr_array_header_t *descriptor_arr;
 };
 
 /** Codec frame */
@@ -136,29 +133,36 @@ static APR_INLINE apr_size_t mpf_codec_descriptor_match(const mpf_codec_descript
 /** Reset list of codec descriptors */
 static APR_INLINE void mpf_codec_list_reset(mpf_codec_list_t *codec_list)
 {
-	codec_list->codecs = NULL;
-	codec_list->max_count = 0;
-	codec_list->count = 0;
+	codec_list->descriptor_arr = NULL;
 }
 
 /** Initialize list of codec descriptors */
-static APR_INLINE void mpf_codec_list_init(mpf_codec_list_t *codec_list, apr_size_t max_count, apr_pool_t *pool)
+static APR_INLINE void mpf_codec_list_init(mpf_codec_list_t *codec_list, apr_size_t initial_count, apr_pool_t *pool)
 {
-	codec_list->codecs = apr_palloc(pool,sizeof(mpf_codec_descriptor_t)*max_count);
-	codec_list->max_count = max_count;
-	codec_list->count = 0;
+	codec_list->descriptor_arr = apr_array_make(pool,(int)initial_count, (int)sizeof(mpf_codec_descriptor_t));
 }
 
 /** Increment number of codec descriptors in the list and return the descriptor to fill */
 static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_add(mpf_codec_list_t *codec_list)
 {
+	return apr_array_push(codec_list->descriptor_arr);
+}
+
+/** Determine if codec list is empty */
+static APR_INLINE apt_bool_t mpf_codec_list_is_empty(const mpf_codec_list_t *codec_list)
+{
+	return apr_is_empty_array(codec_list->descriptor_arr);
+}
+
+/** Get codec descriptor by index */
+static APR_INLINE mpf_codec_descriptor_t* mpf_codec_get(const mpf_codec_list_t *codec_list, apr_size_t id)
+{
 	mpf_codec_descriptor_t *descriptor;
-	if(codec_list->count >= codec_list->max_count) {
+	if(id >= (apr_size_t)codec_list->descriptor_arr->nelts) {
 		return NULL;
 	}
-	descriptor = &codec_list->codecs[codec_list->count++];
-	mpf_codec_descriptor_init(descriptor);
-	return descriptor;
+	descriptor = (mpf_codec_descriptor_t*)codec_list->descriptor_arr->elts;
+	return descriptor + id;
 }
 
 APT_END_EXTERN_C

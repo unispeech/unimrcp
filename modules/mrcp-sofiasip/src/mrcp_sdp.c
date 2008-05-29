@@ -151,12 +151,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_media)
 {
 	apr_size_t offset = 0;
-	apr_size_t i;
+	int i;
+	mpf_codec_descriptor_t *codec_descriptor;
+	apr_array_header_t *descriptor_arr = audio_media->codec_list.descriptor_arr;
 	offset += snprintf(buffer+offset,size-offset,
 		"m=audio %d RTP/AVP", 
 		audio_media->base.state == MPF_MEDIA_ENABLED ? audio_media->base.port : 0);
-	for(i=0; i<audio_media->codec_list.count; i++) {
-		offset += snprintf(buffer+offset,size-offset," %d", audio_media->codec_list.codecs[i].payload_type);
+	for(i=0; i<descriptor_arr->nelts; i++) {
+		codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
+		offset += snprintf(buffer+offset,size-offset," %d", codec_descriptor->payload_type);
 	}
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
 	if(descriptor->ip.length && audio_media->base.ip.length && 
@@ -164,11 +167,12 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",audio_media->base.ip);
 	}
 	if(audio_media->base.state == MPF_MEDIA_ENABLED) {
-		for(i=0; i<audio_media->codec_list.count; i++) {
+		for(i=0; i<descriptor_arr->nelts; i++) {
+			codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
 			offset += snprintf(buffer+offset,size-offset,"a=rtpmap:%d %s/%d\r\n",
-				audio_media->codec_list.codecs[i].payload_type,
-				audio_media->codec_list.codecs[i].name,
-				audio_media->codec_list.codecs[i].sampling_rate);
+				codec_descriptor->payload_type,
+				codec_descriptor->name,
+				codec_descriptor->sampling_rate);
 		}
 #if 0
 		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",
