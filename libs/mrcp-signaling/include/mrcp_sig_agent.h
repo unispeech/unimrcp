@@ -31,11 +31,13 @@ APT_BEGIN_EXTERN_C
 /** MRCP signaling agent  */
 struct mrcp_sig_agent_t {
 	/** Memory pool to allocate memory from */
-	apr_pool_t *pool;
+	apr_pool_t          *pool;
 	/** External object associated with agent */
-	void       *obj;
+	void                *obj;
 	/** Task interface */
-	apt_task_t *task;
+	apt_task_t          *task;
+	/** Task message pool used to allocate signaling agent messages */
+	apt_task_msg_pool_t *msg_pool;
 
 	/** Virtual create_session */
 	mrcp_session_t* (*create_session)();

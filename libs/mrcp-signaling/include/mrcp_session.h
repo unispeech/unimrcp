@@ -35,11 +35,14 @@ typedef struct mrcp_session_event_vtable_t mrcp_session_event_vtable_t;
 /** MRCP session */
 struct mrcp_session_t {
 	/** Memory pool to allocate memory from */
-	apr_pool_t *pool;
-	/** External object associated with agent */
-	void       *obj;
+	apr_pool_t       *pool;
+	/** External object associated with session */
+	void             *obj;
+	/** Back pointer to signaling agent */
+	mrcp_sig_agent_t *signaling_agent;
+
 	/** Session identifier */
-	apt_str_t   session_id;
+	apt_str_t         id;
 
 	/** Virtual methods */
 	const mrcp_session_method_vtable_t *method_vtable;

@@ -22,6 +22,8 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
+#define MRCP_SESSION_ID_HEX_STRING_LENGTH 16
+
 /** MRCP server */
 struct mrcp_server_t {
 	/** Main message processing task */
@@ -39,6 +41,23 @@ struct mrcp_server_t {
 
 	/** Memory pool */
 	apr_pool_t                *pool;
+};
+
+typedef enum {
+	MRCP_SERVER_SIGNALING_TASK_MSG = TASK_MSG_USER,
+	MRCP_SERVER_MEDIA_TASK_MSG
+} mrcp_server_task_msg_type_e ;
+
+
+typedef enum {
+	SIG_AGENT_TASK_MSG_OFFER,
+	SIG_AGENT_TASK_MSG_TERMINATE
+}sig_agent_task_msg_type_e ;
+
+typedef struct sig_agent_message_t sig_agent_message_t;
+struct sig_agent_message_t {
+	mrcp_session_t            *session;
+	mrcp_session_descriptor_t *descriptor;
 };
 
 static void mrcp_server_on_start_complete(apt_task_t *task);
@@ -71,7 +90,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	vtable.on_start_complete = mrcp_server_on_start_complete;
 	vtable.on_terminate_complete = mrcp_server_on_terminate_complete;
 
-	msg_pool = apt_task_msg_pool_create_dynamic(/*sizeof(sample_msg_data_t)*/0,pool);
+	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
 
 	server->task = apt_consumer_task_create(server, &vtable, msg_pool, pool);
 	if(!server->task) {
@@ -91,6 +110,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server)
 	}
 	task = apt_consumer_task_base_get(server->task);
 	apt_log(APT_PRIO_INFO,"Start Server Task");
+	server->session_table = apr_hash_make(server->pool);
 	if(apt_task_start(task) == FALSE) {
 		apt_log(APT_PRIO_WARNING,"Failed to Start Server Task");
 		return FALSE;
@@ -111,6 +131,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 		apt_log(APT_PRIO_WARNING,"Failed to Shutdown Server Task");
 		return FALSE;
 	}
+	server->session_table = NULL;
 	return TRUE;
 }
 
@@ -157,6 +178,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 		return FALSE;
 	}
 	signaling_agent->create_session = mrcp_server_session_create;
+	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sig_agent_message_t),server->pool);
 	server->signaling_agent = signaling_agent;
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
@@ -181,13 +203,56 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 	apt_log(APT_PRIO_INFO,"On Server Task Terminate");
 }
 
+
+static apt_bool_t mrcp_server_session_offer_process(mrcp_server_t *server, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	apt_log(APT_PRIO_INFO,"Process Session Offer");
+	if(!session->id.length) {
+		/* Received first offer, generate session id and add to session's table */
+		apt_unique_id_generate(&session->id,MRCP_SESSION_ID_HEX_STRING_LENGTH,server->pool);
+		apr_hash_set(server->session_table,session->id.buf,session->id.length,session);
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_t *server, mrcp_session_t *session)
+{
+	apt_log(APT_PRIO_INFO,"Process Session Terminate");
+	apr_hash_set(server->session_table,session->id.buf,session->id.length,NULL);
+	return TRUE;
+}
+
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+	apt_log(APT_PRIO_DEBUG,"Process Message");
+	switch(msg->type) {
+		case MRCP_SERVER_SIGNALING_TASK_MSG:
+		{
+			sig_agent_message_t *data = (sig_agent_message_t*)msg->data;
+			switch(msg->sub_type) {
+				case SIG_AGENT_TASK_MSG_OFFER:
+					mrcp_server_session_offer_process(server,data->session,data->descriptor);
+					break;
+				case SIG_AGENT_TASK_MSG_TERMINATE:
+					mrcp_server_session_terminate_process(server,data->session);
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+		case MRCP_SERVER_MEDIA_TASK_MSG:
+			break;
+		default: 
+			break;
+	}
 	return TRUE;
 }
 
 
-
+/* Signaling interface */
 static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session);
 
@@ -206,12 +271,28 @@ static mrcp_session_t* mrcp_server_session_create()
 
 static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
-	apt_log(APT_PRIO_INFO,"Session Offer");
-	return TRUE;
+	sig_agent_message_t *message;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	task_msg->type = MRCP_SERVER_SIGNALING_TASK_MSG;
+	task_msg->sub_type = SIG_AGENT_TASK_MSG_OFFER;
+	message = (sig_agent_message_t*) task_msg->data;
+	message->session = session;
+	message->descriptor = descriptor;
+
+	apt_log(APT_PRIO_DEBUG,"Session Offer");
+	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
 static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session)
 {
-	apt_log(APT_PRIO_INFO,"Session Terminate");
-	return TRUE;
+	sig_agent_message_t *data;
+	apt_task_msg_t *msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	msg->type = MRCP_SERVER_SIGNALING_TASK_MSG;
+	msg->sub_type = SIG_AGENT_TASK_MSG_TERMINATE;
+	data = (sig_agent_message_t*) msg->data;
+	data->session = session;
+	data->descriptor = NULL;
+
+	apt_log(APT_PRIO_DEBUG,"Session Terminate");
+	return apt_task_msg_parent_signal(session->signaling_agent->task,msg);
 }

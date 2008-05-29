@@ -24,6 +24,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(apr_pool_t *pool)
 	sig_agent->pool = pool;
 	sig_agent->obj = NULL;
 	sig_agent->task = NULL;
+	sig_agent->msg_pool = NULL;
 	sig_agent->create_session = NULL;
 	return sig_agent;
 }
@@ -38,9 +39,10 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_session_create()
 	session = apr_palloc(pool,sizeof(mrcp_session_t));
 	session->pool = pool;
 	session->obj = NULL;
+	session->signaling_agent = NULL;
 	session->event_vtable = NULL;
 	session->method_vtable = NULL;
-	apt_string_reset(&session->session_id);
+	apt_string_reset(&session->id);
 	return session;
 }
 

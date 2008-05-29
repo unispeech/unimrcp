@@ -169,6 +169,7 @@ static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia
 {
 	mrcp_sofia_session_t *sofia_session;
 	mrcp_session_t* session = sofia_agent->sig_agent->create_session();
+	session->signaling_agent = sofia_agent->sig_agent;
 	session->event_vtable = &session_event_vtable;
 
 	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
