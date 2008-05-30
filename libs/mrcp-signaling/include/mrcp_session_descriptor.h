@@ -27,64 +27,82 @@
 
 APT_BEGIN_EXTERN_C
 
-#define MAX_CONTROL_MEDIA_COUNT 3
-#define MAX_AUDIO_MEDIA_COUNT   3
-#define MAX_VIDEO_MEDIA_COUNT   3
-
 /** MRCP session descriptor */
 struct mrcp_session_descriptor_t {
-	apt_str_t    ip;
+	/** Session level IP address */
+	apt_str_t           ip;
 
-	mrcp_control_descriptor_t  *control_descriptor[MAX_CONTROL_MEDIA_COUNT];
-	apr_size_t                  control_count;
-	mpf_rtp_media_descriptor_t *audio_descriptor[MAX_AUDIO_MEDIA_COUNT];
-	apr_size_t                  audio_count;
-	mpf_rtp_media_descriptor_t *video_descriptor[MAX_VIDEO_MEDIA_COUNT];
-	apr_size_t                  video_count;
+	/** MRCP control media array */
+	apr_array_header_t *control_media_arr;
+	/** Audio media array */
+	apr_array_header_t *audio_media_arr;
+	/** Video media array */
+	apr_array_header_t *video_media_arr;
 };
 
 /** Initialize session descriptor  */
-static APR_INLINE void mrcp_session_descriptor_init(mrcp_session_descriptor_t *descriptor)
+static APR_INLINE mrcp_session_descriptor_t* mrcp_session_descriptor_create(apr_pool_t *pool)
 {
+	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
 	apt_string_reset(&descriptor->ip);
-	descriptor->control_count = 0;
-	descriptor->audio_count = 0;
-	descriptor->video_count = 0;
+	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(mrcp_control_descriptor_t));
+	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t));
+	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t));
+	return descriptor;
 }
 
 static APR_INLINE apr_size_t mrcp_session_media_count_get(const mrcp_session_descriptor_t *descriptor)
 {
-	return descriptor->control_count + descriptor->audio_count + descriptor->video_count;
+	return descriptor->control_media_arr->nelts + descriptor->audio_media_arr->nelts + descriptor->video_media_arr->nelts;
 }
 
-static APR_INLINE apt_bool_t mrcp_session_control_media_add(mrcp_session_descriptor_t *descriptor, mrcp_control_descriptor_t *media)
+static APR_INLINE mrcp_control_descriptor_t* mrcp_session_control_media_add(mrcp_session_descriptor_t *descriptor)
 {
-	if(descriptor->control_count >= MAX_CONTROL_MEDIA_COUNT) {
-		return FALSE;
-	}
-	media->base.id = mrcp_session_media_count_get(descriptor);
-	descriptor->control_descriptor[descriptor->control_count++] = media;
-	return TRUE;
+	mrcp_control_descriptor_t *media = apr_array_push(descriptor->control_media_arr);
+	mrcp_control_descriptor_init(media);
+	media->base.id = mrcp_session_media_count_get(descriptor) - 1;
+	return media;
 }
 
-static APR_INLINE apt_bool_t mrcp_session_audio_media_add(mrcp_session_descriptor_t *descriptor, mpf_rtp_media_descriptor_t *media)
+static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_audio_media_add(mrcp_session_descriptor_t *descriptor)
 {
-	if(descriptor->audio_count >= MAX_AUDIO_MEDIA_COUNT) {
-		return FALSE;
-	}
-	media->base.id = mrcp_session_media_count_get(descriptor);
-	descriptor->audio_descriptor[descriptor->audio_count++] = media;
-	return TRUE;
+	mpf_rtp_media_descriptor_t *media = apr_array_push(descriptor->audio_media_arr);
+	mpf_rtp_media_descriptor_init(media);
+	media->base.id = mrcp_session_media_count_get(descriptor) - 1;
+	return media;
 }
 
-static APR_INLINE apt_bool_t mrcp_session_video_media_add(mrcp_session_descriptor_t *descriptor, mpf_rtp_media_descriptor_t *media)
+static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_video_media_add(mrcp_session_descriptor_t *descriptor)
 {
-	if(descriptor->video_count >= MAX_VIDEO_MEDIA_COUNT) {
-		return FALSE;
+	mpf_rtp_media_descriptor_t *media = apr_array_push(descriptor->video_media_arr);
+	mpf_rtp_media_descriptor_init(media);
+	media->base.id = mrcp_session_media_count_get(descriptor) - 1;
+	return media;
+}
+
+
+static APR_INLINE mrcp_control_descriptor_t* mrcp_session_control_media_get(const mrcp_session_descriptor_t *descriptor, apr_size_t id)
+{
+	if((int)id >= descriptor->control_media_arr->nelts) {
+		return NULL;
 	}
-	media->base.id = mrcp_session_media_count_get(descriptor);
-	descriptor->video_descriptor[descriptor->video_count++] = media;
-	return TRUE;
+	return (mrcp_control_descriptor_t*)descriptor->control_media_arr->elts + id;
+}
+
+static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_audio_media_get(const mrcp_session_descriptor_t *descriptor, apr_size_t id)
+{
+	if((int)id >= descriptor->audio_media_arr->nelts) {
+		return NULL;
+	}
+	return (mpf_rtp_media_descriptor_t*)descriptor->audio_media_arr->elts + id;
+}
+
+static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_video_media_get(const mrcp_session_descriptor_t *descriptor, apr_size_t id)
+{
+	if((int)id >= descriptor->video_media_arr->nelts) {
+		return NULL;
+	}
+	return (mpf_rtp_media_descriptor_t*)descriptor->video_media_arr->elts + id;
 }
 
 APT_END_EXTERN_C

@@ -37,8 +37,11 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 	apr_size_t i;
 	apr_size_t count;
 	apr_size_t audio_index = 0;
+	mpf_rtp_media_descriptor_t *audio_media;
 	apr_size_t video_index = 0;
+	mpf_rtp_media_descriptor_t *video_media;
 	apr_size_t control_index = 0;
+	mrcp_control_descriptor_t *control_media;
 	apr_size_t offset = 0;
 	buffer[0] = '\0';
 	offset += snprintf(buffer+offset,size-offset,
@@ -52,19 +55,24 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 			descriptor->ip.buf);
 	count = mrcp_session_media_count_get(descriptor);
 	for(i=0; i<count; i++) {
-		if(audio_index < descriptor->audio_count && i == descriptor->audio_descriptor[audio_index]->base.id) {
-			/** generate audio media */
-			mpf_rtp_media_descriptor_t *audio_media = descriptor->audio_descriptor[audio_index++];
+		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
+		if(audio_media && audio_media->base.id == i) {
+			/* generate audio media */
+			audio_index++;
 			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
+			continue;
 		}
-		else if(video_index < descriptor->video_count && i == descriptor->video_descriptor[video_index]->base.id) {
-			/** generate video media */
-			mpf_rtp_media_descriptor_t *video_media = descriptor->video_descriptor[video_index++];
+		video_media = mrcp_session_video_media_get(descriptor,video_index);
+		if(video_media && video_media->base.id == i) {
+			/* generate video media */
+			video_index++;
 			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);
+			continue;
 		}
-		else if(control_index < descriptor->control_count && i == descriptor->control_descriptor[control_index]->base.id) {
+		control_media = mrcp_session_control_media_get(descriptor,control_index);
+		if(video_media && video_media->base.id == i) {
 			/** generate mrcp control media */
-			mrcp_control_descriptor_t *control_media = descriptor->control_descriptor[control_index++];
+			control_index++;
 			if(offer == TRUE) { /* offer */
 				offset += snprintf(buffer+offset,size-offset,
 					"m=application %d %s 1\r\n"
@@ -94,6 +102,7 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 					control_media->resource_name.buf,
 					control_media->cmid);
 			}
+			continue;
 		}
 	}
 	return offset;
@@ -104,8 +113,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 {
 	sdp_media_t *sdp_media;
 	mpf_media_descriptor_t *base;
-	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
-	mrcp_session_descriptor_init(descriptor);
+	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
 
 	if(sdp->sdp_connection) {
 		apt_string_assign(&descriptor->ip,sdp->sdp_connection->c_address,pool);
@@ -115,26 +123,23 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 		base = NULL;
 		switch(sdp_media->m_type) {
 			case sdp_media_audio:
-			case sdp_media_video:
 			{
-				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
+				mpf_rtp_media_descriptor_t *media = mrcp_session_audio_media_add(descriptor);
 				base = &media->base;
 				mpf_rtp_media_generate(media,sdp_media,pool);
-				if(sdp_media->m_type == sdp_media_audio) {
-					mrcp_session_audio_media_add(descriptor,media);
-				}
-				else {
-					mrcp_session_video_media_add(descriptor,media);
-				}
+				break;
+			}
+			case sdp_media_video:
+			{
+				mpf_rtp_media_descriptor_t *media = mrcp_session_video_media_add(descriptor);
+				base = &media->base;
+				mpf_rtp_media_generate(media,sdp_media,pool);
 				break;
 			}
 			case sdp_media_application:
 			{
-				mrcp_control_descriptor_t *control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
-				mrcp_control_descriptor_init(control_media);
+				mrcp_control_descriptor_t *control_media = mrcp_session_control_media_add(descriptor);
 				base = &control_media->base;
-				mrcp_session_control_media_add(descriptor,control_media);
 				mrcp_control_media_generate(control_media,sdp_media,pool);
 				break;
 			}
