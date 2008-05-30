@@ -96,9 +96,9 @@ struct mrcp_recog_header_t {
     successful match */
 	float                         confidence_threshold;
 	/** To filter out background noise and not mistake it for speech */
-	apr_size_t                    sensitivity_level;
+	float                         sensitivity_level;
 	/** Tunable towards Performance or Accuracy */
-	apr_size_t                    speed_vs_accuracy;
+	float                         speed_vs_accuracy;
 	/** The client, by setting this header, can ask the recognition resource 
 	to send it more  than 1 alternative */
 	apr_size_t                    n_best_list_length;

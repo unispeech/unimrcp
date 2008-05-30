@@ -127,9 +127,9 @@ static apt_bool_t mrcp_completion_cause_generate(mrcp_recog_completion_cause_e c
 /** Initialize recognizer header */
 static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 {
-	recog_header->confidence_threshold = 0;
-	recog_header->sensitivity_level = 0;
-	recog_header->speed_vs_accuracy = 0;
+	recog_header->confidence_threshold = 0.0;
+	recog_header->sensitivity_level = 0.0;
+	recog_header->speed_vs_accuracy = 0.0;
 	recog_header->n_best_list_length = 0;
 	recog_header->no_input_timeout = 0;
 	recog_header->recognition_timeout = 0;
@@ -179,10 +179,10 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size
 			recog_header->confidence_threshold = apt_float_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_SENSITIVITY_LEVEL:
-			recog_header->sensitivity_level = apt_size_value_parse(value);
+			recog_header->sensitivity_level = apt_float_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_SPEED_VS_ACCURACY:
-			recog_header->speed_vs_accuracy = apt_size_value_parse(value);
+			recog_header->speed_vs_accuracy = apt_float_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_N_BEST_LIST_LENGTH:
 			recog_header->n_best_list_length = apt_size_value_parse(value);
@@ -274,13 +274,34 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size
 	return status;
 }
 
+static APR_INLINE float apt_size_value_parse_as_float(const apt_str_t *value)
+{
+	float f = (float)apt_size_value_parse(value);
+	return f / 100;
+}
+
+static APR_INLINE apt_bool_t apt_size_value_generate_from_float(float value, apt_text_stream_t *stream)
+{
+	apr_size_t s = (apr_size_t)((value + 0.001f) * 100);
+	return apt_size_value_generate(s,stream);
+}
+
 /** Parse MRCP v1 recognizer header */
 static apt_bool_t mrcp_v1_recog_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
 		mrcp_recog_header_t *recog_header = accessor->data;
-		recog_header->confidence_threshold = (float)apt_size_value_parse(value);
-		recog_header->confidence_threshold /= 100;
+		recog_header->confidence_threshold = apt_size_value_parse_as_float(value);
+		return TRUE;
+	}
+	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
+		mrcp_recog_header_t *recog_header = accessor->data;
+		recog_header->sensitivity_level = apt_size_value_parse_as_float(value);
+		return TRUE;
+	}
+	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
+		mrcp_recog_header_t *recog_header = accessor->data;
+		recog_header->speed_vs_accuracy = apt_size_value_parse_as_float(value);
 		return TRUE;
 	}
 	return mrcp_recog_header_parse(accessor,id,value,pool);
@@ -295,10 +316,10 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 			apt_float_value_generate(recog_header->confidence_threshold,value);
 			break;
 		case RECOGNIZER_HEADER_SENSITIVITY_LEVEL:
-			apt_size_value_generate(recog_header->sensitivity_level,value);
+			apt_float_value_generate(recog_header->sensitivity_level,value);
 			break;
 		case RECOGNIZER_HEADER_SPEED_VS_ACCURACY:
-			apt_size_value_generate(recog_header->speed_vs_accuracy,value);
+			apt_float_value_generate(recog_header->speed_vs_accuracy,value);
 			break;
 		case RECOGNIZER_HEADER_N_BEST_LIST_LENGTH:
 			apt_size_value_generate(recog_header->n_best_list_length,value);
@@ -395,7 +416,15 @@ static apt_bool_t mrcp_v1_recog_header_generate(mrcp_header_accessor_t *accessor
 {
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
 		mrcp_recog_header_t *recog_header = accessor->data;
-		return apt_size_value_generate((size_t)((recog_header->confidence_threshold+0.001f)*100),value);
+		return apt_size_value_generate_from_float(recog_header->confidence_threshold,value);
+	}
+	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
+		mrcp_recog_header_t *recog_header = accessor->data;
+		return apt_size_value_generate_from_float(recog_header->sensitivity_level,value);
+	}
+	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
+		mrcp_recog_header_t *recog_header = accessor->data;
+		return apt_size_value_generate_from_float(recog_header->speed_vs_accuracy,value);
 	}
 	return mrcp_recog_header_generate(accessor,id,value);
 }
