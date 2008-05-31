@@ -27,10 +27,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MPF engine declaration */
-typedef struct mpf_engine_t mpf_engine_t;
-
-
 /**
  * Create MPF engine.
  * @param pool the pool to allocate memory from
@@ -42,6 +38,13 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool);
  * @param engine the engine to get task from
  */
 MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine);
+
+/**
+ * Set task msg type to send responses and events with.
+ * @param engine the engine to set task msg type for
+ * @param type the type to set
+ */
+MPF_DECLARE(void) mpf_engine_task_msg_type_set(mpf_engine_t *engine, apt_task_msg_type_e type);
 
 
 APT_END_EXTERN_C

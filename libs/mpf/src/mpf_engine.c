@@ -26,8 +26,9 @@
 #include "apt_log.h"
 
 struct mpf_engine_t {
-	apt_task_t          *base;
 	apr_pool_t          *pool;
+	apt_task_t          *task;
+	apt_task_msg_type_e  task_msg_type;
 	apr_thread_mutex_t  *request_queue_guard;
 	apt_obj_list_t      *request_queue;
 	apt_obj_list_t      *contexts;
@@ -66,13 +67,19 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
 	apt_log(APT_PRIO_NOTICE,"Create Media Processing Engine");
-	engine->base = apt_task_create(engine,&vtable,msg_pool,pool);
+	engine->task = apt_task_create(engine,&vtable,msg_pool,pool);
+	engine->task_msg_type = TASK_MSG_USER;
 	return engine;
 }
 
 MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine)
 {
-	return engine->base;
+	return engine->task;
+}
+
+MPF_DECLARE(void) mpf_engine_task_msg_type_set(mpf_engine_t *engine, apt_task_msg_type_e type)
+{
+	engine->task_msg_type = type;
 }
 
 static apt_bool_t mpf_engine_start(apt_task_t *task)
@@ -121,7 +128,6 @@ static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine)
 
 static apt_bool_t mpf_engine_event_raise(mpf_termination_t *termination, int event_id, void *descriptor)
 {
-	apt_task_t *parent_task;
 	apt_task_msg_t *task_msg;
 	mpf_message_t *event_msg;
 	mpf_engine_t *engine;
@@ -130,13 +136,8 @@ static apt_bool_t mpf_engine_event_raise(mpf_termination_t *termination, int eve
 		return FALSE;
 	}
 
-	parent_task = apt_task_parent_get(engine->base);
-	if(!parent_task) {
-		apt_log(APT_PRIO_WARNING,"No MPF Parent Task to Send Event");
-		return FALSE;
-	}
-
-	task_msg = apt_task_msg_get(engine->base);
+	task_msg = apt_task_msg_get(engine->task);
+	task_msg->type = engine->task_msg_type;
 	event_msg = (mpf_message_t*) task_msg->data;
 	event_msg->command_id = event_id;
 	event_msg->message_type = MPF_MESSAGE_TYPE_EVENT;
@@ -145,7 +146,7 @@ static apt_bool_t mpf_engine_event_raise(mpf_termination_t *termination, int eve
 	event_msg->termination = termination;
 	event_msg->descriptor = descriptor;
 	
-	return apt_task_msg_signal(parent_task,task_msg);
+	return apt_task_msg_parent_signal(engine->task,task_msg);
 }
 
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
@@ -160,7 +161,6 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 
 static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_msg_t *msg)
 {
-	apt_task_t *parent_task;
 	apt_task_msg_t *response_msg;
 	mpf_message_t *response;
 	mpf_context_t *context;
@@ -172,13 +172,8 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 		return FALSE;
 	}
 
-	parent_task = apt_task_parent_get(engine->base);
-	if(!parent_task) {
-		apt_log(APT_PRIO_WARNING,"No MPF Parent Task to Send Response");
-		return FALSE;
-	}
-
-	response_msg = apt_task_msg_get(engine->base);
+	response_msg = apt_task_msg_get(engine->task);
+	response_msg->type = engine->task_msg_type;
 	response = (mpf_message_t*) response_msg->data;
 	*response = *request;
 	response->message_type = MPF_MESSAGE_TYPE_RESPONSE;
@@ -234,7 +229,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 		}
 	}
 
-	return apt_task_msg_signal(parent_task,response_msg);
+	return apt_task_msg_parent_signal(engine->task,response_msg);
 }
 
 static void mpf_engine_main(mpf_timer_t *timer, void *data)
