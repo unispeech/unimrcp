@@ -22,16 +22,13 @@
 #include "apt_text_stream.h"
 #include "apt_log.h"
 
-#define MRCP_CLIENT_SDP_ORIGIN "OpenMRCPClient"
-#define MRCP_SERVER_SDP_ORIGIN "OpenMRCPServer"
-
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_descriptor);
 
 static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media, const sdp_media_t *sdp_media, apr_pool_t *pool);
 static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, apr_pool_t *pool);
 static apt_bool_t mpf_media_generate(mpf_media_descriptor_t *media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 
-/** Generate SDP offer by MRCP descriptor */
+/** Generate SDP string by MRCP descriptor */
 MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, apt_bool_t offer)
 {
 	apr_size_t i;
@@ -50,7 +47,7 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 			"s=-\r\n"
 			"c=IN IP4 %s\r\n"
 			"t=0 0\r\n",
-			(offer == TRUE) ? MRCP_CLIENT_SDP_ORIGIN : MRCP_SERVER_SDP_ORIGIN,
+			descriptor->origin.buf ? descriptor->origin.buf : "-",
 			descriptor->ip.buf,
 			descriptor->ip.buf);
 	count = mrcp_session_media_count_get(descriptor);
@@ -182,10 +179,9 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 				codec_descriptor->name,
 				codec_descriptor->sampling_rate);
 		}
-#if 0
 		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",
-			mrcp_audio_direction_str_get(audio_media->direction));
-#endif
+			mrcp_audio_direction_str_get(audio_media->mode));
+		
 		if(audio_media->ptime) {
 			offset += snprintf(buffer+offset,size-offset,"a=ptime:%hu\r\n",
 				audio_media->ptime);
@@ -229,22 +225,20 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media
 		}
 	}
 
-#if 0
 	switch(sdp_media->m_mode) {
 		case sdp_inactive:
-			audio_media->direction = MRCP_AUDIO_NONE;
+			audio_media->mode = STREAM_MODE_NONE;
 			break;
 		case sdp_sendonly:
-			audio_media->direction = MRCP_AUDIO_SEND;
+			audio_media->mode = STREAM_MODE_SEND;
 			break;
 		case sdp_recvonly:
-			audio_media->direction = MRCP_AUDIO_RECEIVE;
+			audio_media->mode = STREAM_MODE_RECEIVE;
 			break;
 		case sdp_sendrecv:
-			audio_media->direction = MRCP_AUDIO_DUPLEX;
+			audio_media->mode = STREAM_MODE_SEND_RECEIVE;
 			break;
 	}
-#endif
 	return TRUE;
 }
 

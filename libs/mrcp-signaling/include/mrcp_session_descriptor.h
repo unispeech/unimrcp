@@ -29,6 +29,8 @@ APT_BEGIN_EXTERN_C
 
 /** MRCP session descriptor */
 struct mrcp_session_descriptor_t {
+	/** SDP origin */
+	apt_str_t           origin;
 	/** Session level IP address */
 	apt_str_t           ip;
 
@@ -44,6 +46,7 @@ struct mrcp_session_descriptor_t {
 static APR_INLINE mrcp_session_descriptor_t* mrcp_session_descriptor_create(apr_pool_t *pool)
 {
 	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
+	apt_string_reset(&descriptor->origin);
 	apt_string_reset(&descriptor->ip);
 	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(mrcp_control_descriptor_t));
 	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t));
