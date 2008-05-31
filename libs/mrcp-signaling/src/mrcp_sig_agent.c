@@ -29,14 +29,14 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(apr_pool_t *pool)
 	return sig_agent;
 }
 
-MRCP_DECLARE(mrcp_session_t*) mrcp_session_create()
+MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding)
 {
 	mrcp_session_t *session;
 	apr_pool_t *pool;
 	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
 		return NULL;
 	}
-	session = apr_palloc(pool,sizeof(mrcp_session_t));
+	session = apr_palloc(pool,sizeof(mrcp_session_t)+padding);
 	session->pool = pool;
 	session->obj = NULL;
 	session->signaling_agent = NULL;

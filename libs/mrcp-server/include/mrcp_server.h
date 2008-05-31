@@ -23,6 +23,7 @@
  */ 
 
 #include "mrcp_sig_types.h"
+#include "mpf_types.h"
 #include "apt_task.h"
 
 APT_BEGIN_EXTERN_C
@@ -68,7 +69,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
  * @param server the MRCP server to set media engine for
  * @param media_engine the media engine to set
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, apt_task_t *media_engine);
+MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine);
 
 /**
  * Register MRCP signaling agent.

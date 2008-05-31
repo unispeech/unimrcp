@@ -71,7 +71,7 @@ struct mrcp_session_event_vtable_t {
 };
 
 /** Create new memory pool and allocate session object from the pool. */
-MRCP_DECLARE(mrcp_session_t*) mrcp_session_create();
+MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding);
 
 /** Destroy session and assosiated memory pool. */
 MRCP_DECLARE(void) mrcp_session_destroy(mrcp_session_t *session);

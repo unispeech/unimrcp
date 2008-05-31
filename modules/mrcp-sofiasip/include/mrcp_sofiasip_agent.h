@@ -45,6 +45,8 @@ struct mrcp_sofia_config_t {
 	char      *user_name;
 	/** User agent name */
 	char      *user_agent_name;
+	/** SDP origin */
+	char      *origin;
 };
 
 /**

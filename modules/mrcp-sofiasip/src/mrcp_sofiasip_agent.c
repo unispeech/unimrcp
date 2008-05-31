@@ -88,6 +88,7 @@ MRCP_DECLARE(mrcp_sofia_config_t*) mrcp_sofiasip_config_alloc(apr_pool_t *pool)
 	
 	config->user_name = NULL;
 	config->user_agent_name = NULL;
+	config->origin = NULL;
 	return config;
 }
 

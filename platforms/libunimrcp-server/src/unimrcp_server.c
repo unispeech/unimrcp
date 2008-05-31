@@ -42,8 +42,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start()
 	}
 	media_engine = mpf_engine_create(pool);
 	if(media_engine) {
-		apt_task_t *media_task = mpf_task_get(media_engine);
-		mrcp_server_media_engine_register(server,media_task);
+		mrcp_server_media_engine_register(server,media_engine);
 	}
 	sig_agent = mrcpv2_sig_agent_create(pool);
 	if(sig_agent) {
@@ -66,9 +65,10 @@ MRCP_DECLARE(apt_bool_t) unimrcp_server_shutdown(mrcp_server_t *server)
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool)
 {
 	mrcp_sofia_config_t *config = mrcp_sofiasip_config_alloc(pool);
-	config->local_ip = "127.0.0.1";
+	config->local_ip = "0.0.0.0";
 	config->local_port = 8060;
 	config->user_agent_name = "UniMRCP Sofia-SIP";
+	config->origin = "UniMRCPServer";
 	return mrcp_sofiasip_agent_create(config,pool);
 }
 
