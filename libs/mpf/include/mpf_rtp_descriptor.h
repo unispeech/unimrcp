@@ -28,13 +28,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Enumeration of RTP media descriptor types */
-typedef enum {
-	RTP_MEDIA_DESCRIPTOR_NONE   = 0x0, /**< no media descriptor */
-	RTP_MEDIA_DESCRIPTOR_LOCAL  = 0x1, /**< local media descriptor */
-	RTP_MEDIA_DESCRIPTOR_REMOTE = 0x2  /**< remote media descriptor */
-} mpf_rtp_media_descriptor_e;
-
 /** RTP media descriptor declaration */
 typedef struct mpf_rtp_media_descriptor_t mpf_rtp_media_descriptor_t;
 /** RTP stream descriptor declaration */
@@ -47,25 +40,22 @@ typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t
 struct mpf_rtp_media_descriptor_t {
 	/** Media descriptor base */
 	mpf_media_descriptor_t base;
-
-	/** packetization time */
-	apr_uint16_t     ptime;
-	/** codec list */
-	mpf_codec_list_t codec_list;
-	/** media identifier */
-	apr_size_t       mid;
+	/** Stream mode (send/receive) */
+	mpf_stream_mode_e      mode;
+	/** Packetization time */
+	apr_uint16_t           ptime;
+	/** Codec list */
+	mpf_codec_list_t       codec_list;
+	/** Media identifier */
+	apr_size_t             mid;
 };
 
 /** RTP stream descriptor */
 struct mpf_rtp_stream_descriptor_t {
-	/** Stream mode (send/receive) */
-	mpf_stream_mode_e          mode;
-	/** Stream mask (local/remote) */
-	mpf_rtp_media_descriptor_e mask;
 	/** Local media descriptor */
-	mpf_rtp_media_descriptor_t local;
+	mpf_rtp_media_descriptor_t *local;
 	/** Remote media descriptor */
-	mpf_rtp_media_descriptor_t remote;
+	mpf_rtp_media_descriptor_t *remote;
 };
 
 /** RTP termination descriptor */
@@ -81,6 +71,7 @@ struct mpf_rtp_termination_descriptor_t {
 static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
 {
 	mpf_media_descriptor_init(&media->base);
+	media->mode = STREAM_MODE_NONE;
 	media->ptime = 0;
 	mpf_codec_list_reset(&media->codec_list);
 	media->mid = 0;
@@ -89,10 +80,15 @@ static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t 
 /** Initialize stream descriptor */
 static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_t *stream)
 {
-	stream->mode = STREAM_MODE_NONE;
-	stream->mask = RTP_MEDIA_DESCRIPTOR_NONE;
-	mpf_rtp_media_descriptor_init(&stream->local);
-	mpf_rtp_media_descriptor_init(&stream->remote);
+	stream->local = NULL;
+	stream->remote = NULL;
+}
+
+/** Initialize RTP termination descriptor */
+static APR_INLINE void mpf_rtp_termination_descriptor_init(mpf_rtp_termination_descriptor_t *rtp_descriptor)
+{
+	mpf_rtp_stream_descriptor_init(&rtp_descriptor->audio);
+	mpf_rtp_stream_descriptor_init(&rtp_descriptor->video);
 }
 
 APT_END_EXTERN_C

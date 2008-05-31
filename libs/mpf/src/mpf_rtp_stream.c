@@ -84,9 +84,9 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 {
 	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
 	apt_bool_t status = TRUE;
-	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_LOCAL) {
+	if(descriptor->local) {
 		/* update local media */
-		mpf_rtp_media_descriptor_t *local_media = &descriptor->local;
+		mpf_rtp_media_descriptor_t *local_media = descriptor->local;
 		if(!rtp_stream->local_media || 
 			apt_string_compare(&rtp_stream->local_media->base.ip,&local_media->base.ip) == FALSE ||
 			rtp_stream->local_media->base.port != local_media->base.port) {
@@ -107,9 +107,9 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 								stream->termination->pool);
 		rtp_stream->local_media = local_media;
 	}
-	if(descriptor->mask & RTP_MEDIA_DESCRIPTOR_REMOTE) {
+	if(descriptor->remote) {
 		/* update remote media */
-		mpf_rtp_media_descriptor_t *remote_media = &descriptor->remote;
+		mpf_rtp_media_descriptor_t *remote_media = descriptor->remote;
 		if(!rtp_stream->remote_media || 
 			apt_string_compare(&rtp_stream->remote_media->base.ip,&remote_media->base.ip) == FALSE ||
 			rtp_stream->remote_media->base.port != remote_media->base.port) {
@@ -133,7 +133,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 			(apr_uint32_t)mpf_codec_frame_samples_calculate(stream->tx_codec->descriptor);
 		rtp_stream->remote_media = remote_media;
 	}
-	stream->mode = descriptor->mode;
+//	stream->mode = descriptor->mode;
 	return TRUE;
 }
 
