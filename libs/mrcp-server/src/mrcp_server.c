@@ -59,6 +59,11 @@ struct mrcp_server_session_t {
 	apr_array_header_t *terminations;
 	/** MRCP control channel array */
 	apr_array_header_t *channels;
+
+	/** In-progress offer */
+	mrcp_session_descriptor_t *offer;
+	/** In-progres answer */
+	mrcp_session_descriptor_t *answer;
 };
 
 
@@ -297,8 +302,13 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_t *server, mrcp_
 {
 	mrcp_server_session_t *server_session = (mrcp_server_session_t*)session;
 	apt_log(APT_PRIO_INFO,"Process Session Offer");
+	if(server_session->offer) {
+		/* last offer received is still in-progress, new offer is not allowed */
+		apt_log(APT_PRIO_INFO,"Cannot Accept New Offer");
+		return FALSE;
+	}
 	if(!session->id.length) {
-		/* Initial offer received, generate session id and add to session's table */
+		/* initial offer received, generate session id and add to session's table */
 		apt_unique_id_generate(&session->id,MRCP_SESSION_ID_HEX_STRING_LENGTH,server->pool);
 		apr_hash_set(server->session_table,session->id.buf,session->id.length,session);
 
@@ -307,6 +317,10 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_t *server, mrcp_
 
 	mrcp_server_control_media_offer_process(server,server_session,descriptor);
 	mrcp_server_av_media_offer_process(server,server_session,descriptor);
+
+	/* store last received offer */
+	server_session->offer = descriptor;
+	server_session->answer = mrcp_session_descriptor_create(session->pool);
 	return TRUE;
 }
 
@@ -315,6 +329,24 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_t *server, m
 	apt_log(APT_PRIO_INFO,"Process Session Terminate");
 	apr_hash_set(server->session_table,session->id.buf,session->id.length,NULL);
 	return TRUE;
+}
+
+static apt_bool_t mrcp_server_session_answer_is_ready(const mrcp_session_descriptor_t *offer, const mrcp_session_descriptor_t *answer)
+{
+	if(!offer || !answer) {
+		return FALSE;
+	}
+	return	(offer->control_media_arr->nelts == answer->control_media_arr->nelts &&
+			 offer->audio_media_arr->nelts == answer->audio_media_arr->nelts &&
+			 offer->video_media_arr->nelts == answer->video_media_arr->nelts);
+}
+
+static apt_bool_t mrcp_server_session_answer_send(mrcp_server_t *server, mrcp_server_session_t *session)
+{
+	apt_bool_t status = mrcp_session_on_answer(&session->base,session->answer);
+	session->offer = NULL;
+	session->answer = NULL;
+	return status;
 }
 
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
@@ -340,10 +372,28 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		}
 		case MRCP_SERVER_MEDIA_TASK_MSG:
 		{
+			mrcp_server_session_t *session = NULL;
 			const mpf_message_t *mpf_message = (const mpf_message_t*) msg->data;
+			if(mpf_message->termination) {
+				session = mpf_termination_object_get(mpf_message->termination);
+			}
 			if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 				if(mpf_message->command_id == MPF_COMMAND_ADD) {
 					apt_log(APT_PRIO_DEBUG,"On Add Termination");
+					if(session && session->answer) {
+						mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
+						if(rtp_descriptor->audio.local) {
+							mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_add(session->answer);
+							*audio_media = *rtp_descriptor->audio.local;
+
+							if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
+								mrcp_server_session_answer_send(server,session);
+							}
+						}
+					}
+				}
+				else if(mpf_message->command_id == MPF_COMMAND_MODIFY) {
+					apt_log(APT_PRIO_DEBUG,"On Modify Termination");
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
 					apt_log(APT_PRIO_DEBUG,"On Subtract Termination");
@@ -379,6 +429,8 @@ static mrcp_session_t* mrcp_server_session_create()
 	session->context = NULL;
 	session->terminations = apr_array_make(session->base.pool,2,sizeof(mpf_termination_t*));
 	session->channels = apr_array_make(session->base.pool,2,sizeof(void*));
+	session->offer = NULL;
+	session->answer = NULL;
 	return &session->base;
 }
 
