@@ -2,7 +2,7 @@
 <VisualStudioPropertySheet
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="mrcp"
+	Name="unimrcpserver"
 	InheritedPropertySheets=".\mrcpserver.vsprops"
 	>
 	<Tool
