@@ -1,0 +1,17 @@
+MAINTAINERCLEANFILES   = Makefile.in
+
+INCLUDES               = -Iinclude \
+                         -I$(top_srcdir)/platforms/libunimrcp-client/include \
+                         -I$(top_srcdir)/libs/mrcp-client/include \
+                         -I$(top_srcdir)/libs/mrcp-signaling/include \
+                         -I$(top_srcdir)/libs/mrcp/include \
+                         -I$(top_srcdir)/libs/mrcp/message/include \
+                         -I$(top_srcdir)/libs/mrcp/control/include \
+                         -I$(top_srcdir)/libs/mrcp/resources/include \
+                         -I$(top_srcdir)/libs/mpf/include \
+                         -I$(top_srcdir)/libs/apr-toolkit/include \
+                         $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+
+bin_PROGRAMS           = unimrcpclient
+unimrcpclient_SOURCES  = src/main.c
+unimrcpclient_LDADD    = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la

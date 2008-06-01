@@ -70,11 +70,14 @@ AC_CONFIG_FILES([
   libs/mrcp/Makefile
   libs/mrcp-signaling/Makefile
   libs/mrcp-server/Makefile
+  libs/mrcp-client/Makefile
   modules/Makefile
   modules/mrcp-sofiasip/Makefile
   platforms/Makefile
   platforms/libunimrcp-server/Makefile
+  platforms/libunimrcp-client/Makefile
   platforms/unimrcp-server/Makefile
+  platforms/unimrcp-client/Makefile
   tests/Makefile
   tests/apttest/Makefile
   tests/mpftest/Makefile
