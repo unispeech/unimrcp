@@ -17,6 +17,7 @@
 #include "unimrcp_server.h"
 #include "mrcp_default_factory.h"
 #include "mpf_engine.h"
+#include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_agent.h"
 #include "apt_log.h"
 
@@ -42,7 +43,11 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start()
 	}
 	media_engine = mpf_engine_create(pool);
 	if(media_engine) {
+		mpf_termination_factory_t *rtp_termination_factory = mpf_rtp_termination_factory_create(
+			"127.0.0.1",5000,6000,pool);
+
 		mrcp_server_media_engine_register(server,media_engine);
+		mrcp_server_rtp_termination_factory_register(server,rtp_termination_factory);
 	}
 	sig_agent = mrcpv2_sig_agent_create(pool);
 	if(sig_agent) {

@@ -192,6 +192,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_file_termination_factory.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_frame.h"
 				>
 			</File>
@@ -229,6 +233,10 @@
 			</File>
 			<File
 				RelativePath=".\include\mpf_rtp_stream.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_rtp_termination_factory.h"
 				>
 			</File>
 			<File
@@ -297,11 +305,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\mpf_file_termination_factory.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mpf_jitter_buffer.c"
 				>
 			</File>
 			<File
 				RelativePath=".\src\mpf_rtp_stream.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_rtp_termination_factory.c"
 				>
 			</File>
 			<File

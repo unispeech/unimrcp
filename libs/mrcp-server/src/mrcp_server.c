@@ -22,6 +22,7 @@
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mpf_user.h"
+#include "mpf_termination.h"
 #include "mpf_engine.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
@@ -31,20 +32,22 @@
 /** MRCP server */
 struct mrcp_server_t {
 	/** Main message processing task */
-	apt_consumer_task_t     *task;
+	apt_consumer_task_t       *task;
 
 	/** MRCP resource factory */
-	mrcp_resource_factory_t *resource_factory;
+	mrcp_resource_factory_t   *resource_factory;
 	/** Media processing engine */
-	mpf_engine_t            *media_engine;
+	mpf_engine_t              *media_engine;
+	/** RTP termination factory */
+	mpf_termination_factory_t *rtp_termination_factory;
 	/** Signaling agent */
-	mrcp_sig_agent_t        *signaling_agent;
+	mrcp_sig_agent_t          *signaling_agent;
 	
 	/** MRCP sessions table */
-	apr_hash_t              *session_table;
+	apr_hash_t                *session_table;
 
 	/** Memory pool */
-	apr_pool_t              *pool;
+	apr_pool_t                *pool;
 };
 
 typedef struct mrcp_server_session_t mrcp_server_session_t;
@@ -110,6 +113,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	server->pool = pool;
 	server->resource_factory = NULL;
 	server->media_engine = NULL;
+	server->rtp_termination_factory = NULL;
 	server->signaling_agent = NULL;
 	server->session_table = NULL;
 
@@ -201,6 +205,17 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server
 	return TRUE;
 }
 
+/** Register RTP termination factory */
+MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory)
+{
+	if(!rtp_termination_factory) {
+		return FALSE;
+	}
+	server->rtp_termination_factory = rtp_termination_factory;
+	return TRUE;
+}
+
+
 /** Register MRCP signaling agent */
 MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent)
 {
@@ -280,7 +295,7 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_t *server, mrcp
 		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		mpf_termination_t **slot;
 		/* create new RTP termination instance */
-		termination = mpf_rtp_termination_create(session,session->base.pool);
+		termination = mpf_termination_create(server->rtp_termination_factory,session,session->base.pool);
 		/* add to termination array */
 		slot = apr_array_push(session->terminations);
 		*slot = termination;

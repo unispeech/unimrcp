@@ -17,7 +17,8 @@
 #include "mpf_termination.h"
 #include "mpf_stream.h"
 
-MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
+MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
+										mpf_termination_factory_t *termination_factory,
 										void *obj,
 										const mpf_termination_vtable_t *vtable,
 										mpf_audio_stream_t *audio_stream,
@@ -30,6 +31,7 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 	termination->event_handler_obj = NULL;
 	termination->event_handler = NULL;
 	termination->codec_manager = NULL;
+	termination->termination_factory = termination_factory;
 	termination->vtable = vtable;
 	termination->slot = 0;
 	if(audio_stream) {
@@ -65,71 +67,19 @@ apt_bool_t mpf_termination_modify(mpf_termination_t *termination, void *descript
 	return TRUE;
 }
 
-
-
-
-#include "mpf_rtp_stream.h"
-
-static apt_bool_t mpf_rtp_termination_destroy(mpf_termination_t *termination)
+/**
+ * Create MPF termination.
+ * @param termination_factory the termination factory to create termination from
+ * @param obj the external object associated with termination
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
+										mpf_termination_factory_t *termination_factory,
+										void *obj,
+										apr_pool_t *pool)
 {
-	return TRUE;
-}
-
-static apt_bool_t mpf_rtp_termination_modify(mpf_termination_t *termination, void *descriptor)
-{
-	mpf_rtp_termination_descriptor_t *rtp_descriptor = descriptor;
-	mpf_audio_stream_t *audio_stream = termination->audio_stream;
-	if(!audio_stream) {
-		audio_stream = mpf_rtp_stream_create(termination,termination->pool);
-		if(!audio_stream) {
-			return FALSE;
-		}
-		termination->audio_stream = audio_stream;
+	if(termination_factory && termination_factory->create_termination) {
+		return termination_factory->create_termination(termination_factory,obj,pool);
 	}
-
-	return mpf_rtp_stream_modify(audio_stream,&rtp_descriptor->audio);
-}
-
-static const mpf_termination_vtable_t rtp_vtable = {
-	mpf_rtp_termination_destroy,
-	mpf_rtp_termination_modify,
-};
-
-MPF_DECLARE(mpf_termination_t*) mpf_rtp_termination_create(void *obj, apr_pool_t *pool)
-{
-	return mpf_termination_create(obj,&rtp_vtable,NULL,NULL,pool);
-}
-
-
-
-
-#include "mpf_audio_file_stream.h"
-
-static apt_bool_t mpf_file_termination_destroy(mpf_termination_t *termination)
-{
-	return TRUE;
-}
-
-static apt_bool_t mpf_file_termination_modify(mpf_termination_t *termination, void *descriptor)
-{
-	mpf_audio_stream_t *audio_stream = termination->audio_stream;
-	if(!audio_stream) {
-		audio_stream = mpf_file_stream_create(termination,termination->pool);
-		if(!audio_stream) {
-			return FALSE;
-		}
-		termination->audio_stream = audio_stream;
-	}
-
-	return mpf_file_stream_modify(audio_stream,descriptor);
-}
-
-static const mpf_termination_vtable_t file_vtable = {
-	mpf_file_termination_destroy,
-	mpf_file_termination_modify,
-};
-
-MPF_DECLARE(mpf_termination_t*) mpf_file_termination_create(void *obj, apr_pool_t *pool)
-{
-	return mpf_termination_create(obj,&file_vtable,NULL,NULL,pool);
+	return NULL;
 }

@@ -34,6 +34,8 @@ struct mpf_rtp_stream_t {
 	rtp_transmitter_t           transmitter;
 	rtp_receiver_t              receiver;
 
+	mpf_rtp_config_t           *config;
+
 	apr_socket_t               *socket;
 	apr_sockaddr_t             *local_sockaddr;
 	apr_sockaddr_t             *remote_sockaddr;
@@ -62,10 +64,11 @@ static const mpf_audio_stream_vtable_t vtable = {
 static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media);
 
 
-MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
+MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, apr_pool_t *pool)
 {
 	mpf_rtp_stream_t *rtp_stream = apr_palloc(pool,sizeof(mpf_rtp_stream_t));
 	rtp_stream->pool = pool;
+	rtp_stream->config = config;
 	rtp_stream->local_media = NULL;
 	rtp_stream->remote_media = NULL;
 	rtp_stream->socket = NULL;

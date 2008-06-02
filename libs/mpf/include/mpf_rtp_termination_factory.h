@@ -14,33 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef __MPF_USER_H__
-#define __MPF_USER_H__
+#ifndef __MPF_RTP_TERMINATION_FACTORY_H__
+#define __MPF_RTP_TERMINATION_FACTORY_H__
 
 /**
- * @file mpf_user.h
- * @brief MPF User Interface
+ * @file mpf_rtp_termination_factory.h
+ * @brief MPF RTP Termination Factory
  */ 
 
+#include <apr_network_io.h>
 #include "mpf_types.h"
 
 APT_BEGIN_EXTERN_C
 
 /**
- * Create MPF context.
- * @param obj the external object associated with context
- * @param max_termination_count the max number of terminations in context
- * @param pool the pool to allocate memory from
+ * Create RTP termination factory.
  */
-MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termination_count, apr_pool_t *pool);
-
-/**
- * Destroy MPF context.
- * @param context the context to destroy
- */
-MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
+MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
+										const char *ip, 
+										apr_port_t port_min, 
+										apr_port_t port_max,
+										apr_pool_t *pool);
 
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_USER_H__*/
+#endif /*__MPF_RTP_TERMINATION_FACTORY_H__*/

@@ -32,7 +32,7 @@ typedef apt_bool_t (*mpf_termination_event_handler_f)(mpf_termination_t *termina
 /** MPF Termination */
 struct mpf_termination_t {
 	/** Pool to allocate memory from */
-	apr_pool_t                     *pool;
+	apr_pool_t                      *pool;
 	/** External object */
 	void                           *obj;
 	/** Object to send events to */
@@ -41,6 +41,8 @@ struct mpf_termination_t {
 	mpf_termination_event_handler_f event_handler;
 	/** Codec manager */
 	const mpf_codec_manager_t      *codec_manager;
+	/** Termination factory entire termination created by */
+	mpf_termination_factory_t      *termination_factory;
 	/** Table of virtual methods */
 	const mpf_termination_vtable_t *vtable;
 	/** Slot in context */
@@ -52,12 +54,61 @@ struct mpf_termination_t {
 	mpf_video_stream_t             *video_stream;
 };
 
+/** MPF termination factory */
+struct mpf_termination_factory_t {
+	mpf_termination_t* (*create_termination)(mpf_termination_factory_t *factory, void *obj, apr_pool_t *pool);
+
+	/* more to add */
+};
+
+
+/**
+ * Create MPF termination base.
+ * @param obj the external object associated with termination
+ * @param vtable the table of virtual functions of termination
+ * @param audio_stream the audio stream
+ * @param video_stream the video stream
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
+										mpf_termination_factory_t *termination_factory,
+										void *obj,
+										const mpf_termination_vtable_t *vtable,
+										mpf_audio_stream_t *audio_stream, 
+										mpf_video_stream_t *video_stream, 
+										apr_pool_t *pool);
+
 /**
  * Modify MPF termination.
  * @param termination the termination to modify
  * @param descriptor the termination specific descriptor
  */
 apt_bool_t mpf_termination_modify(mpf_termination_t *termination, void *descriptor);
+
+/**
+ * Destroy MPF termination.
+ * @param termination the termination to destroy
+ */
+MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination);
+
+/**
+ * Get associated object.
+ * @param termination the termination to get object from
+ */
+MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination);
+
+
+/**
+ * Create MPF termination.
+ * @param termination_factory the termination factory to create termination from
+ * @param obj the external object associated with termination
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
+										mpf_termination_factory_t *termination_factory,
+										void *obj,
+										apr_pool_t *pool);
+
 
 APT_END_EXTERN_C
 

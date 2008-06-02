@@ -72,6 +72,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
 MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine);
 
 /**
+ * Register RTP termination factory.
+ * @param server the MRCP server to set termination factory for
+ * @param rtp_termination_factory the termination factory
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory);
+
+/**
  * Register MRCP signaling agent.
  * @param server the MRCP server to set signaling agent for
  * @param signaling_agent the signaling agent to set

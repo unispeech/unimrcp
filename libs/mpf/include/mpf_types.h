@@ -38,6 +38,9 @@ typedef struct mpf_context_t mpf_context_t;
 /** Opaque MPF termination declaration */
 typedef struct mpf_termination_t mpf_termination_t;
 
+/** Opaque MPF termination factory declaration */
+typedef struct mpf_termination_factory_t mpf_termination_factory_t;
+
 /** Opaque MPF audio stream declaration */
 typedef struct mpf_audio_stream_t mpf_audio_stream_t;
 

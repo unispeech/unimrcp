@@ -18,6 +18,9 @@
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
 #include "mpf_user.h"
+#include "mpf_termination.h"
+#include "mpf_rtp_termination_factory.h"
+#include "mpf_file_termination_factory.h"
 #include "mpf_audio_file_descriptor.h"
 #include "mpf_rtp_descriptor.h"
 #include "apt_consumer_task.h"
@@ -45,15 +48,19 @@ struct mpf_suite_session_t {
 /** Test suite engine */
 struct mpf_suite_engine_t {
 	/** The main task of the test engine, which sends messages to MPF engine and 
-	 * process responses and events from it */
-	apt_consumer_task_t *consumer_task;
-	/** MPF engine */
-	apt_task_t          *engine_task;
+	 * processes responses and events sent back from MPF engine */
+	apt_consumer_task_t       *consumer_task;
+	/** MPF engine task */
+	apt_task_t                *engine_task;
+	/** RTP termination factory */
+	mpf_termination_factory_t *rtp_termination_factory;
+	/** File termination factory */
+	mpf_termination_factory_t *file_termination_factory;
 
 	/** Wait object, which is signalled to indicate shutdown */
-	apr_thread_cond_t   *wait_object;
+	apr_thread_cond_t         *wait_object;
 	/** Mutex of the wait object */
-	apr_thread_mutex_t  *wait_object_mutex;
+	apr_thread_mutex_t        *wait_object_mutex;
 };
 
 static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv);
@@ -93,6 +100,10 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 		return FALSE;
 	}
 	suite_engine->engine_task = mpf_task_get(engine);
+
+	suite_engine->rtp_termination_factory = mpf_rtp_termination_factory_create(
+														"127.0.0.1",5000,6000,suite->pool);
+	suite_engine->file_termination_factory = mpf_file_termination_factory_create(suite->pool);
 
 	apt_task_vtable_reset(&vtable);
 	vtable.process_msg = mpf_suite_msg_process;
@@ -161,7 +172,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	session->context = mpf_context_create(session,2,pool);
 
 	apt_log(APT_PRIO_INFO,"Create Termination [1]");
-	session->termination1 = mpf_file_termination_create(session,session->pool);
+	session->termination1 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
 
 	apt_log(APT_PRIO_INFO,"Add Termination [1]");
 	msg = apt_task_msg_get(task);
@@ -177,10 +188,10 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 
 	apt_log(APT_PRIO_INFO,"Create Termination [2]");
 	if(session->rtp_mode == TRUE) {
-		session->termination2 = mpf_rtp_termination_create(session,session->pool);
+		session->termination2 = mpf_termination_create(suite_engine->rtp_termination_factory,session,session->pool);
 	}
 	else {
-		session->termination2 = mpf_file_termination_create(session,session->pool);
+		session->termination2 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
 	}
 
 	apt_log(APT_PRIO_INFO,"Add Termination [2]");

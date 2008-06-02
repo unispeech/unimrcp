@@ -34,6 +34,8 @@ typedef struct mpf_rtp_media_descriptor_t mpf_rtp_media_descriptor_t;
 typedef struct mpf_rtp_stream_descriptor_t mpf_rtp_stream_descriptor_t;
 /** RTP termination descriptor declaration */
 typedef struct mpf_rtp_termination_descriptor_t mpf_rtp_termination_descriptor_t;
+/** RTP config */
+typedef struct mpf_rtp_config_t mpf_rtp_config_t;
 
 
 /** RTP media (local/remote) descriptor */
@@ -66,6 +68,17 @@ struct mpf_rtp_termination_descriptor_t {
 	mpf_rtp_stream_descriptor_t video;
 };
 
+/** RTP config */
+struct mpf_rtp_config_t {
+	/** Local IP address to bind to */
+	apt_str_t ip;
+	/** RTP port range (min) */
+	apr_port_t rtp_port_min;
+	/** RTP port range (max) */
+	apr_port_t rtp_port_max;
+	/** RTP port range (cur) */
+	apr_port_t rtp_port_cur;
+};
 
 /** Initialize media descriptor */
 static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
