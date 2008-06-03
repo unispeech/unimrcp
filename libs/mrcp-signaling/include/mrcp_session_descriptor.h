@@ -34,11 +34,11 @@ struct mrcp_session_descriptor_t {
 	/** Session level IP address */
 	apt_str_t           ip;
 
-	/** MRCP control media array */
+	/** MRCP control media array (mrcp_control_descriptor_t) */
 	apr_array_header_t *control_media_arr;
-	/** Audio media array */
+	/** Audio media array (mpf_rtp_media_descriptor_t) */
 	apr_array_header_t *audio_media_arr;
-	/** Video media array */
+	/** Video media array (mpf_rtp_media_descriptor_t) */
 	apr_array_header_t *video_media_arr;
 };
 
