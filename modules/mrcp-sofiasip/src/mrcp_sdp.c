@@ -91,7 +91,7 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 					proto ? proto->buf : "",
 					setup_type ? setup_type->buf : "",
 					connection_type ? connection_type->buf : "",
-					control_media->resource_name,
+					control_media->resource_name.buf,
 					control_media->cmid);
 			}
 			else { /* answer */
@@ -182,6 +182,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",audio_media->base.ip.buf);
 	}
 	if(audio_media->base.state == MPF_MEDIA_ENABLED) {
+		const apt_str_t *mode_str = mpf_stream_mode_str_get(audio_media->mode);
 		for(i=0; i<descriptor_arr->nelts; i++) {
 			codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
 			offset += snprintf(buffer+offset,size-offset,"a=rtpmap:%d %s/%d\r\n",
@@ -189,8 +190,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 				codec_descriptor->name.buf,
 				codec_descriptor->sampling_rate);
 		}
-		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",
-			mpf_stream_mode_str_get(audio_media->mode));
+		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",mode_str ? mode_str->buf : "");
 		
 		if(audio_media->ptime) {
 			offset += snprintf(buffer+offset,size-offset,"a=ptime:%hu\r\n",
