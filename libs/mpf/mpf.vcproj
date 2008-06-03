@@ -216,6 +216,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtp_attribs.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_defs.h"
 				>
 			</File>
@@ -310,6 +314,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_jitter_buffer.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_rtp_attribs.c"
 				>
 			</File>
 			<File
