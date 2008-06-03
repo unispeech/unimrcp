@@ -19,12 +19,12 @@
 
 /** String table of RTP attributes (mpf_rtp_attrib_e) */
 static const apt_str_table_item_t mpf_rtp_attrib_table[] = {
-	{"rtpmap",   6,1},
-	{"sendonly", 8,8},
-	{"recvonly", 8,2},
-	{"sendrecv", 8,4},
-	{"mid",      3,0},
-	{"ptime",    5,0}
+	{{"rtpmap",   6},1},
+	{{"sendonly", 8},8},
+	{{"recvonly", 8},2},
+	{{"sendrecv", 8},4},
+	{{"mid",      3},0},
+	{{"ptime",    5},0}
 };
 
 

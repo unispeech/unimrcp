@@ -19,29 +19,29 @@
 
 /** String table of mrcp proto types (mrcp_proto_type_e) */
 static const apt_str_table_item_t mrcp_proto_type_table[] = {
-	{"TCP/MRCPv2",    10,4},
-	{"TCP/TLS/MRCPv2",14,4}
+	{{"TCP/MRCPv2",    10},4},
+	{{"TCP/TLS/MRCPv2",14},4}
 };
 
 /** String table of mrcp attributes (mrcp_attrib_e) */
 static const apt_str_table_item_t mrcp_attrib_table[] = {
-	{"setup",      5,0},
-	{"connection",10,1},
-	{"resource",   8,0},
-	{"channel",    7,1},
-	{"cmid",       4,1}
+	{{"setup",      5},0},
+	{{"connection",10},1},
+	{{"resource",   8},0},
+	{{"channel",    7},1},
+	{{"cmid",       4},1}
 };
 
 /** String table of mrcp setup attribute values (mrcp_setup_type_e) */
 static const apt_str_table_item_t mrcp_setup_value_table[] = {
-	{"active",      6,0},
-	{"passive",     7,0}
+	{{"active",      6},0},
+	{{"passive",     7},0}
 };
 
 /** String table of mrcp connection attribute values (mrcp_connection_type_e) */
 static const apt_str_table_item_t mrcp_connection_value_table[] = {
-	{"new",         3,0},
-	{"existing",    8,0}
+	{{"new",         3},0},
+	{{"existing",    8},0}
 };
 
 
