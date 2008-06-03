@@ -70,9 +70,15 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 			continue;
 		}
 		control_media = mrcp_session_control_media_get(descriptor,control_index);
-		if(video_media && video_media->base.id == i) {
+		if(control_media && control_media->base.id == i) {
 			/** generate mrcp control media */
+			const apt_str_t *proto;
+			const apt_str_t *setup_type;
+			const apt_str_t *connection_type;
 			connection_descriptor = control_media->connection_descriptor;
+			proto = mrcp_proto_get(connection_descriptor->proto);
+			setup_type = mrcp_setup_type_get(connection_descriptor->setup_type);
+			connection_type = mrcp_connection_type_get(connection_descriptor->connection_type);
 			control_index++;
 			if(offer == TRUE) { /* offer */
 				offset += snprintf(buffer+offset,size-offset,
@@ -82,9 +88,9 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 					"a=resource:%s\r\n"
 					"a=cmid:%d\r\n",
 					(control_media->base.state == MPF_MEDIA_ENABLED) ? control_media->base.port : 0,
-					mrcp_proto_get(connection_descriptor->proto),
-					mrcp_setup_type_get(connection_descriptor->setup_type),
-					mrcp_connection_type_get(connection_descriptor->connection_type),
+					proto ? proto->buf : "",
+					setup_type ? setup_type->buf : "",
+					connection_type ? connection_type->buf : "",
 					control_media->resource_name,
 					control_media->cmid);
 			}
@@ -96,9 +102,9 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 					"a=channel:%s@%s\r\n"
 					"a=cmid:%d\r\n",
 					(control_media->base.state == MPF_MEDIA_ENABLED) ? control_media->base.port : 0,
-					mrcp_proto_get(connection_descriptor->proto),
-					mrcp_setup_type_get(connection_descriptor->setup_type),
-					mrcp_connection_type_get(connection_descriptor->connection_type),
+					proto ? proto->buf : "",
+					setup_type ? setup_type->buf : "",
+					connection_type ? connection_type->buf : "",
 					connection_descriptor->session_id.buf,
 					control_media->resource_name.buf,
 					control_media->cmid);
@@ -173,14 +179,14 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
 	if(descriptor->ip.length && audio_media->base.ip.length && 
 		apt_string_compare(&descriptor->ip,&audio_media->base.ip) != TRUE) {
-		offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",audio_media->base.ip);
+		offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",audio_media->base.ip.buf);
 	}
 	if(audio_media->base.state == MPF_MEDIA_ENABLED) {
 		for(i=0; i<descriptor_arr->nelts; i++) {
 			codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
 			offset += snprintf(buffer+offset,size-offset,"a=rtpmap:%d %s/%d\r\n",
 				codec_descriptor->payload_type,
-				codec_descriptor->name,
+				codec_descriptor->name.buf,
 				codec_descriptor->sampling_rate);
 		}
 		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",
