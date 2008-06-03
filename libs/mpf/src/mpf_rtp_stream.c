@@ -136,6 +136,16 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 	return status;
 }
 
+static void mpf_rtp_stream_ip_port_set(mpf_rtp_media_descriptor_t *media, mpf_rtp_config_t *config)
+{
+	media->base.ip = config->ip;
+	media->base.port = config->rtp_port_cur;
+	config->rtp_port_cur += 2;
+	if(config->rtp_port_cur == config->rtp_port_max) {
+		config->rtp_port_cur = config->rtp_port_min;
+	}
+}
+
 static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 {
 	if(!rtp_stream->remote_media) {
@@ -145,9 +155,7 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 	if(!rtp_stream->local_media) {
 		rtp_stream->local_media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
 		mpf_rtp_media_descriptor_init(rtp_stream->local_media);
-		apt_string_set(&rtp_stream->local_media->base.ip,"0.0.0.0");
-		rtp_stream->local_media->base.port = 5000;		 
-
+		mpf_rtp_stream_ip_port_set(rtp_stream->local_media,rtp_stream->config);
 		if(mpf_rtp_socket_create(rtp_stream,rtp_stream->local_media) == FALSE) {
 			return FALSE;
 		}
