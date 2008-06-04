@@ -19,6 +19,7 @@ include_HEADERS             = include/unimrcp_client.h
 libunimrcpclient_la_SOURCES = src/unimrcp_client.c
 
 libunimrcpclient_la_LIBADD  = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofiasip.la \
+                              $(top_builddir)/libs/mrcpv2-transport/libmrcpv2transport.la \
                               $(top_builddir)/libs/mrcp-client/libmrcpclient.la \
                               $(top_builddir)/libs/mrcp-signaling/libmrcpsignaling.la \
                               $(top_builddir)/libs/mrcp/libmrcp.la \
