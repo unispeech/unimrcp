@@ -130,7 +130,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\include\mrcpv2_client_agent.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcpv2_connection_descriptor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mrcpv2_server_agent.h"
 				>
 			</File>
 		</Filter>
@@ -139,7 +147,15 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 			<File
+				RelativePath=".\src\mrcpv2_client_agent.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mrcpv2_connection_descriptor.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcpv2_server_agent.c"
 				>
 			</File>
 		</Filter>

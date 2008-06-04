@@ -81,7 +81,7 @@ struct mrcp_connection_descriptor_t {
 	apr_size_t             cmid;
 };
 
-/** Initialize MRCP control descriptor */
+/** Initialize MRCP connection descriptor */
 static APR_INLINE void mrcp_connection_descriptor_init(mrcp_connection_descriptor_t *descriptor)
 {
 	descriptor->proto = MRCP_PROTO_UNKNOWN;

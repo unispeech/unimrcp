@@ -7,6 +7,10 @@ INCLUDES                      = -I$(top_srcdir)/libs/mrcpv2-transport/include \
 
 noinst_LTLIBRARIES            = libmrcpv2transport.la
 
-include_HEADERS               = include/mrcpv2_connection_descriptor.h
+include_HEADERS               = include/mrcpv2_connection_descriptor.h \
+                                include/mrcpv2_client_agent.h \
+                                include/mrcpv2_server_agent.h
 
-libmrcpv2transport_la_SOURCES = src/mrcpv2_connection_descriptor.c
+libmrcpv2transport_la_SOURCES = src/mrcpv2_connection_descriptor.c \
+                                src/mrcpv2_client_agent.c \
+                                src/mrcpv2_server_agent.c \
