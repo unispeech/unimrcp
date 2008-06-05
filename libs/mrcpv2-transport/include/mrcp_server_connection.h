@@ -14,28 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef __MRCPV2_SERVER_AGENT_H__
-#define __MRCPV2_SERVER_AGENT_H__
+#ifndef __MRCP_SERVER_CONNECTION_H__
+#define __MRCP_SERVER_CONNECTION_H__
 
 /**
- * @file mrcpv2_server_agent.h
- * @brief MRCPv2 Client Connection Agent
+ * @file mrcp_server_connection.h
+ * @brief MRCPv2 Server Connection
  */ 
 
 #include <apr_network_io.h>
-#include "mrcp_types.h"
+#include "mrcp_connection_types.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Opaque MRCPv2 server connection agent */
-typedef struct mrcpv2_server_agent_t mrcpv2_server_agent_t;
 
 /**
  * Create connection agent.
  * @param obj the external object to associate with the agent
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(mrcpv2_server_agent_t*) mrcpv2_server_agent_create(
+APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										void *obj,
 										const char *listen_ip, 
 										apr_port_t listen_port, 
@@ -45,21 +42,32 @@ APT_DECLARE(mrcpv2_server_agent_t*) mrcpv2_server_agent_create(
  * Destroy connection agent.
  * @param agent the agent to destroy
  */
-APT_DECLARE(apt_bool_t) mrcpv2_server_agent_destroy(mrcpv2_server_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent);
 
 /**
  * Start connection agent and wait for incoming requests.
  * @param agent the agent to start
  */
-APT_DECLARE(apt_bool_t) mrcpv2_server_agent_start(mrcpv2_server_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_server_agent_start(mrcp_connection_agent_t *agent);
 
 /**
  * Terminate connection agent.
  * @param agent the agent to terminate
  */
-APT_DECLARE(apt_bool_t) mrcpv2_server_agent_terminate(mrcpv2_server_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_connection_agent_terminate(mrcp_connection_agent_t *agent);
 
+/**
+ * Offer MRCPv2 connection descriptor.
+ * @param agent the connection agent to offer descriptor to
+ * @param handle the communication handle to answer to the offer with
+ * @param connection the connection (NULL on the first offer)
+ * @param descriptor the control descriptor
+ */
+APT_DECLARE(apt_bool_t) mrcp_server_agent_offer(mrcp_connection_agent_t *agent,
+												  void *handle,
+												  mrcp_connection_t *connection,
+												  mrcp_connection_descriptor_t *descriptor);
 
 APT_END_EXTERN_C
 
-#endif /*__MRCPV2_SERVER_AGENT_H__*/
+#endif /*__MRCP_SERVER_CONNECTION_H__*/

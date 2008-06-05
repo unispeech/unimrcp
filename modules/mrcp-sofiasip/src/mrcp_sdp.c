@@ -19,7 +19,7 @@
 #include <sofia-sip/sdp.h>
 #include "mrcp_sdp.h"
 #include "mrcp_session_descriptor.h"
-#include "mrcpv2_connection_descriptor.h"
+#include "mrcp_connection_descriptor.h"
 #include "mpf_rtp_attribs.h"
 #include "apt_text_stream.h"
 #include "apt_log.h"

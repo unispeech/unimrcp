@@ -22,7 +22,8 @@
  * @brief MRCPv2 Connection Descriptor
  */ 
 
-#include "mrcp_types.h"
+#include "apt_string.h"
+#include "mrcp_connection_types.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -68,10 +69,7 @@ typedef enum {
 } mrcp_connection_type_e;
 
 
-/** MRCP control descriptor declaration */
-typedef struct mrcp_connection_descriptor_t mrcp_connection_descriptor_t;
-
-/** MRCP connection descriptor */
+/** MRCPv2 connection descriptor */
 struct mrcp_connection_descriptor_t {
 	mrcp_proto_type_e      proto;
 	mrcp_setup_type_e      setup_type;

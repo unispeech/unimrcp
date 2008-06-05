@@ -16,7 +16,6 @@
 
 #include "mrcp_sig_agent.h"
 #include "mrcp_session.h"
-#include "mrcp_connection.h"
 
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(apr_pool_t *pool)
 {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mrcpv2_client_agent.h"
+#include "mrcp_client_connection.h"
 
 /** Create connection agent. */
 APT_DECLARE(mrcpv2_client_agent_t*) mrcpv2_client_agent_create(void *obj, apr_pool_t *pool)

@@ -11,7 +11,6 @@ noinst_LTLIBRARIES          = libmrcpsignaling.la
 include_HEADERS             = include/mrcp_sig_types.h \
                               include/mrcp_sig_agent.h \
                               include/mrcp_session.h \
-                              include/mrcp_connection.h \
                               include/mrcp_session_descriptor.h \
                               include/mrcp_control_descriptor.h
 

@@ -15,7 +15,7 @@
  */
 
 #include "apt_string_table.h"
-#include "mrcpv2_connection_descriptor.h"
+#include "mrcp_connection_descriptor.h"
 
 /** String table of mrcp proto types (mrcp_proto_type_e) */
 static const apt_str_table_item_t mrcp_proto_type_table[] = {

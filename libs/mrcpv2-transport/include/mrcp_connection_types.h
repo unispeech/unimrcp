@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef __MRCP_SIG_TYPES_H__
-#define __MRCP_SIG_TYPES_H__
+#ifndef __MRCP_CONNECTION_TYPES_H__
+#define __MRCP_CONNECTION_TYPES_H__
 
 /**
- * @file mrcp_sig_types.h
- * @brief MRCP Signaling Types Declaration
+ * @file mrcp_connection_types.h
+ * @brief MRCP Connection Types Declaration
  */ 
 
 #include "mrcp_types.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MRCP signaling agent declaration */
-typedef struct mrcp_sig_agent_t mrcp_sig_agent_t;
+/** Opaque MRCPv2 connection descriptor declaration */
+typedef struct mrcp_connection_descriptor_t mrcp_connection_descriptor_t;
 
-/** Opaque MRCP session declaration */
-typedef struct mrcp_session_t mrcp_session_t;
+/** Opaque MRCPv2 connection declaration */
+typedef struct mrcp_connection_t mrcp_connection_t;
 
-/** Opaque MRCP session descriptor declaration */
-typedef struct mrcp_session_descriptor_t mrcp_session_descriptor_t;
+/** Opaque MRCPv2 connection agent declaration */
+typedef struct mrcp_connection_agent_t mrcp_connection_agent_t;
+
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_SIG_TYPES_H__*/
+#endif /*__MRCP_CONNECTION_TYPES_H__*/
