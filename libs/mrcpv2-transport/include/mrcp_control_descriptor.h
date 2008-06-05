@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef __MRCPV2_CONNECTION_DESCRIPTOR_H__
-#define __MRCPV2_CONNECTION_DESCRIPTOR_H__
+#ifndef __MRCP_CONTROL_DESCRIPTOR_H__
+#define __MRCP_CONTROL_DESCRIPTOR_H__
 
 /**
- * @file mrcpv2_connection_descriptor.h
- * @brief MRCPv2 Connection Descriptor
+ * @file mrcp_control_descriptor.h
+ * @brief MRCPv2 Control Descriptor
  */ 
 
 #include "apt_string.h"
@@ -69,25 +69,31 @@ typedef enum {
 } mrcp_connection_type_e;
 
 
-/** MRCPv2 connection descriptor */
-struct mrcp_connection_descriptor_t {
+/** MRCPv2 control descriptor */
+struct mrcp_control_descriptor_t {
+	apt_str_t              ip;
+	apr_port_t             port;
 	mrcp_proto_type_e      proto;
 	mrcp_setup_type_e      setup_type;
 	mrcp_connection_type_e connection_type;
 	apt_str_t              resource_name;
 	apt_str_t              session_id;
 	apr_size_t             cmid;
+	apr_size_t             id;
 };
 
-/** Initialize MRCP connection descriptor */
-static APR_INLINE void mrcp_connection_descriptor_init(mrcp_connection_descriptor_t *descriptor)
+/** Initialize MRCP control descriptor */
+static APR_INLINE void mrcp_control_descriptor_init(mrcp_control_descriptor_t *descriptor)
 {
+	apt_string_reset(&descriptor->ip);
+	descriptor->port = 0;
 	descriptor->proto = MRCP_PROTO_UNKNOWN;
 	descriptor->setup_type = MRCP_SETUP_TYPE_UNKNOWN;
 	descriptor->connection_type = MRCP_CONNECTION_TYPE_UNKNOWN;
 	apt_string_reset(&descriptor->resource_name);
 	apt_string_reset(&descriptor->session_id);
 	descriptor->cmid = 0;
+	descriptor->id = 0;
 }
 
 /** Get MRCP protocol transport name by identifier */
@@ -120,4 +126,4 @@ MRCP_DECLARE(mrcp_connection_type_e) mrcp_connection_type_find(const apt_str_t *
 
 APT_END_EXTERN_C
 
-#endif /*__MRCPV2_CONNECTION_DESCRIPTOR_H__*/
+#endif /*__MRCP_CONTROL_DESCRIPTOR_H__*/

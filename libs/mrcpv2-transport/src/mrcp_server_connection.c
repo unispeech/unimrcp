@@ -16,7 +16,7 @@
 
 #include <apr_poll.h>
 #include "mrcp_server_connection.h"
-#include "mrcp_connection_descriptor.h"
+#include "mrcp_control_descriptor.h"
 #include "apt_task.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
@@ -24,13 +24,13 @@
 #define MRCP_CONNECTION_MAX_COUNT 10
 
 struct mrcp_connection_t {
-	apr_pool_t                   *pool;
+	apr_pool_t                *pool;
 
-	apr_socket_t                 *sock; /* accepted socket */
-	apr_pollfd_t                  sock_pfd;
+	apr_socket_t              *sock; /* accepted socket */
+	apr_pollfd_t               sock_pfd;
 
-	mrcp_connection_descriptor_t *descriptor;
-	size_t                        access_count;
+	mrcp_control_descriptor_t *descriptor;
+	size_t                     access_count;
 };
 
 struct mrcp_connection_agent_t {
@@ -123,7 +123,7 @@ APT_DECLARE(apt_bool_t) mrcp_connection_agent_terminate(mrcp_connection_agent_t 
 APT_DECLARE(apt_bool_t) mrcp_server_agent_offer(mrcp_connection_agent_t *agent,
 												  void *handle,
 												  mrcp_connection_t *connection,
-												  mrcp_connection_descriptor_t *descriptor)
+												  mrcp_control_descriptor_t *descriptor)
 {
 	return TRUE;
 }

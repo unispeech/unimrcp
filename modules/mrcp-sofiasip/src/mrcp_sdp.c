@@ -19,7 +19,7 @@
 #include <sofia-sip/sdp.h>
 #include "mrcp_sdp.h"
 #include "mrcp_session_descriptor.h"
-#include "mrcp_connection_descriptor.h"
+#include "mrcp_control_descriptor.h"
 #include "mpf_rtp_attribs.h"
 #include "apt_text_stream.h"
 #include "apt_log.h"
@@ -41,7 +41,6 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 	mpf_rtp_media_descriptor_t *video_media;
 	apr_size_t control_index = 0;
 	mrcp_control_descriptor_t *control_media;
-	mrcp_connection_descriptor_t *connection_descriptor;
 	apr_size_t offset = 0;
 	buffer[0] = '\0';
 	offset += snprintf(buffer+offset,size-offset,
@@ -70,15 +69,14 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 			continue;
 		}
 		control_media = mrcp_session_control_media_get(descriptor,control_index);
-		if(control_media && control_media->base.id == i) {
+		if(control_media && control_media->id == i) {
 			/** generate mrcp control media */
 			const apt_str_t *proto;
 			const apt_str_t *setup_type;
 			const apt_str_t *connection_type;
-			connection_descriptor = control_media->connection_descriptor;
-			proto = mrcp_proto_get(connection_descriptor->proto);
-			setup_type = mrcp_setup_type_get(connection_descriptor->setup_type);
-			connection_type = mrcp_connection_type_get(connection_descriptor->connection_type);
+			proto = mrcp_proto_get(control_media->proto);
+			setup_type = mrcp_setup_type_get(control_media->setup_type);
+			connection_type = mrcp_connection_type_get(control_media->connection_type);
 			control_index++;
 			if(offer == TRUE) { /* offer */
 				offset += snprintf(buffer+offset,size-offset,
@@ -87,7 +85,7 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 					"a=connection:%s\r\n"
 					"a=resource:%s\r\n"
 					"a=cmid:%d\r\n",
-					(control_media->base.state == MPF_MEDIA_ENABLED) ? control_media->base.port : 0,
+					control_media->port,
 					proto ? proto->buf : "",
 					setup_type ? setup_type->buf : "",
 					connection_type ? connection_type->buf : "",
@@ -101,11 +99,11 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 					"a=connection:%s\r\n"
 					"a=channel:%s@%s\r\n"
 					"a=cmid:%d\r\n",
-					(control_media->base.state == MPF_MEDIA_ENABLED) ? control_media->base.port : 0,
+					control_media->port,
 					proto ? proto->buf : "",
 					setup_type ? setup_type->buf : "",
 					connection_type ? connection_type->buf : "",
-					connection_descriptor->session_id.buf,
+					control_media->session_id.buf,
 					control_media->resource_name.buf,
 					control_media->cmid);
 			}
@@ -151,8 +149,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 			{
 				mrcp_control_descriptor_t *control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
 				mrcp_control_descriptor_init(control_media);
-				control_media->base.id = mrcp_session_control_media_add(descriptor,control_media);
-				base = &control_media->base;
+				control_media->id = mrcp_session_control_media_add(descriptor,control_media);
 				mrcp_control_media_generate(control_media,sdp_media,pool);
 				break;
 			}
@@ -223,7 +220,7 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media
 				audio_media->mid = atoi(attrib->a_value);
 				break;
 			case RTP_ATTRIB_PTIME:
-				audio_media->ptime = (unsigned short)atoi(attrib->a_value);
+				audio_media->ptime = (apr_uint16_t)atoi(attrib->a_value);
 				break;
 			default:
 				break;
@@ -259,19 +256,15 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media
 }
 
 /** Generate MRCP control media by SDP media */
-static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, apr_pool_t *pool)
+static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control_media, const sdp_media_t *sdp_media, apr_pool_t *pool)
 {
-	mrcp_connection_descriptor_t *connection_descriptor;
 	mrcp_attrib_e id;
 	apt_str_t name;
 	apt_str_t value;
 	sdp_attribute_t *attrib = NULL;
 	apt_string_set(&name,sdp_media->m_proto_name);
-	connection_descriptor = apr_palloc(pool,sizeof(mrcp_connection_descriptor_t));
-	mrcp_media->connection_descriptor = connection_descriptor;
-	mrcp_connection_descriptor_init(connection_descriptor);
-	connection_descriptor->proto = mrcp_proto_find(&name);
-	if(connection_descriptor->proto != MRCP_PROTO_TCP) {
+	control_media->proto = mrcp_proto_find(&name);
+	if(control_media->proto != MRCP_PROTO_TCP) {
 		apt_log(APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]\n",sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP));
 		return FALSE;
 	}
@@ -282,26 +275,34 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_me
 		switch(id) {
 			case MRCP_ATTRIB_SETUP:
 				apt_string_set(&value,attrib->a_value);
-				connection_descriptor->setup_type = mrcp_setup_type_find(&value);
+				control_media->setup_type = mrcp_setup_type_find(&value);
 				break;
 			case MRCP_ATTRIB_CONNECTION:
 				apt_string_set(&value,attrib->a_value);
-				connection_descriptor->connection_type = mrcp_connection_type_find(&value);
+				control_media->connection_type = mrcp_connection_type_find(&value);
 				break;
 			case MRCP_ATTRIB_RESOURCE:
-				apt_string_assign(&mrcp_media->resource_name,attrib->a_value,pool);
+				apt_string_assign(&control_media->resource_name,attrib->a_value,pool);
 				break;
 			case MRCP_ATTRIB_CHANNEL:
 				apt_string_set(&value,attrib->a_value);
-				apt_id_resource_parse(&value,'@',&connection_descriptor->session_id,&connection_descriptor->resource_name,pool);
+				apt_id_resource_parse(&value,'@',&control_media->session_id,&control_media->resource_name,pool);
 				break;
 			case MRCP_ATTRIB_CMID:
-				mrcp_media->cmid = atoi(attrib->a_value);
+				control_media->cmid = atoi(attrib->a_value);
 				break;
 			default:
 				break;
 		}
 	}
+
+	if(sdp_media->m_connections) {
+		apt_string_assign(&control_media->ip,sdp_media->m_connections->c_address,pool);
+	}
+	else {
+//		control_media->ip = *ip;
+	}
+	control_media->port = (apr_port_t)sdp_media->m_port;
 	return TRUE;
 }
 
@@ -315,7 +316,7 @@ static apt_bool_t mpf_media_generate(mpf_media_descriptor_t *media, const sdp_me
 		media->ip = *ip;
 	}
 	if(sdp_media->m_port) {
-		media->port = (unsigned short)sdp_media->m_port;
+		media->port = (apr_port_t)sdp_media->m_port;
 		media->state = MPF_MEDIA_ENABLED;
 	}
 	else {

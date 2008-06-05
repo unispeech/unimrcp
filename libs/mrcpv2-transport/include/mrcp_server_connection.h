@@ -22,7 +22,6 @@
  * @brief MRCPv2 Server Connection
  */ 
 
-#include <apr_network_io.h>
 #include "mrcp_connection_types.h"
 
 APT_BEGIN_EXTERN_C
@@ -66,7 +65,7 @@ APT_DECLARE(apt_bool_t) mrcp_connection_agent_terminate(mrcp_connection_agent_t 
 APT_DECLARE(apt_bool_t) mrcp_server_agent_offer(mrcp_connection_agent_t *agent,
 												  void *handle,
 												  mrcp_connection_t *connection,
-												  mrcp_connection_descriptor_t *descriptor);
+												  mrcp_control_descriptor_t *descriptor);
 
 APT_END_EXTERN_C
 

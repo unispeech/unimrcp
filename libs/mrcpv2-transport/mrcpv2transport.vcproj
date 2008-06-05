@@ -134,11 +134,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mrcp_connection_descriptor.h"
+				RelativePath=".\include\mrcp_connection_types.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\mrcp_connection_types.h"
+				RelativePath=".\include\mrcp_control_descriptor.h"
 				>
 			</File>
 			<File
@@ -155,7 +155,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\mrcp_connection_descriptor.c"
+				RelativePath=".\src\mrcp_control_descriptor.c"
 				>
 			</File>
 			<File

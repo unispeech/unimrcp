@@ -22,12 +22,13 @@
  * @brief MRCP Connection Types Declaration
  */ 
 
+#include <apr_network_io.h>
 #include "mrcp_types.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MRCPv2 connection descriptor declaration */
-typedef struct mrcp_connection_descriptor_t mrcp_connection_descriptor_t;
+/** Opaque MRCPv2 control descriptor declaration */
+typedef struct mrcp_control_descriptor_t mrcp_control_descriptor_t;
 
 /** Opaque MRCPv2 connection declaration */
 typedef struct mrcp_connection_t mrcp_connection_t;
