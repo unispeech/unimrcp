@@ -53,6 +53,10 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start()
 	if(sig_agent) {
 		mrcp_server_signaling_agent_register(server,sig_agent);
 	}
+	sig_agent = mrcpv1_sig_agent_create(pool);
+	if(sig_agent) {
+		mrcp_server_signaling_agent_register(server,sig_agent);
+	}
 
 	mrcp_server_start(server);
 	return server;
