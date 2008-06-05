@@ -13,4 +13,4 @@ include_HEADERS               = include/mrcpv2_connection_descriptor.h \
 
 libmrcpv2transport_la_SOURCES = src/mrcpv2_connection_descriptor.c \
                                 src/mrcpv2_client_agent.c \
-                                src/mrcpv2_server_agent.c \
+                                src/mrcpv2_server_agent.c
