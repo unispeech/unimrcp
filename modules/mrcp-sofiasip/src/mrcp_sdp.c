@@ -131,21 +131,27 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 		switch(sdp_media->m_type) {
 			case sdp_media_audio:
 			{
-				mpf_rtp_media_descriptor_t *media = mrcp_session_audio_media_add(descriptor);
+				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+				mpf_rtp_media_descriptor_init(media);
+				media->base.id = mrcp_session_audio_media_add(descriptor,media);
 				base = &media->base;
 				mpf_rtp_media_generate(media,sdp_media,pool);
 				break;
 			}
 			case sdp_media_video:
 			{
-				mpf_rtp_media_descriptor_t *media = mrcp_session_video_media_add(descriptor);
+				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+				mpf_rtp_media_descriptor_init(media);
+				media->base.id = mrcp_session_video_media_add(descriptor,media);
 				base = &media->base;
 				mpf_rtp_media_generate(media,sdp_media,pool);
 				break;
 			}
 			case sdp_media_application:
 			{
-				mrcp_control_descriptor_t *control_media = mrcp_session_control_media_add(descriptor);
+				mrcp_control_descriptor_t *control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
+				mrcp_control_descriptor_init(control_media);
+				control_media->base.id = mrcp_session_control_media_add(descriptor,control_media);
 				base = &control_media->base;
 				mrcp_control_media_generate(control_media,sdp_media,pool);
 				break;

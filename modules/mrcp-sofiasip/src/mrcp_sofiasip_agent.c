@@ -150,6 +150,25 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 
 static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
+	mrcp_sofia_session_t *sofia_session = session->obj;
+	const char *local_sdp_str = NULL;
+	char sdp_str[2048];
+
+	if(!sofia_session || !sofia_session->nh) {
+		return FALSE;
+	}
+
+	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,FALSE) > 0) {
+		local_sdp_str = sdp_str;
+		apt_log(APT_PRIO_INFO,"Local SDP\n[%s]", local_sdp_str);
+	}
+
+	nua_respond(sofia_session->nh, SIP_200_OK, 
+//		        SIPTAG_CONTACT_STR(channel->agent->sip_contact_str),
+				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
+			    NUTAG_AUTOANSWER(0),
+				TAG_END());
+	
 	return TRUE;
 }
 

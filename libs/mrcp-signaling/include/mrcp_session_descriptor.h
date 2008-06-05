@@ -48,9 +48,9 @@ static APR_INLINE mrcp_session_descriptor_t* mrcp_session_descriptor_create(apr_
 	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
 	apt_string_reset(&descriptor->origin);
 	apt_string_reset(&descriptor->ip);
-	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(mrcp_control_descriptor_t));
-	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t));
-	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t));
+	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(mrcp_control_descriptor_t*));
+	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
+	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));
 	return descriptor;
 }
 
@@ -59,37 +59,33 @@ static APR_INLINE apr_size_t mrcp_session_media_count_get(const mrcp_session_des
 	return descriptor->control_media_arr->nelts + descriptor->audio_media_arr->nelts + descriptor->video_media_arr->nelts;
 }
 
-static APR_INLINE mrcp_control_descriptor_t* mrcp_session_control_media_add(mrcp_session_descriptor_t *descriptor)
+static APR_INLINE apr_size_t mrcp_session_control_media_add(mrcp_session_descriptor_t *descriptor, mrcp_control_descriptor_t *media)
 {
-	mrcp_control_descriptor_t *media = apr_array_push(descriptor->control_media_arr);
-	mrcp_control_descriptor_init(media);
-	media->base.id = mrcp_session_media_count_get(descriptor) - 1;
-	return media;
+	mrcp_control_descriptor_t **slot = apr_array_push(descriptor->control_media_arr);
+	*slot = media;
+	return mrcp_session_media_count_get(descriptor) - 1;
 }
 
-static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_audio_media_add(mrcp_session_descriptor_t *descriptor)
+static APR_INLINE apr_size_t mrcp_session_audio_media_add(mrcp_session_descriptor_t *descriptor, mpf_rtp_media_descriptor_t *media)
 {
-	mpf_rtp_media_descriptor_t *media = apr_array_push(descriptor->audio_media_arr);
-	mpf_rtp_media_descriptor_init(media);
-	media->base.id = mrcp_session_media_count_get(descriptor) - 1;
-	return media;
+	mpf_rtp_media_descriptor_t **slot = apr_array_push(descriptor->audio_media_arr);
+	*slot = media;
+	return mrcp_session_media_count_get(descriptor) - 1;
 }
 
-static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_video_media_add(mrcp_session_descriptor_t *descriptor)
+static APR_INLINE apr_size_t mrcp_session_video_media_add(mrcp_session_descriptor_t *descriptor, mpf_rtp_media_descriptor_t *media)
 {
-	mpf_rtp_media_descriptor_t *media = apr_array_push(descriptor->video_media_arr);
-	mpf_rtp_media_descriptor_init(media);
-	media->base.id = mrcp_session_media_count_get(descriptor) - 1;
-	return media;
+	mpf_rtp_media_descriptor_t **slot = apr_array_push(descriptor->video_media_arr);
+	*slot = media;
+	return mrcp_session_media_count_get(descriptor) - 1;
 }
-
 
 static APR_INLINE mrcp_control_descriptor_t* mrcp_session_control_media_get(const mrcp_session_descriptor_t *descriptor, apr_size_t id)
 {
 	if((int)id >= descriptor->control_media_arr->nelts) {
 		return NULL;
 	}
-	return (mrcp_control_descriptor_t*)descriptor->control_media_arr->elts + id;
+	return ((mrcp_control_descriptor_t**)descriptor->control_media_arr->elts)[id];
 }
 
 static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_audio_media_get(const mrcp_session_descriptor_t *descriptor, apr_size_t id)
@@ -97,7 +93,7 @@ static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_audio_media_get(const
 	if((int)id >= descriptor->audio_media_arr->nelts) {
 		return NULL;
 	}
-	return (mpf_rtp_media_descriptor_t*)descriptor->audio_media_arr->elts + id;
+	return ((mpf_rtp_media_descriptor_t**)descriptor->audio_media_arr->elts)[id];
 }
 
 static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_video_media_get(const mrcp_session_descriptor_t *descriptor, apr_size_t id)
@@ -105,7 +101,7 @@ static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_video_media_get(const
 	if((int)id >= descriptor->video_media_arr->nelts) {
 		return NULL;
 	}
-	return (mpf_rtp_media_descriptor_t*)descriptor->video_media_arr->elts + id;
+	return ((mpf_rtp_media_descriptor_t**)descriptor->video_media_arr->elts)[id];
 }
 
 APT_END_EXTERN_C

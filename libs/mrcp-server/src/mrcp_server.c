@@ -215,7 +215,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_serve
 	return TRUE;
 }
 
-
 /** Register MRCP signaling agent */
 MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent)
 {
@@ -398,8 +397,7 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 					if(session && session->answer) {
 						mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
 						if(rtp_descriptor->audio.local) {
-							mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_add(session->answer);
-							*audio_media = *rtp_descriptor->audio.local;
+							mrcp_session_audio_media_add(session->answer,rtp_descriptor->audio.local);
 
 							if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
 								mrcp_server_session_answer_send(server,session);
