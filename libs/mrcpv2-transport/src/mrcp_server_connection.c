@@ -91,7 +91,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	if(!agent->sockaddr) {
 		return NULL;
 	}
-	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,0,0,agent->pool);
+	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,listen_port,0,agent->pool);
 	if(!agent->sockaddr) {
 		return NULL;
 	}
@@ -186,7 +186,7 @@ static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent
 	}
 
 	/* create control socket */
-	status = apr_socket_create(&agent->control_sock, agent->control_sockaddr->family, SOCK_DGRAM, 0, agent->pool);
+	status = apr_socket_create(&agent->control_sock, agent->control_sockaddr->family, SOCK_DGRAM, APR_PROTO_UDP, agent->pool);
 	if(status != APR_SUCCESS) {
 		return FALSE;
 	}
@@ -352,10 +352,13 @@ static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task)
 {
 	mrcp_connection_agent_t *agent = apt_task_object_get(task);
 	if(agent->control_sock) {
+
 		connection_agent_message_t message;
 		apr_size_t size = sizeof(connection_agent_message_t);
 		message.type = CONNECTION_AGENT_MESSAGE_TERMINATE;
-		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size) != APR_SUCCESS) {
+			apt_log(APT_PRIO_WARNING,"Failed to Send Control Message");
+		}
 	}
 	return TRUE;
 }
