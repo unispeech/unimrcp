@@ -23,6 +23,7 @@
  */ 
 
 #include "mrcp_sig_types.h"
+#include "mrcp_connection_types.h"
 #include "mpf_types.h"
 #include "apt_task.h"
 
@@ -84,6 +85,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_serve
  * @param signaling_agent the signaling agent to set
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent);
+
+/**
+ * Register MRCP connection agent (MRCPv2 only).
+ * @param server the MRCP server to set connection agent for
+ * @param connection_agent the connection agent to set
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent);
 
 /**
  * Get memory pool.

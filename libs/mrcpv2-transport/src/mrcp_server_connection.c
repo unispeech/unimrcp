@@ -50,12 +50,26 @@ struct mrcp_connection_agent_t {
 	apt_obj_list_t *connection_list;
 };
 
+typedef enum {
+	CONNECTION_AGENT_MESSAGE_OFFER,
+	CONNECTION_AGENT_MESSAGE_TERMINATE
+}connection_agent_message_type_e ;
+
+typedef struct connection_agent_message_t connection_agent_message_t;
+struct connection_agent_message_t {
+	connection_agent_message_type_e type;
+	mrcp_connection_agent_t        *agent;
+	void                           *handle;
+	mrcp_connection_t              *connection;
+	mrcp_control_descriptor_t      *descriptor;
+};
+
 static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task);
 
 
 /** Create connection agent */
-APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_agent_create(
+APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										void *obj,
 										const char *listen_ip, 
 										apr_port_t listen_port, 
@@ -64,7 +78,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_agent_create(
 	apt_task_vtable_t vtable;
 	mrcp_connection_agent_t *agent;
 	
-	apt_log(APT_PRIO_NOTICE,"Create MRCPv2 Agent TCP %s:%hu\n",listen_ip,listen_port);
+	apt_log(APT_PRIO_NOTICE,"Create MRCPv2 Agent TCP %s:%hu",listen_ip,listen_port);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
 	agent->sockaddr = NULL;
@@ -95,39 +109,49 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_agent_create(
 }
 
 /** Destroy connection agent. */
-APT_DECLARE(apt_bool_t) mrcp_server_agent_destroy(mrcp_connection_agent_t *agent)
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
-	apt_log(APT_PRIO_NOTICE,"Destroy MRCPv2 Agent\n");
-	return TRUE;
+	apt_log(APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	return apt_task_destroy(agent->task);
 }
 
 /** Start connection agent. */
-APT_DECLARE(apt_bool_t) mrcp_server_agent_start(mrcp_connection_agent_t *agent)
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_start(mrcp_connection_agent_t *agent)
 {
-	return TRUE;
+	return apt_task_start(agent->task);
 }
 
 /** Terminate connection agent. */
-APT_DECLARE(apt_bool_t) mrcp_connection_agent_terminate(mrcp_connection_agent_t *agent)
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_agent_t *agent)
 {
-	if(agent->control_sock) {
-		char test[4];
-		apr_size_t size = 4;
-		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,test,&size);
-	}
-	return TRUE;
+	return apt_task_terminate(agent->task,TRUE);
 }
 
 
 /** Offer MRCPv2 connection descriptor */
-APT_DECLARE(apt_bool_t) mrcp_server_agent_offer(mrcp_connection_agent_t *agent,
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent_t *agent,
 												  void *handle,
 												  mrcp_connection_t *connection,
 												  mrcp_control_descriptor_t *descriptor)
 {
+	if(agent->control_sock) {
+		connection_agent_message_t message;
+		apr_size_t size = sizeof(connection_agent_message_t);
+		message.type = CONNECTION_AGENT_MESSAGE_OFFER;
+		message.agent = agent;
+		message.handle = handle;
+		message.connection = connection;
+		message.descriptor = descriptor;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+	}
 	return TRUE;
 }
 
+/** Get task */
+APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent)
+{
+	return agent->task;
+}
 
 
 static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent)
@@ -242,7 +266,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection = mrcp_server_agent_connection_find(agent,remote_ip);
 
 	if(connection && !connection->sock) {
-		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Connected\n");
+		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Connected");
 		connection->sock = sock;
 		connection->sock_pfd.desc_type = APR_POLL_SOCKET;
 		connection->sock_pfd.reqevents = APR_POLLIN;
@@ -251,7 +275,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 		apr_pollset_add(agent->pollset, &connection->sock_pfd);
 	}
 	else {
-		apt_log(APT_PRIO_INFO,"MRCPv2 Client Rejected\n");
+		apt_log(APT_PRIO_INFO,"MRCPv2 Client Rejected");
 		apr_socket_close(sock);
 	}
 
@@ -260,6 +284,17 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
+	connection_agent_message_t message;
+	apr_size_t size = sizeof(connection_agent_message_t);
+	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&message, &size);
+	if(status == APR_EOF || size == 0) {
+		return FALSE;
+	}
+
+	if(message.type == CONNECTION_AGENT_MESSAGE_TERMINATE) {
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
@@ -278,12 +313,12 @@ static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task)
 	int i;
 
 	if(!agent) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start MRCPv2 Agent\n");
+		apt_log(APT_PRIO_WARNING,"Failed to Start MRCPv2 Agent");
 		return FALSE;
 	}
 
 	if(mrcp_server_agent_socket_create(agent) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create MRCPv2 Agent Socket\n");
+		apt_log(APT_PRIO_WARNING,"Failed to Create MRCPv2 Agent Socket");
 		return FALSE;
 	}
 
@@ -301,18 +336,26 @@ static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task)
 			if(ret_pfd[i].desc.s == agent->control_sock) {
 				apt_log(APT_PRIO_DEBUG,"Process Control Message");
 				mrcp_server_agent_control_pocess(agent);
-				return TRUE;//continue;
+				running = FALSE;break;//continue;
 			}
 	
-			apt_log(APT_PRIO_DEBUG,"Process MRCPv2 Message\n");
+			apt_log(APT_PRIO_DEBUG,"Process MRCPv2 Message");
 			mrcp_server_agent_messsage_receive(agent,ret_pfd[i].client_data);
 		}
 	}
+
+	apt_task_child_terminate(agent->task);
 	return TRUE;
 }
 
 static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task)
 {
 	mrcp_connection_agent_t *agent = apt_task_object_get(task);
-	return mrcp_connection_agent_terminate(agent);
+	if(agent->control_sock) {
+		connection_agent_message_t message;
+		apr_size_t size = sizeof(connection_agent_message_t);
+		message.type = CONNECTION_AGENT_MESSAGE_TERMINATE;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+	}
+	return TRUE;
 }

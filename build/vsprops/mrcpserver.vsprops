@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="mrcpserver"
-	InheritedPropertySheets=".\mrcpsignaling.vsprops"
+	InheritedPropertySheets=".\mrcpsignaling.vsprops;.\mrcpv2transport.vsprops"
 	>
 	<Tool
 		Name="VCCLCompilerTool"

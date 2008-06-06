@@ -19,6 +19,7 @@
 #include "mpf_engine.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_agent.h"
+#include "mrcp_server_connection.h"
 #include "apt_log.h"
 
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool);
@@ -31,6 +32,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start()
 	mrcp_resource_factory_t *resource_factory;
 	mpf_engine_t *media_engine;
 	mrcp_sig_agent_t *sig_agent;
+	mrcp_connection_agent_t *connection_agent;
 	mrcp_server_t *server = mrcp_server_create();
 	if(!server) {
 		return NULL;
@@ -56,6 +58,11 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start()
 	sig_agent = mrcpv1_sig_agent_create(pool);
 	if(sig_agent) {
 		mrcp_server_signaling_agent_register(server,sig_agent);
+	}
+	connection_agent = mrcp_server_connection_agent_create(
+			NULL,"127.0.0.1",1554,pool);
+	if(connection_agent) {
+		mrcp_server_connection_agent_register(server,connection_agent);
 	}
 
 	mrcp_server_start(server);

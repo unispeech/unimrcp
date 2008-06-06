@@ -19,6 +19,7 @@
 #include "mrcp_server.h"
 #include "mrcp_resource_factory.h"
 #include "mrcp_sig_agent.h"
+#include "mrcp_server_connection.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mpf_user.h"
@@ -42,6 +43,8 @@ struct mrcp_server_t {
 	mpf_termination_factory_t *rtp_termination_factory;
 	/** Signaling agent */
 	mrcp_sig_agent_t          *signaling_agent;
+	/** Connection agent */
+	mrcp_connection_agent_t   *connection_agent;
 	
 	/** MRCP sessions table */
 	apr_hash_t                *session_table;
@@ -227,6 +230,21 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
 		apt_task_add(task,signaling_agent->task);
+	}
+	return TRUE;
+}
+
+/** Register MRCP connection agent (MRCPv2 only) */
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent)
+{
+	if(!connection_agent) {
+		return FALSE;
+	}
+	server->connection_agent = connection_agent;
+	if(server->task) {
+		apt_task_t *task = apt_consumer_task_base_get(server->task);
+		apt_task_t *connection_task = mrcp_server_connection_agent_task_get(connection_agent);
+		apt_task_add(task,connection_task);
 	}
 	return TRUE;
 }

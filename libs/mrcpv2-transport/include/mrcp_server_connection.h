@@ -22,6 +22,7 @@
  * @brief MRCPv2 Server Connection
  */ 
 
+#include "apt_task.h"
 #include "mrcp_connection_types.h"
 
 APT_BEGIN_EXTERN_C
@@ -47,13 +48,13 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_age
  * Start connection agent and wait for incoming requests.
  * @param agent the agent to start
  */
-APT_DECLARE(apt_bool_t) mrcp_server_agent_start(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_start(mrcp_connection_agent_t *agent);
 
 /**
  * Terminate connection agent.
  * @param agent the agent to terminate
  */
-APT_DECLARE(apt_bool_t) mrcp_connection_agent_terminate(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_agent_t *agent);
 
 /**
  * Offer MRCPv2 connection descriptor.
@@ -62,10 +63,17 @@ APT_DECLARE(apt_bool_t) mrcp_connection_agent_terminate(mrcp_connection_agent_t 
  * @param connection the connection (NULL on the first offer)
  * @param descriptor the control descriptor
  */
-APT_DECLARE(apt_bool_t) mrcp_server_agent_offer(mrcp_connection_agent_t *agent,
-												  void *handle,
-												  mrcp_connection_t *connection,
-												  mrcp_control_descriptor_t *descriptor);
+APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor);
+
+/**
+ * Get task.
+ * @param agent the agent to get task from
+ */
+APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent);
 
 APT_END_EXTERN_C
 
