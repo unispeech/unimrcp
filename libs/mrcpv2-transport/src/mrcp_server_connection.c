@@ -62,6 +62,7 @@ struct connection_agent_message_t {
 	void                           *handle;
 	mrcp_connection_t              *connection;
 	mrcp_control_descriptor_t      *descriptor;
+	apr_pool_t                     *pool;
 };
 
 static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task);
@@ -132,7 +133,8 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_a
 APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent_t *agent,
 												  void *handle,
 												  mrcp_connection_t *connection,
-												  mrcp_control_descriptor_t *descriptor)
+												  mrcp_control_descriptor_t *descriptor,
+												  apr_pool_t *pool)
 {
 	if(agent->control_sock) {
 		connection_agent_message_t message;
@@ -142,6 +144,7 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent
 		message.handle = handle;
 		message.connection = connection;
 		message.descriptor = descriptor;
+		message.pool = pool;
 		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
 	}
 	return TRUE;
@@ -233,7 +236,24 @@ static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent
 	return TRUE;
 }
 
-static mrcp_connection_t* mrcp_server_agent_connection_find(mrcp_connection_agent_t *agent, const char *remote_ip)
+static mrcp_connection_t* mrcp_server_agent_connection_add(mrcp_connection_agent_t *agent, mrcp_control_descriptor_t *descriptor)
+{
+	mrcp_connection_t *connection;
+	apr_pool_t *pool;
+	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+		return NULL;
+	}
+	
+	connection = apr_palloc(pool,sizeof(mrcp_connection_t));
+	connection->pool = pool;
+	connection->descriptor = descriptor;
+	connection->sock = NULL;
+	connection->access_count = 1;
+	apt_list_push_back(agent->connection_list,connection);
+	return connection;
+}
+
+static mrcp_connection_t* mrcp_server_agent_connection_find(mrcp_connection_agent_t *agent, const apt_str_t *remote_ip)
 {
 	mrcp_connection_t *connection = NULL;
 	apt_list_elem_t *elem = apt_list_first_elem_get(agent->connection_list);
@@ -241,9 +261,10 @@ static mrcp_connection_t* mrcp_server_agent_connection_find(mrcp_connection_agen
 	while(elem) {
 		connection = apt_list_elem_object_get(elem);
 		if(connection && connection->descriptor) {
-/*			if(strcmp(connection->descriptor->,remote_ip) == 0) {
+			if(apt_string_compare(&connection->descriptor->ip,remote_ip) == TRUE) {
 				return connection;
-*/		}
+			}
+		}
 		elem = apt_list_next_elem_get(agent->connection_list,elem);
 	}
 	return NULL;
@@ -254,17 +275,19 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	apr_socket_t *sock;
 	apr_sockaddr_t *sockaddr;
 	mrcp_connection_t *connection;
-	char *remote_ip;
+	apt_str_t remote_ip;
 
 	apr_status_t status = apr_socket_accept(&sock, agent->listen_sock, agent->pool);
 	if(status != APR_SUCCESS) {
 		return FALSE;
 	}
 
+	apt_string_reset(&remote_ip);
 	apr_socket_addr_get(&sockaddr,APR_REMOTE,sock);
-	apr_sockaddr_ip_get(&remote_ip,sockaddr);
-	connection = mrcp_server_agent_connection_find(agent,remote_ip);
-
+	if(apr_sockaddr_ip_get(&remote_ip.buf,sockaddr) == APR_SUCCESS) {
+		remote_ip.length = strlen(remote_ip.buf);
+	}
+	connection = mrcp_server_agent_connection_find(agent,&remote_ip);
 	if(connection && !connection->sock) {
 		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Connected");
 		connection->sock = sock;
@@ -284,6 +307,9 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
+	mrcp_control_descriptor_t *answer;
+	mrcp_connection_t *connection;
+
 	connection_agent_message_t message;
 	apr_size_t size = sizeof(connection_agent_message_t);
 	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&message, &size);
@@ -294,6 +320,23 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 	if(message.type == CONNECTION_AGENT_MESSAGE_TERMINATE) {
 		return FALSE;
 	}
+
+	answer = apr_palloc(message.pool,sizeof(mrcp_control_descriptor_t));
+	mrcp_control_descriptor_init(answer);
+	*answer = *message.descriptor;
+	answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
+
+	if(message.descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
+		connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
+		if(connection) {
+			/* send answer */
+			return TRUE;
+		}
+		/* no existing connection found, proceed with the new oen */
+	}
+	
+	/* create new connection */
+	connection = mrcp_server_agent_connection_add(agent,message.descriptor);
 
 	return TRUE;
 }
@@ -335,8 +378,11 @@ static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task)
 			}
 			if(ret_pfd[i].desc.s == agent->control_sock) {
 				apt_log(APT_PRIO_DEBUG,"Process Control Message");
-				mrcp_server_agent_control_pocess(agent);
-				running = FALSE;break;//continue;
+				if(mrcp_server_agent_control_pocess(agent) == FALSE) {
+					running = FALSE;
+					break;
+				}
+				continue;
 			}
 	
 			apt_log(APT_PRIO_DEBUG,"Process MRCPv2 Message");

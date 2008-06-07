@@ -67,7 +67,8 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(
 								mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
-								mrcp_control_descriptor_t *descriptor);
+								mrcp_control_descriptor_t *descriptor,
+								apr_pool_t *pool);
 
 /**
  * Get task.

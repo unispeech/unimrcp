@@ -22,6 +22,7 @@
 #include "mrcp_server_connection.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
+#include "mrcp_control_descriptor.h"
 #include "mpf_user.h"
 #include "mpf_termination.h"
 #include "mpf_engine.h"
@@ -72,6 +73,21 @@ struct mrcp_server_session_t {
 	mrcp_session_descriptor_t *answer;
 };
 
+typedef struct mrcp_channel_t mrcp_channel_t;
+struct mrcp_channel_t {
+	/** Memory pool */
+	apr_pool_t        *pool;
+	/** MRCP resource */
+	mrcp_resource_t   *resource;
+	/** MRCP session entire channel belongs to (added for fast reverse search) */
+	mrcp_session_t    *session;
+	/** MRCP connection */
+	mrcp_connection_t *connection;
+
+	/** Media termination */
+	mpf_termination_t *termination;
+};
+
 
 typedef enum {
 	MRCP_SERVER_SIGNALING_TASK_MSG = TASK_MSG_USER,
@@ -98,6 +114,7 @@ static apt_bool_t mpf_request_send(mrcp_server_t *server, mpf_command_type_e com
 				mpf_context_t *context, mpf_termination_t *termination, void *descriptor);
 
 static mrcp_session_t* mrcp_server_session_create();
+static mrcp_channel_t* mrcp_server_channel_create(mrcp_session_t *session, apt_str_t *resource_name);
 
 /** Create MRCP server instance */
 MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
@@ -267,6 +284,8 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 
 static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server, mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
+	mrcp_channel_t *channel;
+	mrcp_control_descriptor_t *control_descriptor;
 	int i;
 	int count = session->channels->nelts;
 	if(count > descriptor->control_media_arr->nelts) {
@@ -275,12 +294,33 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server,
 		count = descriptor->control_media_arr->nelts;
 	}
 	
-	/* remove/update existing control channels */
+	/* update existing control channels */
 	for(i=0; i<count; i++) {
+		/* get existing termination */
+		channel = *((mrcp_channel_t**)session->channels->elts + i);
+		if(!channel) continue;
+
+		/* get control descriptor */
+		control_descriptor = mrcp_session_control_media_get(descriptor,i);
+		/* send offer */
+		mrcp_server_connection_agent_offer(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
 	}
 	
 	/* add new control channels */
 	for(; i<descriptor->control_media_arr->nelts; i++) {
+		mrcp_channel_t **slot;
+		/* get control descriptor */
+		control_descriptor = mrcp_session_control_media_get(descriptor,i);
+		if(!control_descriptor) continue;
+
+		/* create new MRCP channel instance */
+		channel = mrcp_server_channel_create(&session->base,&control_descriptor->resource_name);
+		/* add to channel array */
+		slot = apr_array_push(session->channels);
+		*slot = channel;
+
+		/* send offer */
+		mrcp_server_connection_agent_offer(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
 	}
 
 	return TRUE;
@@ -463,6 +503,17 @@ static mrcp_session_t* mrcp_server_session_create()
 	session->offer = NULL;
 	session->answer = NULL;
 	return &session->base;
+}
+
+static mrcp_channel_t* mrcp_server_channel_create(mrcp_session_t *session, apt_str_t *resource_name)
+{
+	mrcp_channel_t *channel = apr_palloc(session->pool,sizeof(mrcp_channel_t));
+	channel->pool = session->pool;
+	channel->session = session;
+	channel->connection = NULL;
+	channel->termination = NULL;
+	channel->resource = NULL;
+	return channel;
 }
 
 static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
