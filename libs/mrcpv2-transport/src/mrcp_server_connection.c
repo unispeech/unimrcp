@@ -48,6 +48,9 @@ struct mrcp_connection_agent_t {
 	apr_pollfd_t    control_sock_pfd;
 
 	apt_obj_list_t *connection_list;
+
+	void                                 *obj;
+	const mrcp_connection_event_vtable_t *vtable;
 };
 
 typedef enum {
@@ -71,7 +74,6 @@ static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task);
 
 /** Create connection agent */
 APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
-										void *obj,
 										const char *listen_ip, 
 										apr_port_t listen_port, 
 										apr_pool_t *pool)
@@ -128,6 +130,14 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_a
 	return apt_task_terminate(agent->task,TRUE);
 }
 
+/** Set connection event handler. */
+APT_DECLARE(void) mrcp_server_connection_agent_handler_set(mrcp_connection_agent_t *agent, 
+									void *obj, const mrcp_connection_event_vtable_t *vtable)
+{
+	agent->obj = obj;
+	agent->vtable = vtable;
+}
+
 
 /** Offer MRCPv2 connection descriptor */
 APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent_t *agent,
@@ -154,6 +164,12 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent
 APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent)
 {
 	return agent->task;
+}
+
+/** Get external object */
+APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent_t *agent)
+{
+	return agent->obj;
 }
 
 
@@ -330,13 +346,21 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 		connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
 		if(connection) {
 			/* send answer */
+			if(agent->vtable && agent->vtable->answer) {
+				agent->vtable->answer(agent,message.handle,message.connection,answer);
+			}
 			return TRUE;
 		}
 		/* no existing connection found, proceed with the new oen */
+		answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
 	}
 	
 	/* create new connection */
 	connection = mrcp_server_agent_connection_add(agent,message.descriptor);
+	/* send answer */
+	if(agent->vtable && agent->vtable->answer) {
+		agent->vtable->answer(agent,message.handle,connection,answer);
+	}
 
 	return TRUE;
 }

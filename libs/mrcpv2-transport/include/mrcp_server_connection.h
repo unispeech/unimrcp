@@ -27,13 +27,14 @@
 
 APT_BEGIN_EXTERN_C
 
+typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
+
 /**
  * Create connection agent.
  * @param obj the external object to associate with the agent
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
-										void *obj,
 										const char *listen_ip, 
 										apr_port_t listen_port, 
 										apr_pool_t *pool);
@@ -57,6 +58,17 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_start(mrcp_connection_agent
 APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_agent_t *agent);
 
 /**
+ * Set connection event handler.
+ * @param agent the agent to set event hadler for
+ * @param obj the external object to associate with the agent
+ * @param vtable the event handler virtual methods
+ */
+APT_DECLARE(void) mrcp_server_connection_agent_handler_set(
+								mrcp_connection_agent_t *agent, 
+								void *obj, 
+								const mrcp_connection_event_vtable_t *vtable);
+
+/**
  * Offer MRCPv2 connection descriptor.
  * @param agent the connection agent to offer descriptor to
  * @param handle the communication handle to answer to the offer with
@@ -75,6 +87,20 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(
  * @param agent the agent to get task from
  */
 APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent);
+
+/**
+ * Get external object.
+ * @param agent the agent to get object from
+ */
+APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent_t *agent);
+
+
+struct mrcp_connection_event_vtable_t {
+	apt_bool_t (*answer)(		mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor);
+};
 
 APT_END_EXTERN_C
 

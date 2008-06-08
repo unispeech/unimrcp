@@ -60,7 +60,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start()
 		mrcp_server_signaling_agent_register(server,sig_agent);
 	}
 	connection_agent = mrcp_server_connection_agent_create(
-			NULL,"127.0.0.1",1554,pool);
+			"127.0.0.1",1554,pool);
 	if(connection_agent) {
 		mrcp_server_connection_agent_register(server,connection_agent);
 	}
