@@ -35,6 +35,18 @@ typedef enum {
 	STREAM_MODE_SEND_RECEIVE = STREAM_MODE_SEND | STREAM_MODE_RECEIVE /**< send and receive */
 } mpf_stream_mode_e; 
 
+static APR_INLINE mpf_stream_mode_e mpf_stream_mode_negotiate(mpf_stream_mode_e remote_mode)
+{
+	mpf_stream_mode_e local_mode = remote_mode;
+	if(local_mode == STREAM_MODE_SEND) {
+		local_mode = STREAM_MODE_RECEIVE;
+	}
+	else if(local_mode == STREAM_MODE_RECEIVE) {
+		local_mode = STREAM_MODE_SEND;
+	}
+	return local_mode;
+}
+
 
 APT_END_EXTERN_C
 
