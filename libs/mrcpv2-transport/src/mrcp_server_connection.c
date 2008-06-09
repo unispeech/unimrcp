@@ -323,8 +323,8 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
-	mrcp_control_descriptor_t *answer;
-	mrcp_connection_t *connection;
+	mrcp_control_descriptor_t *answer = NULL;
+	mrcp_connection_t *connection = NULL;
 
 	connection_agent_message_t message;
 	apr_size_t size = sizeof(connection_agent_message_t);
@@ -341,22 +341,25 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 	mrcp_control_descriptor_init(answer);
 	*answer = *message.descriptor;
 	answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
+	if(answer->port) {
+		answer->port = agent->sockaddr->port;
 
-	if(message.descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
-		connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
-		if(connection) {
-			/* send answer */
-			if(agent->vtable && agent->vtable->answer) {
-				agent->vtable->answer(agent,message.handle,message.connection,answer);
+		if(message.descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
+			connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
+			if(connection) {
+				/* send answer */
+				if(agent->vtable && agent->vtable->answer) {
+					agent->vtable->answer(agent,message.handle,message.connection,answer);
+				}
+				return TRUE;
 			}
-			return TRUE;
+			/* no existing connection found, proceed with the new oen */
+			answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
 		}
-		/* no existing connection found, proceed with the new oen */
-		answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
+		
+		/* create new connection */
+		connection = mrcp_server_agent_connection_add(agent,message.descriptor);
 	}
-	
-	/* create new connection */
-	connection = mrcp_server_agent_connection_add(agent,message.descriptor);
 	/* send answer */
 	if(agent->vtable && agent->vtable->answer) {
 		agent->vtable->answer(agent,message.handle,connection,answer);
@@ -367,6 +370,28 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 
 static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
+	char buffer[2048];
+	apr_size_t size = sizeof(buffer)-1;
+	apr_status_t status;
+
+	if(!connection || !connection->sock) {
+		return FALSE;
+	}
+	
+	status = apr_socket_recv(connection->sock, buffer, &size);
+	if(status == APR_EOF || size == 0) {
+		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Disconnected\n");
+		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
+		apr_socket_close(connection->sock);
+		connection->sock = NULL;
+		if(!connection->access_count) {
+			apr_pool_destroy(connection->pool);
+		}
+		return TRUE;
+	}
+	buffer[size] = '\0';
+
+	apt_log(APT_PRIO_DEBUG,"Receive MRCPv2 Message size=%lu\n%s",size,buffer);
 	return TRUE;
 }
 

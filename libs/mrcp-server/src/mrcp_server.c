@@ -385,12 +385,19 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_t *server, mrcp
 	
 	/* update existing terminations */
 	for(i=0; i<count; i++) {
+		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		/* get existing termination */
 		termination = *((mpf_termination_t**)session->terminations->elts + i);
 		if(!termination) continue;
 
+		/* construct termination descriptor */
+		rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
+		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+		rtp_descriptor->audio.local = NULL;
+		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
+
 		/* send modify termination request */
-		mpf_request_send(server,MPF_COMMAND_MODIFY,session->context,termination,NULL);
+		mpf_request_send(server,MPF_COMMAND_MODIFY,session->context,termination,rtp_descriptor);
 	}
 	
 	/* add new terminations */
@@ -467,6 +474,40 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_t *server, mrcp_se
 	return status;
 }
 
+static apt_bool_t mrcp_server_control_answer_process(mrcp_server_t *server, const connection_agent_message_t *message)
+{
+	mrcp_control_descriptor_t *answer = message->descriptor;
+	apt_log(APT_PRIO_DEBUG,"On Control Channel Answer");
+	if(answer) {
+		mrcp_server_session_t *session = (mrcp_server_session_t*)message->channel->session;
+		message->channel->connection = message->connection;
+		answer->session_id = session->base.id;
+		
+		mrcp_session_control_media_add(session->answer,answer);
+
+		if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
+			mrcp_server_session_answer_send(server,session);
+		}
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_server_media_answer_process(mrcp_server_t *server, mrcp_server_session_t *session, const mpf_message_t *mpf_message)
+{
+	if(session && session->answer) {
+		mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
+		if(rtp_descriptor->audio.local) {
+			session->answer->ip = rtp_descriptor->audio.local->base.ip;
+			mrcp_session_audio_media_add(session->answer,rtp_descriptor->audio.local);
+
+			if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
+				mrcp_server_session_answer_send(server,session);
+			}
+		}
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
@@ -493,18 +534,10 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			const connection_agent_message_t *connection_message = (const connection_agent_message_t*)msg->data;
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_ANSWER:
-					apt_log(APT_PRIO_DEBUG,"On Control Channel Answer");
-					if(connection_message->descriptor) {
-						mrcp_server_session_t *session = (mrcp_server_session_t*)connection_message->channel->session;
-						connection_message->channel->connection = connection_message->connection;
-						
-						mrcp_session_control_media_add(session->answer,connection_message->descriptor);
-
-						if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
-							mrcp_server_session_answer_send(server,session);
-						}
-					}
+				{
+					mrcp_server_control_answer_process(server,connection_message);
 					break;
+				}
 				default:
 					break;
 			}
@@ -520,19 +553,11 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 				if(mpf_message->command_id == MPF_COMMAND_ADD) {
 					apt_log(APT_PRIO_DEBUG,"On Add Termination");
-					if(session && session->answer) {
-						mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
-						if(rtp_descriptor->audio.local) {
-							mrcp_session_audio_media_add(session->answer,rtp_descriptor->audio.local);
-
-							if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
-								mrcp_server_session_answer_send(server,session);
-							}
-						}
-					}
+					mrcp_server_media_answer_process(server,session,mpf_message);
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_MODIFY) {
 					apt_log(APT_PRIO_DEBUG,"On Modify Termination");
+					mrcp_server_media_answer_process(server,session,mpf_message);
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
 					apt_log(APT_PRIO_DEBUG,"On Subtract Termination");

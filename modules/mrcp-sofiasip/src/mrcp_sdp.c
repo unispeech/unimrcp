@@ -27,7 +27,7 @@
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_descriptor);
 
 static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media, const sdp_media_t *sdp_media, apr_pool_t *pool);
-static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, apr_pool_t *pool);
+static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 static apt_bool_t mpf_media_generate(mpf_media_descriptor_t *media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 
 /** Generate SDP string by MRCP descriptor */
@@ -150,7 +150,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 				mrcp_control_descriptor_t *control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
 				mrcp_control_descriptor_init(control_media);
 				control_media->id = mrcp_session_control_media_add(descriptor,control_media);
-				mrcp_control_media_generate(control_media,sdp_media,pool);
+				mrcp_control_media_generate(control_media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
 			default:
@@ -256,7 +256,7 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media
 }
 
 /** Generate MRCP control media by SDP media */
-static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control_media, const sdp_media_t *sdp_media, apr_pool_t *pool)
+static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool)
 {
 	mrcp_attrib_e id;
 	apt_str_t name;
@@ -300,7 +300,7 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 		apt_string_assign(&control_media->ip,sdp_media->m_connections->c_address,pool);
 	}
 	else {
-//		control_media->ip = *ip;
+		control_media->ip = *ip;
 	}
 	control_media->port = (apr_port_t)sdp_media->m_port;
 	return TRUE;
