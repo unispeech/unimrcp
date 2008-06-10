@@ -69,17 +69,30 @@ APT_DECLARE(void) mrcp_server_connection_agent_handler_set(
 								const mrcp_connection_event_vtable_t *vtable);
 
 /**
- * Offer MRCPv2 connection descriptor.
- * @param agent the connection agent to offer descriptor to
- * @param handle the communication handle to answer to the offer with
+ * Modify MRCPv2 connection.
+ * @param agent the connection agent
+ * @param handle the communication handle to response with
  * @param connection the connection (NULL on the first offer)
  * @param descriptor the control descriptor
  */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(
+APT_DECLARE(apt_bool_t) mrcp_server_connection_modify(
 								mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
 								mrcp_control_descriptor_t *descriptor,
+								apr_pool_t *pool);
+
+/**
+ * Remove MRCPv2 connection.
+ * @param agent the connection agent
+ * @param handle the communication handle to response with
+ * @param connection the connection
+ * @param descriptor the control descriptor
+ */
+APT_DECLARE(apt_bool_t) mrcp_server_connection_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
 								apr_pool_t *pool);
 
 /**
@@ -96,10 +109,12 @@ APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent
 
 
 struct mrcp_connection_event_vtable_t {
-	apt_bool_t (*answer)(		mrcp_connection_agent_t *agent,
+	apt_bool_t (*on_modify)(	mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
 								mrcp_control_descriptor_t *descriptor);
+	apt_bool_t (*on_remove)(	mrcp_connection_agent_t *agent,
+								void *handle);
 };
 
 APT_END_EXTERN_C

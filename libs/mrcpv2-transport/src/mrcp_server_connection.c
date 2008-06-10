@@ -31,6 +31,7 @@ struct mrcp_connection_t {
 
 	mrcp_control_descriptor_t *descriptor;
 	size_t                     access_count;
+	apt_list_elem_t           *it;
 };
 
 struct mrcp_connection_agent_t {
@@ -54,7 +55,8 @@ struct mrcp_connection_agent_t {
 };
 
 typedef enum {
-	CONNECTION_AGENT_MESSAGE_OFFER,
+	CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION,
+	CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION,
 	CONNECTION_AGENT_MESSAGE_TERMINATE
 }connection_agent_message_type_e ;
 
@@ -139,17 +141,18 @@ APT_DECLARE(void) mrcp_server_connection_agent_handler_set(mrcp_connection_agent
 }
 
 
-/** Offer MRCPv2 connection descriptor */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent_t *agent,
-												  void *handle,
-												  mrcp_connection_t *connection,
-												  mrcp_control_descriptor_t *descriptor,
-												  apr_pool_t *pool)
+/** Modify MRCPv2 connection descriptor */
+APT_DECLARE(apt_bool_t) mrcp_server_connection_modify(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor,
+								apr_pool_t *pool)
 {
 	if(agent->control_sock) {
 		connection_agent_message_t message;
 		apr_size_t size = sizeof(connection_agent_message_t);
-		message.type = CONNECTION_AGENT_MESSAGE_OFFER;
+		message.type = CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION;
 		message.agent = agent;
 		message.handle = handle;
 		message.connection = connection;
@@ -159,6 +162,28 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_offer(mrcp_connection_agent
 	}
 	return TRUE;
 }
+
+/** Remove MRCPv2 connection */
+APT_DECLARE(apt_bool_t) mrcp_server_connection_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								apr_pool_t *pool)
+{
+	if(agent->control_sock) {
+		connection_agent_message_t message;
+		apr_size_t size = sizeof(connection_agent_message_t);
+		message.type = CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION;
+		message.agent = agent;
+		message.handle = handle;
+		message.connection = connection;
+		message.descriptor = NULL;
+		message.pool = pool;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+	}
+	return TRUE;
+}
+
 
 /** Get task */
 APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent)
@@ -265,7 +290,7 @@ static mrcp_connection_t* mrcp_server_agent_connection_add(mrcp_connection_agent
 	connection->descriptor = descriptor;
 	connection->sock = NULL;
 	connection->access_count = 1;
-	apt_list_push_back(agent->connection_list,connection);
+	connection->it = apt_list_push_back(agent->connection_list,connection);
 	return connection;
 }
 
@@ -323,9 +348,6 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
-	mrcp_control_descriptor_t *answer = NULL;
-	mrcp_connection_t *connection = NULL;
-
 	connection_agent_message_t message;
 	apr_size_t size = sizeof(connection_agent_message_t);
 	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&message, &size);
@@ -333,36 +355,63 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 		return FALSE;
 	}
 
-	if(message.type == CONNECTION_AGENT_MESSAGE_TERMINATE) {
-		return FALSE;
-	}
+	switch(message.type) {
+		case CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION:
+		{
+			mrcp_connection_t *connection = NULL;
+			mrcp_control_descriptor_t *answer;
+			answer = apr_palloc(message.pool,sizeof(mrcp_control_descriptor_t));
+			mrcp_control_descriptor_init(answer);
+			*answer = *message.descriptor;
+			answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
+			if(answer->port) {
+				answer->port = agent->sockaddr->port;
 
-	answer = apr_palloc(message.pool,sizeof(mrcp_control_descriptor_t));
-	mrcp_control_descriptor_init(answer);
-	*answer = *message.descriptor;
-	answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
-	if(answer->port) {
-		answer->port = agent->sockaddr->port;
-
-		if(message.descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
-			connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
-			if(connection) {
-				/* send answer */
-				if(agent->vtable && agent->vtable->answer) {
-					agent->vtable->answer(agent,message.handle,message.connection,answer);
+				if(message.descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
+					connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
+					if(connection) {
+						/* send answer */
+						if(agent->vtable && agent->vtable->on_modify) {
+							agent->vtable->on_modify(agent,message.handle,message.connection,answer);
+						}
+						break;
+					}
+					/* no existing connection found, proceed with the new oen */
+					answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
 				}
-				return TRUE;
+				
+				/* create new connection */
+				connection = mrcp_server_agent_connection_add(agent,message.descriptor);
 			}
-			/* no existing connection found, proceed with the new oen */
-			answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
+			/* send answer */
+			if(agent->vtable && agent->vtable->on_modify) {
+				agent->vtable->on_modify(agent,message.handle,connection,answer);
+			}
+			break;
 		}
-		
-		/* create new connection */
-		connection = mrcp_server_agent_connection_add(agent,message.descriptor);
-	}
-	/* send answer */
-	if(agent->vtable && agent->vtable->answer) {
-		agent->vtable->answer(agent,message.handle,connection,answer);
+		case CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION:
+		{
+			mrcp_connection_t *connection = message.connection;
+			if(connection && connection->access_count) {
+				connection->access_count--;
+				if(!connection->access_count) {
+					/* remove from the list */
+					if(connection->it) {
+						apt_list_elem_remove(agent->connection_list,connection->it);
+					}
+					if(!connection->sock) {
+						apr_pool_destroy(connection->pool);
+					}
+				}
+			}
+			/* send response */
+			if(agent->vtable && agent->vtable->on_remove) {
+				agent->vtable->on_remove(agent,message.handle);
+			}
+			break;
+		}
+		case CONNECTION_AGENT_MESSAGE_TERMINATE:
+			return FALSE;
 	}
 
 	return TRUE;

@@ -122,7 +122,8 @@ static const mrcp_session_method_vtable_t session_method_vtable = {
 
 /* Connection agent interface */
 typedef enum {
-	CONNECTION_AGENT_TASK_MSG_ANSWER,
+	CONNECTION_AGENT_TASK_MSG_MODIFY,
+	CONNECTION_AGENT_TASK_MSG_REMOVE,
 	CONNECTION_AGENT_TASK_MSG_TERMINATE
 } connection_agent_task_msg_type_e ;
 
@@ -134,14 +135,18 @@ struct connection_agent_message_t {
 	mrcp_control_descriptor_t *descriptor;
 };
 
-static apt_bool_t mrcp_server_channel_answer(
+static apt_bool_t mrcp_server_channel_on_modify(
 								mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
 								mrcp_control_descriptor_t *descriptor);
+static apt_bool_t mrcp_server_channel_on_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle);
 
 static const mrcp_connection_event_vtable_t connection_method_vtable = {
-	mrcp_server_channel_answer
+	mrcp_server_channel_on_modify,
+	mrcp_server_channel_on_remove
 };
 
 /* Media interface */
@@ -349,7 +354,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server,
 		/* get control descriptor */
 		control_descriptor = mrcp_session_control_media_get(descriptor,i);
 		/* send offer */
-		mrcp_server_connection_agent_offer(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
+		mrcp_server_connection_modify(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
 	}
 	
 	/* add new control channels */
@@ -366,7 +371,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server,
 		*slot = channel;
 
 		/* send offer */
-		mrcp_server_connection_agent_offer(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
+		mrcp_server_connection_modify(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
 	}
 
 	return TRUE;
@@ -451,6 +456,22 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_t *server, mrcp_
 
 static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_t *server, mrcp_session_t *session)
 {
+	int i;
+	mrcp_server_session_t *server_session = (mrcp_server_session_t*)session;
+	for(i=0; i<server_session->channels->nelts; i++) {
+		mrcp_channel_t *channel = ((mrcp_channel_t**)server_session->channels->elts)[i];
+		if(channel) {
+			/* send remove channel request */
+			mrcp_server_connection_remove(server->connection_agent,channel,channel->connection,channel->pool);
+		}
+	}
+	for(i=0; i<server_session->terminations->nelts; i++) {
+		mpf_termination_t *termination = ((mpf_termination_t**)server_session->terminations->elts)[i];
+		if(termination) {
+			/* send subtract termination request */
+			mpf_request_send(server,MPF_COMMAND_SUBTRACT,server_session->context,termination,NULL);
+		}
+	}
 	apt_log(APT_PRIO_INFO,"Process Session Terminate");
 	apr_hash_set(server->session_table,session->id.buf,session->id.length,NULL);
 	return TRUE;
@@ -474,7 +495,7 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_t *server, mrcp_se
 	return status;
 }
 
-static apt_bool_t mrcp_server_control_answer_process(mrcp_server_t *server, const connection_agent_message_t *message)
+static apt_bool_t mrcp_server_on_channel_modify(mrcp_server_t *server, const connection_agent_message_t *message)
 {
 	mrcp_control_descriptor_t *answer = message->descriptor;
 	apt_log(APT_PRIO_DEBUG,"On Control Channel Answer");
@@ -492,7 +513,41 @@ static apt_bool_t mrcp_server_control_answer_process(mrcp_server_t *server, cons
 	return TRUE;
 }
 
-static apt_bool_t mrcp_server_media_answer_process(mrcp_server_t *server, mrcp_server_session_t *session, const mpf_message_t *mpf_message)
+static apt_bool_t mrcp_server_on_channel_remove(mrcp_server_t *server, const connection_agent_message_t *message)
+{
+	int i;
+	apt_bool_t empty = TRUE;
+	mrcp_server_session_t *session = (mrcp_server_session_t*)message->channel->session;
+	if(!session) {
+		return FALSE;
+	}
+	for(i=0; i<session->channels->nelts; i++) {
+		mrcp_channel_t *channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(channel == message->channel) {
+			((mrcp_channel_t**)session->channels->elts)[i] = NULL;
+		}
+		else {
+			empty = FALSE;
+		}
+	}
+	if(empty == TRUE) {
+		for(i=0; i<session->terminations->nelts; i++) {
+			mpf_termination_t *termination = ((mpf_termination_t**)session->terminations->elts)[i];
+			if(termination) {
+				empty = FALSE;
+				break;
+			}
+		}
+		if(empty == TRUE) {
+			mrcp_session_on_terminate(&session->base);
+		}
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_t *server, mrcp_server_session_t *session, const mpf_message_t *mpf_message)
 {
 	if(session && session->answer) {
 		mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
@@ -503,6 +558,36 @@ static apt_bool_t mrcp_server_media_answer_process(mrcp_server_t *server, mrcp_s
 			if(mrcp_server_session_answer_is_ready(session->offer,session->answer) == TRUE) {
 				mrcp_server_session_answer_send(server,session);
 			}
+		}
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_t *server, mrcp_server_session_t *session, const mpf_message_t *mpf_message)
+{
+	int i;
+	apt_bool_t empty = TRUE;
+	for(i=0; i<session->terminations->nelts; i++) {
+		mpf_termination_t *termination = ((mpf_termination_t**)session->terminations->elts)[i];
+		if(!termination) continue;
+
+		if(termination == mpf_message->termination) {
+			((mpf_termination_t**)session->terminations->elts)[i] = NULL;
+		}
+		else {
+			empty = FALSE;
+		}
+	}
+	if(empty == TRUE) {
+		for(i=0; i<session->channels->nelts; i++) {
+			mrcp_channel_t *channel = ((mrcp_channel_t**)session->channels->elts)[i];
+			if(channel) {
+				empty = FALSE;
+				break;
+			}
+		}
+		if(empty == TRUE) {
+			mrcp_session_on_terminate(&session->base);
 		}
 	}
 	return TRUE;
@@ -533,9 +618,16 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		{
 			const connection_agent_message_t *connection_message = (const connection_agent_message_t*)msg->data;
 			switch(msg->sub_type) {
-				case CONNECTION_AGENT_TASK_MSG_ANSWER:
+				case CONNECTION_AGENT_TASK_MSG_MODIFY:
 				{
-					mrcp_server_control_answer_process(server,connection_message);
+					apt_log(APT_PRIO_DEBUG,"On Modify Control Channel");
+					mrcp_server_on_channel_modify(server,connection_message);
+					break;
+				}
+				case CONNECTION_AGENT_TASK_MSG_REMOVE:
+				{
+					apt_log(APT_PRIO_DEBUG,"On Remove Control Channel");
+					mrcp_server_on_channel_remove(server,connection_message);
 					break;
 				}
 				default:
@@ -553,14 +645,15 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 				if(mpf_message->command_id == MPF_COMMAND_ADD) {
 					apt_log(APT_PRIO_DEBUG,"On Add Termination");
-					mrcp_server_media_answer_process(server,session,mpf_message);
+					mrcp_server_on_termination_modify(server,session,mpf_message);
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_MODIFY) {
 					apt_log(APT_PRIO_DEBUG,"On Modify Termination");
-					mrcp_server_media_answer_process(server,session,mpf_message);
+					mrcp_server_on_termination_modify(server,session,mpf_message);
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
 					apt_log(APT_PRIO_DEBUG,"On Subtract Termination");
+					mrcp_server_on_termination_subtract(server,session,mpf_message);
 				}
 			}
 			else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
@@ -630,7 +723,7 @@ static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session)
 
 
 /* Connection interface */
-static apt_bool_t mrcp_server_channel_answer(
+static apt_bool_t mrcp_server_channel_on_modify(
 								mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
@@ -641,12 +734,31 @@ static apt_bool_t mrcp_server_channel_answer(
 	connection_agent_message_t *message;
 	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->connection_msg_pool);
 	task_msg->type = MRCP_SERVER_CONNECTION_TASK_MSG;
-	task_msg->sub_type = CONNECTION_AGENT_TASK_MSG_ANSWER;
+	task_msg->sub_type = CONNECTION_AGENT_TASK_MSG_MODIFY;
 	message = (connection_agent_message_t*) task_msg->data;
 	message->agent = agent;
 	message->channel = handle;
 	message->connection = connection;
 	message->descriptor = descriptor;
+
+	return apt_task_msg_signal(task,task_msg);
+}
+
+static apt_bool_t mrcp_server_channel_on_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle)
+{
+	mrcp_server_t *server = mrcp_server_connection_agent_object_get(agent);
+	apt_task_t *task = apt_consumer_task_base_get(server->task);
+	connection_agent_message_t *message;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->connection_msg_pool);
+	task_msg->type = MRCP_SERVER_CONNECTION_TASK_MSG;
+	task_msg->sub_type = CONNECTION_AGENT_TASK_MSG_REMOVE;
+	message = (connection_agent_message_t*) task_msg->data;
+	message->agent = agent;
+	message->channel = handle;
+	message->connection = NULL;
+	message->descriptor = NULL;
 
 	return apt_task_msg_signal(task,task_msg);
 }
