@@ -26,9 +26,8 @@
 
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_descriptor);
 
-static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media, const sdp_media_t *sdp_media, apr_pool_t *pool);
+static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
-static apt_bool_t mpf_media_generate(mpf_media_descriptor_t *media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 
 /** Generate SDP string by MRCP descriptor */
 MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, apt_bool_t offer)
@@ -117,7 +116,6 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
-	mpf_media_descriptor_t *base;
 	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
 
 	if(sdp->sdp_connection) {
@@ -125,15 +123,13 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 	}
 
 	for(sdp_media=sdp->sdp_media; sdp_media; sdp_media=sdp_media->m_next) {
-		base = NULL;
 		switch(sdp_media->m_type) {
 			case sdp_media_audio:
 			{
 				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 				mpf_rtp_media_descriptor_init(media);
 				media->base.id = mrcp_session_audio_media_add(descriptor,media);
-				base = &media->base;
-				mpf_rtp_media_generate(media,sdp_media,pool);
+				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
 			case sdp_media_video:
@@ -141,8 +137,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 				mpf_rtp_media_descriptor_init(media);
 				media->base.id = mrcp_session_video_media_add(descriptor,media);
-				base = &media->base;
-				mpf_rtp_media_generate(media,sdp_media,pool);
+				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
 			case sdp_media_application:
@@ -154,11 +149,8 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 				break;
 			}
 			default:
-				apt_log(APT_PRIO_INFO,"Not Supported SDP Media [%s]\n", sdp_media->m_type_name);
+				apt_log(APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
 				break;
-		}
-		if(base) {
-			mpf_media_generate(base,sdp_media,&descriptor->ip,pool);
 		}
 	}
 	return descriptor;
@@ -205,7 +197,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 }
 
 /** Generate RTP media descriptor by SDP media */
-static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media, const sdp_media_t *sdp_media, apr_pool_t *pool)
+static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool)
 {
 	mpf_rtp_attrib_e id;
 	apt_str_t name;
@@ -217,19 +209,19 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media
 		id = mpf_rtp_attrib_id_find(&name);
 		switch(id) {
 			case RTP_ATTRIB_MID:
-				audio_media->mid = atoi(attrib->a_value);
+				rtp_media->mid = atoi(attrib->a_value);
 				break;
 			case RTP_ATTRIB_PTIME:
-				audio_media->ptime = (apr_uint16_t)atoi(attrib->a_value);
+				rtp_media->ptime = (apr_uint16_t)atoi(attrib->a_value);
 				break;
 			default:
 				break;
 		}
 	}
 
-	mpf_codec_list_init(&audio_media->codec_list,5,pool);
+	mpf_codec_list_init(&rtp_media->codec_list,5,pool);
 	for(map = sdp_media->m_rtpmaps; map; map = map->rm_next) {
-		codec = mpf_codec_list_add(&audio_media->codec_list);
+		codec = mpf_codec_list_add(&rtp_media->codec_list);
 		if(codec) {
 			codec->payload_type = (apr_byte_t)map->rm_pt;
 			apt_string_assign(&codec->name,map->rm_encoding,pool);
@@ -240,17 +232,31 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *audio_media
 
 	switch(sdp_media->m_mode) {
 		case sdp_inactive:
-			audio_media->mode = STREAM_MODE_NONE;
+			rtp_media->mode = STREAM_MODE_NONE;
 			break;
 		case sdp_sendonly:
-			audio_media->mode = STREAM_MODE_SEND;
+			rtp_media->mode = STREAM_MODE_SEND;
 			break;
 		case sdp_recvonly:
-			audio_media->mode = STREAM_MODE_RECEIVE;
+			rtp_media->mode = STREAM_MODE_RECEIVE;
 			break;
 		case sdp_sendrecv:
-			audio_media->mode = STREAM_MODE_SEND_RECEIVE;
+			rtp_media->mode = STREAM_MODE_SEND_RECEIVE;
 			break;
+	}
+
+	if(sdp_media->m_connections) {
+		apt_string_assign(&rtp_media->base.ip,sdp_media->m_connections->c_address,pool);
+	}
+	else {
+		rtp_media->base.ip = *ip;
+	}
+	if(sdp_media->m_port) {
+		rtp_media->base.port = (apr_port_t)sdp_media->m_port;
+		rtp_media->base.state = MPF_MEDIA_ENABLED;
+	}
+	else {
+		rtp_media->base.state = MPF_MEDIA_DISABLED;
 	}
 	return TRUE;
 }
@@ -265,7 +271,7 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 	apt_string_set(&name,sdp_media->m_proto_name);
 	control_media->proto = mrcp_proto_find(&name);
 	if(control_media->proto != MRCP_PROTO_TCP) {
-		apt_log(APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]\n",sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP));
+		apt_log(APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]",sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP));
 		return FALSE;
 	}
 	
@@ -303,24 +309,5 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 		control_media->ip = *ip;
 	}
 	control_media->port = (apr_port_t)sdp_media->m_port;
-	return TRUE;
-}
-
-/** Generate media descriptor base by SDP media */
-static apt_bool_t mpf_media_generate(mpf_media_descriptor_t *media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool)
-{
-	if(sdp_media->m_connections) {
-		apt_string_assign(&media->ip,sdp_media->m_connections->c_address,pool);
-	}
-	else {
-		media->ip = *ip;
-	}
-	if(sdp_media->m_port) {
-		media->port = (apr_port_t)sdp_media->m_port;
-		media->state = MPF_MEDIA_ENABLED;
-	}
-	else {
-		media->state = MPF_MEDIA_DISABLED;
-	}
 	return TRUE;
 }
