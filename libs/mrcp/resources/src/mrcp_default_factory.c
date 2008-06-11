@@ -17,6 +17,7 @@
 #include "mrcp_default_factory.h"
 #include "mrcp_synth_resource.h"
 #include "mrcp_recog_resource.h"
+#include "apt_log.h"
 
 /** String table of MRCPv1 resources (mrcp_resource_types_e) */
 static const apt_str_table_item_t mrcp_v1_resource_string_table[] = {
@@ -34,8 +35,10 @@ static const apt_str_table_item_t mrcp_v2_resource_string_table[] = {
 MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *pool)
 {
 	mrcp_resource_t *resource;
+	mrcp_resource_factory_t *resource_factory;
 	/* create resource factory instance */
-	mrcp_resource_factory_t *resource_factory = mrcp_resource_factory_create(MRCP_RESOURCE_TYPE_COUNT,pool);
+	apt_log(APT_PRIO_NOTICE,"Create MRCP Resource Factory [%d]",MRCP_RESOURCE_TYPE_COUNT);
+	resource_factory = mrcp_resource_factory_create(MRCP_RESOURCE_TYPE_COUNT,pool);
 	if(!resource_factory) {
 		return NULL;
 	}
@@ -47,11 +50,13 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *p
 	/* create and register resources */
 	resource = mrcp_synth_resource_create(pool);
 	if(resource) {
+		apt_log(APT_PRIO_NOTICE,"Register Synthesizer Resource");
 		mrcp_resource_register(resource_factory,resource,MRCP_SYNTHESIZER_RESOURCE);
 	}
 	
 	resource = mrcp_recog_resource_create(pool);
 	if(resource) {
+		apt_log(APT_PRIO_NOTICE,"Register Recognizer Resource");
 		mrcp_resource_register(resource_factory,resource,MRCP_RECOGNIZER_RESOURCE);
 	}
 

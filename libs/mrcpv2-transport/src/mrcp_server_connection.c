@@ -83,7 +83,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	apt_task_vtable_t vtable;
 	mrcp_connection_agent_t *agent;
 	
-	apt_log(APT_PRIO_NOTICE,"Create MRCPv2 Agent TCP %s:%hu",listen_ip,listen_port);
+	apt_log(APT_PRIO_NOTICE,"Create MRCPv2 Connection Agent [TCP] %s:%hu",listen_ip,listen_port);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
 	agent->sockaddr = NULL;

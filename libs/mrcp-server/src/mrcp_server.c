@@ -340,7 +340,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server,
 	int i;
 	int count = session->channels->nelts;
 	if(count > descriptor->control_media_arr->nelts) {
-		apt_log(APT_PRIO_WARNING,"Number of control channels [%d] > Number of control media in offer [%d]\n",
+		apt_log(APT_PRIO_WARNING,"Number of control channels [%d] > Number of control media in offer [%d]",
 			count,descriptor->control_media_arr->nelts);
 		count = descriptor->control_media_arr->nelts;
 	}
@@ -354,6 +354,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server,
 		/* get control descriptor */
 		control_descriptor = mrcp_session_control_media_get(descriptor,i);
 		/* send offer */
+		apt_log(APT_PRIO_DEBUG,"Modify Control Channel");
 		mrcp_server_connection_modify(server->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
 	}
 	
@@ -367,6 +368,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_t *server,
 		/* create new MRCP channel instance */
 		channel = mrcp_server_channel_create(&session->base,&control_descriptor->resource_name);
 		/* add to channel array */
+		apt_log(APT_PRIO_DEBUG,"Add Control Channel");
 		slot = apr_array_push(session->channels);
 		*slot = channel;
 
@@ -402,6 +404,7 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_t *server, mrcp
 		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
 
 		/* send modify termination request */
+		apt_log(APT_PRIO_DEBUG,"Modify Termination");
 		mpf_request_send(server,MPF_COMMAND_MODIFY,session->context,termination,rtp_descriptor);
 	}
 	
@@ -412,6 +415,7 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_t *server, mrcp
 		/* create new RTP termination instance */
 		termination = mpf_termination_create(server->rtp_termination_factory,session,session->base.pool);
 		/* add to termination array */
+		apt_log(APT_PRIO_DEBUG,"Add Termination");
 		slot = apr_array_push(session->terminations);
 		*slot = termination;
 
@@ -431,24 +435,29 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_t *server, mrcp
 static apt_bool_t mrcp_server_session_offer_process(mrcp_server_t *server, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	mrcp_server_session_t *server_session = (mrcp_server_session_t*)session;
-	apt_log(APT_PRIO_INFO,"Process Session Offer");
 	if(server_session->offer) {
 		/* last offer received is still in-progress, new offer is not allowed */
-		apt_log(APT_PRIO_INFO,"Cannot Accept New Offer");
+		apt_log(APT_PRIO_WARNING,"Cannot Accept New Offer");
 		return FALSE;
 	}
 	if(!session->id.length) {
 		/* initial offer received, generate session id and add to session's table */
 		apt_unique_id_generate(&session->id,MRCP_SESSION_ID_HEX_STRING_LENGTH,server->pool);
+		apt_log(APT_PRIO_NOTICE,"Add Session <%s>",session->id.buf);
 		apr_hash_set(server->session_table,session->id.buf,session->id.length,session);
 
 		server_session->context = mpf_context_create(server_session,5,session->pool);
 	}
+	apt_log(APT_PRIO_INFO,"Process Session Offer <%s> [control:%d audio:%d video:%d]",
+		session->id.buf,
+		descriptor->control_media_arr->nelts,
+		descriptor->audio_media_arr->nelts,
+		descriptor->video_media_arr->nelts);
 
 	mrcp_server_control_media_offer_process(server,server_session,descriptor);
 	mrcp_server_av_media_offer_process(server,server_session,descriptor);
 
-	/* store last received offer */
+	/* store received offer */
 	server_session->offer = descriptor;
 	server_session->answer = mrcp_session_descriptor_create(session->pool);
 	return TRUE;
@@ -458,10 +467,12 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_t *server, m
 {
 	int i;
 	mrcp_server_session_t *server_session = (mrcp_server_session_t*)session;
+	apt_log(APT_PRIO_INFO,"Process Session Terminate");
 	for(i=0; i<server_session->channels->nelts; i++) {
 		mrcp_channel_t *channel = ((mrcp_channel_t**)server_session->channels->elts)[i];
 		if(channel) {
 			/* send remove channel request */
+			apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
 			mrcp_server_connection_remove(server->connection_agent,channel,channel->connection,channel->pool);
 		}
 	}
@@ -469,10 +480,11 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_t *server, m
 		mpf_termination_t *termination = ((mpf_termination_t**)server_session->terminations->elts)[i];
 		if(termination) {
 			/* send subtract termination request */
+			apt_log(APT_PRIO_DEBUG,"Subtract Termination");
 			mpf_request_send(server,MPF_COMMAND_SUBTRACT,server_session->context,termination,NULL);
 		}
 	}
-	apt_log(APT_PRIO_INFO,"Process Session Terminate");
+	apt_log(APT_PRIO_NOTICE,"Remove Session <%s>",session->id.buf);
 	apr_hash_set(server->session_table,session->id.buf,session->id.length,NULL);
 	return TRUE;
 }
@@ -498,7 +510,7 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_t *server, mrcp_se
 static apt_bool_t mrcp_server_on_channel_modify(mrcp_server_t *server, const connection_agent_message_t *message)
 {
 	mrcp_control_descriptor_t *answer = message->descriptor;
-	apt_log(APT_PRIO_DEBUG,"On Control Channel Answer");
+	apt_log(APT_PRIO_DEBUG,"On Control Channel Modify");
 	if(answer) {
 		mrcp_server_session_t *session = (mrcp_server_session_t*)message->channel->session;
 		message->channel->connection = message->connection;
@@ -521,6 +533,7 @@ static apt_bool_t mrcp_server_on_channel_remove(mrcp_server_t *server, const con
 	if(!session) {
 		return FALSE;
 	}
+	apt_log(APT_PRIO_DEBUG,"On Control Channel Remove");
 	for(i=0; i<session->channels->nelts; i++) {
 		mrcp_channel_t *channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(!channel) continue;
@@ -549,6 +562,7 @@ static apt_bool_t mrcp_server_on_channel_remove(mrcp_server_t *server, const con
 
 static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_t *server, mrcp_server_session_t *session, const mpf_message_t *mpf_message)
 {
+	apt_log(APT_PRIO_DEBUG,"On Termination Modify");
 	if(session && session->answer) {
 		mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
 		if(rtp_descriptor->audio.local) {
@@ -567,6 +581,7 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_t *server, mrc
 {
 	int i;
 	apt_bool_t empty = TRUE;
+	apt_log(APT_PRIO_DEBUG,"On Termination Subtract");
 	for(i=0; i<session->terminations->nelts; i++) {
 		mpf_termination_t *termination = ((mpf_termination_t**)session->terminations->elts)[i];
 		if(!termination) continue;
@@ -597,7 +612,7 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
-	apt_log(APT_PRIO_DEBUG,"Process Message");
+	apt_log(APT_PRIO_DEBUG,"Process Server Task Message [%d]", msg->type);
 	switch(msg->type) {
 		case MRCP_SERVER_SIGNALING_TASK_MSG:
 		{
@@ -620,13 +635,11 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_MODIFY:
 				{
-					apt_log(APT_PRIO_DEBUG,"On Modify Control Channel");
 					mrcp_server_on_channel_modify(server,connection_message);
 					break;
 				}
 				case CONNECTION_AGENT_TASK_MSG_REMOVE:
 				{
-					apt_log(APT_PRIO_DEBUG,"On Remove Control Channel");
 					mrcp_server_on_channel_remove(server,connection_message);
 					break;
 				}
@@ -644,15 +657,12 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			}
 			if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 				if(mpf_message->command_id == MPF_COMMAND_ADD) {
-					apt_log(APT_PRIO_DEBUG,"On Add Termination");
 					mrcp_server_on_termination_modify(server,session,mpf_message);
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_MODIFY) {
-					apt_log(APT_PRIO_DEBUG,"On Modify Termination");
 					mrcp_server_on_termination_modify(server,session,mpf_message);
 				}
 				else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
-					apt_log(APT_PRIO_DEBUG,"On Subtract Termination");
 					mrcp_server_on_termination_subtract(server,session,mpf_message);
 				}
 			}
@@ -703,7 +713,7 @@ static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_sessio
 	message->session = session;
 	message->descriptor = descriptor;
 
-	apt_log(APT_PRIO_DEBUG,"Session Offer");
+	apt_log(APT_PRIO_DEBUG,"Signal Session Offer");
 	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
@@ -717,7 +727,7 @@ static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session)
 	data->session = session;
 	data->descriptor = NULL;
 
-	apt_log(APT_PRIO_DEBUG,"Session Terminate");
+	apt_log(APT_PRIO_DEBUG,"Signal Session Terminate");
 	return apt_task_msg_parent_signal(session->signaling_agent->task,msg);
 }
 

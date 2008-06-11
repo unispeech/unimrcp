@@ -73,7 +73,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
-
+	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP Agent %s:%hu",config->local_ip,config->local_port);
 	return sofia_agent->sig_agent;
 }
 
@@ -160,7 +160,7 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,FALSE) > 0) {
 		local_sdp_str = sdp_str;
-		apt_log(APT_PRIO_INFO,"Local SDP\n[%s]", local_sdp_str);
+		apt_log(APT_PRIO_INFO,"Local SDP\n%s", local_sdp_str);
 	}
 
 	nua_respond(sofia_session->nh, SIP_200_OK, 
@@ -176,6 +176,10 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 {
 	mrcp_sofia_session_t *sofia_session = session->obj;
 	if(sofia_session) {
+		if(sofia_session->session) {
+			mrcp_session_destroy(sofia_session->session);
+			sofia_session->session = NULL;
+		}
 		if(sofia_session->nh) {
 			nua_handle_bind(sofia_session->nh, NULL);
 			nua_handle_destroy(sofia_session->nh);
@@ -243,7 +247,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 	}
 
 	if(remote_sdp_str) {
-		apt_log(APT_PRIO_INFO,"Remote SDP\n[%s]", remote_sdp_str);
+		apt_log(APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 		sdp = sdp_session(parser);		

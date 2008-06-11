@@ -17,6 +17,7 @@
 #include "mpf_termination.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mpf_rtp_stream.h"
+#include "apt_log.h"
 
 typedef struct rtp_termination_factory_t rtp_termination_factory_t;
 struct rtp_termination_factory_t {
@@ -67,5 +68,6 @@ MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
 	rtp_termination_factory->config.rtp_port_min = port_min;
 	rtp_termination_factory->config.rtp_port_max = port_max;
 	rtp_termination_factory->config.rtp_port_cur = port_min;
+	apt_log(APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",ip,port_min,port_max);
 	return &rtp_termination_factory->base;
 }
