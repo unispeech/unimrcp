@@ -4,6 +4,7 @@ INCLUDES                    = -I$(top_srcdir)/platforms/libunimrcp-client/includ
                               -I$(top_srcdir)/modules/mrcp-sofiasip/include \
                               -I$(top_srcdir)/libs/mrcp-client/include \
                               -I$(top_srcdir)/libs/mrcp-signaling/include \
+                              -I$(top_srcdir)/libs/mrcpv2-transport/include \
                               -I$(top_srcdir)/libs/mrcp/include \
                               -I$(top_srcdir)/libs/mrcp/message/include \
                               -I$(top_srcdir)/libs/mrcp/control/include \
