@@ -95,7 +95,7 @@ typedef enum {
 	MRCP_SERVER_SIGNALING_TASK_MSG = TASK_MSG_USER,
 	MRCP_SERVER_CONNECTION_TASK_MSG,
 	MRCP_SERVER_MEDIA_TASK_MSG
-} mrcp_server_task_msg_type_e ;
+} mrcp_server_task_msg_type_e;
 
 
 /* Signaling agent interface */
@@ -254,6 +254,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 /** Register MRCP resource factory */
 MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *server, mrcp_resource_factory_t *resource_factory)
 {
+	if(!resource_factory) {
+		return FALSE;
+	}
 	server->resource_factory = resource_factory;
 	return TRUE;
 }
