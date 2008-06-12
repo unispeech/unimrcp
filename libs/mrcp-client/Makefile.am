@@ -13,6 +13,6 @@ INCLUDES                    = -I$(top_srcdir)/libs/mrcp-client/include \
 
 noinst_LTLIBRARIES          = libmrcpclient.la
 
-include_HEADERS             = include/mrcp_client.h
+include_HEADERS             = include/mrcp_client.h include/mrcp_application.h
 
 libmrcpclient_la_SOURCES    = src/mrcp_client.c
