@@ -293,7 +293,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 	if(!signaling_agent) {
 		return FALSE;
 	}
-	signaling_agent->create_session = mrcp_server_session_create;
+	signaling_agent->create_server_session = mrcp_server_session_create;
 	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sig_agent_message_t),server->pool);
 	server->signaling_agent = signaling_agent;
 	if(server->task) {
@@ -689,7 +689,7 @@ static mrcp_session_t* mrcp_server_session_create()
 
 	session->context = NULL;
 	session->terminations = apr_array_make(session->base.pool,2,sizeof(mpf_termination_t*));
-	session->channels = apr_array_make(session->base.pool,2,sizeof(void*));
+	session->channels = apr_array_make(session->base.pool,2,sizeof(mrcp_channel_t*));
 	session->offer = NULL;
 	session->answer = NULL;
 	return &session->base;

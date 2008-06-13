@@ -24,7 +24,8 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(apr_pool_t *pool)
 	sig_agent->obj = NULL;
 	sig_agent->task = NULL;
 	sig_agent->msg_pool = NULL;
-	sig_agent->create_session = NULL;
+	sig_agent->create_server_session = NULL;
+	sig_agent->create_client_session = NULL;
 	return sig_agent;
 }
 

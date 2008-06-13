@@ -203,7 +203,7 @@ static const mrcp_session_event_vtable_t session_event_vtable = {
 static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia_agent, nua_handle_t *nh)
 {
 	mrcp_sofia_session_t *sofia_session;
-	mrcp_session_t* session = sofia_agent->sig_agent->create_session();
+	mrcp_session_t* session = sofia_agent->sig_agent->create_server_session();
 	session->signaling_agent = sofia_agent->sig_agent;
 	session->event_vtable = &session_event_vtable;
 
