@@ -23,33 +23,107 @@
  */ 
 
 #include "mrcp_sig_types.h"
+#include "mpf_rtp_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
 /** Opaque MRCP application declaration */
 typedef struct mrcp_application_t mrcp_application_t;
+/** Opaque MRCP channel declaration */
+typedef struct mrcp_channel_t mrcp_channel_t;
 
-/** 
+/** MRCP application event handlers vtable declaration */
+typedef struct mrcp_application_vtable_t mrcp_application_vtable_t;
+
+/**
+ * Create application instance.
+ * @param obj the external object
+ * @param vtable the event handlers
+ * @param pool the memory pool to allocate memory from
+ */
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, const mrcp_application_vtable_t *vtable, apr_pool_t *pool);
+
+/**
+ * Destroy application instance.
+ * @param application the application to destroy
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *application);
+
+
+/**
  * Create client session.
  * @param application the entire application
- * @param object the external object
+ * @param obj the external object
  * @return the created session instance
  */
-mrcp_session_t* mrcp_client_session_create(mrcp_application_t *application, void *object);
+MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj);
 
 /** 
- * Destroy client session (session must be terminated prior to destroy).
- * @param application the entire application
- * @param session the session to destroy
+ * Send session update request.
+ * @param session the session to update
  */
-apt_bool_t mrcp_client_session_destroy(mrcp_application_t *application, mrcp_session_t *session);
+MRCP_DECLARE(apt_bool_t) mrcp_application_session_update(mrcp_session_t *session);
 
 /** 
  * Send session termination request.
- * @param application the entire application
  * @param session the session to terminate
  */
-apt_bool_t mrcp_client_session_terminate(mrcp_application_t *application, mrcp_session_t *session);
+MRCP_DECLARE(apt_bool_t) mrcp_application_session_terminate(mrcp_session_t *session);
+
+/** 
+ * Destroy client session (session must be terminated prior to destroy).
+ * @param session the session to destroy
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *session);
+
+
+/** 
+ * Create control channel.
+ * @param session the session to create channel for
+ * @param termination the media termination
+ * @param obj the external object
+ */
+MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mpf_termination_t *termination, void *obj);
+
+/** 
+ * Send channel add/modify request.
+ * @param session the session to create channel for
+ * @param channel the control channel
+ * @param descriptor the descriptor of RTP termination assoiciated with control channel (NULL by default)
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_modify(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor);
+
+/** 
+ * Send MRCP message.
+ * @param session the session
+ * @param channel the control channel
+ * @param message the MRCP message to send
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
+
+/** 
+ * Remove channel.
+ * @param session the session to remove channel from
+ * @param channel the control channel to remove
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session, mrcp_channel_t *channel);
+
+/** 
+ * Destroy channel.
+ * @param channel the control channel to destroy
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_destroy(mrcp_channel_t *channel);
+
+
+/** MRCP application event handlers vtable */
+struct mrcp_application_vtable_t {
+	apt_bool_t (*on_session_update)(mrcp_application_t *application, mrcp_session_t *session);
+	apt_bool_t (*on_session_terminate)(mrcp_application_t *application, mrcp_session_t *session);
+	
+	apt_bool_t (*on_channel_modify)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor);
+	apt_bool_t (*on_message_receive)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
+	apt_bool_t (*on_channel_remove)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor);
+};
 
 
 APT_END_EXTERN_C
