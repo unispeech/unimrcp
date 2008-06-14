@@ -312,7 +312,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *cl
 	if(!connection_agent) {
 		return FALSE;
 	}
-/*	mrcp_client_connection_agent_handler_set(connection_agent,client,&connection_method_vtable);
+//	mrcp_client_connection_agent_handler_set(connection_agent,client,&connection_method_vtable);
 	client->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_message_t),client->pool);
 	client->connection_agent = connection_agent;
 	if(client->task) {
@@ -320,7 +320,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *cl
 		apt_task_t *connection_task = mrcp_client_connection_agent_task_get(connection_agent);
 		apt_task_add(task,connection_task);
 	}
-*/	return TRUE;
+	return TRUE;
 }
 
 /** Get memory pool */
@@ -459,8 +459,11 @@ static void mrcp_client_on_terminate_complete(apt_task_t *task)
 
 static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
-//	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
-//	mrcp_client_t *client = apt_consumer_task_object_get(consumer_task);
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_client_t *client = apt_consumer_task_object_get(consumer_task);
+	if(!client) {
+		return FALSE;
+	}
 	apt_log(APT_PRIO_DEBUG,"Process Client Task Message [%d]", msg->type);
 	switch(msg->type) {
 		case MRCP_CLIENT_SIGNALING_TASK_MSG:

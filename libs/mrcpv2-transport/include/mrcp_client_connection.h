@@ -22,7 +22,7 @@
  * @brief MRCPv2 Client Connection Agent
  */ 
 
-#include "mrcp_types.h"
+#include "apt_task.h"
 #include "mrcp_connection_types.h"
 
 APT_BEGIN_EXTERN_C
@@ -32,25 +32,78 @@ APT_BEGIN_EXTERN_C
  * @param obj the external object to associate with the agent
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_agent_create(void *obj, apr_pool_t *pool);
+APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_connection_agent_create(apr_pool_t *pool);
 
 /**
  * Destroy connection agent.
  * @param agent the agent to destroy
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_destroy(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_destroy(mrcp_connection_agent_t *agent);
 
 /**
  * Start connection agent and wait for incoming requests.
  * @param agent the agent to start
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_start(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_start(mrcp_connection_agent_t *agent);
 
 /**
  * Terminate connection agent.
  * @param agent the agent to terminate
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_terminate(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_terminate(mrcp_connection_agent_t *agent);
+
+
+/**
+ * Set connection event handler.
+ * @param agent the agent to set event hadler for
+ * @param obj the external object to associate with the agent
+ * @param vtable the event handler virtual methods
+ */
+APT_DECLARE(void) mrcp_client_connection_agent_handler_set(
+								mrcp_connection_agent_t *agent, 
+								void *obj, 
+								const mrcp_connection_event_vtable_t *vtable);
+
+/**
+ * Modify MRCPv2 connection.
+ * @param agent the connection agent
+ * @param handle the communication handle to response with
+ * @param connection the connection (NULL on the first offer)
+ * @param descriptor the control descriptor
+ */
+APT_DECLARE(apt_bool_t) mrcp_client_connection_modify(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor,
+								apr_pool_t *pool);
+
+/**
+ * Remove MRCPv2 connection.
+ * @param agent the connection agent
+ * @param handle the communication handle to response with
+ * @param connection the connection
+ * @param descriptor the control descriptor
+ */
+APT_DECLARE(apt_bool_t) mrcp_client_connection_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								apr_pool_t *pool);
+
+/**
+ * Get task.
+ * @param agent the agent to get task from
+ */
+APT_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent);
+
+/**
+ * Get external object.
+ * @param agent the agent to get object from
+ */
+APT_DECLARE(void*) mrcp_client_connection_agent_object_get(mrcp_connection_agent_t *agent);
+
+
 
 
 APT_END_EXTERN_C

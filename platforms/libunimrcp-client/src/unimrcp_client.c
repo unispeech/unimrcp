@@ -32,7 +32,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_start()
 	mrcp_resource_factory_t *resource_factory;
 	mpf_engine_t *media_engine;
 	mrcp_sig_agent_t *sig_agent;
-//	mrcp_connection_agent_t *connection_agent;
+	mrcp_connection_agent_t *connection_agent;
 	mrcp_client_t *client = mrcp_client_create();
 	if(!client) {
 		return NULL;
@@ -59,12 +59,11 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_start()
 	if(sig_agent) {
 		mrcp_client_signaling_agent_register(client,sig_agent);
 	}
-/*	connection_agent = mrcp_client_connection_agent_create(
-			"127.0.0.1",1554,pool);
+	connection_agent = mrcpv2_client_connection_agent_create(pool);
 	if(connection_agent) {
 		mrcp_client_connection_agent_register(client,connection_agent);
 	}
-*/
+
 	mrcp_client_start(client);
 	return client;
 }

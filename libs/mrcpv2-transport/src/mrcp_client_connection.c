@@ -43,7 +43,7 @@ static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task);
 
 /** Create connection agent. */
-APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_agent_create(void *obj, apr_pool_t *pool)
+APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_connection_agent_create(apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
 	mrcp_connection_agent_t *agent;
@@ -73,22 +73,66 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_agent_create(void *obj, apr_
 }
 
 /** Destroy connection agent. */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_destroy(mrcp_connection_agent_t *agent)
+APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
 	return TRUE;
 }
 
 /** Start connection agent. */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_start(mrcp_connection_agent_t *agent)
+APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_start(mrcp_connection_agent_t *agent)
 {
 	return TRUE;
 }
 
 /** Terminate connection agent. */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_terminate(mrcp_connection_agent_t *agent)
+APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_terminate(mrcp_connection_agent_t *agent)
 {
 	return TRUE;
 }
+
+/** Set connection event handler. */
+APT_DECLARE(void) mrcp_client_connection_agent_handler_set(mrcp_connection_agent_t *agent, 
+									void *obj, const mrcp_connection_event_vtable_t *vtable)
+{
+	agent->obj = obj;
+	agent->vtable = vtable;
+}
+
+
+/** Modify MRCPv2 connection descriptor */
+APT_DECLARE(apt_bool_t) mrcp_client_connection_modify(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor,
+								apr_pool_t *pool)
+{
+	return TRUE;
+}
+
+/** Remove MRCPv2 connection */
+APT_DECLARE(apt_bool_t) mrcp_client_connection_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								apr_pool_t *pool)
+{
+	return TRUE;
+}
+
+
+/** Get task */
+APT_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent)
+{
+	return agent->task;
+}
+
+/** Get external object */
+APT_DECLARE(void*) mrcp_client_connection_agent_object_get(mrcp_connection_agent_t *agent)
+{
+	return agent->obj;
+}
+
 
 
 static apt_bool_t mrcp_client_agent_socket_create(mrcp_connection_agent_t *agent)
