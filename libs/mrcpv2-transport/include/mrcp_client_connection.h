@@ -23,36 +23,34 @@
  */ 
 
 #include "mrcp_types.h"
+#include "mrcp_connection_types.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Opaque MRCPv2 client connection agent */
-typedef struct mrcpv2_client_agent_t mrcpv2_client_agent_t;
 
 /**
  * Create connection agent.
  * @param obj the external object to associate with the agent
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(mrcpv2_client_agent_t*) mrcpv2_client_agent_create(void *obj, apr_pool_t *pool);
+APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_agent_create(void *obj, apr_pool_t *pool);
 
 /**
  * Destroy connection agent.
  * @param agent the agent to destroy
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_destroy(mrcpv2_client_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcpv2_client_agent_destroy(mrcp_connection_agent_t *agent);
 
 /**
  * Start connection agent and wait for incoming requests.
  * @param agent the agent to start
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_start(mrcpv2_client_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcpv2_client_agent_start(mrcp_connection_agent_t *agent);
 
 /**
  * Terminate connection agent.
  * @param agent the agent to terminate
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_agent_terminate(mrcpv2_client_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcpv2_client_agent_terminate(mrcp_connection_agent_t *agent);
 
 
 APT_END_EXTERN_C

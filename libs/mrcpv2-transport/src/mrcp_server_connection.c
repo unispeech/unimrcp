@@ -97,7 +97,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 		return NULL;
 	}
 	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,listen_port,0,agent->pool);
-	if(!agent->sockaddr) {
+	if(!agent->control_sockaddr) {
 		return NULL;
 	}
 

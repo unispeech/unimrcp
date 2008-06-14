@@ -37,6 +37,18 @@ typedef struct mrcp_connection_t mrcp_connection_t;
 typedef struct mrcp_connection_agent_t mrcp_connection_agent_t;
 
 
+typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
+struct mrcp_connection_event_vtable_t {
+	apt_bool_t (*on_modify)(	mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor);
+	apt_bool_t (*on_remove)(	mrcp_connection_agent_t *agent,
+								void *handle);
+};
+
+
+
 APT_END_EXTERN_C
 
 #endif /*__MRCP_CONNECTION_TYPES_H__*/

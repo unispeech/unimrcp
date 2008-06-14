@@ -27,8 +27,6 @@
 
 APT_BEGIN_EXTERN_C
 
-typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
-
 /**
  * Create connection agent.
  * @param obj the external object to associate with the agent
@@ -107,15 +105,6 @@ APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_a
  */
 APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent_t *agent);
 
-
-struct mrcp_connection_event_vtable_t {
-	apt_bool_t (*on_modify)(	mrcp_connection_agent_t *agent,
-								void *handle,
-								mrcp_connection_t *connection,
-								mrcp_control_descriptor_t *descriptor);
-	apt_bool_t (*on_remove)(	mrcp_connection_agent_t *agent,
-								void *handle);
-};
 
 APT_END_EXTERN_C
 
