@@ -23,6 +23,17 @@
 
 #define MRCP_CONNECTION_MAX_COUNT 10
 
+struct mrcp_connection_t {
+	apr_pool_t                *pool;
+
+	apr_socket_t              *sock; /* accepted socket */
+	apr_pollfd_t               sock_pfd;
+
+	mrcp_control_descriptor_t *descriptor;
+	size_t                     access_count;
+	apt_list_elem_t           *it;
+};
+
 struct mrcp_connection_agent_t {
 	apr_pool_t     *pool;
 	apt_task_t     *task;
@@ -38,6 +49,23 @@ struct mrcp_connection_agent_t {
 	void                                 *obj;
 	const mrcp_connection_event_vtable_t *vtable;
 };
+
+typedef enum {
+	CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION,
+	CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION,
+	CONNECTION_AGENT_MESSAGE_TERMINATE
+}connection_agent_message_type_e ;
+
+typedef struct connection_agent_message_t connection_agent_message_t;
+struct connection_agent_message_t {
+	connection_agent_message_type_e type;
+	mrcp_connection_agent_t        *agent;
+	void                           *handle;
+	mrcp_connection_t              *connection;
+	mrcp_control_descriptor_t      *descriptor;
+	apr_pool_t                     *pool;
+};
+
 
 static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task);
@@ -75,19 +103,20 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_connection_agent_create(apr_
 /** Destroy connection agent. */
 APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
-	return TRUE;
+	apt_log(APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	return apt_task_destroy(agent->task);
 }
 
 /** Start connection agent. */
 APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_start(mrcp_connection_agent_t *agent)
 {
-	return TRUE;
+	return apt_task_start(agent->task);
 }
 
 /** Terminate connection agent. */
 APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_terminate(mrcp_connection_agent_t *agent)
 {
-	return TRUE;
+	return apt_task_terminate(agent->task,TRUE);
 }
 
 /** Set connection event handler. */
@@ -154,7 +183,7 @@ static apt_bool_t mrcp_client_agent_socket_create(mrcp_connection_agent_t *agent
 	}
 
 	/* create pollset */
-	status = apr_pollset_create(&agent->pollset, MRCP_CONNECTION_MAX_COUNT + 2, agent->pool, 0);
+	status = apr_pollset_create(&agent->pollset, MRCP_CONNECTION_MAX_COUNT + 1, agent->pool, 0);
 	if(status != APR_SUCCESS) {
 		return FALSE;
 	}
@@ -175,6 +204,43 @@ static apt_bool_t mrcp_client_agent_socket_create(mrcp_connection_agent_t *agent
 
 static apt_bool_t mrcp_client_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
+	connection_agent_message_t message;
+	apr_size_t size = sizeof(connection_agent_message_t);
+	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&message, &size);
+	if(status == APR_EOF || size == 0) {
+		return FALSE;
+	}
+
+	switch(message.type) {
+		case CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION:
+		{
+			break;
+		}
+		case CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION:
+		{
+			mrcp_connection_t *connection = message.connection;
+			if(connection && connection->access_count) {
+				connection->access_count--;
+				if(!connection->access_count) {
+					/* remove from the list */
+					if(connection->it) {
+						apt_list_elem_remove(agent->connection_list,connection->it);
+					}
+					if(!connection->sock) {
+						apr_pool_destroy(connection->pool);
+					}
+				}
+			}
+			/* send response */
+			if(agent->vtable && agent->vtable->on_remove) {
+				agent->vtable->on_remove(agent,message.handle);
+			}
+			break;
+		}
+		case CONNECTION_AGENT_MESSAGE_TERMINATE:
+			return FALSE;
+	}
+
 	return TRUE;
 }
 
@@ -228,5 +294,14 @@ static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task)
 
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task)
 {
+	mrcp_connection_agent_t *agent = apt_task_object_get(task);
+	if(agent->control_sock) {
+		connection_agent_message_t message;
+		apr_size_t size = sizeof(connection_agent_message_t);
+		message.type = CONNECTION_AGENT_MESSAGE_TERMINATE;
+		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size) != APR_SUCCESS) {
+			apt_log(APT_PRIO_WARNING,"Failed to Send Control Message");
+		}
+	}
 	return TRUE;
 }
