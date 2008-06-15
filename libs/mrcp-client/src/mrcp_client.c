@@ -17,7 +17,6 @@
 #include <apr_hash.h>
 #include <apr_tables.h>
 #include "mrcp_client.h"
-#include "mrcp_application.h"
 #include "mrcp_resource_factory.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_connection.h"
@@ -140,6 +139,21 @@ struct connection_agent_message_t {
 	mrcp_connection_t         *connection;
 	mrcp_control_descriptor_t *descriptor;
 };
+
+static apt_bool_t mrcp_client_channel_on_modify(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor);
+static apt_bool_t mrcp_client_channel_on_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle);
+
+static const mrcp_connection_event_vtable_t connection_method_vtable = {
+	mrcp_client_channel_on_modify,
+	mrcp_client_channel_on_remove
+};
+
 
 /* Application interface */
 typedef enum {
@@ -312,7 +326,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *cl
 	if(!connection_agent) {
 		return FALSE;
 	}
-//	mrcp_client_connection_agent_handler_set(connection_agent,client,&connection_method_vtable);
+	mrcp_client_connection_agent_handler_set(connection_agent,client,&connection_method_vtable);
 	client->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_message_t),client->pool);
 	client->connection_agent = connection_agent;
 	if(client->task) {
@@ -320,6 +334,16 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *cl
 		apt_task_t *connection_task = mrcp_client_connection_agent_task_get(connection_agent);
 		apt_task_add(task,connection_task);
 	}
+	return TRUE;
+}
+
+/** Register MRCP application */
+MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application)
+{
+	if(!application) {
+		return FALSE;
+	}
+	application->client = client;
 	return TRUE;
 }
 
@@ -494,6 +518,22 @@ static apt_bool_t mrcp_client_session_answer(mrcp_session_t *session, mrcp_sessi
 }
 
 static apt_bool_t mrcp_client_session_terminate(mrcp_session_t *session)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_channel_on_modify(
+								mrcp_connection_agent_t *agent,
+								void *handle,
+								mrcp_connection_t *connection,
+								mrcp_control_descriptor_t *descriptor)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_channel_on_remove(
+								mrcp_connection_agent_t *agent,
+								void *handle)
 {
 	return TRUE;
 }

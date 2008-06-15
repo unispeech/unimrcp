@@ -24,6 +24,7 @@
 
 #include "mrcp_sig_types.h"
 #include "mrcp_connection_types.h"
+#include "mrcp_application.h"
 #include "mpf_types.h"
 #include "apt_task.h"
 
@@ -92,6 +93,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *cli
  * @param connection_agent the connection agent to set
  */
 MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *client, mrcp_connection_agent_t *connection_agent);
+
+/**
+ * Register MRCP application.
+ * @param client the MRCP client to set application for
+ * @param application the application to set
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application);
 
 /**
  * Get memory pool.

@@ -23,6 +23,7 @@
  */ 
 
 #include "mrcp_sig_types.h"
+#include "mpf_types.h"
 #include "mpf_rtp_descriptor.h"
 
 APT_BEGIN_EXTERN_C
