@@ -16,8 +16,6 @@
 
 #include "demo_application.h"
 
-static apt_bool_t synth_application_event_handler(const mrcp_application_event_t *app_event);
-
 static apt_bool_t synth_application_on_session_update(demo_application_t *application, mrcp_session_t *session)
 {
 	return TRUE;
