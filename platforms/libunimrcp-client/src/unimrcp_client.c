@@ -26,7 +26,7 @@ static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool);
 static mrcp_sig_agent_t* mrcpv1_sig_agent_create(apr_pool_t *pool);
 
 /** Start UniMRCP client */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_start()
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create()
 {
 	apr_pool_t *pool;
 	mrcp_resource_factory_t *resource_factory;
@@ -64,17 +64,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_start()
 		mrcp_client_connection_agent_register(client,connection_agent);
 	}
 
-	mrcp_client_start(client);
 	return client;
-}
-
-/** Shutdown UniMRCP client */
-MRCP_DECLARE(apt_bool_t) unimrcp_client_shutdown(mrcp_client_t *client)
-{
-	if(mrcp_client_shutdown(client) == FALSE) {
-		return FALSE;
-	}
-	return mrcp_client_destroy(client);
 }
 
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool)

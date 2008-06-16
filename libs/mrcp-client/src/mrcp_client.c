@@ -57,7 +57,7 @@ struct mrcp_client_t {
 
 struct mrcp_application_t {
 	void                            *obj;
-	const mrcp_application_vtable_t *vtable;
+	mrcp_application_event_handler_f event_handler;
 	mrcp_client_t                   *client;
 };
 
@@ -358,11 +358,11 @@ MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(mrcp_client_t *client)
 
 
 /** Create application instance */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, const mrcp_application_vtable_t *vtable, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_application_event_handler_f event_handler, apr_pool_t *pool)
 {
 	mrcp_application_t *application = apr_palloc(pool,sizeof(mrcp_application_t));
 	application->obj = obj;
-	application->vtable = vtable;
+	application->event_handler = event_handler;
 	application->client = NULL;
 	return application;
 }

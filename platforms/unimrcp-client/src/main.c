@@ -15,23 +15,22 @@
  */
 
 #include <stdio.h>
-#include "unimrcp_client.h"
+#include "demo_framework.h"
 
 int main(int argc, const char * const *argv)
 {
-	mrcp_client_t *client;
-	
+	demo_framework_t *framework;
 	if(apr_initialize() != APR_SUCCESS) {
 		apr_terminate();
 		return 0;
 	}
 
-	client = unimrcp_client_start();
-	if(client) {
+	framework = demo_framework_create();
+	if(framework) {
 		getchar();
-		unimrcp_client_shutdown(client);
+		demo_framework_destroy(framework);
 	}
-
+	
 	apr_terminate();
 	return 0;
 }

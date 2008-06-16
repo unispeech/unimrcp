@@ -14,5 +14,7 @@ INCLUDES               = -Iinclude \
                          $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
 
 bin_PROGRAMS           = unimrcpclient
-unimrcpclient_SOURCES  = src/main.c
+unimrcpclient_SOURCES  = src/main.c \
+                         src/demo_framework.c \
+                         src/demo_synth_application.c
 unimrcpclient_LDADD    = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la

@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef __UNIMRCP_CLIENT_H__
-#define __UNIMRCP_CLIENT_H__
+#ifndef __DEMO_FRAMEWORK_H__
+#define __DEMO_FRAMEWORK_H__
 
 /**
- * @file unimrcp_client.h
- * @brief UniMRCP Client
+ * @file demo_framework.h
+ * @brief Demo MRCP Application Framework
  */ 
 
-#include "mrcp_client.h"
+#include "mrcp_types.h"
 
 APT_BEGIN_EXTERN_C
 
-/**
- * Create UniMRCP client.
- */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create();
+/** Opaque demo framework declaration */
+typedef struct demo_framework_t demo_framework_t;
 
+/** 
+ * Create demo framework.
+ */
+demo_framework_t* demo_framework_create();
+
+/** 
+ * Destroy demo framework.
+ * @param framework the framework to destroy
+ */
+apt_bool_t demo_framework_destroy(demo_framework_t *framework);
 
 APT_END_EXTERN_C
 
-#endif /*__UNIMRCP_CLIENT_H__*/
+#endif /*__DEMO_FRAMEWORK_H__*/
