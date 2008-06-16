@@ -54,6 +54,11 @@ demo_framework_t* demo_framework_create()
 			demo_application->framework = framework;
 			mrcp_client_application_register(client,demo_application->application);
 		}
+
+		if(framework->task) {
+			apt_task_t *task = apt_consumer_task_base_get(framework->task);
+			apt_task_start(task);
+		}
 		 
 		mrcp_client_start(client);
 	}
@@ -67,10 +72,15 @@ apt_bool_t demo_framework_destroy(demo_framework_t *framework)
 	if(!framework) {
 		return FALSE;
 	}
-	
-	if(mrcp_client_shutdown(framework->client) == FALSE) {
-		return FALSE;
+
+	if(framework->task) {
+		apt_task_t *task = apt_consumer_task_base_get(framework->task);
+		apt_task_terminate(task,TRUE);
+		apt_task_destroy(task);
+		framework->task = NULL;
 	}
+
+	mrcp_client_shutdown(framework->client);
 	return mrcp_client_destroy(framework->client);
 }
 
