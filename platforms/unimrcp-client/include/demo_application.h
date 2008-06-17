@@ -40,6 +40,8 @@ struct demo_application_t {
 
 /** Demo application vtable */
 struct demo_application_vtable_t {
+	apt_bool_t (*run)(demo_application_t *application);
+
 	apt_bool_t (*on_session_update)(demo_application_t *application, mrcp_session_t *session);
 	apt_bool_t (*on_session_terminate)(demo_application_t *application, mrcp_session_t *session);
 	

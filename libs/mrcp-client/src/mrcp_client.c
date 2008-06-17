@@ -389,13 +389,19 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 	return &session->base;
 }
 
+/** Get external object associated with the application */
+APT_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
+{
+	return application->obj;
+}
+
 static apt_bool_t mrcp_application_task_msg_signal(int type, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message, mpf_rtp_media_descriptor_t *descriptor)
 {
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	mrcp_application_t *application = client_session->application;
 	apt_task_t *task = apt_consumer_task_base_get(application->client->task);
 	application_message_t *app_message;
-	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(application->client->application_msg_pool);
 	task_msg->type = MRCP_CLIENT_APPLICATION_TASK_MSG;
 	task_msg->sub_type = type;
 	app_message = (application_message_t*) task_msg->data;
@@ -504,6 +510,21 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		}
 		case MRCP_CLIENT_APPLICATION_TASK_MSG:
 		{
+//			const application_message_t *app_message = (const application_message_t*) msg->data;
+			switch(msg->sub_type) {
+				case APPLICATION_TASK_MSG_SESSION_UPDATE:
+					break;
+				case APPLICATION_TASK_MSG_SESSION_TERMINATE:
+					break;
+				case APPLICATION_TASK_MSG_CHANNEL_MODIFY:
+					break;
+				case APPLICATION_TASK_MSG_CHANNEL_REMOVE:
+					break;
+				case APPLICATION_TASK_MSG_MESSAGE_SEND:
+					break;
+				default:
+					break;
+			}
 			break;
 		}
 		default:

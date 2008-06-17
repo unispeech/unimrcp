@@ -78,6 +78,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
  */
 MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj);
 
+/**
+ * Get external object associated with the application.
+ * @param application the application to get object from
+ */
+APT_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application);
+
 /** 
  * Send session update request.
  * @param session the session to update

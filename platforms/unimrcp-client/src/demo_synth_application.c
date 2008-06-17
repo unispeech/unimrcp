@@ -16,32 +16,45 @@
 
 #include "demo_application.h"
 
-static apt_bool_t synth_application_on_session_update(demo_application_t *application, mrcp_session_t *session)
+static apt_bool_t synth_application_run(demo_application_t *demo_application)
+{
+	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,NULL);
+	if(session) {
+		mrcp_channel_t *channel = mrcp_application_channel_create(session,NULL,NULL);
+		if(channel) {
+			mrcp_application_channel_modify(session,channel,NULL);
+		}
+	}
+	return TRUE;
+}
+
+static apt_bool_t synth_application_on_session_update(demo_application_t *demo_application, mrcp_session_t *session)
 {
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_session_terminate(demo_application_t *application, mrcp_session_t *session)
+static apt_bool_t synth_application_on_session_terminate(demo_application_t *demo_application, mrcp_session_t *session)
 {
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_channel_modify(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor)
+static apt_bool_t synth_application_on_channel_modify(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor)
 {
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_message_receive(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
+static apt_bool_t synth_application_on_message_receive(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_channel_remove(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel)
+static apt_bool_t synth_application_on_channel_remove(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	return TRUE;
 }
 
 static const demo_application_vtable_t synth_application_vtable = {
+	synth_application_run,
 	synth_application_on_session_update,
 	synth_application_on_session_terminate,
 	synth_application_on_channel_modify,
