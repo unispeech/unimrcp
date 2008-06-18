@@ -185,11 +185,21 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 
 		/* negotiate local and remote media */
 		mpf_rtp_stream_media_negotiate(rtp_stream);
+	}
 
-		if(!descriptor->local) {
-			descriptor->local = rtp_stream->local_media;
+	if(!rtp_stream->local_media) {
+		/* cretae local media */
+		rtp_stream->local_media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
+		mpf_rtp_media_descriptor_init(rtp_stream->local_media);
+		mpf_rtp_stream_ip_port_set(rtp_stream->local_media,rtp_stream->config);
+		if(mpf_rtp_socket_create(rtp_stream,rtp_stream->local_media) == FALSE) {
+			return FALSE;
 		}
 	}
+	if(!descriptor->local) {
+		descriptor->local = rtp_stream->local_media;
+	}
+
 //	stream->mode = descriptor->mode;
 	return TRUE;
 }
