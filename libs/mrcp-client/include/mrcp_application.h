@@ -117,7 +117,7 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *se
  * @param channel the control channel
  * @param descriptor the descriptor of RTP termination assoiciated with control channel (NULL by default)
  */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_modify(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor);
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_modify(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
 
 /** 
  * Send MRCP message.

@@ -25,6 +25,7 @@
 #include "mrcp_control_descriptor.h"
 #include "mpf_termination.h"
 #include "mpf_engine.h"
+#include "mpf_user.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -166,12 +167,15 @@ typedef enum {
 
 typedef struct application_message_t application_message_t;
 struct application_message_t {
-	mrcp_session_t             *session;
-	mrcp_channel_t             *channel;
-	mrcp_message_t             *message;
-	mpf_rtp_media_descriptor_t *descriptor;
+	mrcp_session_t                   *session;
+	mrcp_channel_t                   *channel;
+	mrcp_message_t                   *message;
+	mpf_rtp_termination_descriptor_t *descriptor;
 };
 
+/* Media interface */
+static apt_bool_t mpf_request_send(mrcp_client_t *client, mpf_command_type_e command_id, 
+				mpf_context_t *context, mpf_termination_t *termination, void *descriptor);
 
 /* Task interface */
 static void mrcp_client_on_start_complete(apt_task_t *task);
@@ -395,7 +399,7 @@ APT_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
 	return application->obj;
 }
 
-static apt_bool_t mrcp_application_task_msg_signal(int type, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message, mpf_rtp_media_descriptor_t *descriptor)
+static apt_bool_t mrcp_application_task_msg_signal(int type, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message, mpf_rtp_termination_descriptor_t *descriptor)
 {
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	mrcp_application_t *application = client_session->application;
@@ -447,7 +451,7 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *se
 }
 
 /** Send channel add/modify request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_modify(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor)
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_modify(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor)
 {
 	apt_log(APT_PRIO_DEBUG,"Signal Channel Modify");
 	return mrcp_application_task_msg_signal(APPLICATION_TASK_MSG_CHANNEL_MODIFY,session,channel,NULL,descriptor);
@@ -487,6 +491,81 @@ static void mrcp_client_on_terminate_complete(apt_task_t *task)
 	apt_log(APT_PRIO_INFO,"On Client Task Terminate");
 }
 
+
+static apt_bool_t mrcp_client_channel_find(mrcp_client_session_t *session, mrcp_channel_t *channel)
+{
+	int i;
+	for(i=0; i<session->channels->nelts; i++) {
+		mrcp_channel_t *existing_channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(existing_channel == channel) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static apt_bool_t mrcp_client_channel_add(mrcp_client_t *client, mrcp_client_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *rtp_descriptor)
+{
+	mrcp_channel_t **channel_slot;
+	mrcp_control_descriptor_t *control_media;
+	mpf_termination_t **termination_slot;
+	mpf_termination_t *termination;
+	apr_pool_t *pool = session->base.pool;
+	if(!session->offer) {
+		session->offer = mrcp_session_descriptor_create(pool);
+		session->context = mpf_context_create(session,5,pool);
+	}
+	/* add to channel array */
+	apt_log(APT_PRIO_DEBUG,"Add Control Channel");
+	channel_slot = apr_array_push(session->channels);
+	*channel_slot = channel;
+	
+	/* create rtp termination */
+	termination = mpf_termination_create(client->rtp_termination_factory,session,session->base.pool);
+	/* add to channel array */
+	apt_log(APT_PRIO_DEBUG,"Add RTP Termination");
+	termination_slot = apr_array_push(session->terminations);
+	*termination_slot = termination;
+	/* send add termination request (add to media context) */
+	if(!rtp_descriptor) {
+		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
+		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+	}
+	mpf_request_send(client,MPF_COMMAND_ADD,session->context,termination,rtp_descriptor);
+
+	control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
+	mrcp_control_descriptor_init(control_media);
+	control_media->id = mrcp_session_control_media_add(session->offer,control_media);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_on_termination_add(mrcp_client_t *client, mrcp_client_session_t *session, const mpf_message_t *mpf_message)
+{
+	apt_log(APT_PRIO_DEBUG,"On Termination Add");
+	if(session && session->offer) {
+		mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_message->descriptor;
+		if(rtp_descriptor->audio.local) {
+			session->offer->ip = rtp_descriptor->audio.local->base.ip;
+			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
+
+			mrcp_session_offer(&session->base,session->offer);
+		}
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_t *client, mrcp_client_session_t *session, const mpf_message_t *mpf_message)
+{
+	apt_log(APT_PRIO_DEBUG,"On Termination Modify");
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_t *client, mrcp_client_session_t *session, const mpf_message_t *mpf_message)
+{
+	apt_log(APT_PRIO_DEBUG,"On Termination Subtract");
+	return TRUE;
+}
+
 static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
@@ -506,18 +585,47 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		}
 		case MRCP_CLIENT_MEDIA_TASK_MSG:
 		{
+			mrcp_client_session_t *session = NULL;
+			const mpf_message_t *mpf_message = (const mpf_message_t*) msg->data;
+			if(mpf_message->termination) {
+				session = mpf_termination_object_get(mpf_message->termination);
+			}
+			if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
+				if(mpf_message->command_id == MPF_COMMAND_ADD) {
+					mrcp_client_on_termination_add(client,session,mpf_message);
+				}
+				else if(mpf_message->command_id == MPF_COMMAND_MODIFY) {
+					mrcp_client_on_termination_modify(client,session,mpf_message);
+				}
+				else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
+					mrcp_client_on_termination_subtract(client,session,mpf_message);
+				}
+			}
+			else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
+				apt_log(APT_PRIO_DEBUG,"Process MPF Event");
+			}
 			break;
 		}
 		case MRCP_CLIENT_APPLICATION_TASK_MSG:
 		{
-//			const application_message_t *app_message = (const application_message_t*) msg->data;
+			const application_message_t *app_message = (const application_message_t*) msg->data;
 			switch(msg->sub_type) {
 				case APPLICATION_TASK_MSG_SESSION_UPDATE:
 					break;
 				case APPLICATION_TASK_MSG_SESSION_TERMINATE:
 					break;
 				case APPLICATION_TASK_MSG_CHANNEL_MODIFY:
+				{
+					mrcp_client_session_t *client_session = (mrcp_client_session_t*)app_message->session;
+					if(mrcp_client_channel_find(client_session,app_message->channel) == TRUE) {
+						/* update */
+					}
+					else {
+						/* new */
+						mrcp_client_channel_add(client,client_session,app_message->channel,app_message->descriptor);
+					}
 					break;
+				}
 				case APPLICATION_TASK_MSG_CHANNEL_REMOVE:
 					break;
 				case APPLICATION_TASK_MSG_MESSAGE_SEND:
@@ -557,4 +665,23 @@ static apt_bool_t mrcp_client_channel_on_remove(
 								void *handle)
 {
 	return TRUE;
+}
+
+/* Media interface */
+static apt_bool_t mpf_request_send(mrcp_client_t *client, mpf_command_type_e command_id, 
+				mpf_context_t *context, mpf_termination_t *termination, void *descriptor)
+{
+	apt_task_t *media_task = mpf_task_get(client->media_engine);
+	apt_task_msg_t *msg;
+	mpf_message_t *mpf_message;
+	msg = apt_task_msg_get(media_task);
+	msg->type = TASK_MSG_USER;
+	mpf_message = (mpf_message_t*) msg->data;
+
+	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
+	mpf_message->command_id = command_id;
+	mpf_message->context = context;
+	mpf_message->termination = termination;
+	mpf_message->descriptor = descriptor;
+	return apt_task_msg_signal(media_task,msg);
 }
