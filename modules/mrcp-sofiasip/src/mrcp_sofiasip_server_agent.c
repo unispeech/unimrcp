@@ -64,7 +64,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_ser
 	apt_task_vtable_t vtable;
 	mrcp_sofia_agent_t *sofia_agent;
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
-	sofia_agent->sig_agent = mrcp_signaling_agent_create(pool);
+	sofia_agent->sig_agent = mrcp_signaling_agent_create(sofia_agent,pool);
 	sofia_agent->config = config;
 	sofia_agent->root = NULL;
 	sofia_agent->nua = NULL;
@@ -192,8 +192,7 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 	return TRUE;
 }
 
-static const mrcp_session_event_vtable_t session_event_vtable = {
-	NULL, /*on_offer*/
+static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_sofia_on_session_answer,
 	mrcp_sofia_on_session_terminate
 };
@@ -205,7 +204,8 @@ static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia
 	mrcp_sofia_session_t *sofia_session;
 	mrcp_session_t* session = sofia_agent->sig_agent->create_server_session();
 	session->signaling_agent = sofia_agent->sig_agent;
-	session->event_vtable = &session_event_vtable;
+	session->response_vtable = &session_response_vtable;
+	session->event_vtable = NULL;
 
 	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
 	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
@@ -265,7 +265,7 @@ static void mrcp_sofia_on_call_terminate(mrcp_sofia_agent_t          *sofia_agen
 									     tagi_t                       tags[])
 {
 	if(sofia_session) {
-		mrcp_session_terminate(sofia_session->session);
+		mrcp_session_terminate_request(sofia_session->session);
 	}
 }
 

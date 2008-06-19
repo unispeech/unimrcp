@@ -118,12 +118,16 @@ struct sig_agent_message_t {
 };
 
 static apt_bool_t mrcp_client_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
-static apt_bool_t mrcp_client_session_terminate(mrcp_session_t *session);
+static apt_bool_t mrcp_client_session_terminate_response(mrcp_session_t *session);
+static apt_bool_t mrcp_client_session_terminate_event(mrcp_session_t *session);
 
-static const mrcp_session_method_vtable_t session_method_vtable = {
-	NULL, /* offer */
+static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_client_session_answer,
-	mrcp_client_session_terminate
+	mrcp_client_session_terminate_response
+};
+
+static const mrcp_session_event_vtable_t session_event_vtable = {
+	mrcp_client_session_terminate_event
 };
 
 /* Connection agent interface */
@@ -382,7 +386,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
 MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*) mrcp_session_create(sizeof(mrcp_client_session_t)-sizeof(mrcp_session_t));
-	session->base.method_vtable = &session_method_vtable;
+	session->base.response_vtable = &session_response_vtable;
+	session->base.event_vtable = &session_event_vtable;
 
 	session->application = application;
 	session->context = NULL;
@@ -512,6 +517,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_t *client, mrcp_client_ses
 	mpf_termination_t *termination;
 	apr_pool_t *pool = session->base.pool;
 	if(!session->offer) {
+		session->base.signaling_agent = client->signaling_agent;
+		client->signaling_agent->create_client_session(&session->base);
+
 		session->offer = mrcp_session_descriptor_create(pool);
 		session->context = mpf_context_create(session,5,pool);
 	}
@@ -646,7 +654,12 @@ static apt_bool_t mrcp_client_session_answer(mrcp_session_t *session, mrcp_sessi
 	return TRUE;
 }
 
-static apt_bool_t mrcp_client_session_terminate(mrcp_session_t *session)
+static apt_bool_t mrcp_client_session_terminate_response(mrcp_session_t *session)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_session_terminate_event(mrcp_session_t *session)
 {
 	return TRUE;
 }

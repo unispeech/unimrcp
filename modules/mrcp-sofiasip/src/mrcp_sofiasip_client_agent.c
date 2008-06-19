@@ -58,13 +58,16 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 									   sip_t const          *sip,
 									   tagi_t                tags[]);
 
+static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session);
+
 /** Create Sofia-SIP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_client_config_t *config, apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
 	mrcp_sofia_agent_t *sofia_agent;
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
-	sofia_agent->sig_agent = mrcp_signaling_agent_create(pool);
+	sofia_agent->sig_agent = mrcp_signaling_agent_create(sofia_agent,pool);
+	sofia_agent->sig_agent->create_client_session = mrcp_sofia_session_create;
 	sofia_agent->config = config;
 	sofia_agent->root = NULL;
 	sofia_agent->nua = NULL;
@@ -147,30 +150,28 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 }
 
 
-static apt_bool_t mrcp_sofia_on_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	return TRUE;
 }
 
-static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
+static apt_bool_t mrcp_sofia_session_terminate(mrcp_session_t *session)
 {
 	return TRUE;
 }
 
-static const mrcp_session_event_vtable_t session_event_vtable = {
-	mrcp_sofia_on_session_offer,
-	NULL, /*on_answer*/
-	mrcp_sofia_on_session_terminate
+static const mrcp_session_request_vtable_t session_request_vtable = {
+	mrcp_sofia_session_offer,
+	mrcp_sofia_session_terminate
 };
 
 
 static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session)
 {
-#if 0
 	mrcp_sofia_agent_t *sofia_agent = session->signaling_agent->obj;
 	mrcp_sofia_session_t *sofia_session;
-	session->signaling_agent = sofia_agent->sig_agent;
-	session->event_vtable = &session_event_vtable;
+//	session->signaling_agent = sofia_agent->sig_agent;
+	session->request_vtable = &session_request_vtable;
 
 	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
 	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
@@ -180,11 +181,10 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session)
 	sofia_session->nh = nua_handle(
 				sofia_agent->nua,
 				sofia_session,
-				SIPTAG_TO_STR(agent->sip_to_str),
-				SIPTAG_FROM_STR(agent->sip_from_str),
-				SIPTAG_CONTACT_STR(agent->sip_contact_str),
+//				SIPTAG_TO_STR(agent->sip_to_str),
+//				SIPTAG_FROM_STR(agent->sip_from_str),
+//				SIPTAG_CONTACT_STR(agent->sip_contact_str),
 				TAG_END());
-#endif
 	return TRUE;
 }
 

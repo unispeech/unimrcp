@@ -113,9 +113,8 @@ struct sig_agent_message_t {
 static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session);
 
-static const mrcp_session_method_vtable_t session_method_vtable = {
+static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_server_session_offer,
-	NULL, /* answer */
 	mrcp_server_session_terminate
 };
 
@@ -504,7 +503,7 @@ static apt_bool_t mrcp_server_session_answer_is_ready(const mrcp_session_descrip
 
 static apt_bool_t mrcp_server_session_answer_send(mrcp_server_t *server, mrcp_server_session_t *session)
 {
-	apt_bool_t status = mrcp_session_on_answer(&session->base,session->answer);
+	apt_bool_t status = mrcp_session_answer(&session->base,session->answer);
 	session->offer = NULL;
 	session->answer = NULL;
 	return status;
@@ -557,7 +556,7 @@ static apt_bool_t mrcp_server_on_channel_remove(mrcp_server_t *server, const con
 			}
 		}
 		if(empty == TRUE) {
-			mrcp_session_on_terminate(&session->base);
+			mrcp_session_terminate_response(&session->base);
 		}
 	}
 	return TRUE;
@@ -605,7 +604,7 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_t *server, mrc
 			}
 		}
 		if(empty == TRUE) {
-			mrcp_session_on_terminate(&session->base);
+			mrcp_session_terminate_response(&session->base);
 		}
 	}
 	return TRUE;
@@ -685,7 +684,7 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 static mrcp_session_t* mrcp_server_session_create()
 {
 	mrcp_server_session_t *session = (mrcp_server_session_t*) mrcp_session_create(sizeof(mrcp_server_session_t)-sizeof(mrcp_session_t));
-	session->base.method_vtable = &session_method_vtable;
+	session->base.request_vtable = &session_request_vtable;
 
 	session->context = NULL;
 	session->terminations = apr_array_make(session->base.pool,2,sizeof(mpf_termination_t*));
