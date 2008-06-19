@@ -18,7 +18,7 @@
 #include "mrcp_default_factory.h"
 #include "mpf_engine.h"
 #include "mpf_rtp_termination_factory.h"
-#include "mrcp_sofiasip_agent.h"
+#include "mrcp_sofiasip_client_agent.h"
 #include "mrcp_client_connection.h"
 #include "apt_log.h"
 
@@ -69,12 +69,12 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create()
 
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool)
 {
-	mrcp_sofia_config_t *config = mrcp_sofiasip_config_alloc(pool);
+	mrcp_sofia_client_config_t *config = mrcp_sofiasip_client_config_alloc(pool);
 	config->local_ip = "0.0.0.0";
 	config->local_port = 8062;
 	config->user_agent_name = "UniMRCP Sofia-SIP";
 	config->origin = "UniMRCPClient";
-	return mrcp_sofiasip_agent_create(config,pool);
+	return mrcp_sofiasip_client_agent_create(config,pool);
 }
 
 static mrcp_sig_agent_t* mrcpv1_sig_agent_create(apr_pool_t *pool)
