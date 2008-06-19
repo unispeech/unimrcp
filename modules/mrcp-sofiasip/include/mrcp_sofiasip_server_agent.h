@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef __MRCP_SOFIASIP_AGENT_H__
-#define __MRCP_SOFIASIP_AGENT_H__
+#ifndef __MRCP_SOFIASIP_SERVER_AGENT_H__
+#define __MRCP_SOFIASIP_SERVER_AGENT_H__
 
 /**
- * @file mrcp_sofiasip_agent.h
+ * @file mrcp_sofiasip_server_agent.h
  * @brief Implementation of MRCP Signaling Interface using Sofia-SIP
  */ 
 
@@ -28,10 +28,10 @@
 APT_BEGIN_EXTERN_C
 
 /** Sofia-SIP config declaration */
-typedef struct mrcp_sofia_config_t mrcp_sofia_config_t;
+typedef struct mrcp_sofia_server_config_t mrcp_sofia_server_config_t;
 
 /** Sofia-SIP config */
-struct mrcp_sofia_config_t {
+struct mrcp_sofia_server_config_t {
 	/** Local IP address to bind to */
 	char      *local_ip;
 	/** Local port to bind to */
@@ -52,13 +52,13 @@ struct mrcp_sofia_config_t {
 /**
  * Create Sofia-SIP signaling agent.
  */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *config, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_server_config_t *config, apr_pool_t *pool);
 
 /**
  * Allocate Sofia-SIP config.
  */
-MRCP_DECLARE(mrcp_sofia_config_t*) mrcp_sofiasip_config_alloc(apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_pool_t *pool);
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_SOFIASIP_AGENT_H__*/
+#endif /*__MRCP_SOFIASIP_SERVER_AGENT_H__*/

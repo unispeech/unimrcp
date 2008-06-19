@@ -26,17 +26,17 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sdp.h>
 
-#include "mrcp_sofiasip_agent.h"
+#include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_session.h"
 #include "mrcp_sdp.h"
 #include "apt_log.h"
 
 struct mrcp_sofia_agent_t {
-	mrcp_sig_agent_t    *sig_agent;
+	mrcp_sig_agent_t           *sig_agent;
 
-	mrcp_sofia_config_t *config;
-	su_root_t           *root;
-	nua_t               *nua;
+	mrcp_sofia_server_config_t *config;
+	su_root_t                  *root;
+	nua_t                      *nua;
 };
 
 struct mrcp_sofia_session_t {
@@ -59,7 +59,7 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 									   tagi_t                tags[]);
 
 /** Create Sofia-SIP Signaling Agent */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *config, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_server_config_t *config, apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
 	mrcp_sofia_agent_t *sofia_agent;
@@ -78,9 +78,9 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_agent_create(mrcp_sofia_config_t *
 }
 
 /** Allocate Sofia-SIP config */
-MRCP_DECLARE(mrcp_sofia_config_t*) mrcp_sofiasip_config_alloc(apr_pool_t *pool)
+MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_pool_t *pool)
 {
-	mrcp_sofia_config_t *config = apr_palloc(pool,sizeof(mrcp_sofia_config_t));
+	mrcp_sofia_server_config_t *config = apr_palloc(pool,sizeof(mrcp_sofia_server_config_t));
 	config->local_ip = NULL;
 	config->local_port = 0;
 	config->remote_ip = NULL;
