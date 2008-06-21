@@ -36,10 +36,6 @@ struct mrcp_sofia_server_config_t {
 	char      *local_ip;
 	/** Local port to bind to */
 	apr_port_t local_port;
-	/** Remote IP address */
-	char      *remote_ip;
-	/** Remote port */
-	apr_port_t remote_port;
 
 	/** SIP user name */
 	char      *user_name;
