@@ -18,6 +18,7 @@
 #include "demo_application.h"
 #include "unimrcp_client.h"
 #include "apt_consumer_task.h"
+#include "apt_log.h"
 
 /** Demo framework */
 struct demo_framework_t {
@@ -84,6 +85,8 @@ static void demo_framework_on_start_complete(apt_task_t *task)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	demo_framework_t *framework = apt_consumer_task_object_get(consumer_task);
+	apt_task_delay(3000);
+	apt_log(APT_PRIO_NOTICE,"Run Demo Application");
 	if(framework) {
 		demo_application_t *demo_application;
 		demo_application = demo_synth_application_create(framework->pool);

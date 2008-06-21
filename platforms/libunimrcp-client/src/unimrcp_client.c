@@ -22,6 +22,9 @@
 #include "mrcp_client_connection.h"
 #include "apt_log.h"
 
+#define LOCAL_IP_ADDRESS "127.0.0.1"
+#define REMOTE_IP_ADDRESS "127.0.0.1"
+
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool);
 static mrcp_sig_agent_t* mrcpv1_sig_agent_create(apr_pool_t *pool);
 
@@ -46,7 +49,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create()
 	media_engine = mpf_engine_create(pool);
 	if(media_engine) {
 		mpf_termination_factory_t *rtp_termination_factory = mpf_rtp_termination_factory_create(
-			"127.0.0.1",4000,5000,pool);
+			LOCAL_IP_ADDRESS,4000,5000,pool);
 
 		mrcp_client_media_engine_register(client,media_engine);
 		mrcp_client_rtp_termination_factory_register(client,rtp_termination_factory);
@@ -70,8 +73,10 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create()
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool)
 {
 	mrcp_sofia_client_config_t *config = mrcp_sofiasip_client_config_alloc(pool);
-	config->local_ip = "0.0.0.0";
+	config->local_ip = LOCAL_IP_ADDRESS;
 	config->local_port = 8062;
+	config->remote_ip = LOCAL_IP_ADDRESS;
+	config->remote_port = 8060;
 	config->user_agent_name = "UniMRCP Sofia-SIP";
 	config->origin = "UniMRCPClient";
 	return mrcp_sofiasip_client_agent_create(config,pool);

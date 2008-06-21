@@ -32,17 +32,20 @@ typedef struct mrcp_sofia_client_config_t mrcp_sofia_client_config_t;
 
 /** Sofia-SIP config */
 struct mrcp_sofia_client_config_t {
-	/** Local IP address to bind to */
+	/** Local IP address */
 	char      *local_ip;
-	/** Local port to bind to */
+	/** Local SIP port */
 	apr_port_t local_port;
+	/** Local SIP user name */
+	char      *local_user_name;
+	
 	/** Remote IP address */
 	char      *remote_ip;
-	/** Remote port */
+	/** Remote SIP port */
 	apr_port_t remote_port;
+	/** Remote SIP user name */
+	char      *remote_user_name;
 
-	/** SIP user name */
-	char      *user_name;
 	/** User agent name */
 	char      *user_agent_name;
 	/** SDP origin */
