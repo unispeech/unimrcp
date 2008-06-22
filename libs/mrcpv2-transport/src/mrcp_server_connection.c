@@ -29,8 +29,8 @@ struct mrcp_connection_t {
 	apr_socket_t              *sock; /* accepted socket */
 	apr_pollfd_t               sock_pfd;
 
-	mrcp_control_descriptor_t *descriptor;
-	size_t                     access_count;
+	apt_str_t                  remote_ip;
+	apr_size_t                 access_count;
 	apt_list_elem_t           *it;
 };
 
@@ -48,6 +48,7 @@ struct mrcp_connection_agent_t {
 	apr_socket_t   *control_sock; /* control socket */
 	apr_pollfd_t    control_sock_pfd;
 
+	apr_pool_t     *sub_pool; /* pool to allocate accepted sockets from */
 	apt_obj_list_t *connection_list;
 
 	void                                 *obj;
@@ -109,6 +110,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 		return NULL;
 	}
 
+	agent->sub_pool = NULL;
 	agent->connection_list = apt_list_create(pool);
 	return agent;
 }
@@ -287,9 +289,13 @@ static mrcp_connection_t* mrcp_server_agent_connection_add(mrcp_connection_agent
 	
 	connection = apr_palloc(pool,sizeof(mrcp_connection_t));
 	connection->pool = pool;
-	connection->descriptor = descriptor;
+	apt_string_copy(&connection->remote_ip,&descriptor->ip,pool);
 	connection->sock = NULL;
 	connection->access_count = 1;
+
+	if(apt_list_is_empty(agent->connection_list) == TRUE) {
+		apr_pool_create(&agent->sub_pool,NULL);
+	}
 	connection->it = apt_list_push_back(agent->connection_list,connection);
 	return connection;
 }
@@ -301,8 +307,8 @@ static mrcp_connection_t* mrcp_server_agent_connection_find(mrcp_connection_agen
 	/* walk through the list of connections */
 	while(elem) {
 		connection = apt_list_elem_object_get(elem);
-		if(connection && connection->descriptor) {
-			if(apt_string_compare(&connection->descriptor->ip,remote_ip) == TRUE) {
+		if(connection) {
+			if(apt_string_compare(&connection->remote_ip,remote_ip) == TRUE) {
 				return connection;
 			}
 		}
@@ -318,8 +324,12 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	mrcp_connection_t *connection;
 	apt_str_t remote_ip;
 
-	apr_status_t status = apr_socket_accept(&sock, agent->listen_sock, agent->pool);
-	if(status != APR_SUCCESS) {
+	if(!agent->sub_pool) {
+		apt_log(APT_PRIO_INFO,"No Active Connection to Accept Socket for");
+		return FALSE;
+	}
+
+	if(apr_socket_accept(&sock,agent->listen_sock,agent->sub_pool) != APR_SUCCESS) {
 		return FALSE;
 	}
 
@@ -371,8 +381,11 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 					connection = mrcp_server_agent_connection_find(agent,&message.descriptor->ip);
 					if(connection) {
 						/* send answer */
+						if(!message.connection) {
+							connection->access_count ++;
+						}
 						if(agent->vtable && agent->vtable->on_modify) {
-							agent->vtable->on_modify(agent,message.handle,message.connection,answer);
+							agent->vtable->on_modify(agent,message.handle,connection,answer);
 						}
 						break;
 					}
@@ -401,6 +414,10 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 					}
 					if(!connection->sock) {
 						apr_pool_destroy(connection->pool);
+						if(apt_list_is_empty(agent->connection_list) == TRUE) {
+							apr_pool_destroy(agent->sub_pool);
+							agent->sub_pool = NULL;
+						}
 					}
 				}
 			}
@@ -429,12 +446,16 @@ static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *ag
 	
 	status = apr_socket_recv(connection->sock, buffer, &size);
 	if(status == APR_EOF || size == 0) {
-		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Disconnected\n");
+		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Disconnected");
 		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 		if(!connection->access_count) {
 			apr_pool_destroy(connection->pool);
+			if(apt_list_is_empty(agent->connection_list) == TRUE) {
+				apr_pool_destroy(agent->sub_pool);
+				agent->sub_pool = NULL;
+			}
 		}
 		return TRUE;
 	}
