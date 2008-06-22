@@ -26,14 +26,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Enumeration of MRCP resource types */
-typedef enum {
-	MRCP_SYNTHESIZER_RESOURCE, /**< Synthesizer resource */
-	MRCP_RECOGNIZER_RESOURCE,  /**< Recognizer resource */
-
-	MRCP_RESOURCE_TYPE_COUNT   /**< Number of resources */
-} mrcp_resource_type_e;
-
 /** Create default MRCP resource factory */
 MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *pool);
 

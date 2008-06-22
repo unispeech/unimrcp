@@ -28,13 +28,19 @@ APT_BEGIN_EXTERN_C
 
 /** Protocol version */
 typedef enum {
-	/** Unknown version */
-	MRCP_VERSION_UNKNOWN = 0, 
-	/** MRCPv1 (RFC4463) */
-	MRCP_VERSION_1 = 1, 
-	/** MRCPv2 (draft-ietf-speechsc-mrcpv2-15) */
-	MRCP_VERSION_2 = 2  
+	
+	MRCP_VERSION_UNKNOWN = 0,  /**< Unknown version */
+	MRCP_VERSION_1 = 1,        /**< MRCPv1 (RFC4463) */
+	MRCP_VERSION_2 = 2         /**< MRCPv2 (draft-ietf-speechsc-mrcpv2-15) */
 } mrcp_version_e;
+
+/** Enumeration of MRCP resource types */
+typedef enum {
+	MRCP_SYNTHESIZER_RESOURCE, /**< Synthesizer resource */
+	MRCP_RECOGNIZER_RESOURCE,  /**< Recognizer resource */
+
+	MRCP_RESOURCE_TYPE_COUNT   /**< Number of resources */
+} mrcp_resource_type_e;
 
 /** Message identifier used in request/response/event messages. */
 typedef apr_size_t  mrcp_request_id;
