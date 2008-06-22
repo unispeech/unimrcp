@@ -26,11 +26,11 @@
 struct mrcp_connection_t {
 	apr_pool_t                *pool;
 
-	apr_socket_t              *sock; /* accepted socket */
+	apr_sockaddr_t            *sockaddr;
+	apr_socket_t              *sock; /* connected socket */
 	apr_pollfd_t               sock_pfd;
 
-	mrcp_control_descriptor_t *descriptor;
-	size_t                     access_count;
+	apr_size_t                 access_count;
 	apt_list_elem_t           *it;
 };
 
@@ -136,6 +136,17 @@ APT_DECLARE(apt_bool_t) mrcp_client_connection_modify(
 								mrcp_control_descriptor_t *descriptor,
 								apr_pool_t *pool)
 {
+	if(agent->control_sock) {
+		connection_agent_message_t message;
+		apr_size_t size = sizeof(connection_agent_message_t);
+		message.type = CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION;
+		message.agent = agent;
+		message.handle = handle;
+		message.connection = connection;
+		message.descriptor = descriptor;
+		message.pool = pool;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+	}
 	return TRUE;
 }
 
@@ -146,6 +157,17 @@ APT_DECLARE(apt_bool_t) mrcp_client_connection_remove(
 								mrcp_connection_t *connection,
 								apr_pool_t *pool)
 {
+	if(agent->control_sock) {
+		connection_agent_message_t message;
+		apr_size_t size = sizeof(connection_agent_message_t);
+		message.type = CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION;
+		message.agent = agent;
+		message.handle = handle;
+		message.connection = connection;
+		message.descriptor = NULL;
+		message.pool = pool;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+	}
 	return TRUE;
 }
 
@@ -202,6 +224,77 @@ static apt_bool_t mrcp_client_agent_socket_create(mrcp_connection_agent_t *agent
 	return TRUE;
 }
 
+static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_agent_t *agent, mrcp_control_descriptor_t *descriptor)
+{
+	mrcp_connection_t *connection;
+	apr_sockaddr_t *sockaddr = NULL;
+	apr_pool_t *pool;
+	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+		return NULL;
+	}
+	
+	connection = apr_palloc(pool,sizeof(mrcp_connection_t));
+	connection->pool = pool;
+	connection->sockaddr = sockaddr;
+	connection->sock = NULL;
+
+	apr_sockaddr_info_get(&sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
+	if(!sockaddr) {
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+
+	if(apr_socket_create(&connection->sock, sockaddr->family, SOCK_STREAM, APR_PROTO_TCP, connection->pool) != APR_SUCCESS) {
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+
+	apr_socket_opt_set(connection->sock, APR_SO_NONBLOCK, 0);
+	apr_socket_timeout_set(connection->sock, -1);
+	apr_socket_opt_set(connection->sock, APR_SO_REUSEADDR, 1);
+
+	if(apr_socket_connect(connection->sock, sockaddr) != APR_SUCCESS) {
+		apr_socket_close(connection->sock);
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+
+	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
+	connection->sock_pfd.reqevents = APR_POLLIN;
+	connection->sock_pfd.desc.s = connection->sock;
+	connection->sock_pfd.client_data = connection;
+	if(apr_pollset_add(agent->pollset, &connection->sock_pfd) != APR_SUCCESS) {
+		apr_socket_close(connection->sock);
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+	
+	apt_log(APT_PRIO_NOTICE,"Connected to MRCPv2 Server\n");
+	connection->access_count = 1;
+	connection->it = apt_list_push_back(agent->connection_list,connection);
+	return connection;
+}
+
+static mrcp_connection_t* mrcp_client_agent_connection_find(mrcp_connection_agent_t *agent, mrcp_control_descriptor_t *descriptor)
+{
+	apr_sockaddr_t *sockaddr;
+	mrcp_connection_t *connection = NULL;
+	apt_list_elem_t *elem = apt_list_first_elem_get(agent->connection_list);
+	/* walk through the list of connections */
+	while(elem) {
+		connection = apt_list_elem_object_get(elem);
+		if(connection) {
+			if(apr_sockaddr_info_get(&sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool) == APR_SUCCESS) {
+				if(apr_sockaddr_equal(sockaddr,connection->sockaddr) != 0) {
+					return connection;
+				}
+			}
+		}
+		elem = apt_list_next_elem_get(agent->connection_list,elem);
+	}
+	return NULL;
+}
+
 static apt_bool_t mrcp_client_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
 	connection_agent_message_t message;
@@ -214,6 +307,28 @@ static apt_bool_t mrcp_client_agent_control_pocess(mrcp_connection_agent_t *agen
 	switch(message.type) {
 		case CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION:
 		{
+			mrcp_connection_t *connection = NULL;
+			mrcp_control_descriptor_t *answer = message.descriptor;
+			if(answer->port) {
+				if(answer->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
+					connection = mrcp_client_agent_connection_find(agent,answer);
+					if(connection) {
+						connection->access_count ++;
+						/* send response */
+						if(agent->vtable && agent->vtable->on_modify) {
+							agent->vtable->on_modify(agent,message.handle,message.connection,answer);
+						}
+						break;
+					}
+					/* no existing connection found, proceed with the new one */
+				}
+				/* create new connection */
+				connection = mrcp_client_agent_connection_create(agent,answer);
+			}
+			/* send response */
+			if(agent->vtable && agent->vtable->on_modify) {
+				agent->vtable->on_modify(agent,message.handle,connection,answer);
+			}
 			break;
 		}
 		case CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION:

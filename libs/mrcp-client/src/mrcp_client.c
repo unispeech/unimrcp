@@ -107,8 +107,9 @@ typedef enum {
 
 /* Signaling agent interface */
 typedef enum {
-	SIG_AGENT_TASK_MSG_OFFER,
-	SIG_AGENT_TASK_MSG_TERMINATE
+	SIG_AGENT_TASK_MSG_ANSWER,
+	SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE,
+	SIG_AGENT_TASK_MSG_TERMINATE_EVENT
 } sig_agent_task_msg_type_e ;
 
 typedef struct sig_agent_message_t sig_agent_message_t;
@@ -544,6 +545,13 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_t *client, mrcp_client_ses
 	control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
 	mrcp_control_descriptor_init(control_media);
 	control_media->id = mrcp_session_control_media_add(session->offer,control_media);
+	control_media->cmid = session->offer->control_media_arr->nelts;
+
+	control_media->proto = MRCP_PROTO_TCP;
+	control_media->port = 9;
+	control_media->setup_type = MRCP_SETUP_TYPE_ACTIVE;
+	control_media->connection_type = MRCP_CONNECTION_TYPE_EXISTING;
+//	control_media->resource_name;
 	return TRUE;
 }
 
@@ -555,6 +563,7 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_t *client, mrcp_cli
 		if(rtp_descriptor->audio.local) {
 			session->offer->ip = rtp_descriptor->audio.local->base.ip;
 			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
+			rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
 
 			mrcp_session_offer(&session->base,session->offer);
 		}
@@ -574,6 +583,113 @@ static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_t *client, mrc
 	return TRUE;
 }
 
+static mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, apt_str_t *resource_name)
+{
+	mrcp_channel_t *channel = apr_palloc(session->pool,sizeof(mrcp_channel_t));
+	channel->pool = session->pool;
+	channel->session = session;
+	channel->connection = NULL;
+	channel->termination = NULL;
+	channel->resource = NULL;
+	return channel;
+}
+
+static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_t *client, mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	mrcp_channel_t *channel;
+	mrcp_control_descriptor_t *control_descriptor;
+	int i;
+	int count = session->channels->nelts;
+	if(count != descriptor->control_media_arr->nelts) {
+		apt_log(APT_PRIO_WARNING,"Number of control channels [%d] != Number of control media in answer [%d]",
+			count,descriptor->control_media_arr->nelts);
+		count = descriptor->control_media_arr->nelts;
+	}
+
+	if(!session->base.id.length) {
+		/* initial answer received, store session id and add to session's table */
+		control_descriptor = mrcp_session_control_media_get(descriptor,0);
+		if(control_descriptor) {
+			session->base.id = control_descriptor->session_id;
+			apt_log(APT_PRIO_NOTICE,"Add Session <%s>",session->base.id.buf);
+			apr_hash_set(client->session_table,session->base.id.buf,session->base.id.length,session);
+		}
+	}
+
+	/* update existing control channels */
+	for(i=0; i<count; i++) {
+		/* get existing channel */
+		channel = *((mrcp_channel_t**)session->channels->elts + i);
+		if(!channel) continue;
+
+		/* get control descriptor */
+		control_descriptor = mrcp_session_control_media_get(descriptor,i);
+		/* modify channel */
+		apt_log(APT_PRIO_DEBUG,"Modify Control Channel");
+		mrcp_client_connection_modify(client->connection_agent,channel,channel->connection,control_descriptor,channel->pool);
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_t *client, mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	mpf_termination_t *termination;
+	int i;
+	int count = session->terminations->nelts;
+	if(count != descriptor->audio_media_arr->nelts) {
+		apt_log(APT_PRIO_WARNING,"Number of terminations [%d] != Number of audio media in answer [%d]\n",
+			count,descriptor->audio_media_arr->nelts);
+		count = descriptor->audio_media_arr->nelts;
+	}
+	
+	/* update existing terminations */
+	for(i=0; i<count; i++) {
+		mpf_rtp_termination_descriptor_t *rtp_descriptor;
+		/* get existing termination */
+		termination = *((mpf_termination_t**)session->terminations->elts + i);
+		if(!termination) continue;
+
+		/* construct termination descriptor */
+		rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
+		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+		rtp_descriptor->audio.local = NULL;
+		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
+
+		/* send modify termination request */
+		apt_log(APT_PRIO_DEBUG,"Modify Termination");
+		mpf_request_send(client,MPF_COMMAND_MODIFY,session->context,termination,rtp_descriptor);
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_session_answer_process(mrcp_client_t *client, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	apt_log(APT_PRIO_INFO,"Process Session Answer <%s> [control:%d audio:%d video:%d]",
+		session->id.buf ? session->id.buf : "",
+		descriptor->control_media_arr->nelts,
+		descriptor->audio_media_arr->nelts,
+		descriptor->video_media_arr->nelts);
+
+	mrcp_client_control_media_answer_process(client,client_session,descriptor);
+	mrcp_client_av_media_answer_process(client,client_session,descriptor);
+
+	/* store received offer */
+//	client_session->offer = descriptor;
+	client_session->answer = descriptor;
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_t *client, mrcp_session_t *session)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_t *client, mrcp_session_t *session)
+{
+	return TRUE;
+}
+
 static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
@@ -585,6 +701,20 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	switch(msg->type) {
 		case MRCP_CLIENT_SIGNALING_TASK_MSG:
 		{
+			const sig_agent_message_t *sig_message = (const sig_agent_message_t*)msg->data;
+			switch(msg->sub_type) {
+				case SIG_AGENT_TASK_MSG_ANSWER:
+					mrcp_client_session_answer_process(client,sig_message->session,sig_message->descriptor);
+					break;
+				case SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE:
+					mrcp_client_session_terminate_response_process(client,sig_message->session);
+					break;
+				case SIG_AGENT_TASK_MSG_TERMINATE_EVENT:
+					mrcp_client_session_terminate_event_process(client,sig_message->session);
+					break;
+				default:
+					break;
+			}
 			break;
 		}
 		case MRCP_CLIENT_CONNECTION_TASK_MSG:
@@ -651,17 +781,44 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 
 static apt_bool_t mrcp_client_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
-	return TRUE;
+	sig_agent_message_t *message;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	task_msg->type = MRCP_CLIENT_SIGNALING_TASK_MSG;
+	task_msg->sub_type = SIG_AGENT_TASK_MSG_ANSWER;
+	message = (sig_agent_message_t*) task_msg->data;
+	message->session = session;
+	message->descriptor = descriptor;
+
+	apt_log(APT_PRIO_DEBUG,"Signal Session Answer");
+	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
 static apt_bool_t mrcp_client_session_terminate_response(mrcp_session_t *session)
 {
-	return TRUE;
+	sig_agent_message_t *message;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	task_msg->type = MRCP_CLIENT_SIGNALING_TASK_MSG;
+	task_msg->sub_type = SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE;
+	message = (sig_agent_message_t*) task_msg->data;
+	message->session = session;
+	message->descriptor = NULL;
+
+	apt_log(APT_PRIO_DEBUG,"Signal Session Terminate Response");
+	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
 static apt_bool_t mrcp_client_session_terminate_event(mrcp_session_t *session)
 {
-	return TRUE;
+	sig_agent_message_t *message;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	task_msg->type = MRCP_CLIENT_SIGNALING_TASK_MSG;
+	task_msg->sub_type = SIG_AGENT_TASK_MSG_TERMINATE_EVENT;
+	message = (sig_agent_message_t*) task_msg->data;
+	message->session = session;
+	message->descriptor = NULL;
+
+	apt_log(APT_PRIO_DEBUG,"Signal Session Terminate Event");
+	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
 static apt_bool_t mrcp_client_channel_on_modify(
