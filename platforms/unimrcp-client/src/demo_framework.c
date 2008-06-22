@@ -92,7 +92,7 @@ static void demo_framework_on_start_complete(apt_task_t *task)
 		demo_application = demo_synth_application_create(framework->pool);
 		if(demo_application) {
 			demo_application->application = mrcp_application_create(
-				demo_application,demo_framework_event_handler,framework->pool);
+				demo_application,MRCP_VERSION_2,demo_framework_event_handler,framework->pool);
 			demo_application->framework = framework;
 			mrcp_client_application_register(framework->client,demo_application->application);
 

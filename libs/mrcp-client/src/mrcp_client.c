@@ -58,6 +58,7 @@ struct mrcp_client_t {
 
 struct mrcp_application_t {
 	void                            *obj;
+	mrcp_version_e                   version;
 	mrcp_application_event_handler_f event_handler;
 	mrcp_client_t                   *client;
 };
@@ -367,10 +368,11 @@ MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(mrcp_client_t *client)
 
 
 /** Create application instance */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_application_event_handler_f event_handler, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_application_event_handler_f event_handler, apr_pool_t *pool)
 {
 	mrcp_application_t *application = apr_palloc(pool,sizeof(mrcp_application_t));
 	application->obj = obj;
+	application->version = version;
 	application->event_handler = event_handler;
 	application->client = NULL;
 	return application;
@@ -445,7 +447,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 
 
 /** Create control channel */
-MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mpf_termination_t *termination, void *obj)
+MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj)
 {
 	mrcp_channel_t *channel = apr_palloc(session->pool,sizeof(mrcp_channel_t));
 	channel->pool = session->pool;

@@ -61,7 +61,7 @@ struct mrcp_application_event_t {
  * @param vtable the event handlers
  * @param pool the memory pool to allocate memory from
  */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_application_event_handler_f event_handler, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_application_event_handler_f event_handler, apr_pool_t *pool);
 
 /**
  * Destroy application instance.
@@ -109,7 +109,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
  * @param termination the media termination
  * @param obj the external object
  */
-MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mpf_termination_t *termination, void *obj);
+MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
 
 /** 
  * Send channel add/modify request.

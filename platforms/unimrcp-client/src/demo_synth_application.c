@@ -20,7 +20,7 @@ static apt_bool_t synth_application_run(demo_application_t *demo_application)
 {
 	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,NULL);
 	if(session) {
-		mrcp_channel_t *channel = mrcp_application_channel_create(session,NULL,NULL);
+		mrcp_channel_t *channel = mrcp_application_channel_create(session,MRCP_SYNTHESIZER_RESOURCE,NULL,NULL);
 		if(channel) {
 			mrcp_application_channel_modify(session,channel,NULL);
 		}
