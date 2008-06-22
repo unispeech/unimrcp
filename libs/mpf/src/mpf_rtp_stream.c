@@ -191,6 +191,8 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		/* create local media */
 		mpf_rtp_media_descriptor_t *local_media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
 		mpf_rtp_media_descriptor_init(local_media);
+		local_media->base.state = MPF_MEDIA_ENABLED;
+		local_media->mode = STREAM_MODE_SEND_RECEIVE;
 		mpf_rtp_stream_ip_port_set(local_media,rtp_stream->config);
 		mpf_rtp_stream_local_media_update(rtp_stream,local_media);
 	}
