@@ -117,6 +117,13 @@ APT_DECLARE(apt_list_elem_t*) apt_list_elem_insert(apt_obj_list_t *list, apt_lis
 APT_DECLARE(apt_list_elem_t*) apt_list_elem_remove(apt_obj_list_t *list, apt_list_elem_t *elem);
 
 /**
+ * Query whether the list is empty.
+ * @param list the list to query
+ * @return TRUE if empty, otherwise FALSE
+ */
+APT_DECLARE(apt_bool_t) apt_list_is_empty(apt_obj_list_t *list);
+
+/**
  * Retrieve the object associated with element.
  * @param elem the element to retrieve object from
  */

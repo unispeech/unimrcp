@@ -137,6 +137,14 @@ APT_DECLARE(apt_list_elem_t*) apt_list_elem_remove(apt_obj_list_t *list, apt_lis
 	return next_elem;
 }
 
+APT_DECLARE(apt_bool_t) apt_list_is_empty(apt_obj_list_t *list)
+{
+	if(APR_RING_EMPTY(&list->head,apt_list_elem_t,link)) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
 APT_DECLARE(void*) apt_list_elem_object_get(apt_list_elem_t *elem)
 {
 	return elem->obj;
