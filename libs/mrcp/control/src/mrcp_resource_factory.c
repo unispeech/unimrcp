@@ -19,8 +19,6 @@
 #include "mrcp_resource.h"
 #include "mrcp_generic_header.h"
 
-static APR_INLINE const apt_str_t* mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id, mrcp_version_e version);
-static APR_INLINE mrcp_resource_id mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name, mrcp_version_e version);
 static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message);
 static apt_bool_t mrcp_message_resourcify_by_id(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
 static apt_bool_t mrcp_message_resourcify_by_name(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
@@ -209,7 +207,7 @@ static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message)
 }
 
 /** Get resource name associated with specified resource id */
-static APR_INLINE const apt_str_t* mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id, mrcp_version_e version)
+MRCP_DECLARE(const apt_str_t*) mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id, mrcp_version_e version)
 {
 	const apt_str_table_item_t *string_table = resource_factory->v2_string_table;
 	if(version == MRCP_VERSION_1) {
@@ -219,7 +217,7 @@ static APR_INLINE const apt_str_t* mrcp_resource_name_get(mrcp_resource_factory_
 }
 
 /** Find resource id associated with specified resource name */
-static APR_INLINE mrcp_resource_id mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name, mrcp_version_e version)
+MRCP_DECLARE(mrcp_resource_id) mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name, mrcp_version_e version)
 {
 	const apt_str_table_item_t *string_table = resource_factory->v2_string_table;
 	if(version == MRCP_VERSION_1) {

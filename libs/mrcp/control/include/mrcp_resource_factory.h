@@ -43,6 +43,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_register(mrcp_resource_factory_t *resourc
 /** Get MRCP resource by resource id */
 MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id);
 
+/** Get resource name associated with specified resource id */
+MRCP_DECLARE(const apt_str_t*) mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id, mrcp_version_e version);
+
+/** Find resource id associated with specified resource name */
+MRCP_DECLARE(mrcp_resource_id) mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name, mrcp_version_e version);
+
 
 /** Parse MRCP message */
 MRCP_DECLARE(apt_bool_t) mrcp_message_parse(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *text_stream);
