@@ -32,27 +32,61 @@ APT_BEGIN_EXTERN_C
 typedef struct mrcp_application_t mrcp_application_t;
 /** Opaque MRCP channel declaration */
 typedef struct mrcp_channel_t mrcp_channel_t;
-/** MRCP application event declaration */
-typedef struct mrcp_application_event_t mrcp_application_event_t;
+/** MRCP application message declaration */
+typedef struct mrcp_app_message_t mrcp_app_message_t;
+
 
 /** MRCP application event handler declaration */
-typedef apt_bool_t (*mrcp_application_event_handler_f)(const mrcp_application_event_t *app_event);
+typedef apt_bool_t (*mrcp_app_message_handler_f)(const mrcp_app_message_t *app_message);
 
+/** Enumeration of MRCP application message types */
 typedef enum {
-	MRCP_APPLICATION_EVENT_SESSION_UPDATE,
-	MRCP_APPLICATION_EVENT_SESSION_TERMINATE,
-	MRCP_APPLICATION_EVENT_CHANNEL_MODIFY,
-	MRCP_APPLICATION_EVENT_CHANNEL_REMOVE,
-	MRCP_APPLICATION_EVENT_MESSAGE_RECEIVE,
-} mrcp_application_event_type_e;
+	MRCP_APP_MESSAGE_TYPE_REQUEST,  /**< request message */
+	MRCP_APP_MESSAGE_TYPE_RESPONSE, /**< response message */
+	MRCP_APP_MESSAGE_TYPE_EVENT     /**< event message */
+} mrcp_app_message_type_e;
 
-struct mrcp_application_event_t {
-	mrcp_application_event_type_e type;
-	mrcp_application_t           *application;
-	mrcp_session_t               *session;
-	mrcp_channel_t               *channel;
-	mrcp_message_t               *message;
-	mpf_rtp_media_descriptor_t   *descriptor;
+/** Enumeration of MRCP application status codes */
+typedef enum {
+	MRCP_APP_STATUS_CODE_SUCCESS,  /**< indicates success */
+	MRCP_APP_STATUS_CODE_FAILURE   /**< indicates failure */
+} mrcp_app_status_code_e;
+
+
+/** Enumeration of MRCP application commands (requests/responses) */
+typedef enum {
+	MRCP_APP_COMMAND_SESSION_UPDATE,
+	MRCP_APP_COMMAND_SESSION_TERMINATE,
+	MRCP_APP_COMMAND_CHANNEL_MODIFY,
+	MRCP_APP_COMMAND_CHANNEL_REMOVE,
+	MRCP_APP_COMMAND_MESSAGE,
+} mrcp_app_command_e;
+
+/** Enumeration of MRCP application events */
+typedef enum {
+	MRCP_APP_EVENT_MESSAGE,
+} mrcp_app_event_e;
+
+
+/** MRCP application message definition */
+struct mrcp_app_message_t {
+	/** Message type (request/response/event) */
+	mrcp_app_message_type_e           message_type;
+	/** Command (request/response) identifier */
+	mrcp_app_command_e                command_id;
+	/** Event identifier */
+	mrcp_app_event_e                  event_id;
+
+	/** Application */
+	mrcp_application_t               *application;
+	/** Session */
+	mrcp_session_t                   *session;
+	/** Channel */
+	mrcp_channel_t                   *channel;
+	/** MRCP message */
+	mrcp_message_t                   *mrcp_message;
+	/** Optional RTP descriptor */
+	mpf_rtp_termination_descriptor_t *descriptor;
 };
 
 /**
@@ -61,7 +95,7 @@ struct mrcp_application_event_t {
  * @param vtable the event handlers
  * @param pool the memory pool to allocate memory from
  */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_application_event_handler_f event_handler, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_app_message_handler_f handler, apr_pool_t *pool);
 
 /**
  * Destroy application instance.

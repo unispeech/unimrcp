@@ -38,8 +38,9 @@ static apt_bool_t synth_application_on_session_terminate(demo_application_t *dem
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_channel_modify(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_media_descriptor_t *descriptor)
+static apt_bool_t synth_application_on_channel_modify(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor)
 {
+	mrcp_application_channel_remove(session,channel);
 	return TRUE;
 }
 

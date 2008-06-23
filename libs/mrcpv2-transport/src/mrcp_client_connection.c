@@ -269,7 +269,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 		return NULL;
 	}
 	
-	apt_log(APT_PRIO_NOTICE,"Connected to MRCPv2 Server\n");
+	apt_log(APT_PRIO_NOTICE,"Connected to MRCPv2 Server");
 	connection->access_count = 1;
 	connection->it = apt_list_push_back(agent->connection_list,connection);
 	return connection;

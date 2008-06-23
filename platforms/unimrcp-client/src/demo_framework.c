@@ -32,11 +32,11 @@ struct demo_framework_t {
 
 typedef struct framework_task_data_t framework_task_data_t;
 struct framework_task_data_t {
-	demo_application_t             *demo_application;
-	const mrcp_application_event_t *app_event;
+	demo_application_t       *demo_application;
+	const mrcp_app_message_t *app_message;
 };
 
-static apt_bool_t demo_framework_event_handler(const mrcp_application_event_t *app_event);
+static apt_bool_t demo_framework_event_handler(const mrcp_app_message_t *app_message);
 static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framework);
 
 /** Create demo framework */
@@ -110,35 +110,40 @@ static apt_bool_t demo_framework_msg_process(apt_task_t *task, apt_task_msg_t *m
 	if(msg->type == TASK_MSG_USER) {
 		framework_task_data_t *framework_task_data = (framework_task_data_t*)msg->data;
 		demo_application_t *demo_application = framework_task_data->demo_application;
-		switch(framework_task_data->app_event->type) {
-			case MRCP_APPLICATION_EVENT_SESSION_UPDATE:
-				demo_application->vtable->on_session_update(demo_application,framework_task_data->app_event->session);
-				break;
-			case MRCP_APPLICATION_EVENT_SESSION_TERMINATE:
-				demo_application->vtable->on_session_terminate(demo_application,framework_task_data->app_event->session);
-				break;
-			case MRCP_APPLICATION_EVENT_CHANNEL_MODIFY:
-				demo_application->vtable->on_channel_modify(
-						demo_application,
-						framework_task_data->app_event->session,
-						framework_task_data->app_event->channel,
-						framework_task_data->app_event->descriptor);
-				break;
-			case MRCP_APPLICATION_EVENT_CHANNEL_REMOVE:
-				demo_application->vtable->on_channel_remove(
-						demo_application,
-						framework_task_data->app_event->session,
-						framework_task_data->app_event->channel);
-				break;
-			case MRCP_APPLICATION_EVENT_MESSAGE_RECEIVE:
-				demo_application->vtable->on_message_receive(
-						demo_application,
-						framework_task_data->app_event->session,
-						framework_task_data->app_event->channel,
-						framework_task_data->app_event->message);
-				break;
-			default:
-				break;
+		const mrcp_app_message_t *app_message = framework_task_data->app_message;
+		switch(app_message->message_type) {
+			case MRCP_APP_MESSAGE_TYPE_RESPONSE:
+			switch(framework_task_data->app_message->command_id) {
+				case MRCP_APP_COMMAND_SESSION_UPDATE:
+					demo_application->vtable->on_session_update(demo_application,app_message->session);
+					break;
+				case MRCP_APP_COMMAND_SESSION_TERMINATE:
+					demo_application->vtable->on_session_terminate(demo_application,app_message->session);
+					break;
+				case MRCP_APP_COMMAND_CHANNEL_MODIFY:
+					demo_application->vtable->on_channel_modify(
+							demo_application,
+							app_message->session,
+							app_message->channel,
+							app_message->descriptor);
+					break;
+				case MRCP_APP_COMMAND_CHANNEL_REMOVE:
+					demo_application->vtable->on_channel_remove(
+							demo_application,
+							app_message->session,
+							app_message->channel);
+					break;
+				case MRCP_APP_COMMAND_MESSAGE:
+					demo_application->vtable->on_message_receive(
+							demo_application,
+							app_message->session,
+							app_message->channel,
+							app_message->mrcp_message);
+					break;
+				default:
+					break;
+			}
+			break;
 		}
 	}
 	return TRUE;
@@ -159,13 +164,13 @@ static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framewor
 	return TRUE;
 }
 
-static apt_bool_t demo_framework_event_handler(const mrcp_application_event_t *app_event)
+static apt_bool_t demo_framework_event_handler(const mrcp_app_message_t *app_message)
 {
 	demo_application_t *demo_application;
-	if(!app_event->application) {
+	if(!app_message->application) {
 		return FALSE;
 	}
-	demo_application = mrcp_application_object_get(app_event->application);
+	demo_application = mrcp_application_object_get(app_message->application);
 	if(demo_application && demo_application->framework) {
 		demo_framework_t *framework = demo_application->framework;
 		apt_task_t *task = apt_consumer_task_base_get(framework->task);
@@ -175,7 +180,7 @@ static apt_bool_t demo_framework_event_handler(const mrcp_application_event_t *a
 			task_msg->type = TASK_MSG_USER;
 			task_msg->sub_type = 0;
 			framework_task_data = (framework_task_data_t*) task_msg->data;
-			framework_task_data->app_event = app_event;
+			framework_task_data->app_message = app_message;
 			framework_task_data->demo_application = demo_application;
 			apt_task_msg_signal(task,task_msg);
 		}
