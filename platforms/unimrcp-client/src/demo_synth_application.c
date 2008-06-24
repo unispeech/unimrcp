@@ -51,6 +51,7 @@ static apt_bool_t synth_application_on_message_receive(demo_application_t *demo_
 
 static apt_bool_t synth_application_on_channel_remove(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel)
 {
+	mrcp_application_session_terminate(session);
 	return TRUE;
 }
 

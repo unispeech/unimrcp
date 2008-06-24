@@ -640,6 +640,57 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_t *client, mrcp_client_ses
 	return TRUE;
 }
 
+static apt_bool_t mrcp_client_session_update(mrcp_client_t *client, mrcp_client_session_t *session)
+{
+	if(!session->offer) {
+		return FALSE;
+	}
+	apt_log(APT_PRIO_DEBUG,"Update Session");
+	return mrcp_session_offer(&session->base,session->offer);
+}
+
+static apt_bool_t mrcp_client_session_terminate(mrcp_client_t *client, mrcp_client_session_t *session)
+{
+	mrcp_channel_t *channel;
+	mrcp_termination_slot_t *slot;
+	int i;
+	if(!session->offer) {
+		return FALSE;
+	}
+	apt_log(APT_PRIO_DEBUG,"Terminate Session");
+	/* remove existing control channels */
+	for(i=0; i<session->channels->nelts; i++) {
+		/* get existing channel */
+		channel = *((mrcp_channel_t**)session->channels->elts + i);
+		if(!channel) continue;
+
+		/* remove channel */
+		apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
+		if(mrcp_client_connection_remove(client->connection_agent,channel,channel->connection,channel->pool) == TRUE) {
+			channel->waiting = TRUE;
+			session->terminate_flag_count++;
+		}
+	}
+
+	/* subtract existing terminations */
+	for(i=0; i<session->terminations->nelts; i++) {
+		/* get existing termination */
+		slot = &((mrcp_termination_slot_t*)session->terminations->elts)[i];
+		if(!slot || !slot->termination) continue;
+
+		/* send subtract termination request */
+		apt_log(APT_PRIO_DEBUG,"Subtract Termination");
+		if(mpf_request_send(client,MPF_COMMAND_SUBTRACT,session->context,slot->termination,NULL) == TRUE) {
+			slot->waiting = TRUE;
+			session->terminate_flag_count++;
+		}
+	}
+
+	mrcp_session_terminate_request(&session->base);
+	return TRUE;
+}
+
+
 static apt_bool_t mrcp_client_on_channel_modify(mrcp_client_t *client, const connection_agent_message_t *message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)message->channel->session;
@@ -885,8 +936,10 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			client_session->request = app_message;
 			switch(app_message->command_id) {
 				case MRCP_APP_COMMAND_SESSION_UPDATE:
+					mrcp_client_session_update(client,client_session);
 					break;
 				case MRCP_APP_COMMAND_SESSION_TERMINATE:
+					mrcp_client_session_terminate(client,client_session);
 					break;
 				case MRCP_APP_COMMAND_CHANNEL_ADD:
 					mrcp_client_channel_add(client,client_session,app_message->channel,app_message->descriptor);
