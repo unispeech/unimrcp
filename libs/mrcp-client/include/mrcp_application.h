@@ -57,7 +57,7 @@ typedef enum {
 typedef enum {
 	MRCP_APP_COMMAND_SESSION_UPDATE,
 	MRCP_APP_COMMAND_SESSION_TERMINATE,
-	MRCP_APP_COMMAND_CHANNEL_MODIFY,
+	MRCP_APP_COMMAND_CHANNEL_ADD,
 	MRCP_APP_COMMAND_CHANNEL_REMOVE,
 	MRCP_APP_COMMAND_MESSAGE,
 } mrcp_app_command_e;
@@ -146,12 +146,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
 
 /** 
- * Send channel add/modify request.
+ * Send channel add request.
  * @param session the session to create channel for
  * @param channel the control channel
  * @param descriptor the descriptor of RTP termination assoiciated with control channel (NULL by default)
  */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_modify(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
 
 /** 
  * Send MRCP message.

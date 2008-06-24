@@ -45,7 +45,7 @@ struct demo_application_vtable_t {
 	apt_bool_t (*on_session_update)(demo_application_t *application, mrcp_session_t *session);
 	apt_bool_t (*on_session_terminate)(demo_application_t *application, mrcp_session_t *session);
 	
-	apt_bool_t (*on_channel_modify)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
+	apt_bool_t (*on_channel_add)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
 	apt_bool_t (*on_channel_remove)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel);
 
 	apt_bool_t (*on_message_receive)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);

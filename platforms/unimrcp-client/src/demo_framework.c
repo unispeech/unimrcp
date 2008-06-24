@@ -114,8 +114,8 @@ static apt_bool_t demo_framework_response_process(demo_application_t *demo_appli
 		case MRCP_APP_COMMAND_SESSION_TERMINATE:
 			demo_application->vtable->on_session_terminate(demo_application,app_message->session);
 			break;
-		case MRCP_APP_COMMAND_CHANNEL_MODIFY:
-			demo_application->vtable->on_channel_modify(
+		case MRCP_APP_COMMAND_CHANNEL_ADD:
+			demo_application->vtable->on_channel_add(
 					demo_application,
 					app_message->session,
 					app_message->channel,
