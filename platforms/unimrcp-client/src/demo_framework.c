@@ -105,45 +105,60 @@ static void demo_framework_on_terminate_complete(apt_task_t *task)
 {
 }
 
+static apt_bool_t demo_framework_response_process(demo_application_t *demo_application, const mrcp_app_message_t *app_message)
+{
+	switch(app_message->command_id) {
+		case MRCP_APP_COMMAND_SESSION_UPDATE:
+			demo_application->vtable->on_session_update(demo_application,app_message->session);
+			break;
+		case MRCP_APP_COMMAND_SESSION_TERMINATE:
+			demo_application->vtable->on_session_terminate(demo_application,app_message->session);
+			break;
+		case MRCP_APP_COMMAND_CHANNEL_MODIFY:
+			demo_application->vtable->on_channel_modify(
+					demo_application,
+					app_message->session,
+					app_message->channel,
+					app_message->descriptor);
+			break;
+		case MRCP_APP_COMMAND_CHANNEL_REMOVE:
+			demo_application->vtable->on_channel_remove(
+					demo_application,
+					app_message->session,
+					app_message->channel);
+			break;
+		case MRCP_APP_COMMAND_MESSAGE:
+			demo_application->vtable->on_message_receive(
+					demo_application,
+					app_message->session,
+					app_message->channel,
+					app_message->mrcp_message);
+			break;
+		default:
+			break;
+	}
+	return TRUE;
+}
+
+static apt_bool_t demo_framework_event_process(demo_application_t *demo_application, const mrcp_app_message_t *app_message)
+{
+	return TRUE;
+}
+
 static apt_bool_t demo_framework_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	if(msg->type == TASK_MSG_USER) {
 		framework_task_data_t *framework_task_data = (framework_task_data_t*)msg->data;
-		demo_application_t *demo_application = framework_task_data->demo_application;
 		const mrcp_app_message_t *app_message = framework_task_data->app_message;
 		switch(app_message->message_type) {
 			case MRCP_APP_MESSAGE_TYPE_RESPONSE:
-			switch(framework_task_data->app_message->command_id) {
-				case MRCP_APP_COMMAND_SESSION_UPDATE:
-					demo_application->vtable->on_session_update(demo_application,app_message->session);
-					break;
-				case MRCP_APP_COMMAND_SESSION_TERMINATE:
-					demo_application->vtable->on_session_terminate(demo_application,app_message->session);
-					break;
-				case MRCP_APP_COMMAND_CHANNEL_MODIFY:
-					demo_application->vtable->on_channel_modify(
-							demo_application,
-							app_message->session,
-							app_message->channel,
-							app_message->descriptor);
-					break;
-				case MRCP_APP_COMMAND_CHANNEL_REMOVE:
-					demo_application->vtable->on_channel_remove(
-							demo_application,
-							app_message->session,
-							app_message->channel);
-					break;
-				case MRCP_APP_COMMAND_MESSAGE:
-					demo_application->vtable->on_message_receive(
-							demo_application,
-							app_message->session,
-							app_message->channel,
-							app_message->mrcp_message);
-					break;
-				default:
-					break;
-			}
-			break;
+				demo_framework_response_process(framework_task_data->demo_application,app_message);
+				break;
+			case MRCP_APP_MESSAGE_TYPE_EVENT:
+				demo_framework_event_process(framework_task_data->demo_application,app_message);
+				break;
+			default:
+				break;
 		}
 	}
 	return TRUE;
