@@ -32,7 +32,7 @@ typedef apt_bool_t (*mpf_termination_event_handler_f)(mpf_termination_t *termina
 /** MPF Termination */
 struct mpf_termination_t {
 	/** Pool to allocate memory from */
-	apr_pool_t                      *pool;
+	apr_pool_t                     *pool;
 	/** External object */
 	void                           *obj;
 	/** Object to send events to */
