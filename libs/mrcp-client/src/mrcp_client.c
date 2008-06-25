@@ -27,6 +27,7 @@
 #include "mpf_engine.h"
 #include "mpf_user.h"
 #include "apt_consumer_task.h"
+#include "apt_obj_list.h"
 #include "apt_log.h"
 
 /** MRCP client */
@@ -83,8 +84,10 @@ struct mrcp_client_session_t {
 	/** In-progress answer */
 	mrcp_session_descriptor_t *answer;
 
-	/** In-progress MRCP application request */
-	const mrcp_app_message_t  *request;
+	/** MRCP application active request */
+	const mrcp_app_message_t  *active_request;
+	/** MRCP application request queue */
+	apt_obj_list_t            *request_queue;
 
 	apr_size_t                 offer_flag_count;
 	apr_size_t                 answer_flag_count;
@@ -188,6 +191,8 @@ static apt_bool_t mpf_request_send(mrcp_client_t *client, mpf_command_type_e com
 static void mrcp_client_on_start_complete(apt_task_t *task);
 static void mrcp_client_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+
+static apt_bool_t mrcp_client_application_msg_dispatch(mrcp_client_t *client, mrcp_client_session_t *client_session, const mrcp_app_message_t *app_message);
 
 
 /** Create MRCP client instance */
@@ -400,7 +405,8 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 	session->channels = apr_array_make(session->base.pool,2,sizeof(mrcp_channel_t*));
 	session->offer = NULL;
 	session->answer = NULL;
-	session->request = NULL;
+	session->active_request = NULL;
+	session->request_queue = apt_list_create(session->base.pool);
 	session->offer_flag_count = 0;
 	session->answer_flag_count = 0;
 	session->terminate_flag_count = 0;
@@ -546,15 +552,18 @@ static mrcp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_ses
 static apt_bool_t mrcp_client_application_respond(mrcp_client_t *client, mrcp_client_session_t *session)
 {
 	mrcp_app_message_t *response;
-	if(!session->request) {
+	if(!session->active_request) {
 		return FALSE;
 	}
 	response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
-	*response = *session->request;
+	*response = *session->active_request;
 	response->message_type = MRCP_APP_MESSAGE_TYPE_RESPONSE;
 	session->application->handler(response);
 
-	session->request = NULL;
+	session->active_request = apt_list_pop_front(session->request_queue);
+	if(session->active_request) {
+		mrcp_client_application_msg_dispatch(client,session,session->active_request);
+	}
 	return TRUE;
 }
 
@@ -686,6 +695,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_t *client, mrcp_clie
 		}
 	}
 
+	session->terminate_flag_count++;
 	mrcp_session_terminate_request(&session->base);
 	return TRUE;
 }
@@ -707,7 +717,15 @@ static apt_bool_t mrcp_client_on_channel_modify(mrcp_client_t *client, const con
 
 static apt_bool_t mrcp_client_on_channel_remove(mrcp_client_t *client, const connection_agent_message_t *message)
 {
+	mrcp_client_session_t *session = (mrcp_client_session_t*)message->channel->session;
 	apt_log(APT_PRIO_DEBUG,"On Control Channel Remove");
+	if(session->terminate_flag_count) {
+		session->terminate_flag_count--;
+		if(!session->terminate_flag_count) {
+			/* send application response */
+			mrcp_client_application_respond(client,session);
+		}
+	}
 	return TRUE;
 }
 
@@ -743,6 +761,18 @@ static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_t *client, mrcp_
 
 static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_t *client, mrcp_client_session_t *session, const mpf_message_t *mpf_message)
 {
+	if(session && session->offer) {
+		mrcp_termination_slot_t *termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
+		if(termination_slot && termination_slot->waiting == TRUE) {
+			if(session->terminate_flag_count) {
+				session->terminate_flag_count--;
+				if(!session->terminate_flag_count) {
+					/* send application response */
+					mrcp_client_application_respond(client,session);
+				}
+			}
+		}
+	}
 	return TRUE;
 }
 
@@ -844,11 +874,44 @@ static apt_bool_t mrcp_client_session_answer_process(mrcp_client_t *client, mrcp
 
 static apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_t *client, mrcp_session_t *session)
 {
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	apt_log(APT_PRIO_INFO,"Process Session Terminate <%s>",session->id.buf);
+
+	if(client_session->terminate_flag_count) {
+		client_session->terminate_flag_count--;
+	}
+
+	if(!client_session->terminate_flag_count) {
+		mrcp_client_application_respond(client,client_session);
+	}
 	return TRUE;
 }
 
 static apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_t *client, mrcp_session_t *session)
 {
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_application_msg_dispatch(mrcp_client_t *client, mrcp_client_session_t *client_session, const mrcp_app_message_t *app_message)
+{
+	switch(app_message->command_id) {
+		case MRCP_APP_COMMAND_SESSION_UPDATE:
+			mrcp_client_session_update(client,client_session);
+			break;
+		case MRCP_APP_COMMAND_SESSION_TERMINATE:
+			mrcp_client_session_terminate(client,client_session);
+			break;
+		case MRCP_APP_COMMAND_CHANNEL_ADD:
+			mrcp_client_channel_add(client,client_session,app_message->channel,app_message->descriptor);
+			break;
+		case MRCP_APP_COMMAND_CHANNEL_REMOVE:
+			mrcp_client_channel_modify(client,client_session,app_message->channel,FALSE);
+			break;
+		case MRCP_APP_COMMAND_MESSAGE:
+			break;
+		default:
+			break;
+	}
 	return TRUE;
 }
 
@@ -927,30 +990,18 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_CLIENT_APPLICATION_TASK_MSG:
 		{
 			mrcp_client_session_t *client_session;
-			const mrcp_app_message_t **slot = (const mrcp_app_message_t**) msg->data;
-			const mrcp_app_message_t *app_message = *slot;
+			mrcp_app_message_t **slot = (mrcp_app_message_t**) msg->data;
+			mrcp_app_message_t *app_message = *slot;
 			if(app_message->message_type != MRCP_APP_MESSAGE_TYPE_REQUEST) {
 				break;
 			}
 			client_session = (mrcp_client_session_t*)app_message->session;
-			client_session->request = app_message;
-			switch(app_message->command_id) {
-				case MRCP_APP_COMMAND_SESSION_UPDATE:
-					mrcp_client_session_update(client,client_session);
-					break;
-				case MRCP_APP_COMMAND_SESSION_TERMINATE:
-					mrcp_client_session_terminate(client,client_session);
-					break;
-				case MRCP_APP_COMMAND_CHANNEL_ADD:
-					mrcp_client_channel_add(client,client_session,app_message->channel,app_message->descriptor);
-					break;
-				case MRCP_APP_COMMAND_CHANNEL_REMOVE:
-					mrcp_client_channel_modify(client,client_session,app_message->channel,FALSE);
-					break;
-				case MRCP_APP_COMMAND_MESSAGE:
-					break;
-				default:
-					break;
+			if(client_session->active_request) {
+				apt_list_push_back(client_session->request_queue,app_message);
+			}
+			else {
+				client_session->active_request = app_message;
+				mrcp_client_application_msg_dispatch(client,client_session,app_message);
 			}
 			break;
 		}

@@ -48,6 +48,8 @@ struct mrcp_sofia_session_t {
 	mrcp_session_t *session;
 	su_home_t      *home;
 	nua_handle_t   *nh;
+
+	apt_bool_t      terminate_requested;
 };
 
 
@@ -197,6 +199,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session)
 	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
 	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
 	sofia_session->session = session;
+	sofia_session->terminate_requested = FALSE;
 	session->obj = sofia_session;
 	
 	sofia_session->nh = nua_handle(
@@ -237,9 +240,11 @@ static apt_bool_t mrcp_sofia_session_terminate(mrcp_session_t *session)
 		return FALSE;
 	}
 
+	sofia_session->terminate_requested = TRUE;
 	nua_bye(sofia_session->nh,TAG_END());
 	return TRUE;
 }
+
 
 static void mrcp_sofia_on_call_ready(mrcp_sofia_agent_t   *sofia_agent,
 									 nua_handle_t         *nh,
@@ -269,12 +274,27 @@ static void mrcp_sofia_on_call_ready(mrcp_sofia_agent_t   *sofia_agent,
 	mrcp_session_answer(sofia_session->session,descriptor);
 }
 
-static void mrcp_sofia_on_call_terminate(mrcp_sofia_agent_t          *sofia_agent,
-									     nua_handle_t                *nh,
-									     mrcp_sofia_session_t        *sofia_session,
-									     sip_t const                 *sip,
-									     tagi_t                       tags[])
+static void mrcp_sofia_on_call_terminate(mrcp_sofia_agent_t   *sofia_agent,
+									     nua_handle_t         *nh,
+									     mrcp_sofia_session_t *sofia_session,
+									     sip_t const          *sip,
+									     tagi_t                tags[])
 {
+	if(sofia_session->terminate_requested == TRUE) {
+		mrcp_session_terminate_response(sofia_session->session);
+		if(sofia_session->nh) {
+			nua_handle_bind(sofia_session->nh, NULL);
+			nua_handle_destroy(sofia_session->nh);
+		}
+		if(sofia_session->home) {
+			sofia_session->session->obj = NULL;
+			su_home_unref(sofia_session->home);
+			sofia_session->home = NULL;
+		}
+	}
+	else {
+		mrcp_session_terminate_event(sofia_session->session);
+	}
 }
 
 static void mrcp_sofia_on_state_change(mrcp_sofia_agent_t   *sofia_agent,
@@ -284,9 +304,9 @@ static void mrcp_sofia_on_state_change(mrcp_sofia_agent_t   *sofia_agent,
 									   tagi_t                tags[])
 {
 	int ss_state = nua_callstate_init;
-	tl_gets(tags, 
+	tl_gets(tags,
 			NUTAG_CALLSTATE_REF(ss_state),
-			TAG_END()); 
+			TAG_END());
 	
 	apt_log(APT_PRIO_NOTICE,"SIP Call State [%s]", nua_callstate_name(ss_state));
 

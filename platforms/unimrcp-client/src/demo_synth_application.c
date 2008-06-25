@@ -35,6 +35,7 @@ static apt_bool_t synth_application_on_session_update(demo_application_t *demo_a
 
 static apt_bool_t synth_application_on_session_terminate(demo_application_t *demo_application, mrcp_session_t *session)
 {
+	mrcp_application_session_destroy(session);
 	return TRUE;
 }
 
