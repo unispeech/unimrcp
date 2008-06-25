@@ -22,16 +22,10 @@
  * @brief MRCP Client
  */ 
 
-#include "mrcp_sig_types.h"
-#include "mrcp_connection_types.h"
-#include "mrcp_application.h"
-#include "mpf_types.h"
+#include "mrcp_client_types.h"
 #include "apt_task.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Opaque MRCP client declaration */
-typedef struct mrcp_client_t mrcp_client_t;
 
 /**
  * Create MRCP client instance.

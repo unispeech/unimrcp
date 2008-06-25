@@ -22,19 +22,13 @@
  * @brief MRCP User Level Application Interface
  */ 
 
-#include "mrcp_sig_types.h"
-#include "mpf_types.h"
+#include "mrcp_client_types.h"
 #include "mpf_rtp_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MRCP application declaration */
-typedef struct mrcp_application_t mrcp_application_t;
-/** Opaque MRCP channel declaration */
-typedef struct mrcp_channel_t mrcp_channel_t;
 /** MRCP application message declaration */
 typedef struct mrcp_app_message_t mrcp_app_message_t;
-
 
 /** MRCP application event handler declaration */
 typedef apt_bool_t (*mrcp_app_message_handler_f)(const mrcp_app_message_t *app_message);
