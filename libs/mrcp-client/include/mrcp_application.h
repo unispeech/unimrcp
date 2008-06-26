@@ -42,8 +42,9 @@ typedef enum {
 
 /** Enumeration of MRCP application status codes */
 typedef enum {
-	MRCP_APP_STATUS_CODE_SUCCESS,  /**< indicates success */
-	MRCP_APP_STATUS_CODE_FAILURE   /**< indicates failure */
+	MRCP_APP_STATUS_CODE_SUCCESS,   /**< indicates success */
+	MRCP_APP_STATUS_CODE_FAILURE,   /**< indicates failure */
+	MRCP_APP_STATUS_CODE_TERMINATE
 } mrcp_app_status_code_e;
 
 
@@ -70,6 +71,8 @@ struct mrcp_app_message_t {
 	mrcp_app_command_e                command_id;
 	/** Event identifier */
 	mrcp_app_event_e                  event_id;
+	/** Status code used in response */
+	mrcp_app_status_code_e            status;
 
 	/** Application */
 	mrcp_application_t               *application;
@@ -97,20 +100,19 @@ MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_versio
  */
 MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *application);
 
-
-/**
- * Create client session.
- * @param application the entire application
- * @param obj the external object
- * @return the created session instance
- */
-MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj);
-
 /**
  * Get external object associated with the application.
  * @param application the application to get object from
  */
 APT_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application);
+
+/**
+ * Create session.
+ * @param application the entire application
+ * @param obj the external object
+ * @return the created session instance
+ */
+MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj);
 
 /** 
  * Send session update request.

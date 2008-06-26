@@ -26,29 +26,13 @@
 #include "mrcp_application.h"
 #include "mrcp_session.h"
 #include "mpf_message.h"
+#include "apt_task_msg.h"
 #include "apt_obj_list.h"
 
 APT_BEGIN_EXTERN_C
 
-struct mrcp_application_t {
-	void                      *obj;
-	mrcp_version_e             version;
-	mrcp_app_message_handler_f handler;
-	mrcp_client_t             *client;
-
-	/** MRCP resource factory */
-	mrcp_resource_factory_t   *resource_factory;
-	/** Media processing engine */
-	mpf_engine_t              *media_engine;
-	/** RTP termination factory */
-	mpf_termination_factory_t *rtp_termination_factory;
-	/** Signaling agent */
-	mrcp_sig_agent_t          *signaling_agent;
-	/** Connection agent */
-	mrcp_connection_agent_t   *connection_agent;
-};
-
 typedef struct mrcp_client_session_t mrcp_client_session_t;
+
 struct mrcp_client_session_t {
 	/** Session base */
 	mrcp_session_t             base;
@@ -78,32 +62,33 @@ struct mrcp_client_session_t {
 	apr_size_t                 terminate_flag_count;
 };
 
-struct mrcp_channel_t {
-	/** Memory pool */
-	apr_pool_t        *pool;
-	/** MRCP resource identifier */
-	mrcp_resource_id   resource_id;
-	/** MRCP resource */
-	mrcp_resource_t   *resource;
-	/** MRCP session entire channel belongs to (added for fast reverse search) */
-	mrcp_session_t    *session;
-	/** MRCP connection */
-	mrcp_connection_t *connection;
+struct mrcp_application_t {
+	void                      *obj;
+	mrcp_version_e             version;
+	mrcp_app_message_handler_f handler;
+	
+	mrcp_client_t             *client;
+	/** Application task message pool */
+	apt_task_msg_pool_t       *msg_pool;
 
-	/** waiting state */
-	apt_bool_t         waiting;
-	/** Media termination */
-	mpf_termination_t *termination;
+	/** MRCP resource factory */
+	mrcp_resource_factory_t   *resource_factory;
+	/** Media processing engine */
+	mpf_engine_t              *media_engine;
+	/** RTP termination factory */
+	mpf_termination_factory_t *rtp_termination_factory;
+	/** Signaling agent */
+	mrcp_sig_agent_t          *signaling_agent;
+	/** Connection agent */
+	mrcp_connection_agent_t   *connection_agent;
 };
 
-typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
-struct mrcp_termination_slot_t {
-	/** waiting state */
-	apt_bool_t         waiting;
-	/** RTP termination */
-	mpf_termination_t *termination;
-};
 
+mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj);
+mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
+
+apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message);
+apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message);
 
 apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session);
@@ -111,11 +96,6 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel);
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel);
-
-apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *session, mpf_message_t *mpf_message);
-apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *session, mpf_message_t *mpf_message);
-
-apt_bool_t mrcp_client_on_application_message(mrcp_client_session_t *session, mrcp_app_message_t *app_message);
 
 APT_END_EXTERN_C
 
