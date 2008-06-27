@@ -23,6 +23,7 @@
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
+#include "mrcp_message.h"
 #include "mpf_termination.h"
 #include "mpf_engine.h"
 #include "mpf_user.h"
@@ -31,24 +32,6 @@
 #include "apt_log.h"
 
 typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
-
-struct mrcp_channel_t {
-	/** Memory pool */
-	apr_pool_t        *pool;
-	/** MRCP resource identifier */
-	mrcp_resource_id   resource_id;
-	/** MRCP resource */
-	mrcp_resource_t   *resource;
-	/** MRCP session entire channel belongs to (added for fast reverse search) */
-	mrcp_session_t    *session;
-	/** MRCP connection */
-	mrcp_connection_t *connection;
-
-	/** waiting state */
-	apt_bool_t         waiting;
-	/** Media termination */
-	mpf_termination_t *termination;
-};
 
 struct mrcp_termination_slot_t {
 	/** waiting state */
@@ -288,10 +271,13 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 }
 
 
-apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel)
+apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_PRIO_DEBUG,"On Control Channel Modify");
+	if(!channel->connection) {
+		channel->connection = connection;
+	}
 	if(session->answer_flag_count) {
 		session->answer_flag_count--;
 		if(!session->answer_flag_count) {
@@ -314,6 +300,11 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 			mrcp_client_application_respond(session,MRCP_APP_STATUS_CODE_SUCCESS);
 		}
 	}
+	return TRUE;
+}
+
+apt_bool_t mrcp_client_on_message_receive(mrcp_connection_t *connection, mrcp_message_t *message)
+{
 	return TRUE;
 }
 
@@ -503,6 +494,11 @@ static apt_bool_t mrcp_client_application_msg_dispatch(mrcp_client_session_t *se
 			mrcp_client_channel_modify(session,app_message->channel,FALSE);
 			break;
 		case MRCP_APP_COMMAND_MESSAGE:
+			app_message->mrcp_message->channel_id.session_id = session->base.id;
+			mrcp_client_connection_message_send(
+				session->application->connection_agent,
+				app_message->channel->connection,
+				app_message->mrcp_message);
 			break;
 		default:
 			break;

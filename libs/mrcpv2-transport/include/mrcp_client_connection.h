@@ -32,25 +32,25 @@ APT_BEGIN_EXTERN_C
  * @param obj the external object to associate with the agent
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(mrcp_connection_agent_t*) mrcpv2_client_connection_agent_create(apr_pool_t *pool);
+APT_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_pool_t *pool);
 
 /**
  * Destroy connection agent.
  * @param agent the agent to destroy
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_destroy(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_client_connection_agent_destroy(mrcp_connection_agent_t *agent);
 
 /**
  * Start connection agent and wait for incoming requests.
  * @param agent the agent to start
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_start(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_client_connection_agent_start(mrcp_connection_agent_t *agent);
 
 /**
  * Terminate connection agent.
  * @param agent the agent to terminate
  */
-APT_DECLARE(apt_bool_t) mrcpv2_client_connection_agent_terminate(mrcp_connection_agent_t *agent);
+APT_DECLARE(apt_bool_t) mrcp_client_connection_agent_terminate(mrcp_connection_agent_t *agent);
 
 
 /**
@@ -63,6 +63,28 @@ APT_DECLARE(void) mrcp_client_connection_agent_handler_set(
 								mrcp_connection_agent_t *agent, 
 								void *obj, 
 								const mrcp_connection_event_vtable_t *vtable);
+
+/**
+ * Set MRCP resource factory.
+ * @param agent the agent to set resource factory for
+ * @param resource_factory the MRCP resource factory to set
+ */
+APT_DECLARE(void) mrcp_client_connection_resource_factory_set(
+								mrcp_connection_agent_t *agent, 
+								mrcp_resource_factory_t *resource_factroy);
+
+/**
+ * Get task.
+ * @param agent the agent to get task from
+ */
+APT_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent);
+
+/**
+ * Get external object.
+ * @param agent the agent to get object from
+ */
+APT_DECLARE(void*) mrcp_client_connection_agent_object_get(mrcp_connection_agent_t *agent);
+
 
 /**
  * Modify MRCPv2 connection.
@@ -92,19 +114,15 @@ APT_DECLARE(apt_bool_t) mrcp_client_connection_remove(
 								apr_pool_t *pool);
 
 /**
- * Get task.
- * @param agent the agent to get task from
+ * Send MRCPv2 message.
+ * @param agent the connection agent
+ * @param connection the connection to send message through
+ * @param message the message to send
  */
-APT_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent);
-
-/**
- * Get external object.
- * @param agent the agent to get object from
- */
-APT_DECLARE(void*) mrcp_client_connection_agent_object_get(mrcp_connection_agent_t *agent);
-
-
-
+APT_DECLARE(apt_bool_t) mrcp_client_connection_message_send(
+								mrcp_connection_agent_t *agent,
+								mrcp_connection_t *connection,
+								mrcp_message_t *message);
 
 APT_END_EXTERN_C
 

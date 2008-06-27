@@ -45,6 +45,9 @@ struct mrcp_connection_event_vtable_t {
 								mrcp_control_descriptor_t *descriptor);
 	apt_bool_t (*on_remove)(	mrcp_connection_agent_t *agent,
 								void *handle);
+	apt_bool_t (*on_receive)(	mrcp_connection_agent_t *agent,
+								mrcp_connection_t *connection,
+								mrcp_message_t *message);
 };
 
 

@@ -150,6 +150,14 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *se
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
 
 /** 
+ * Create MRCP message.
+ * @param session the session
+ * @param channel the control channel
+ * @param method_id the method identifier of MRCP message
+ */
+mrcp_message_t* mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id);
+
+/** 
  * Send MRCP message.
  * @param session the session
  * @param channel the control channel

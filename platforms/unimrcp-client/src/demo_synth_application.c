@@ -15,6 +15,34 @@
  */
 
 #include "demo_application.h"
+#include "mrcp_session.h"
+#include "mrcp_message.h"
+#include "mrcp_synth_resource.h"
+#include "mrcp_generic_header.h"
+
+static mrcp_message_t* synth_application_speak_message_create(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel)
+{
+	const char text[] = 
+		"<?xml version=\"1.0\"?>\r\n"
+		"<speak>\r\n"
+		"<paragraph>\r\n"
+		"    <sentence>Hello World.</sentence>\r\n"
+		"</paragraph>\r\n"
+		"</speak>\r\n";
+
+	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,SYNTHESIZER_SPEAK);
+	if(mrcp_message) {
+		mrcp_generic_header_t *generic_header;
+		generic_header = mrcp_generic_header_prepare(mrcp_message);
+		if(generic_header) {
+			apt_string_assign(&generic_header->content_type,"application/synthesis+ssml",mrcp_message->pool);
+			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
+		}
+		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
+	}
+	return mrcp_message;
+}
+
 
 static apt_bool_t synth_application_run(demo_application_t *demo_application)
 {
@@ -22,7 +50,13 @@ static apt_bool_t synth_application_run(demo_application_t *demo_application)
 	if(session) {
 		mrcp_channel_t *channel = mrcp_application_channel_create(session,MRCP_SYNTHESIZER_RESOURCE,NULL,NULL);
 		if(channel) {
+			mrcp_message_t *mrcp_message;
 			mrcp_application_channel_add(session,channel,NULL);
+
+			mrcp_message = synth_application_speak_message_create(demo_application,session,channel);
+			if(mrcp_message) {
+				mrcp_application_message_send(session,channel,mrcp_message);
+			}
 		}
 	}
 	return TRUE;
@@ -41,12 +75,12 @@ static apt_bool_t synth_application_on_session_terminate(demo_application_t *dem
 
 static apt_bool_t synth_application_on_channel_add(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor)
 {
-	mrcp_application_channel_remove(session,channel);
 	return TRUE;
 }
 
 static apt_bool_t synth_application_on_message_receive(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
+	mrcp_application_channel_remove(session,channel);
 	return TRUE;
 }
 

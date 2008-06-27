@@ -62,7 +62,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create()
 	if(sig_agent) {
 		mrcp_client_signaling_agent_register(client,sig_agent);
 	}
-	connection_agent = mrcpv2_client_connection_agent_create(pool);
+	connection_agent = mrcp_client_connection_agent_create(pool);
 	if(connection_agent) {
 		mrcp_client_connection_agent_register(client,connection_agent);
 	}
