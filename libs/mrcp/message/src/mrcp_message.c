@@ -610,11 +610,12 @@ MRCP_DECLARE(void) mrcp_message_init_by_request(mrcp_message_t *message, const m
 }
 
 /** Create MRCP request message */
-MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_method_id method_id, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_id resource_id, mrcp_method_id method_id, apr_pool_t *pool)
 {
 	mrcp_message_t *request_message = mrcp_message_create(pool);
 	request_message->start_line.message_type = MRCP_MESSAGE_TYPE_REQUEST;
 	request_message->start_line.method_id = method_id;
+	request_message->channel_id.resource_id = resource_id;
 	return request_message;
 }
 
@@ -667,5 +668,3 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message)
 
 	return TRUE;
 }
-
-

@@ -194,7 +194,7 @@ MRCP_DECLARE(void) mrcp_message_init(mrcp_message_t *message, apr_pool_t *pool);
 MRCP_DECLARE(void) mrcp_message_init_by_request(mrcp_message_t *message, const mrcp_message_t *request_message);
 
 /** Create MRCP request message */
-MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_method_id method_id, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_id resource_id, mrcp_method_id method_id, apr_pool_t *pool);
 /** Create MRCP response message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request_message, apr_pool_t *pool);
 /** Create MRCP event message */
