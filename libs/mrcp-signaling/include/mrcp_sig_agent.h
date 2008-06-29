@@ -34,13 +34,15 @@ struct mrcp_sig_agent_t {
 	apr_pool_t          *pool;
 	/** External object associated with agent */
 	void                *obj;
+	/** Parent object (client/server) */
+	void                *parent;
 	/** Task interface */
 	apt_task_t          *task;
 	/** Task message pool used to allocate signaling agent messages */
 	apt_task_msg_pool_t *msg_pool;
 
 	/** Virtual create_server_session */
-	mrcp_session_t* (*create_server_session)();
+	mrcp_session_t* (*create_server_session)(mrcp_sig_agent_t *signaling_agent);
 	/** Virtual create_client_session */
 	apt_bool_t (*create_client_session)(mrcp_session_t *session);
 };

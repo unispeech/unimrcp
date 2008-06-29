@@ -133,6 +133,10 @@
 				RelativePath=".\include\mrcp_server.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\mrcp_server_session.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
@@ -140,6 +144,10 @@
 			>
 			<File
 				RelativePath=".\src\mrcp_server.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_server_session.c"
 				>
 			</File>
 		</Filter>

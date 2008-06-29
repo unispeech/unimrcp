@@ -170,8 +170,7 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia_agent, nua_handle_t *nh)
 {
 	mrcp_sofia_session_t *sofia_session;
-	mrcp_session_t* session = sofia_agent->sig_agent->create_server_session();
-	session->signaling_agent = sofia_agent->sig_agent;
+	mrcp_session_t* session = sofia_agent->sig_agent->create_server_session(sofia_agent->sig_agent);
 	session->response_vtable = &session_response_vtable;
 	session->event_vtable = NULL;
 

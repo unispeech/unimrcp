@@ -267,6 +267,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *cli
 	}
 	apt_log(APT_PRIO_INFO,"Register Signaling Agent");
 	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sig_agent_task_msg_data_t),client->pool);
+	signaling_agent->parent = client;
 	client->signaling_agent = signaling_agent;
 	if(client->task) {
 		apt_task_t *task = apt_consumer_task_base_get(client->task);
