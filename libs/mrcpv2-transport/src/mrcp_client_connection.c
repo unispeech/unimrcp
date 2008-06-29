@@ -335,27 +335,35 @@ static mrcp_connection_t* mrcp_client_agent_connection_find(mrcp_connection_agen
 
 static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message)
 {
-	char buffer[MRCP_MESSAGE_MAX_SIZE];
-	apt_text_stream_t text_stream;
-	
-	if(!connection || !connection->sock) {
-		return FALSE;
+	apt_bool_t status = FALSE;
+	if(connection && connection->sock) {
+		char buffer[MRCP_MESSAGE_MAX_SIZE];
+		apt_text_stream_t text_stream;
+		
+		text_stream.text.buf = buffer;
+		text_stream.text.length = sizeof(buffer)-1;
+		text_stream.pos = text_stream.text.buf;
+
+		if(mrcp_message_generate(agent->resource_factory,message,&text_stream) == TRUE) {
+			*text_stream.pos = '\0';
+			apt_log(APT_PRIO_INFO,"Send MRCPv2 Message size=%lu\n%s",
+				text_stream.text.length,text_stream.text.buf);
+			if(apr_socket_send(connection->sock,text_stream.text.buf,&text_stream.text.length) == APR_SUCCESS) {
+				status = TRUE;
+			}
+			else {
+				apt_log(APT_PRIO_WARNING,"Failed to Send MRCPv2 Message");
+			}
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv2 Message");
+		}
 	}
 
-	text_stream.text.buf = buffer;
-	text_stream.text.length = sizeof(buffer)-1;
-	text_stream.pos = text_stream.text.buf;
-
-	if(mrcp_message_generate(agent->resource_factory,message,&text_stream) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv2 Message");
-		return FALSE;
-	}
-	*text_stream.pos = '\0';
-	apt_log(APT_PRIO_DEBUG,"Send MRCPv2 Message size=%lu\n%s",
-		text_stream.text.length,text_stream.text.buf);
-	if(apr_socket_send(connection->sock,text_stream.text.buf,&text_stream.text.length) != APR_SUCCESS) {
-		apt_log(APT_PRIO_WARNING,"Failed to Send MRCPv2 Message");
-		return FALSE;
+	if(status == FALSE) {
+		mrcp_message_t *response = mrcp_response_create(message,message->pool);
+		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+		agent->vtable->on_receive(agent,connection,message);
 	}
 	return TRUE;
 }
@@ -387,7 +395,7 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 	text_stream.text.buf[text_stream.text.length] = '\0';
 	text_stream.pos = text_stream.text.buf;
 
-	apt_log(APT_PRIO_DEBUG,"Receive MRCPv2 Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
+	apt_log(APT_PRIO_INFO,"Receive MRCPv2 Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
 	if(!connection->access_count) {
 		return FALSE;
 	}
@@ -395,11 +403,10 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 	do {
 		message = mrcp_message_create(connection->pool);
 		if(mrcp_message_parse(agent->resource_factory,message,&text_stream) == TRUE) {
-			apt_log(APT_PRIO_DEBUG,"Signal MRCPv2 Message\n");
 			agent->vtable->on_receive(agent,connection,message);
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv2 Message\n");
+			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv2 Message");
 			if(message->start_line.version == MRCP_VERSION_2) {
 				/* assume that at least message length field is valid */
 				if(message->start_line.length <= text_stream.text.length) {
@@ -419,7 +426,7 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 			more_messages_on_buffer = TRUE;
 			text_stream.text.length -= text_stream.pos - text_stream.text.buf;
 			text_stream.text.buf = text_stream.pos;
-			apt_log(APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message\n");
+			apt_log(APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message");
 		}
 	}
 	while(more_messages_on_buffer);

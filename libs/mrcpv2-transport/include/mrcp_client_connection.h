@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef __MRCPV2_CLIENT_AGENT_H__
-#define __MRCPV2_CLIENT_AGENT_H__
+#ifndef __MRCP_CLIENT_CONNECTION_H__
+#define __MRCP_CLIENT_CONNECTION_H__
 
 /**
- * @file mrcpv2_client_agent.h
- * @brief MRCPv2 Client Connection Agent
+ * @file mrcp_client_connection.h
+ * @brief MRCPv2 Client Connection
  */ 
 
 #include "apt_task.h"
@@ -126,4 +126,4 @@ APT_DECLARE(apt_bool_t) mrcp_client_connection_message_send(
 
 APT_END_EXTERN_C
 
-#endif /*__MRCPV2_CLIENT_AGENT_H__*/
+#endif /*__MRCP_CLIENT_CONNECTION_H__*/

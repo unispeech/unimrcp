@@ -69,7 +69,7 @@ struct mrcp_channel_t {
 	mrcp_resource_id   resource_id;
 	/** MRCP resource */
 	mrcp_resource_t   *resource;
-	/** MRCP session entire channel belongs to (added for fast reverse search) */
+	/** MRCP session entire channel belongs to */
 	mrcp_session_t    *session;
 	/** MRCP connection */
 	mrcp_connection_t *connection;
@@ -114,7 +114,7 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection);
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel);
-apt_bool_t mrcp_client_on_message_receive(mrcp_connection_t *connection, mrcp_message_t *message);
+apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message);
 
 APT_END_EXTERN_C
 
