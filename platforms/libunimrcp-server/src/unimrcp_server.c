@@ -81,7 +81,7 @@ MRCP_DECLARE(apt_bool_t) unimrcp_server_shutdown(mrcp_server_t *server)
 static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool)
 {
 	mrcp_sofia_server_config_t *config = mrcp_sofiasip_server_config_alloc(pool);
-	config->local_ip = "0.0.0.0";
+	config->local_ip = "127.0.0.1";
 	config->local_port = 8060;
 	config->user_agent_name = "UniMRCP Sofia-SIP";
 	config->origin = "UniMRCPServer";
