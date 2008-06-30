@@ -64,8 +64,8 @@ struct mrcp_server_session_t {
 
 mrcp_server_session_t* mrcp_server_session_create();
 
-apt_bool_t mrcp_server_session_offer_process(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
-apt_bool_t mrcp_server_session_terminate_process(mrcp_session_t *session);
+apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor);
+apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session);
 
 apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection, mrcp_control_descriptor_t *answer);
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);

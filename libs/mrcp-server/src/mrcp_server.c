@@ -65,48 +65,50 @@ typedef enum {
 	SIG_AGENT_TASK_MSG_TERMINATE
 } sig_agent_task_msg_type_e ;
 
-typedef struct sig_agent_message_t sig_agent_message_t;
-struct sig_agent_message_t {
-	mrcp_session_t            *session;
+typedef struct sig_agent_task_msg_data_t sig_agent_task_msg_data_t;
+struct sig_agent_task_msg_data_t {
+	mrcp_server_session_t     *session;
 	mrcp_session_descriptor_t *descriptor;
 };
 
-static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
-static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session);
+static apt_bool_t mrcp_server_offer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
+static apt_bool_t mrcp_server_terminate_signal(mrcp_session_t *session);
 
 static const mrcp_session_request_vtable_t session_request_vtable = {
-	mrcp_server_session_offer,
-	mrcp_server_session_terminate
+	mrcp_server_offer_signal,
+	mrcp_server_terminate_signal
 };
 
 
 /* Connection agent interface */
 typedef enum {
-	CONNECTION_AGENT_TASK_MSG_MODIFY,
-	CONNECTION_AGENT_TASK_MSG_REMOVE,
+	CONNECTION_AGENT_TASK_MSG_MODIFY_CONNECTION,
+	CONNECTION_AGENT_TASK_MSG_REMOVE_CONNECTION,
+	CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE,
 	CONNECTION_AGENT_TASK_MSG_TERMINATE
 } connection_agent_task_msg_type_e ;
 
-typedef struct connection_agent_message_t connection_agent_message_t;
-struct connection_agent_message_t {
+typedef struct connection_agent_task_msg_data_t connection_agent_task_msg_data_t;
+struct connection_agent_task_msg_data_t {
 	mrcp_connection_agent_t   *agent;
 	mrcp_channel_t            *channel;
 	mrcp_connection_t         *connection;
 	mrcp_control_descriptor_t *descriptor;
+	mrcp_message_t            *mrcp_message;
 };
 
-static apt_bool_t mrcp_server_channel_on_modify(
+static apt_bool_t mrcp_server_channel_modify_signal(
 								mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
 								mrcp_control_descriptor_t *descriptor);
-static apt_bool_t mrcp_server_channel_on_remove(
+static apt_bool_t mrcp_server_channel_remove_signal(
 								mrcp_connection_agent_t *agent,
 								void *handle);
 
 static const mrcp_connection_event_vtable_t connection_method_vtable = {
-	mrcp_server_channel_on_modify,
-	mrcp_server_channel_on_remove
+	mrcp_server_channel_modify_signal,
+	mrcp_server_channel_remove_signal
 };
 
 
@@ -250,7 +252,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 	}
 	signaling_agent->parent = server;
 	signaling_agent->create_server_session = mrcp_server_sig_agent_session_create;
-	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sig_agent_message_t),server->pool);
+	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sig_agent_task_msg_data_t),server->pool);
 	server->signaling_agent = signaling_agent;
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
@@ -266,7 +268,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *se
 		return FALSE;
 	}
 	mrcp_server_connection_agent_handler_set(connection_agent,server,&connection_method_vtable);
-	server->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_message_t),server->pool);
+	server->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_task_msg_data_t),server->pool);
 	server->connection_agent = connection_agent;
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
@@ -315,7 +317,8 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	switch(msg->type) {
 		case MRCP_SERVER_SIGNALING_TASK_MSG:
 		{
-			const sig_agent_message_t *sig_message = (const sig_agent_message_t*)msg->data;
+			const sig_agent_task_msg_data_t *sig_message = (const sig_agent_task_msg_data_t*)msg->data;
+			apt_log(APT_PRIO_DEBUG,"Receive Signaling Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case SIG_AGENT_TASK_MSG_OFFER:
 					mrcp_server_session_offer_process(sig_message->session,sig_message->descriptor);
@@ -330,14 +333,15 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		}
 		case MRCP_SERVER_CONNECTION_TASK_MSG:
 		{
-			const connection_agent_message_t *connection_message = (const connection_agent_message_t*)msg->data;
+			const connection_agent_task_msg_data_t *connection_message = (const connection_agent_task_msg_data_t*)msg->data;
+			apt_log(APT_PRIO_DEBUG,"Receive Connection Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
-				case CONNECTION_AGENT_TASK_MSG_MODIFY:
+				case CONNECTION_AGENT_TASK_MSG_MODIFY_CONNECTION:
 				{
 					mrcp_server_on_channel_modify(connection_message->channel,connection_message->connection,connection_message->descriptor);
 					break;
 				}
-				case CONNECTION_AGENT_TASK_MSG_REMOVE:
+				case CONNECTION_AGENT_TASK_MSG_REMOVE_CONNECTION:
 				{
 					mrcp_server_on_channel_remove(connection_message->channel);
 					break;
@@ -350,17 +354,59 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_MEDIA_TASK_MSG:
 		{
 			mpf_message_t *mpf_message = (mpf_message_t*) msg->data;
+			apt_log(APT_PRIO_DEBUG,"Receive Media Task Message [%d]", mpf_message->command_id);
 			mrcp_server_mpf_message_process(mpf_message);
 			break;
 		}
-		default: 
+		default:
+		{
+			apt_log(APT_PRIO_WARNING,"Receive Unknown Task Message [%d]", msg->type);
 			break;
+		}
 	}
 	return TRUE;
 }
 
+static apt_bool_t mrcp_server_signaling_task_msg_signal(sig_agent_task_msg_type_e type, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	sig_agent_task_msg_data_t *data;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
+	task_msg->type = MRCP_SERVER_SIGNALING_TASK_MSG;
+	task_msg->sub_type = type;
+	data = (sig_agent_task_msg_data_t*) task_msg->data;
+	data->session = (mrcp_server_session_t*)session;
+	data->descriptor = descriptor;
 
-/* Signaling interface */
+	apt_log(APT_PRIO_DEBUG,"Signal Signaling Task Message");
+	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
+}
+
+static apt_bool_t mrcp_server_connection_task_msg_signal(
+							connection_agent_task_msg_type_e type,
+							mrcp_connection_agent_t         *agent,
+							mrcp_channel_t                  *channel,
+							mrcp_connection_t               *connection,
+							mrcp_control_descriptor_t       *descriptor,
+							mrcp_message_t                  *mrcp_message)
+{
+	mrcp_server_t *server = mrcp_server_connection_agent_object_get(agent);
+	apt_task_t *task = apt_consumer_task_base_get(server->task);
+	connection_agent_task_msg_data_t *data;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->connection_msg_pool);
+	task_msg->type = MRCP_SERVER_CONNECTION_TASK_MSG;
+	task_msg->sub_type = type;
+	data = (connection_agent_task_msg_data_t*) task_msg->data;
+	data->agent = agent;
+	data->channel = channel;
+	data->connection = connection;
+	data->descriptor = descriptor;
+	data->mrcp_message = mrcp_message;
+
+	apt_log(APT_PRIO_DEBUG,"Signal Connection Task Message");
+	return apt_task_msg_signal(task,task_msg);
+}
+
+
 static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *signaling_agent)
 {
 	mrcp_server_t *server = signaling_agent->parent;
@@ -376,72 +422,54 @@ static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *si
 	return &session->base;
 }
 
-static apt_bool_t mrcp_server_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+static apt_bool_t mrcp_server_offer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
-	sig_agent_message_t *message;
-	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
-	task_msg->type = MRCP_SERVER_SIGNALING_TASK_MSG;
-	task_msg->sub_type = SIG_AGENT_TASK_MSG_OFFER;
-	message = (sig_agent_message_t*) task_msg->data;
-	message->session = session;
-	message->descriptor = descriptor;
-
-	apt_log(APT_PRIO_DEBUG,"Signal Session Offer");
-	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
+	return mrcp_server_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_OFFER,session,descriptor);
 }
 
-static apt_bool_t mrcp_server_session_terminate(mrcp_session_t *session)
+static apt_bool_t mrcp_server_terminate_signal(mrcp_session_t *session)
 {
-	sig_agent_message_t *data;
-	apt_task_msg_t *msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
-	msg->type = MRCP_SERVER_SIGNALING_TASK_MSG;
-	msg->sub_type = SIG_AGENT_TASK_MSG_TERMINATE;
-	data = (sig_agent_message_t*) msg->data;
-	data->session = session;
-	data->descriptor = NULL;
-
-	apt_log(APT_PRIO_DEBUG,"Signal Session Terminate");
-	return apt_task_msg_parent_signal(session->signaling_agent->task,msg);
+	return mrcp_server_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_TERMINATE,session,NULL);
 }
 
-
-/* Connection interface */
-static apt_bool_t mrcp_server_channel_on_modify(
+static apt_bool_t mrcp_server_channel_modify_signal(
 								mrcp_connection_agent_t *agent,
 								void *handle,
 								mrcp_connection_t *connection,
 								mrcp_control_descriptor_t *descriptor)
 {
-	mrcp_server_t *server = mrcp_server_connection_agent_object_get(agent);
-	apt_task_t *task = apt_consumer_task_base_get(server->task);
-	connection_agent_message_t *message;
-	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->connection_msg_pool);
-	task_msg->type = MRCP_SERVER_CONNECTION_TASK_MSG;
-	task_msg->sub_type = CONNECTION_AGENT_TASK_MSG_MODIFY;
-	message = (connection_agent_message_t*) task_msg->data;
-	message->agent = agent;
-	message->channel = handle;
-	message->connection = connection;
-	message->descriptor = descriptor;
-
-	return apt_task_msg_signal(task,task_msg);
+	return mrcp_server_connection_task_msg_signal(
+								CONNECTION_AGENT_TASK_MSG_MODIFY_CONNECTION,
+								agent,
+								handle,
+								connection,
+								descriptor,
+								NULL);
 }
 
-static apt_bool_t mrcp_server_channel_on_remove(
+static apt_bool_t mrcp_server_channel_remove_signal(
 								mrcp_connection_agent_t *agent,
 								void *handle)
 {
-	mrcp_server_t *server = mrcp_server_connection_agent_object_get(agent);
-	apt_task_t *task = apt_consumer_task_base_get(server->task);
-	connection_agent_message_t *message;
-	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->connection_msg_pool);
-	task_msg->type = MRCP_SERVER_CONNECTION_TASK_MSG;
-	task_msg->sub_type = CONNECTION_AGENT_TASK_MSG_REMOVE;
-	message = (connection_agent_message_t*) task_msg->data;
-	message->agent = agent;
-	message->channel = handle;
-	message->connection = NULL;
-	message->descriptor = NULL;
+	return mrcp_server_connection_task_msg_signal(
+								CONNECTION_AGENT_TASK_MSG_REMOVE_CONNECTION,
+								agent,
+								handle,
+								NULL,
+								NULL,
+								NULL);
+}
 
-	return apt_task_msg_signal(task,task_msg);
+static apt_bool_t mrcp_server_message_signal(
+								mrcp_connection_agent_t *agent,
+								mrcp_connection_t *connection,
+								mrcp_message_t *mrcp_message)
+{
+	return mrcp_server_connection_task_msg_signal(
+								CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE,
+								agent,
+								NULL,
+								connection,
+								NULL,
+								mrcp_message);
 }

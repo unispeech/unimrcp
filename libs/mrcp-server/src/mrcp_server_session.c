@@ -172,58 +172,56 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 	return TRUE;
 }
 
-apt_bool_t mrcp_server_session_offer_process(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
-	mrcp_server_session_t *server_session = (mrcp_server_session_t*)session;
-	if(server_session->offer) {
+	if(session->offer) {
 		/* last offer received is still in-progress, new offer is not allowed */
 		apt_log(APT_PRIO_WARNING,"Cannot Accept New Offer");
 		return FALSE;
 	}
-	if(!session->id.length) {
+	if(!session->base.id.length) {
 		/* initial offer received, generate session id and add to session's table */
-		apt_unique_id_generate(&session->id,MRCP_SESSION_ID_HEX_STRING_LENGTH,session->pool);
-		mrcp_server_session_add(server_session);
+		apt_unique_id_generate(&session->base.id,MRCP_SESSION_ID_HEX_STRING_LENGTH,session->base.pool);
+		mrcp_server_session_add(session);
 
-		server_session->context = mpf_context_create(server_session,5,session->pool);
+		session->context = mpf_context_create(session,5,session->base.pool);
 	}
 	apt_log(APT_PRIO_INFO,"Process Session Offer <%s> [c:%d a:%d v:%d]",
-		session->id.buf,
+		session->base.id.buf,
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts);
 
-	mrcp_server_control_media_offer_process(server_session,descriptor);
-	mrcp_server_av_media_offer_process(server_session,descriptor);
+	mrcp_server_control_media_offer_process(session,descriptor);
+	mrcp_server_av_media_offer_process(session,descriptor);
 
 	/* store received offer */
-	server_session->offer = descriptor;
-	server_session->answer = mrcp_session_descriptor_create(session->pool);
+	session->offer = descriptor;
+	session->answer = mrcp_session_descriptor_create(session->base.pool);
 	return TRUE;
 }
 
-apt_bool_t mrcp_server_session_terminate_process(mrcp_session_t *session)
+apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session)
 {
 	int i;
-	mrcp_server_session_t *server_session = (mrcp_server_session_t*)session;
 	apt_log(APT_PRIO_INFO,"Process Session Terminate");
-	for(i=0; i<server_session->channels->nelts; i++) {
-		mrcp_channel_t *channel = ((mrcp_channel_t**)server_session->channels->elts)[i];
+	for(i=0; i<session->channels->nelts; i++) {
+		mrcp_channel_t *channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(channel) {
 			/* send remove channel request */
 			apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
-			mrcp_server_connection_remove(server_session->connection_agent,channel,channel->connection,channel->pool);
+			mrcp_server_connection_remove(session->connection_agent,channel,channel->connection,channel->pool);
 		}
 	}
-	for(i=0; i<server_session->terminations->nelts; i++) {
-		mpf_termination_t *termination = ((mpf_termination_t**)server_session->terminations->elts)[i];
+	for(i=0; i<session->terminations->nelts; i++) {
+		mpf_termination_t *termination = ((mpf_termination_t**)session->terminations->elts)[i];
 		if(termination) {
 			/* send subtract termination request */
 			apt_log(APT_PRIO_DEBUG,"Subtract Termination");
-			mpf_request_send(server_session,MPF_COMMAND_SUBTRACT,server_session->context,termination,NULL);
+			mpf_request_send(session,MPF_COMMAND_SUBTRACT,session->context,termination,NULL);
 		}
 	}
-	mrcp_server_session_remove(server_session);
+	mrcp_server_session_remove(session);
 	return TRUE;
 }
 
