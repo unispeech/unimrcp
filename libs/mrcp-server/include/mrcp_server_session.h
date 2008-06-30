@@ -59,6 +59,9 @@ struct mrcp_server_session_t {
 	mrcp_session_descriptor_t *offer;
 	/** In-progres answer */
 	mrcp_session_descriptor_t *answer;
+
+	apr_size_t                 answer_flag_count;
+	apr_size_t                 terminate_flag_count;
 };
 
 
@@ -69,6 +72,7 @@ apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session)
 
 apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection, mrcp_control_descriptor_t *answer);
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);
+apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message);
 
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 

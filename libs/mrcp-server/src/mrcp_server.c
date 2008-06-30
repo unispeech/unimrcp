@@ -17,6 +17,7 @@
 #include <apr_hash.h>
 #include "mrcp_server.h"
 #include "mrcp_server_session.h"
+#include "mrcp_message.h"
 #include "mrcp_resource_factory.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_server_connection.h"
@@ -299,6 +300,11 @@ void mrcp_server_session_remove(mrcp_server_session_t *session)
 	}
 }
 
+static APR_INLINE mrcp_server_session_t* mrcp_server_session_find(mrcp_server_t *server, const apt_str_t *session_id)
+{
+	return apr_hash_get(server->session_table,session_id->buf,session_id->length);
+}
+
 static void mrcp_server_on_start_complete(apt_task_t *task)
 {
 	apt_log(APT_PRIO_INFO,"On Server Task Start");
@@ -311,9 +317,6 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
-//	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
-//	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
-	apt_log(APT_PRIO_DEBUG,"Process Server Task Message [%d]", msg->type);
 	switch(msg->type) {
 		case MRCP_SERVER_SIGNALING_TASK_MSG:
 		{
@@ -344,6 +347,23 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				case CONNECTION_AGENT_TASK_MSG_REMOVE_CONNECTION:
 				{
 					mrcp_server_on_channel_remove(connection_message->channel);
+					break;
+				}
+				case CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE:
+				{
+					apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+					mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+
+					mrcp_message_t *mrcp_message = connection_message->mrcp_message;
+					mrcp_server_session_t *session = mrcp_server_session_find(
+												server,
+												&mrcp_message->channel_id.session_id);
+					if(!session) {
+						apt_log(APT_PRIO_WARNING,"No Such Session <%s>", mrcp_message->channel_id.session_id.buf);
+						break;
+					}
+
+					mrcp_server_on_message_receive(session,connection_message->connection,mrcp_message);
 					break;
 				}
 				default:
