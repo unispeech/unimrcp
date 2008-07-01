@@ -75,6 +75,8 @@ AC_CONFIG_FILES([
   libs/mrcp-client/Makefile
   modules/Makefile
   modules/mrcp-sofiasip/Makefile
+  plugins/Makefile
+  plugins/demo-synth/Makefile
   platforms/Makefile
   platforms/libunimrcp-server/Makefile
   platforms/libunimrcp-client/Makefile
