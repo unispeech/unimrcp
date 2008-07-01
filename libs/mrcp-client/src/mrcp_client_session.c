@@ -15,6 +15,7 @@
  */
 
 #include "mrcp_client_session.h"
+#include "mrcp_resource.h"
 #include "mrcp_resource_factory.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_connection.h"
@@ -54,6 +55,8 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *session, mpf_message_t *mpf_message);
+
+static mrcp_channel_t* mrcp_client_channel_find_by_id(mrcp_client_session_t *session, mrcp_resource_id resource_id);
 
 static apt_bool_t mrcp_client_mpf_request_send(
 						mrcp_client_session_t *session, 
@@ -186,6 +189,11 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 
 apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message)
 {
+	mrcp_channel_t *channel = mrcp_client_channel_find_by_id(session,message->channel_id.resource_id);
+	if(!channel) {
+		apt_log(APT_PRIO_WARNING,"No such channel [%d]",message->channel_id.resource_id);
+		return FALSE;
+	}
 	return mrcp_client_application_message_send(session,message);
 }
 
@@ -303,6 +311,19 @@ static apt_bool_t mrcp_client_channel_find(mrcp_client_session_t *session, mrcp_
 		}
 	}
 	return FALSE;
+}
+
+static mrcp_channel_t* mrcp_client_channel_find_by_id(mrcp_client_session_t *session, mrcp_resource_id resource_id)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(channel && channel->resource && channel->resource->id == resource_id) {
+			return channel;
+		}
+	}
+	return NULL;
 }
 
 static mrcp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_session_t *session, mpf_termination_t *termination)
