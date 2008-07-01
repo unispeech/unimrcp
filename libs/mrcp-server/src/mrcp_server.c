@@ -106,10 +106,15 @@ static apt_bool_t mrcp_server_channel_modify_signal(
 static apt_bool_t mrcp_server_channel_remove_signal(
 								mrcp_connection_agent_t *agent,
 								void *handle);
+static apt_bool_t mrcp_server_message_signal(
+								mrcp_connection_agent_t *agent,
+								mrcp_connection_t *connection,
+								mrcp_message_t *mrcp_message);
 
 static const mrcp_connection_event_vtable_t connection_method_vtable = {
 	mrcp_server_channel_modify_signal,
-	mrcp_server_channel_remove_signal
+	mrcp_server_channel_remove_signal,
+	mrcp_server_message_signal
 };
 
 
