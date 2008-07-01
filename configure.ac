@@ -70,6 +70,7 @@ AC_CONFIG_FILES([
   libs/mrcp/Makefile
   libs/mrcp-signaling/Makefile
   libs/mrcpv2-transport/Makefile
+  libs/mrcp-engine/Makefile
   libs/mrcp-server/Makefile
   libs/mrcp-client/Makefile
   modules/Makefile
