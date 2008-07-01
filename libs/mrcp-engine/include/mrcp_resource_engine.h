@@ -30,7 +30,7 @@ APT_BEGIN_EXTERN_C
 #ifdef WIN32
 #define MRCP_PLUGIN_DECLARE(type)   __declspec(dllexport) type __stdcall
 #else
-#define MRCP_DECLARE(type) type
+#define MRCP_PLUGIN_DECLARE(type) type
 #endif
 
 /** MRCP resource engine declaration */
