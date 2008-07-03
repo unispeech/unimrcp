@@ -7,7 +7,7 @@
 	>
 	<Tool
 		Name="VCCLCompilerTool"
-		AdditionalIncludeDirectories="&quot;$(ProjectRootDir)platforms\libunimrcp-server\include&quot;"
+		AdditionalIncludeDirectories="&quot;$(ProjectRootDir)platforms\libunimrcp-server\include&quot;;&quot;$(ProjectRootDir)plugins\demo-synth\include&quot;"
 	/>
 	<Tool
 		Name="VCLinkerTool"

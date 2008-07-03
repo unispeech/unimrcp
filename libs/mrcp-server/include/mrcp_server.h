@@ -24,6 +24,7 @@
 
 #include "mrcp_sig_types.h"
 #include "mrcp_connection_types.h"
+#include "mrcp_resource_engine.h"
 #include "mpf_types.h"
 #include "apt_task.h"
 
@@ -64,6 +65,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server);
  * @param resource_factory the resource factory to set
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *server, mrcp_resource_factory_t *resource_factory);
+
+/**
+ * Register MRCP resource engine.
+ * @param server the MRCP server to set engine for
+ * @param engine the resource engine to set
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine);
 
 /**
  * Register media engine.

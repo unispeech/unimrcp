@@ -23,6 +23,7 @@
 #include "mrcp_server_connection.h"
 #include "mpf_engine.h"
 #include "apt_consumer_task.h"
+#include "apt_obj_list.h"
 #include "apt_log.h"
 
 #define MRCP_SESSION_ID_HEX_STRING_LENGTH 16
@@ -34,6 +35,8 @@ struct mrcp_server_t {
 
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;
+	/** MRCP resource engine list */
+	apt_obj_list_t            *resource_engines;
 	/** Media processing engine */
 	mpf_engine_t              *media_engine;
 	/** RTP termination factory */
@@ -142,6 +145,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	server = apr_palloc(pool,sizeof(mrcp_server_t));
 	server->pool = pool;
 	server->resource_factory = NULL;
+	server->resource_engines = apt_list_create(pool);
 	server->media_engine = NULL;
 	server->rtp_termination_factory = NULL;
 	server->signaling_agent = NULL;
@@ -221,6 +225,16 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
 		return FALSE;
 	}
 	server->resource_factory = resource_factory;
+	return TRUE;
+}
+
+/** Register MRCP resource engine */
+MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine)
+{
+	if(!engine) {
+		return FALSE;
+	}
+	apt_list_push_back(server->resource_engines,engine);
 	return TRUE;
 }
 
