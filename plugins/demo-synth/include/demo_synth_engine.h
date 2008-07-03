@@ -29,7 +29,7 @@ APT_BEGIN_EXTERN_C
 /**
  * Create demo synthesizer engine.
  */
-MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) demo_resource_engine_create(apr_pool_t *pool);
+MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) demo_synth_engine_create(apr_pool_t *pool);
 
 
 APT_END_EXTERN_C
