@@ -121,14 +121,17 @@ static apt_bool_t demo_recog_channel_request_process(mrcp_engine_channel_t *chan
 		case RECOGNIZER_GET_PARAMS:
 			break;
 		case RECOGNIZER_DEFINE_GRAMMAR:
+			status = demo_recog_channel_define_grammar(channel,request);
 			break;
 		case RECOGNIZER_RECOGNIZE:
+			status = demo_recog_channel_recognize(channel,request);
 			break;
 		case RECOGNIZER_GET_RESULT:
 			break;
 		case RECOGNIZER_START_INPUT_TIMERS:
 			break;
 		case RECOGNIZER_STOP:
+			status = demo_recog_channel_stop(channel,request);
 			break;
 		default:
 			break;

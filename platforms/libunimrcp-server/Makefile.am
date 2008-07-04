@@ -2,6 +2,7 @@ MAINTAINERCLEANFILES 	    = Makefile.in
 
 INCLUDES                    = -I$(top_srcdir)/platforms/libunimrcp-server/include \
                               -I$(top_srcdir)/plugins/demo-synth/include \
+                              -I$(top_srcdir)/plugins/demo-recog/include \
                               -I$(top_srcdir)/modules/mrcp-sofiasip/include \
                               -I$(top_srcdir)/libs/mrcp-server/include \
                               -I$(top_srcdir)/libs/mrcp-engine/include \
@@ -23,6 +24,7 @@ libunimrcpserver_la_SOURCES = src/unimrcp_server.c
 
 libunimrcpserver_la_LIBADD  = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofiasip.la \
                               $(top_builddir)/plugins/demo-synth/libdemosynth.la \
+                              $(top_builddir)/plugins/demo-recog/libdemorecog.la \
                               $(top_builddir)/libs/mrcp-server/libmrcpserver.la \
                               $(top_builddir)/libs/mrcp-signaling/libmrcpsignaling.la \
                               $(top_builddir)/libs/mrcpv2-transport/libmrcpv2transport.la \
