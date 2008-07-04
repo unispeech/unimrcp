@@ -17,11 +17,12 @@
 #include "mrcp_sig_agent.h"
 #include "mrcp_session.h"
 
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
 	mrcp_sig_agent_t *sig_agent = apr_palloc(pool,sizeof(mrcp_sig_agent_t));
 	sig_agent->pool = pool;
 	sig_agent->obj = obj;
+	sig_agent->mrcp_version = mrcp_version;
 	sig_agent->parent = NULL;
 	sig_agent->task = NULL;
 	sig_agent->msg_pool = NULL;

@@ -36,6 +36,8 @@ struct mrcp_sig_agent_t {
 	void                *obj;
 	/** Parent object (client/server) */
 	void                *parent;
+	/** MRCP version */
+	mrcp_version_e       mrcp_version;
 	/** Task interface */
 	apt_task_t          *task;
 	/** Task message pool used to allocate signaling agent messages */
@@ -48,7 +50,7 @@ struct mrcp_sig_agent_t {
 };
 
 /** Create signaling agent. */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool);
 
 APT_END_EXTERN_C
 
