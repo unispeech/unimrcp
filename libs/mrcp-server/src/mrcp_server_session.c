@@ -18,6 +18,7 @@
 #include "mrcp_server_session.h"
 #include "mrcp_resource.h"
 #include "mrcp_resource_factory.h"
+#include "mrcp_resource_engine.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_server_connection.h"
 #include "mrcp_session_descriptor.h"
@@ -33,28 +34,27 @@
 
 struct mrcp_channel_t {
 	/** Memory pool */
-	apr_pool_t        *pool;
+	apr_pool_t            *pool;
 	/** MRCP resource */
-	mrcp_resource_t   *resource;
-	/** MRCP session entire channel belongs to (added for fast reverse search) */
-	mrcp_session_t    *session;
+	mrcp_resource_t       *resource;
+	/** MRCP session entire channel belongs to */
+	mrcp_session_t        *session;
 	/** MRCP connection */
-	mrcp_connection_t *connection;
+	mrcp_connection_t     *connection;
 
-	/** Media termination */
-	mpf_termination_t *termination;
-
+	/** MRCP resource engine channel */
+	mrcp_engine_channel_t *engine_channel;
 	/** waiting state */
-	apt_bool_t         waiting;
+	apt_bool_t             waiting;
 };
 
 typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
 
 struct mrcp_termination_slot_t {
-	/** waiting state */
-	apt_bool_t         waiting;
 	/** RTP termination */
 	mpf_termination_t *termination;
+	/** waiting state */
+	apt_bool_t         waiting;
 };
 
 
@@ -92,14 +92,45 @@ mrcp_server_session_t* mrcp_server_session_create()
 	return session;
 }
 
-static mrcp_channel_t* mrcp_server_channel_create(mrcp_session_t *session, apt_str_t *resource_name)
+static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_resource_id resource_id)
 {
-	mrcp_channel_t *channel = apr_palloc(session->pool,sizeof(mrcp_channel_t));
-	channel->pool = session->pool;
-	channel->session = session;
+	mrcp_resource_engine_t *resource_engine;
+	apt_list_elem_t *elem = apt_list_first_elem_get(session->resource_engines);
+	/* walk through the list of engines */
+	while(elem) {
+		resource_engine = apt_list_elem_object_get(elem);
+		if(resource_engine && resource_engine->resource_id == resource_id) {
+			return resource_engine->method_vtable->create_channel(resource_engine,session->base.pool);
+		}
+		elem = apt_list_next_elem_get(session->resource_engines,elem);
+	}
+	return NULL;
+}
+
+static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, apt_str_t *resource_name)
+{
+	mrcp_resource_id resource_id;
+	mrcp_resource_t *resource;
+	mrcp_engine_channel_t *engine_channel;
+	mrcp_channel_t *channel;
+
+	resource_id = mrcp_resource_id_find(session->resource_factory,resource_name,session->base.signaling_agent->mrcp_version);
+	resource = mrcp_resource_get(session->resource_factory,resource_id);
+	if(!resource) {
+		return NULL;
+	}
+
+	engine_channel = mrcp_server_engine_channel_create(session,resource_id);
+	if(!engine_channel) {
+		return NULL;
+	}
+
+	channel = apr_palloc(session->base.pool,sizeof(mrcp_channel_t));
+	channel->pool = session->base.pool;
+	channel->resource = resource;
+	channel->session = &session->base;
 	channel->connection = NULL;
-	channel->termination = NULL;
-	channel->resource = NULL;
+	channel->engine_channel = engine_channel;
 	channel->waiting = FALSE;
 	return channel;
 }
@@ -286,7 +317,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		if(!control_descriptor) continue;
 
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(&session->base,&control_descriptor->resource_name);
+		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name);
 		/* add to channel array */
 		apt_log(APT_PRIO_DEBUG,"Add Control Channel");
 		slot = apr_array_push(session->channels);

@@ -25,6 +25,7 @@
 #include "mrcp_session.h"
 #include "mpf_message.h"
 #include "apt_task.h"
+#include "apt_obj_list.h"
 
 
 APT_BEGIN_EXTERN_C
@@ -39,6 +40,8 @@ struct mrcp_server_session_t {
 	mrcp_server_t             *server;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;
+	/** MRCP resource engine list */
+	apt_obj_list_t            *resource_engines;
 	/** Media processing engine */
 	mpf_engine_t              *media_engine;
 	/** RTP termination factory */
