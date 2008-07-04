@@ -51,6 +51,7 @@ typedef struct mrcp_engine_channel_method_vtable_t mrcp_engine_channel_method_vt
 typedef struct mrcp_engine_channel_event_vtable_t mrcp_engine_channel_event_vtable_t;
 
 struct mrcp_engine_channel_method_vtable_t {
+	apt_bool_t (*destroy)(mrcp_engine_channel_t *channel);
 	apt_bool_t (*open)(mrcp_engine_channel_t *channel);
 	apt_bool_t (*close)(mrcp_engine_channel_t *channel);
 	apt_bool_t (*process_request)(mrcp_engine_channel_t *channel, mrcp_message_t *request);
@@ -76,6 +77,7 @@ struct mrcp_engine_method_vtable_t {
 	apt_bool_t (*destroy)(mrcp_resource_engine_t *engine);
 	apt_bool_t (*open)(mrcp_resource_engine_t *engine);
 	apt_bool_t (*close)(mrcp_resource_engine_t *engine);
+	mrcp_engine_channel_t* (*create_channel)(mrcp_resource_engine_t *engine, apr_pool_t *pool);
 };
 
 struct mrcp_resource_engine_t {
@@ -117,6 +119,23 @@ static APR_INLINE apt_bool_t mrcp_resource_engine_close(mrcp_resource_engine_t *
 	return engine->method_vtable->close(engine);
 }
 
+/** Create engine channel */
+static APR_INLINE mrcp_engine_channel_t* mrcp_engine_channel_create(
+								mrcp_resource_engine_t *engine, 
+								const mrcp_engine_channel_method_vtable_t *method_vtable,
+								void *method_obj,
+								mpf_termination_t *termination,
+								apr_pool_t *pool)
+{
+	mrcp_engine_channel_t *channel = apr_palloc(pool,sizeof(mrcp_engine_channel_t));
+	channel->method_vtable = method_vtable;
+	channel->method_obj = method_obj;
+	channel->event_vtable = NULL;
+	channel->event_obj = NULL;
+	channel->termination = termination;
+	channel->pool = pool;
+	return channel;
+}
 
 /** Open engine channel */
 static APR_INLINE apt_bool_t mrcp_engine_channel_open(mrcp_engine_channel_t *channel)

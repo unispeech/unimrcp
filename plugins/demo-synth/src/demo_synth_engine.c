@@ -21,19 +21,23 @@
 static apt_bool_t demo_synth_engine_destroy(mrcp_resource_engine_t *engine);
 static apt_bool_t demo_synth_engine_open(mrcp_resource_engine_t *engine);
 static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine);
+static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
 
 static const struct mrcp_engine_method_vtable_t engine_vtable = {
 	demo_synth_engine_destroy,
 	demo_synth_engine_open,
-	demo_synth_engine_close
+	demo_synth_engine_close,
+	demo_synth_engine_channel_create
 };
 
 
+static apt_bool_t demo_synth_channel_destroy(mrcp_engine_channel_t *channel);
 static apt_bool_t demo_synth_channel_open(mrcp_engine_channel_t *channel);
 static apt_bool_t demo_synth_channel_close(mrcp_engine_channel_t *channel);
 static apt_bool_t demo_synth_channel_request_process(mrcp_engine_channel_t *channel, mrcp_message_t *request);
 
 static const struct mrcp_engine_channel_method_vtable_t channel_vtable = {
+	demo_synth_channel_destroy,
 	demo_synth_channel_open,
 	demo_synth_channel_close,
 	demo_synth_channel_request_process
@@ -65,6 +69,15 @@ static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
 	return TRUE;
 }
 
+static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+{
+	return mrcp_engine_channel_create(engine,&channel_vtable,NULL,NULL,pool);
+}
+
+static apt_bool_t demo_synth_channel_destroy(mrcp_engine_channel_t *channel)
+{
+	return TRUE;
+}
 
 static apt_bool_t demo_synth_channel_open(mrcp_engine_channel_t *channel)
 {
