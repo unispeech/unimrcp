@@ -17,11 +17,15 @@
 #include <apr_poll.h>
 #include "mrcp_server_connection.h"
 #include "mrcp_control_descriptor.h"
+#include "mrcp_resource_factory.h"
+#include "mrcp_message.h"
+#include "apt_text_stream.h"
 #include "apt_task.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
 
 #define MRCP_CONNECTION_MAX_COUNT 10
+#define MRCP_MESSAGE_MAX_SIZE 2048
 
 struct mrcp_connection_t {
 	apr_pool_t                *pool;
@@ -35,21 +39,22 @@ struct mrcp_connection_t {
 };
 
 struct mrcp_connection_agent_t {
-	apr_pool_t     *pool;
-	apt_task_t     *task;
+	apr_pool_t              *pool;
+	apt_task_t              *task;
+	mrcp_resource_factory_t *resource_factory;
 
-	apr_pollset_t  *pollset;
+	apr_pollset_t           *pollset;
 
-	apr_sockaddr_t *sockaddr;
-	apr_socket_t   *listen_sock; /* listening socket */
-	apr_pollfd_t    listen_sock_pfd;
+	apr_sockaddr_t          *sockaddr;
+	apr_socket_t            *listen_sock; /* listening socket */
+	apr_pollfd_t             listen_sock_pfd;
 
-	apr_sockaddr_t *control_sockaddr;
-	apr_socket_t   *control_sock; /* control socket */
-	apr_pollfd_t    control_sock_pfd;
+	apr_sockaddr_t          *control_sockaddr;
+	apr_socket_t            *control_sock; /* control socket */
+	apr_pollfd_t             control_sock_pfd;
 
-	apr_pool_t     *sub_pool; /* pool to allocate accepted sockets from */
-	apt_obj_list_t *connection_list;
+	apr_pool_t              *sub_pool; /* pool to allocate accepted sockets from */
+	apt_obj_list_t          *connection_list;
 
 	void                                 *obj;
 	const mrcp_connection_event_vtable_t *vtable;
@@ -58,17 +63,19 @@ struct mrcp_connection_agent_t {
 typedef enum {
 	CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION,
 	CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION,
+	CONNECTION_TASK_MSG_SEND_MESSAGE,
 	CONNECTION_AGENT_MESSAGE_TERMINATE
-}connection_agent_message_type_e ;
+}connection_task_msg_data_type_e;
 
-typedef struct connection_agent_message_t connection_agent_message_t;
-struct connection_agent_message_t {
-	connection_agent_message_type_e type;
+typedef struct connection_task_msg_data_t connection_task_msg_data_t;
+struct connection_task_msg_data_t {
+	connection_task_msg_data_type_e type;
 	mrcp_connection_agent_t        *agent;
 	void                           *handle;
 	mrcp_connection_t              *connection;
 	mrcp_control_descriptor_t      *descriptor;
 	apr_pool_t                     *pool;
+	mrcp_message_t                 *mrcp_message;
 };
 
 static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task);
@@ -142,6 +149,13 @@ APT_DECLARE(void) mrcp_server_connection_agent_handler_set(mrcp_connection_agent
 	agent->vtable = vtable;
 }
 
+/** Set MRCP resource factory */
+APT_DECLARE(void) mrcp_server_connection_resource_factory_set(
+								mrcp_connection_agent_t *agent, 
+								mrcp_resource_factory_t *resource_factroy)
+{
+	agent->resource_factory = resource_factroy;
+}
 
 /** Modify MRCPv2 connection descriptor */
 APT_DECLARE(apt_bool_t) mrcp_server_connection_modify(
@@ -152,15 +166,15 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_modify(
 								apr_pool_t *pool)
 {
 	if(agent->control_sock) {
-		connection_agent_message_t message;
-		apr_size_t size = sizeof(connection_agent_message_t);
-		message.type = CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION;
-		message.agent = agent;
-		message.handle = handle;
-		message.connection = connection;
-		message.descriptor = descriptor;
-		message.pool = pool;
-		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+		connection_task_msg_data_t data;
+		apr_size_t size = sizeof(connection_task_msg_data_t);
+		data.type = CONNECTION_AGENT_MESSAGE_MODIFY_CONNECTION;
+		data.agent = agent;
+		data.handle = handle;
+		data.connection = connection;
+		data.descriptor = descriptor;
+		data.pool = pool;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&data,&size);
 	}
 	return TRUE;
 }
@@ -173,18 +187,40 @@ APT_DECLARE(apt_bool_t) mrcp_server_connection_remove(
 								apr_pool_t *pool)
 {
 	if(agent->control_sock) {
-		connection_agent_message_t message;
-		apr_size_t size = sizeof(connection_agent_message_t);
-		message.type = CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION;
-		message.agent = agent;
-		message.handle = handle;
-		message.connection = connection;
-		message.descriptor = NULL;
-		message.pool = pool;
-		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size);
+		connection_task_msg_data_t data;
+		apr_size_t size = sizeof(connection_task_msg_data_t);
+		data.type = CONNECTION_AGENT_MESSAGE_REMOVE_CONNECTION;
+		data.agent = agent;
+		data.handle = handle;
+		data.connection = connection;
+		data.descriptor = NULL;
+		data.pool = pool;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&data,&size);
 	}
 	return TRUE;
 }
+
+/** Send MRCPv2 message */
+APT_DECLARE(apt_bool_t) mrcp_server_connection_message_send(
+								mrcp_connection_agent_t *agent,
+								mrcp_connection_t *connection,
+								mrcp_message_t *mrcp_message)
+{
+	if(agent->control_sock) {
+		connection_task_msg_data_t data;
+		apr_size_t size = sizeof(connection_task_msg_data_t);
+		data.type = CONNECTION_TASK_MSG_SEND_MESSAGE;
+		data.agent = agent;
+		data.handle = NULL;
+		data.connection = connection;
+		data.descriptor = NULL;
+		data.mrcp_message = mrcp_message;
+		data.pool = NULL;
+		apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&data,&size);
+	}
+	return TRUE;
+}
+
 
 
 /** Get task */
@@ -356,10 +392,117 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	return TRUE;
 }
 
+static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message)
+{
+	apt_bool_t status = FALSE;
+	if(connection && connection->sock) {
+		char buffer[MRCP_MESSAGE_MAX_SIZE];
+		apt_text_stream_t text_stream;
+		
+		text_stream.text.buf = buffer;
+		text_stream.text.length = sizeof(buffer)-1;
+		text_stream.pos = text_stream.text.buf;
+
+		if(mrcp_message_generate(agent->resource_factory,message,&text_stream) == TRUE) {
+			*text_stream.pos = '\0';
+			apt_log(APT_PRIO_INFO,"Send MRCPv2 Message size=%lu\n%s",
+				text_stream.text.length,text_stream.text.buf);
+			if(apr_socket_send(connection->sock,text_stream.text.buf,&text_stream.text.length) == APR_SUCCESS) {
+				status = TRUE;
+			}
+			else {
+				apt_log(APT_PRIO_WARNING,"Failed to Send MRCPv2 Message");
+			}
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv2 Message");
+		}
+	}
+
+	return status;
+}
+
+static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
+{
+	char buffer[MRCP_MESSAGE_MAX_SIZE];
+	apt_bool_t more_messages_on_buffer = FALSE;
+	apr_status_t status;
+	apt_text_stream_t text_stream;
+	mrcp_message_t *message;
+
+	if(!connection || !connection->sock) {
+		return FALSE;
+	}
+	
+	text_stream.text.buf = buffer;
+	text_stream.text.length = sizeof(buffer)-1;
+	status = apr_socket_recv(connection->sock, text_stream.text.buf, &text_stream.text.length);
+	if(status == APR_EOF || text_stream.text.length == 0) {
+		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Disconnected");
+		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
+		apr_socket_close(connection->sock);
+		connection->sock = NULL;
+		if(!connection->access_count) {
+			apr_pool_destroy(connection->pool);
+			if(apt_list_is_empty(agent->connection_list) == TRUE) {
+				apr_pool_destroy(agent->sub_pool);
+				agent->sub_pool = NULL;
+			}
+		}
+		return TRUE;
+	}
+	text_stream.text.buf[text_stream.text.length] = '\0';
+	text_stream.pos = text_stream.text.buf;
+
+	apt_log(APT_PRIO_INFO,"Receive MRCPv2 Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
+	if(!connection->access_count) {
+		return FALSE;
+	}
+
+	do {
+		message = mrcp_message_create(connection->pool);
+		if(mrcp_message_parse(agent->resource_factory,message,&text_stream) == TRUE) {
+			agent->vtable->on_receive(agent,connection,message);
+		}
+		else {
+			mrcp_message_t *response;
+			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv2 Message\n");
+			if(message->start_line.version == MRCP_VERSION_2) {
+				/* assume that at least message length field is valid */
+				if(message->start_line.length <= text_stream.text.length) {
+					/* skip to the end of the message */
+					text_stream.pos = text_stream.text.buf + message->start_line.length;
+				}
+				else {
+					/* skip to the end of the buffer (support incomplete) */
+					text_stream.pos = text_stream.text.buf + text_stream.text.length;
+				}
+			}
+			response = mrcp_response_create(message,message->pool);
+			response->start_line.status_code = MRCP_STATUS_CODE_UNRECOGNIZED_MESSAGE;
+			if(mrcp_server_agent_messsage_send(agent,connection,response) == FALSE) {
+				apt_log(APT_PRIO_WARNING,"Failed to Send MRCPv2 Response\n");
+			}
+		}
+
+		more_messages_on_buffer = FALSE;
+		if(text_stream.text.length > (apr_size_t)(text_stream.pos - text_stream.text.buf)) {
+			/* there are more MRCPv2 messages to signal */
+			more_messages_on_buffer = TRUE;
+			text_stream.text.length -= text_stream.pos - text_stream.text.buf;
+			text_stream.text.buf = text_stream.pos;
+			apt_log(APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message");
+		}
+	}
+	while(more_messages_on_buffer);
+
+	return TRUE;
+}
+
 static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agent)
 {
-	connection_agent_message_t message;
-	apr_size_t size = sizeof(connection_agent_message_t);
+	connection_task_msg_data_t message;
+	apr_size_t size = sizeof(connection_task_msg_data_t);
 	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&message, &size);
 	if(status == APR_EOF || size == 0) {
 		return FALSE;
@@ -427,41 +570,15 @@ static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agen
 			}
 			break;
 		}
+		case CONNECTION_TASK_MSG_SEND_MESSAGE:
+		{
+			mrcp_server_agent_messsage_send(agent,message.connection,message.mrcp_message);
+			break;
+		}
 		case CONNECTION_AGENT_MESSAGE_TERMINATE:
 			return FALSE;
 	}
 
-	return TRUE;
-}
-
-static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
-{
-	char buffer[2048];
-	apr_size_t size = sizeof(buffer)-1;
-	apr_status_t status;
-
-	if(!connection || !connection->sock) {
-		return FALSE;
-	}
-	
-	status = apr_socket_recv(connection->sock, buffer, &size);
-	if(status == APR_EOF || size == 0) {
-		apt_log(APT_PRIO_NOTICE,"MRCPv2 Client Disconnected");
-		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
-		apr_socket_close(connection->sock);
-		connection->sock = NULL;
-		if(!connection->access_count) {
-			apr_pool_destroy(connection->pool);
-			if(apt_list_is_empty(agent->connection_list) == TRUE) {
-				apr_pool_destroy(agent->sub_pool);
-				agent->sub_pool = NULL;
-			}
-		}
-		return TRUE;
-	}
-	buffer[size] = '\0';
-
-	apt_log(APT_PRIO_DEBUG,"Receive MRCPv2 Message size=%lu\n%s",size,buffer);
 	return TRUE;
 }
 
@@ -518,8 +635,8 @@ static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task)
 	mrcp_connection_agent_t *agent = apt_task_object_get(task);
 	if(agent->control_sock) {
 
-		connection_agent_message_t message;
-		apr_size_t size = sizeof(connection_agent_message_t);
+		connection_task_msg_data_t message;
+		apr_size_t size = sizeof(connection_task_msg_data_t);
 		message.type = CONNECTION_AGENT_MESSAGE_TERMINATE;
 		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&message,&size) != APR_SUCCESS) {
 			apt_log(APT_PRIO_WARNING,"Failed to Send Control Message");
