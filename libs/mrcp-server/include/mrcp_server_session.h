@@ -49,7 +49,6 @@ struct mrcp_server_session_t {
 	/** Connection agent */
 	mrcp_connection_agent_t   *connection_agent;
 
-
 	/** Media context */
 	mpf_context_t             *context;
 
@@ -77,8 +76,13 @@ apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connectio
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);
 apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message);
 
+apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status);
+apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel);
+apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_message_t *message);
+
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 
+mrcp_session_t* mrcp_server_channel_session_get(mrcp_channel_t *channel);
 
 APT_END_EXTERN_C
 

@@ -45,8 +45,11 @@ struct mrcp_server_t {
 	mrcp_sig_agent_t          *signaling_agent;
 	/** Connection agent */
 	mrcp_connection_agent_t   *connection_agent;
+
 	/** Connection task message pool */
 	apt_task_msg_pool_t       *connection_msg_pool;
+	/** Resource engine task message pool */
+	apt_task_msg_pool_t       *resource_engine_msg_pool;
 	
 	/** MRCP sessions table */
 	apr_hash_t                *session_table;
@@ -59,6 +62,7 @@ struct mrcp_server_t {
 typedef enum {
 	MRCP_SERVER_SIGNALING_TASK_MSG = TASK_MSG_USER,
 	MRCP_SERVER_CONNECTION_TASK_MSG,
+	MRCP_SERVER_RESOURCE_ENGINE_TASK_MSG,
 	MRCP_SERVER_MEDIA_TASK_MSG
 } mrcp_server_task_msg_type_e;
 
@@ -67,7 +71,7 @@ typedef enum {
 typedef enum {
 	SIG_AGENT_TASK_MSG_OFFER,
 	SIG_AGENT_TASK_MSG_TERMINATE
-} sig_agent_task_msg_type_e ;
+} sig_agent_task_msg_type_e;
 
 typedef struct sig_agent_task_msg_data_t sig_agent_task_msg_data_t;
 struct sig_agent_task_msg_data_t {
@@ -90,7 +94,7 @@ typedef enum {
 	CONNECTION_AGENT_TASK_MSG_REMOVE_CONNECTION,
 	CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE,
 	CONNECTION_AGENT_TASK_MSG_TERMINATE
-} connection_agent_task_msg_type_e ;
+} connection_agent_task_msg_type_e;
 
 typedef struct connection_agent_task_msg_data_t connection_agent_task_msg_data_t;
 struct connection_agent_task_msg_data_t {
@@ -120,6 +124,30 @@ static const mrcp_connection_event_vtable_t connection_method_vtable = {
 	mrcp_server_message_signal
 };
 
+
+/* Resource engine interface */
+typedef enum {
+	RESOURCE_ENGINE_TASK_MSG_OPEN_CHANNEL,
+	RESOURCE_ENGINE_TASK_MSG_CLOSE_CHANNEL,
+	RESOURCE_ENGINE_TASK_MSG_MESSAGE
+} resource_engine_task_msg_type_e;
+
+typedef struct resource_engine_task_msg_data_t resource_engine_task_msg_data_t;
+struct resource_engine_task_msg_data_t {
+	mrcp_channel_t *channel;
+	apt_bool_t      status;
+	mrcp_message_t *mrcp_message;
+};
+
+static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel, apt_bool_t status);
+static apt_bool_t mrcp_server_channel_close_signal(mrcp_engine_channel_t *channel);
+static apt_bool_t mrcp_server_channel_message_signal(mrcp_engine_channel_t *channel, mrcp_message_t *message);
+
+const mrcp_engine_channel_event_vtable_t engine_channel_vtable = {
+	mrcp_server_channel_open_signal,
+	mrcp_server_channel_close_signal,
+	mrcp_server_channel_message_signal
+};
 
 /* Task interface */
 static void mrcp_server_on_start_complete(apt_task_t *task);
@@ -151,6 +179,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	server->signaling_agent = NULL;
 	server->connection_agent = NULL;
 	server->connection_msg_pool = NULL;
+	server->resource_engine_msg_pool = NULL;
 	server->session_table = NULL;
 
 	apt_task_vtable_reset(&vtable);
@@ -233,6 +262,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
 {
 	if(!engine) {
 		return FALSE;
+	}
+	if(!server->resource_engine_msg_pool) {
+		server->resource_engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(resource_engine_task_msg_data_t),server->pool);
 	}
 	apt_list_push_back(server->resource_engines,engine);
 	return TRUE;
@@ -390,6 +422,25 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			}
 			break;
 		}
+		case MRCP_SERVER_RESOURCE_ENGINE_TASK_MSG:
+		{
+			resource_engine_task_msg_data_t *data = (resource_engine_task_msg_data_t*)msg->data;
+			apt_log(APT_PRIO_DEBUG,"Receive Resource Engine Task Message [%d]", msg->sub_type);
+			switch(msg->sub_type) {
+				case RESOURCE_ENGINE_TASK_MSG_OPEN_CHANNEL:
+					mrcp_server_on_engine_channel_open(data->channel,data->status);
+					break;
+				case RESOURCE_ENGINE_TASK_MSG_CLOSE_CHANNEL:
+					mrcp_server_on_engine_channel_close(data->channel);
+					break;
+				case RESOURCE_ENGINE_TASK_MSG_MESSAGE:
+					mrcp_server_on_engine_channel_message(data->channel,data->mrcp_message);
+					break;
+				default:
+					break;
+			}
+			break;
+		}
 		case MRCP_SERVER_MEDIA_TASK_MSG:
 		{
 			mpf_message_t *mpf_message = (mpf_message_t*) msg->data;
@@ -442,6 +493,29 @@ static apt_bool_t mrcp_server_connection_task_msg_signal(
 	data->mrcp_message = mrcp_message;
 
 	apt_log(APT_PRIO_DEBUG,"Signal Connection Task Message");
+	return apt_task_msg_signal(task,task_msg);
+}
+
+static apt_bool_t mrcp_server_engine_task_msg_signal(
+							resource_engine_task_msg_type_e  type,
+							mrcp_engine_channel_t           *engine_channel,
+							apt_bool_t                       status,
+							mrcp_message_t                  *message)
+{
+	mrcp_channel_t *channel = engine_channel->event_obj;
+	mrcp_session_t *session = mrcp_server_channel_session_get(channel);
+	mrcp_server_t *server = session->signaling_agent->parent;
+	apt_task_t *task = apt_consumer_task_base_get(server->task);
+	resource_engine_task_msg_data_t *data;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->resource_engine_msg_pool);
+	task_msg->type = MRCP_SERVER_RESOURCE_ENGINE_TASK_MSG;
+	task_msg->sub_type = type;
+	data = (resource_engine_task_msg_data_t*) task_msg->data;
+	data->channel = channel;
+	data->status = status;
+	data->mrcp_message = message;
+
+	apt_log(APT_PRIO_DEBUG,"Signal Resource Engine Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 
@@ -511,4 +585,31 @@ static apt_bool_t mrcp_server_message_signal(
 								connection,
 								NULL,
 								mrcp_message);
+}
+
+static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel, apt_bool_t status)
+{
+	return mrcp_server_engine_task_msg_signal(
+								RESOURCE_ENGINE_TASK_MSG_OPEN_CHANNEL,
+								channel,
+								status,
+								NULL);
+}
+
+static apt_bool_t mrcp_server_channel_close_signal(mrcp_engine_channel_t *channel)
+{
+	return mrcp_server_engine_task_msg_signal(
+								RESOURCE_ENGINE_TASK_MSG_CLOSE_CHANNEL,
+								channel,
+								TRUE,
+								NULL);
+}
+
+static apt_bool_t mrcp_server_channel_message_signal(mrcp_engine_channel_t *channel, mrcp_message_t *message)
+{
+	return mrcp_server_engine_task_msg_signal(
+								RESOURCE_ENGINE_TASK_MSG_MESSAGE,
+								channel,
+								TRUE,
+								message);
 }

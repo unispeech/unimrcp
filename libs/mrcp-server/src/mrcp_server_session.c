@@ -57,6 +57,7 @@ struct mrcp_termination_slot_t {
 	apt_bool_t         waiting;
 };
 
+extern const mrcp_engine_channel_event_vtable_t engine_channel_vtable;
 
 void mrcp_server_session_add(mrcp_server_session_t *session);
 void mrcp_server_session_remove(mrcp_server_session_t *session);
@@ -132,7 +133,15 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	channel->connection = NULL;
 	channel->engine_channel = engine_channel;
 	channel->waiting = FALSE;
+
+	engine_channel->event_obj = channel;
+	engine_channel->event_vtable = &engine_channel_vtable;
 	return channel;
+}
+
+mrcp_session_t* mrcp_server_channel_session_get(mrcp_channel_t *channel)
+{
+	return channel->session;
 }
 
 apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor)
@@ -178,6 +187,10 @@ apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session)
 		apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
 		if(mrcp_server_connection_remove(session->connection_agent,channel,channel->connection,channel->pool) == TRUE) {
 			channel->waiting = TRUE;
+			session->terminate_flag_count++;
+		}
+		/* close resource engine channel */
+		if(mrcp_engine_channel_close(channel->engine_channel) == TRUE) {
 			session->terminate_flag_count++;
 		}
 	}
@@ -247,8 +260,48 @@ apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session, mrcp_c
 		return FALSE;
 	}
 
+	/* update state machine */
+
+	/* send message to resource engine for actual processing */
+	return mrcp_engine_channel_message_send(channel->engine_channel,message);
+}
+
+apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status)
+{
+	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
+	apt_log(APT_PRIO_DEBUG,"On Engine Channel Open");
+	if(session->answer_flag_count) {
+		session->answer_flag_count--;
+		if(!session->answer_flag_count) {
+			/* send answer to client */
+			mrcp_server_session_answer_send(session);
+		}
+	}
 	return TRUE;
 }
+
+apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel)
+{
+	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
+	apt_log(APT_PRIO_DEBUG,"On Engine Channel Close");
+	if(session->terminate_flag_count) {
+		session->terminate_flag_count--;
+		if(!session->terminate_flag_count) {
+			/* send termination response to client */
+			mrcp_session_terminate_response(&session->base);
+		}
+	}
+	return TRUE;
+}
+
+apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_message_t *message)
+{
+	/* update state machine */
+
+	/* send response/event message to client */
+	return mrcp_engine_channel_message_send(channel->engine_channel,message);
+}
+
 
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message)
 {
@@ -323,9 +376,13 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		slot = apr_array_push(session->channels);
 		*slot = channel;
 
-		/* send offer */
+		/* send modify connection request */
 		if(mrcp_server_connection_modify(session->connection_agent,channel,channel->connection,control_descriptor,channel->pool) == TRUE) {
 			channel->waiting = TRUE;
+			session->answer_flag_count++;
+		}
+		/* open resource engine channel */
+		if(mrcp_engine_channel_open(channel->engine_channel) == TRUE) {
 			session->answer_flag_count++;
 		}
 	}
