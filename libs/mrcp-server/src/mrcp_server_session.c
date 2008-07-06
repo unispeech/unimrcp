@@ -263,7 +263,7 @@ apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session, mrcp_c
 	/* update state machine */
 
 	/* send message to resource engine for actual processing */
-	return mrcp_engine_channel_message_send(channel->engine_channel,message);
+	return mrcp_engine_channel_request_process(channel->engine_channel,message);
 }
 
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status)
@@ -296,10 +296,15 @@ apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel)
 
 apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_message_t *message)
 {
+	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
+
 	/* update state machine */
 
 	/* send response/event message to client */
-	return mrcp_engine_channel_message_send(channel->engine_channel,message);
+	return mrcp_server_connection_message_send(
+				session->connection_agent,
+				channel->connection,
+				message);
 }
 
 
@@ -371,6 +376,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 
 		/* create new MRCP channel instance */
 		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name);
+		if(!channel) continue;
 		/* add to channel array */
 		apt_log(APT_PRIO_DEBUG,"Add Control Channel");
 		slot = apr_array_push(session->channels);

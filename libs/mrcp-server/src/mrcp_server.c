@@ -319,6 +319,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *se
 	if(!connection_agent) {
 		return FALSE;
 	}
+	mrcp_server_connection_resource_factory_set(connection_agent,server->resource_factory);
 	mrcp_server_connection_agent_handler_set(connection_agent,server,&connection_method_vtable);
 	server->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_task_msg_data_t),server->pool);
 	server->connection_agent = connection_agent;
@@ -526,6 +527,7 @@ static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *si
 	mrcp_server_session_t *session = mrcp_server_session_create();
 	session->server = server;
 	session->resource_factory = server->resource_factory;
+	session->resource_engines = server->resource_engines;
 	session->media_engine = server->media_engine;
 	session->rtp_termination_factory = server->rtp_termination_factory;
 	session->connection_agent = server->connection_agent;

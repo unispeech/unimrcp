@@ -95,6 +95,7 @@ static APR_INLINE mrcp_resource_engine_t* mrcp_resource_engine_create(
 								apr_pool_t *pool)
 {
 	mrcp_resource_engine_t *engine = apr_palloc(pool,sizeof(mrcp_resource_engine_t));
+	engine->resource_id = resource_id;
 	engine->obj = obj;
 	engine->method_vtable =vtable;
 	engine->pool = pool;
@@ -150,7 +151,7 @@ static APR_INLINE apt_bool_t mrcp_engine_channel_close(mrcp_engine_channel_t *ch
 }
 
 /** Process request */
-static APR_INLINE apt_bool_t mrcp_engine_channel_request_proces(mrcp_engine_channel_t *channel, mrcp_message_t *message)
+static APR_INLINE apt_bool_t mrcp_engine_channel_request_process(mrcp_engine_channel_t *channel, mrcp_message_t *message)
 {
 	return channel->method_vtable->process_request(channel,message);
 }
