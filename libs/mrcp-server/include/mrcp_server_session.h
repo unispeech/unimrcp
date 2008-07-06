@@ -32,6 +32,22 @@ APT_BEGIN_EXTERN_C
 
 typedef struct mrcp_channel_t mrcp_channel_t;
 typedef struct mrcp_server_session_t mrcp_server_session_t;
+typedef struct mrcp_signaling_message_t mrcp_signaling_message_t;
+
+/* Signaling agent interface */
+typedef enum {
+	SIGNALING_MESSAGE_OFFER,
+	SIGNALING_MESSAGE_CONTROL,
+	SIGNALING_MESSAGE_TERMINATE,
+} mrcp_signaling_message_type_e;
+
+struct mrcp_signaling_message_t {
+	mrcp_signaling_message_type_e type;
+	mrcp_server_session_t        *session;
+	mrcp_session_descriptor_t    *descriptor;
+	mrcp_message_t               *message;
+};
+
 
 struct mrcp_server_session_t {
 	/** Session base */
@@ -57,6 +73,11 @@ struct mrcp_server_session_t {
 	/** MRCP control channel array */
 	apr_array_header_t        *channels;
 
+	/** In-progress signaling request */
+	mrcp_signaling_message_t  *active_request;
+	/** Signaling request queue */
+	apt_obj_list_t            *request_queue;
+
 	/** In-progress offer */
 	mrcp_session_descriptor_t *offer;
 	/** In-progres answer */
@@ -69,18 +90,15 @@ struct mrcp_server_session_t {
 
 mrcp_server_session_t* mrcp_server_session_create();
 
-apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor);
-apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session);
+apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signaling_message);
+apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 
 apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection, mrcp_control_descriptor_t *answer);
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);
-apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message);
 
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status);
 apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel);
 apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_message_t *message);
-
-apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 
 mrcp_session_t* mrcp_server_channel_session_get(mrcp_channel_t *channel);
 
