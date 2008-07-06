@@ -576,7 +576,7 @@ static apt_bool_t mrcp_application_task_msg_signal(mrcp_app_command_e command_id
 	apt_task_t *task = apt_consumer_task_base_get(application->client->task);
 	apt_task_msg_t *task_msg = apt_task_msg_acquire(application->msg_pool);
 	if(task_msg) {
-		mrcp_app_message_t** slot = ((mrcp_app_message_t**)task_msg->data);
+		mrcp_app_message_t **slot = ((mrcp_app_message_t**)task_msg->data);
 		mrcp_app_message_t *app_message;
 		task_msg->type = MRCP_CLIENT_APPLICATION_TASK_MSG;
 
