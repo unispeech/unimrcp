@@ -46,9 +46,13 @@ typedef enum {
 
 /** MRCP signaling message */
 struct mrcp_signaling_message_t {
+	/** Signaling message type */
 	mrcp_signaling_message_type_e type;
+	/** Session */
 	mrcp_server_session_t        *session;
+	/** Descriptor */
 	mrcp_session_descriptor_t    *descriptor;
+	/** MRCP message */
 	mrcp_message_t               *message;
 };
 

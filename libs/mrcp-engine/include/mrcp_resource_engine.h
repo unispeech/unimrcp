@@ -27,6 +27,7 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Plugin export/import defines */
 #ifdef WIN32
 #ifdef MRCP_STATIC_PLUGIN
 #define MRCP_PLUGIN_DECLARE(type)   type __stdcall
@@ -55,9 +56,13 @@ typedef struct mrcp_engine_channel_event_vtable_t mrcp_engine_channel_event_vtab
 
 /** Table of channel virtual methods */
 struct mrcp_engine_channel_method_vtable_t {
+	/** Virtual destroy */
 	apt_bool_t (*destroy)(mrcp_engine_channel_t *channel);
+	/** Virtual open */
 	apt_bool_t (*open)(mrcp_engine_channel_t *channel);
+	/** Virtual close */
 	apt_bool_t (*close)(mrcp_engine_channel_t *channel);
+	/** Virtual process_request */
 	apt_bool_t (*process_request)(mrcp_engine_channel_t *channel, mrcp_message_t *request);
 };
 

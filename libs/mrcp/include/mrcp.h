@@ -24,7 +24,7 @@
 
 #include <apt.h>
 
-/** lib export/import defines (win32) */
+/** Library export/import defines */
 #ifdef WIN32
 #ifdef MRCP_STATIC_LIB
 #define MRCP_DECLARE(type)   type __stdcall
