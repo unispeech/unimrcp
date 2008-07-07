@@ -33,23 +33,27 @@ typedef struct mrcp_control_descriptor_t mrcp_control_descriptor_t;
 /** Opaque MRCPv2 connection declaration */
 typedef struct mrcp_connection_t mrcp_connection_t;
 
+/** Opaque MRCPv2 control channel declaration */
+typedef struct mrcp_control_channel_t mrcp_control_channel_t;
+
 /** Opaque MRCPv2 connection agent declaration */
 typedef struct mrcp_connection_agent_t mrcp_connection_agent_t;
 
 
 typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
 struct mrcp_connection_event_vtable_t {
-	apt_bool_t (*on_modify)(	mrcp_connection_agent_t *agent,
-								void *handle,
-								mrcp_connection_t *connection,
-								mrcp_control_descriptor_t *descriptor);
-	apt_bool_t (*on_remove)(	mrcp_connection_agent_t *agent,
-								void *handle);
-	apt_bool_t (*on_receive)(	mrcp_connection_agent_t *agent,
-								mrcp_connection_t *connection,
-								mrcp_message_t *message);
+	apt_bool_t (*on_modify)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+	apt_bool_t (*on_remove)(mrcp_control_channel_t *channel);
+	apt_bool_t (*on_receive)(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message);
 };
 
+/** MRCPv2 control channel */
+struct mrcp_control_channel_t {
+	mrcp_connection_agent_t *agent;
+	mrcp_connection_t       *connection;
+	void                    *obj;
+	apr_pool_t              *pool;
+};
 
 
 APT_END_EXTERN_C

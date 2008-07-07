@@ -89,7 +89,7 @@ mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, mrcp_resourc
 	channel->pool = session->pool;
 	channel->session = session;
 	channel->resource_id = resource_id;
-	channel->connection = NULL;
+	channel->control_channel = NULL;
 	channel->termination = NULL;
 	channel->resource = NULL;
 	channel->waiting = FALSE;
@@ -147,7 +147,7 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 	return TRUE;
 }
 
-apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection)
+apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_PRIO_DEBUG,"On Control Channel Modify");
@@ -155,9 +155,6 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_connectio
 		return FALSE;
 	}
 	channel->waiting = TRUE;
-	if(!channel->connection) {
-		channel->connection = connection;
-	}
 	if(session->answer_flag_count) {
 		session->answer_flag_count--;
 		if(!session->answer_flag_count) {
@@ -351,9 +348,8 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	}
 
 	message->channel_id.session_id = session->base.id;
-	mrcp_client_connection_message_send(
-		session->application->connection_agent,
-		channel->connection,
+	mrcp_client_control_message_send(
+		channel->control_channel,
 		message);
 	return TRUE;
 }
@@ -400,6 +396,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		if(!channel->resource) {
 			return FALSE;
 		}
+	}
+	if(!channel->control_channel) {
+		channel->control_channel = mrcp_client_control_channel_create(session->application->connection_agent,channel,pool);
 	}
 
 	/* add to channel array */
@@ -466,7 +465,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 		/* remove channel */
 		apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
-		if(mrcp_client_connection_remove(session->application->connection_agent,channel,channel->connection,channel->pool) == TRUE) {
+		if(mrcp_client_control_channel_remove(channel->control_channel) == TRUE) {
 			channel->waiting = TRUE;
 			session->terminate_flag_count++;
 		}
@@ -605,7 +604,7 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 		control_descriptor = mrcp_session_control_media_get(descriptor,i);
 		/* modify channel */
 		apt_log(APT_PRIO_DEBUG,"Modify Control Channel");
-		if(mrcp_client_connection_modify(session->application->connection_agent,channel,channel->connection,control_descriptor,channel->pool) == TRUE) {
+		if(mrcp_client_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
 			channel->waiting = TRUE;
 			session->answer_flag_count++;
 		}

@@ -34,18 +34,17 @@
 
 struct mrcp_channel_t {
 	/** Memory pool */
-	apr_pool_t            *pool;
+	apr_pool_t             *pool;
 	/** MRCP resource */
-	mrcp_resource_t       *resource;
+	mrcp_resource_t        *resource;
 	/** MRCP session entire channel belongs to */
-	mrcp_session_t        *session;
-	/** MRCP connection */
-	mrcp_connection_t     *connection;
-
+	mrcp_session_t         *session;
+	/** MRCP control channel */
+	mrcp_control_channel_t *control_channel;
 	/** MRCP resource engine channel */
-	mrcp_engine_channel_t *engine_channel;
+	mrcp_engine_channel_t  *engine_channel;
 	/** waiting state */
-	apt_bool_t             waiting;
+	apt_bool_t              waiting;
 };
 
 typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
@@ -134,7 +133,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	channel->pool = session->base.pool;
 	channel->resource = resource;
 	channel->session = &session->base;
-	channel->connection = NULL;
+	channel->control_channel = mrcp_server_control_channel_create(session->connection_agent,channel,session->base.pool);
 	channel->engine_channel = engine_channel;
 	channel->waiting = FALSE;
 
@@ -173,7 +172,6 @@ apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connectio
 		return FALSE;
 	}
 	channel->waiting = TRUE;
-	channel->connection = connection;
 	answer->session_id = session->base.id;
 	mrcp_session_control_media_add(session->answer,answer);
 	if(session->answer_flag_count) {
@@ -239,14 +237,13 @@ apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_m
 	/* update state machine */
 
 	/* send response/event message to client */
-	mrcp_server_connection_message_send(
-				session->connection_agent,
-				channel->connection,
-				message);
+	mrcp_server_control_message_send(channel->control_channel,message);
 
-	session->active_request = apt_list_pop_front(session->request_queue);
-	if(session->active_request) {
-		mrcp_server_signaling_message_dispatch(session,session->active_request);
+	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
+		session->active_request = apt_list_pop_front(session->request_queue);
+		if(session->active_request) {
+			mrcp_server_signaling_message_dispatch(session,session->active_request);
+		}
 	}
 	return TRUE;
 }
@@ -323,7 +320,7 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 
 		/* send remove channel request */
 		apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
-		if(mrcp_server_connection_remove(session->connection_agent,channel,channel->connection,channel->pool) == TRUE) {
+		if(mrcp_server_control_channel_remove(channel->control_channel) == TRUE) {
 			channel->waiting = TRUE;
 			session->terminate_flag_count++;
 		}
@@ -403,7 +400,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		control_descriptor = mrcp_session_control_media_get(descriptor,i);
 		/* send offer */
 		apt_log(APT_PRIO_DEBUG,"Modify Control Channel");
-		if(mrcp_server_connection_modify(session->connection_agent,channel,channel->connection,control_descriptor,channel->pool) == TRUE) {
+		if(mrcp_server_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
 			channel->waiting = TRUE;
 			session->answer_flag_count++;
 		}
@@ -425,7 +422,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		*slot = channel;
 
 		/* send modify connection request */
-		if(mrcp_server_connection_modify(session->connection_agent,channel,channel->connection,control_descriptor,channel->pool) == TRUE) {
+		if(mrcp_server_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
 			channel->waiting = TRUE;
 			session->answer_flag_count++;
 		}

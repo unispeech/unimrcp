@@ -89,42 +89,33 @@ APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent
 
 
 /**
- * Modify MRCPv2 connection.
- * @param agent the connection agent
- * @param handle the communication handle to response with
- * @param connection the connection (NULL on the first offer)
- * @param descriptor the control descriptor
+ * Create control channel.
+ * @param agent the agent to create channel for
+ * @param obj the external object to associate with the control channel
+ * @param pool the pool to allocate memory from
  */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_modify(
-								mrcp_connection_agent_t *agent,
-								void *handle,
-								mrcp_connection_t *connection,
-								mrcp_control_descriptor_t *descriptor,
-								apr_pool_t *pool);
+APT_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_connection_agent_t *agent, void *obj, apr_pool_t *pool);
 
 /**
- * Remove MRCPv2 connection.
- * @param agent the connection agent
- * @param handle the communication handle to response with
- * @param connection the connection
+ * Modify MRCPv2 control channel.
+ * @param channel the control channel to modify
  * @param descriptor the control descriptor
  */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_remove(
-								mrcp_connection_agent_t *agent,
-								void *handle,
-								mrcp_connection_t *connection,
-								apr_pool_t *pool);
+APT_DECLARE(apt_bool_t) mrcp_server_control_channel_modify(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+
+/**
+ * Remove MRCPv2 control channel.
+ * @param channel the control channel to remove
+ */
+APT_DECLARE(apt_bool_t) mrcp_server_control_channel_remove(mrcp_control_channel_t *channel);
 
 /**
  * Send MRCPv2 message.
- * @param agent the connection agent
- * @param connection the connection to send message through
+ * @param channel the control channel to send message through
  * @param message the message to send
  */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_message_send(
-								mrcp_connection_agent_t *agent,
-								mrcp_connection_t *connection,
-								mrcp_message_t *message);
+APT_DECLARE(apt_bool_t) mrcp_server_control_message_send(mrcp_control_channel_t *channel, mrcp_message_t *message);
+
 
 APT_END_EXTERN_C
 

@@ -64,20 +64,20 @@ struct mrcp_client_session_t {
 
 struct mrcp_channel_t {
 	/** Memory pool */
-	apr_pool_t        *pool;
+	apr_pool_t             *pool;
 	/** MRCP resource identifier */
-	mrcp_resource_id   resource_id;
+	mrcp_resource_id        resource_id;
 	/** MRCP resource */
-	mrcp_resource_t   *resource;
+	mrcp_resource_t        *resource;
 	/** MRCP session entire channel belongs to */
-	mrcp_session_t    *session;
-	/** MRCP connection */
-	mrcp_connection_t *connection;
+	mrcp_session_t         *session;
+	/** MRCP control channel */
+	mrcp_control_channel_t *control_channel;
 
 	/** waiting state */
-	apt_bool_t         waiting;
+	apt_bool_t              waiting;
 	/** Media termination */
-	mpf_termination_t *termination;
+	mpf_termination_t      *termination;
 };
 
 struct mrcp_application_t {
@@ -112,7 +112,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session);
 apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *session);
 
-apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection);
+apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor);
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel);
 apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message);
 
