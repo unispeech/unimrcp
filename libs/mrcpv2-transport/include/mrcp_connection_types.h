@@ -39,19 +39,28 @@ typedef struct mrcp_control_channel_t mrcp_control_channel_t;
 /** Opaque MRCPv2 connection agent declaration */
 typedef struct mrcp_connection_agent_t mrcp_connection_agent_t;
 
-
+/** MRCPv2 connection event vtable declaration */
 typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
+
+/** MRCPv2 connection event vtable */
 struct mrcp_connection_event_vtable_t {
+	/** Channel modify event handler */
 	apt_bool_t (*on_modify)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+	/** Channel remove event handler */
 	apt_bool_t (*on_remove)(mrcp_control_channel_t *channel);
+	/** Message receive event handler */
 	apt_bool_t (*on_receive)(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message);
 };
 
 /** MRCPv2 control channel */
 struct mrcp_control_channel_t {
+	/** MRCPv2 Connection agent */
 	mrcp_connection_agent_t *agent;
+	/** MRCPv2 (shared) connection */
 	mrcp_connection_t       *connection;
+	/** External object associated with the channel */
 	void                    *obj;
+	/** Pool to allocate memory from */
 	apr_pool_t              *pool;
 };
 

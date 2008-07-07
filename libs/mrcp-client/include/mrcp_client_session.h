@@ -31,8 +31,10 @@
 
 APT_BEGIN_EXTERN_C
 
+/** MRCP client session declaration */
 typedef struct mrcp_client_session_t mrcp_client_session_t;
 
+/** MRCP client session */
 struct mrcp_client_session_t {
 	/** Session base */
 	mrcp_session_t             base;
@@ -62,6 +64,7 @@ struct mrcp_client_session_t {
 	apr_size_t                 terminate_flag_count;
 };
 
+/** MRCP channel */
 struct mrcp_channel_t {
 	/** Memory pool */
 	apr_pool_t             *pool;
@@ -80,6 +83,7 @@ struct mrcp_channel_t {
 	mpf_termination_t      *termination;
 };
 
+/** MRCP application */
 struct mrcp_application_t {
 	void                      *obj;
 	mrcp_version_e             version;

@@ -89,8 +89,9 @@ struct mrcp_app_message_t {
 /**
  * Create application instance.
  * @param obj the external object
- * @param vtable the event handlers
- * @param pool the memory pool to allocate memory from
+ * @param version the MRCP protocol version
+ * @param handler the event handler
+ * @param pool the pool to allocate memory from
  */
 MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_app_message_handler_f handler, apr_pool_t *pool);
 
@@ -136,6 +137,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 /** 
  * Create control channel.
  * @param session the session to create channel for
+ * @param resource_id the resource identifier of the channel
  * @param termination the media termination
  * @param obj the external object
  */

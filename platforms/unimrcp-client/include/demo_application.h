@@ -18,7 +18,7 @@
 #define __DEMO_APPLICATION_H__
 
 /**
- * @file demo_framework.h
+ * @file demo_application.h
  * @brief Demo MRCP Application Framework
  */ 
 
@@ -33,25 +33,34 @@ typedef struct demo_application_vtable_t demo_application_vtable_t;
 
 /** Demo application */
 struct demo_application_t {
+	/** MRCP application */
 	mrcp_application_t              *application;
+	/** Demo framework */
 	void                            *framework;
+	/** Table of demo application virtaul methods */
 	const demo_application_vtable_t *vtable;
 };
 
 /** Demo application vtable */
 struct demo_application_vtable_t {
+	/** Virtual run method */
 	apt_bool_t (*run)(demo_application_t *application);
 
+	/** Session update event handler */
 	apt_bool_t (*on_session_update)(demo_application_t *application, mrcp_session_t *session);
+	/** Session terminate event handler */
 	apt_bool_t (*on_session_terminate)(demo_application_t *application, mrcp_session_t *session);
 	
+	/** Channel add event handler */
 	apt_bool_t (*on_channel_add)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
+	/** Channel remove event handler */
 	apt_bool_t (*on_channel_remove)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel);
 
+	/** Message receive event handler */
 	apt_bool_t (*on_message_receive)(demo_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
 };
 
-
+/** Create demo synthesizer application */
 demo_application_t* demo_synth_application_create(apr_pool_t *pool);
 
 

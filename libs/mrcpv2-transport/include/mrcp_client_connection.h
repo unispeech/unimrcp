@@ -29,7 +29,6 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create connection agent.
- * @param obj the external object to associate with the agent
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_pool_t *pool);
@@ -71,7 +70,7 @@ APT_DECLARE(void) mrcp_client_connection_agent_handler_set(
  */
 APT_DECLARE(void) mrcp_client_connection_resource_factory_set(
 								mrcp_connection_agent_t *agent, 
-								mrcp_resource_factory_t *resource_factroy);
+								mrcp_resource_factory_t *resource_factory);
 
 /**
  * Get task.

@@ -43,13 +43,17 @@ APT_BEGIN_EXTERN_C
 
 /** MRCP resource engine declaration */
 typedef struct mrcp_resource_engine_t mrcp_resource_engine_t;
+/** MRCP resource engine vtable declaration */
 typedef struct mrcp_engine_method_vtable_t mrcp_engine_method_vtable_t;
 
 /** MRCP engine channel declaration */
 typedef struct mrcp_engine_channel_t mrcp_engine_channel_t;
+/** MRCP engine channel virtual method table declaration */
 typedef struct mrcp_engine_channel_method_vtable_t mrcp_engine_channel_method_vtable_t;
+/** MRCP engine channel virtual event table declaration */
 typedef struct mrcp_engine_channel_event_vtable_t mrcp_engine_channel_event_vtable_t;
 
+/** Table of channel virtual methods */
 struct mrcp_engine_channel_method_vtable_t {
 	apt_bool_t (*destroy)(mrcp_engine_channel_t *channel);
 	apt_bool_t (*open)(mrcp_engine_channel_t *channel);
@@ -57,12 +61,14 @@ struct mrcp_engine_channel_method_vtable_t {
 	apt_bool_t (*process_request)(mrcp_engine_channel_t *channel, mrcp_message_t *request);
 };
 
+/** Table of channel virtual events */
 struct mrcp_engine_channel_event_vtable_t {
 	apt_bool_t (*on_open)(mrcp_engine_channel_t *channel, apt_bool_t status);
 	apt_bool_t (*on_close)(mrcp_engine_channel_t *channel);
 	apt_bool_t (*on_message)(mrcp_engine_channel_t *channel, mrcp_message_t *message);
 };
 
+/** MRCP engine channel declaration */
 struct mrcp_engine_channel_t {
 	const mrcp_engine_channel_method_vtable_t *method_vtable;
 	void                                      *method_obj;
@@ -72,7 +78,7 @@ struct mrcp_engine_channel_t {
 	apr_pool_t                                *pool;
 };
 
-
+/** Table of MRCP engine virtual methods */
 struct mrcp_engine_method_vtable_t {
 	apt_bool_t (*destroy)(mrcp_resource_engine_t *engine);
 	apt_bool_t (*open)(mrcp_resource_engine_t *engine);
@@ -80,6 +86,7 @@ struct mrcp_engine_method_vtable_t {
 	mrcp_engine_channel_t* (*create_channel)(mrcp_resource_engine_t *engine, apr_pool_t *pool);
 };
 
+/** MRCP resource engine */
 struct mrcp_resource_engine_t {
 	mrcp_resource_id                   resource_id;
 	void                              *obj;

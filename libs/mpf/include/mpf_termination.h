@@ -64,6 +64,7 @@ struct mpf_termination_factory_t {
 
 /**
  * Create MPF termination base.
+ * @param termination_factory the termination factory
  * @param obj the external object associated with termination
  * @param vtable the table of virtual functions of termination
  * @param audio_stream the audio stream

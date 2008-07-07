@@ -18,7 +18,7 @@
 #define __MRCP_SOFIASIP_CLIENT_AGENT_H__
 
 /**
- * @file mrcp_sofiasip_agent.h
+ * @file mrcp_sofiasip_client_agent.h
  * @brief Implementation of MRCP Signaling Interface using Sofia-SIP
  */ 
 

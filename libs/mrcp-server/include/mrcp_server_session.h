@@ -34,13 +34,14 @@ typedef struct mrcp_channel_t mrcp_channel_t;
 typedef struct mrcp_server_session_t mrcp_server_session_t;
 typedef struct mrcp_signaling_message_t mrcp_signaling_message_t;
 
-/* Signaling agent interface */
+/** Enumeration of signaling task messages */
 typedef enum {
 	SIGNALING_MESSAGE_OFFER,
 	SIGNALING_MESSAGE_CONTROL,
 	SIGNALING_MESSAGE_TERMINATE,
 } mrcp_signaling_message_type_e;
 
+/** MRCP signaling message */
 struct mrcp_signaling_message_t {
 	mrcp_signaling_message_type_e type;
 	mrcp_server_session_t        *session;
@@ -49,6 +50,7 @@ struct mrcp_signaling_message_t {
 };
 
 
+/** MRCP server session */
 struct mrcp_server_session_t {
 	/** Session base */
 	mrcp_session_t             base;
