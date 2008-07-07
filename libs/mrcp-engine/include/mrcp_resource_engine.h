@@ -61,36 +61,53 @@ struct mrcp_engine_channel_method_vtable_t {
 	apt_bool_t (*process_request)(mrcp_engine_channel_t *channel, mrcp_message_t *request);
 };
 
-/** Table of channel virtual events */
+/** Table of channel virtual event handlers */
 struct mrcp_engine_channel_event_vtable_t {
+	/** Open event handler */
 	apt_bool_t (*on_open)(mrcp_engine_channel_t *channel, apt_bool_t status);
+	/** Close event handler */
 	apt_bool_t (*on_close)(mrcp_engine_channel_t *channel);
+	/** Message event handler */
 	apt_bool_t (*on_message)(mrcp_engine_channel_t *channel, mrcp_message_t *message);
 };
 
 /** MRCP engine channel declaration */
 struct mrcp_engine_channel_t {
+	/** Table of virtual methods */
 	const mrcp_engine_channel_method_vtable_t *method_vtable;
+	/** External object used with virtual methods */
 	void                                      *method_obj;
+	/** Table of virtual event handlers */
 	const mrcp_engine_channel_event_vtable_t  *event_vtable;
+	/** External object used with event handlers */
 	void                                      *event_obj;
+	/** Media termination */
 	mpf_termination_t                         *termination;
+	/** Pool to allocate memory from */
 	apr_pool_t                                *pool;
 };
 
 /** Table of MRCP engine virtual methods */
 struct mrcp_engine_method_vtable_t {
+	/** Virtual destroy */
 	apt_bool_t (*destroy)(mrcp_resource_engine_t *engine);
+	/** Virtual open */
 	apt_bool_t (*open)(mrcp_resource_engine_t *engine);
+	/** Virtual close */
 	apt_bool_t (*close)(mrcp_resource_engine_t *engine);
+	/** Virtual channel create */
 	mrcp_engine_channel_t* (*create_channel)(mrcp_resource_engine_t *engine, apr_pool_t *pool);
 };
 
 /** MRCP resource engine */
 struct mrcp_resource_engine_t {
+	/** Resource identifier */
 	mrcp_resource_id                   resource_id;
+	/** External object associated with engine */
 	void                              *obj;
+	/** Table of virtual methods */
 	const mrcp_engine_method_vtable_t *method_vtable;
+	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
 };
 

@@ -56,6 +56,7 @@ struct mpf_termination_t {
 
 /** MPF termination factory */
 struct mpf_termination_factory_t {
+	/** Virtual create */
 	mpf_termination_t* (*create_termination)(mpf_termination_factory_t *factory, void *obj, apr_pool_t *pool);
 
 	/* more to add */

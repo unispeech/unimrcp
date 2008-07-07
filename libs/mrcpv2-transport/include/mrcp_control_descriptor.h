@@ -27,7 +27,7 @@
 
 APT_BEGIN_EXTERN_C
 
-/** MRCP proto transport (v2) */
+/** MRCPv2 proto transport */
 typedef enum {
 	MRCP_PROTO_TCP,
 	MRCP_PROTO_TLS,
@@ -37,7 +37,7 @@ typedef enum {
 }mrcp_proto_type_e;
 
 
-/** MRCP attributes */
+/** MRCPv2 attributes */
 typedef enum {
 	MRCP_ATTRIB_SETUP,
 	MRCP_ATTRIB_CONNECTION,
@@ -50,7 +50,7 @@ typedef enum {
 }mrcp_attrib_e;
 
 
-/** MRCP setup attributes */
+/** MRCPv2 setup attributes */
 typedef enum {
 	MRCP_SETUP_TYPE_ACTIVE,
 	MRCP_SETUP_TYPE_PASSIVE,
@@ -59,7 +59,7 @@ typedef enum {
 	MRCP_SETUP_TYPE_UNKNOWN = MRCP_SETUP_TYPE_COUNT
 } mrcp_setup_type_e;
 
-/** MRCP connection attributes */
+/** MRCPv2 connection attributes */
 typedef enum {
 	MRCP_CONNECTION_TYPE_NEW,
 	MRCP_CONNECTION_TYPE_EXISTING,
@@ -71,14 +71,23 @@ typedef enum {
 
 /** MRCPv2 control descriptor */
 struct mrcp_control_descriptor_t {
+	/** IP address */
 	apt_str_t              ip;
+	/** Port */
 	apr_port_t             port;
+	/** Protocol type */
 	mrcp_proto_type_e      proto;
+	/** Setup type */
 	mrcp_setup_type_e      setup_type;
+	/** Connection type */
 	mrcp_connection_type_e connection_type;
+	/** Resource name */
 	apt_str_t              resource_name;
+	/** Session identifier */
 	apt_str_t              session_id;
+	/** Control media identifier */
 	apr_size_t             cmid;
+	/** Base identifier */
 	apr_size_t             id;
 };
 

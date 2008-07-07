@@ -59,8 +59,11 @@ struct mrcp_client_session_t {
 	/** MRCP application request queue */
 	apt_obj_list_t            *request_queue;
 
+	/** Number of in-progress offer requests (flags) */
 	apr_size_t                 offer_flag_count;
+	/** Number of in-progress answer requests (flags) */
 	apr_size_t                 answer_flag_count;
+	/** Number of in-progress terminate requests (flags) */
 	apr_size_t                 terminate_flag_count;
 };
 
@@ -85,10 +88,13 @@ struct mrcp_channel_t {
 
 /** MRCP application */
 struct mrcp_application_t {
+	/** External object associated with the application */
 	void                      *obj;
+	/** MRCP protocol version */
 	mrcp_version_e             version;
+	/** Application message handler */
 	mrcp_app_message_handler_f handler;
-	
+	/** MRCP client */
 	mrcp_client_t             *client;
 	/** Application task message pool */
 	apt_task_msg_pool_t       *msg_pool;
@@ -105,19 +111,28 @@ struct mrcp_application_t {
 	mrcp_connection_agent_t   *connection_agent;
 };
 
-
+/** Create client session */
 mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj);
+/** Create channel */
 mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
 
+/** Process application message */
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message);
+/** Process MPF message */
 apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message);
 
+/** Process session answer */
 apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
+/** Process session termination response */
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session);
+/** Process session termination event */
 apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *session);
 
+/** Process channel modify event */
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+/** Process channel remove event */
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel);
+/** Process message receive event */
 apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message);
 
 APT_END_EXTERN_C

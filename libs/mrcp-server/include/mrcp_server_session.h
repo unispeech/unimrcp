@@ -30,8 +30,11 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Opaque MRCP channel declaration */
 typedef struct mrcp_channel_t mrcp_channel_t;
+/** MRCP server session declaration */
 typedef struct mrcp_server_session_t mrcp_server_session_t;
+/** MRCP signaling message declaration */
 typedef struct mrcp_signaling_message_t mrcp_signaling_message_t;
 
 /** Enumeration of signaling task messages */
@@ -54,7 +57,7 @@ struct mrcp_signaling_message_t {
 struct mrcp_server_session_t {
 	/** Session base */
 	mrcp_session_t             base;
-
+	/** MRCP server */
 	mrcp_server_t             *server;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;
@@ -85,23 +88,33 @@ struct mrcp_server_session_t {
 	/** In-progres answer */
 	mrcp_session_descriptor_t *answer;
 
+	/** Number of in-progress answer requests (flags) */
 	apr_size_t                 answer_flag_count;
+	/** Number of in-progress terminate requests (flags) */
 	apr_size_t                 terminate_flag_count;
 };
 
-
+/** Create server session */
 mrcp_server_session_t* mrcp_server_session_create();
 
+/** Process signaling message */
 apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signaling_message);
+/** Process MPF message */
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 
+/** Process channel modify event */
 apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection, mrcp_control_descriptor_t *answer);
+/** Process channel remove event */
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);
 
+/** Process channel open event */
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status);
+/** Process channel close event */
 apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel);
+/** Process message receive event */
 apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_message_t *message);
 
+/** Get session by channel */
 mrcp_session_t* mrcp_server_channel_session_get(mrcp_channel_t *channel);
 
 APT_END_EXTERN_C
