@@ -16,5 +16,6 @@ INCLUDES               = -Iinclude \
 bin_PROGRAMS           = unimrcpclient
 unimrcpclient_SOURCES  = src/main.c \
                          src/demo_framework.c \
-                         src/demo_synth_application.c
+                         src/demo_synth_application.c \
+                         src/demo_recog_application.c
 unimrcpclient_LDADD    = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la

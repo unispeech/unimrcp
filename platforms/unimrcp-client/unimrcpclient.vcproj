@@ -153,6 +153,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\demo_recog_application.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\demo_synth_application.c"
 				>
 			</File>
