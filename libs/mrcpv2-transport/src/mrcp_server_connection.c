@@ -350,6 +350,16 @@ static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent
 	return TRUE;
 }
 
+static void mrcp_server_agent_socket_destroy(mrcp_connection_agent_t *agent)
+{
+	mrcp_server_agent_listen_socket_destroy(agent);
+	mrcp_server_agent_control_socket_destroy(agent);
+	if(agent->pollset) {
+		apr_pollset_destroy(agent->pollset);
+		agent->pollset = NULL;
+	}
+}
+
 static mrcp_connection_t* mrcp_server_agent_connection_add(mrcp_connection_agent_t *agent, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_connection_t *connection;
@@ -669,6 +679,8 @@ static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task)
 			mrcp_server_agent_messsage_receive(agent,ret_pfd[i].client_data);
 		}
 	}
+
+	mrcp_server_agent_socket_destroy(agent);
 
 	apt_task_child_terminate(agent->task);
 	return TRUE;
