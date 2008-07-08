@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include "unimrcp_server.h"
+#include "apt_log.h"
 
 int main(int argc, const char * const *argv)
 {
@@ -25,6 +26,8 @@ int main(int argc, const char * const *argv)
 		apr_terminate();
 		return 0;
 	}
+
+	apt_log_priority_set(APT_PRIO_INFO);
 
 	server = unimrcp_server_start();
 	if(server) {
