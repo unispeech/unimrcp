@@ -28,14 +28,14 @@
 #define MRCP_MESSAGE_MAX_SIZE 2048
 
 struct mrcp_connection_t {
-	apr_pool_t                *pool;
+	apr_pool_t      *pool;
 
-	apr_socket_t              *sock; /* accepted socket */
-	apr_pollfd_t               sock_pfd;
+	apr_socket_t    *sock; /* accepted socket */
+	apr_pollfd_t     sock_pfd;
 
-	apt_str_t                  remote_ip;
-	apr_size_t                 access_count;
-	apt_list_elem_t           *it;
+	apt_str_t        remote_ip;
+	apr_size_t       access_count;
+	apt_list_elem_t *it;
 };
 
 struct mrcp_connection_agent_t {
@@ -115,7 +115,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 		return NULL;
 	}
 
-	agent->sub_pool = NULL;
+	apr_pool_create(&agent->sub_pool,NULL);
 	agent->connection_list = apt_list_create(pool);
 	return agent;
 }
@@ -124,6 +124,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
 	apt_log(APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	apr_pool_destroy(agent->sub_pool);
 	return apt_task_destroy(agent->task);
 }
 
@@ -204,8 +205,6 @@ static apt_bool_t mrcp_server_control_message_signal(
 	return TRUE;
 }
 
-
-
 /** Modify MRCPv2 control channel */
 APT_DECLARE(apt_bool_t) mrcp_server_control_channel_modify(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
@@ -225,11 +224,10 @@ APT_DECLARE(apt_bool_t) mrcp_server_control_message_send(mrcp_control_channel_t 
 }
 
 
-static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent)
+static apt_bool_t mrcp_server_agent_listen_socket_create(mrcp_connection_agent_t *agent)
 {
 	apr_status_t status;
-
-	if(!agent->sockaddr || !agent->control_sockaddr) {
+	if(!agent->sockaddr) {
 		return FALSE;
 	}
 
@@ -256,6 +254,24 @@ static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent
 		return FALSE;
 	}
 
+	return TRUE;
+}
+
+static void mrcp_server_agent_listen_socket_destroy(mrcp_connection_agent_t *agent)
+{
+	if(agent->listen_sock) {
+		apr_socket_close(agent->listen_sock);
+		agent->listen_sock = NULL;
+	}
+}
+
+static apt_bool_t mrcp_server_agent_control_socket_create(mrcp_connection_agent_t *agent)
+{
+	apr_status_t status;
+	if(!agent->control_sockaddr) {
+		return FALSE;
+	}
+
 	/* create control socket */
 	status = apr_socket_create(&agent->control_sock, agent->control_sockaddr->family, SOCK_DGRAM, APR_PROTO_UDP, agent->pool);
 	if(status != APR_SUCCESS) {
@@ -263,39 +279,69 @@ static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent
 	}
 	status = apr_socket_bind(agent->control_sock, agent->control_sockaddr);
 	if(status != APR_SUCCESS) {
+		apr_socket_close(agent->control_sock);
+		agent->control_sock = NULL;
 		return FALSE;
 	}
 
+	return TRUE;
+}
+
+static void mrcp_server_agent_control_socket_destroy(mrcp_connection_agent_t *agent)
+{
+	if(agent->control_sock) {
+		apr_socket_close(agent->control_sock);
+		agent->control_sock = NULL;
+	}
+}
+
+static apt_bool_t mrcp_server_agent_socket_create(mrcp_connection_agent_t *agent)
+{
+	apr_status_t status;
+	if(mrcp_server_agent_listen_socket_create(agent) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create Listen Socket");
+		return FALSE;
+	}
+	if(mrcp_server_agent_control_socket_create(agent) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create Control Socket");
+		mrcp_server_agent_listen_socket_destroy(agent);
+		return FALSE;
+	}
 
 	/* create pollset */
 	status = apr_pollset_create(&agent->pollset, MRCP_CONNECTION_MAX_COUNT + 2, agent->pool, 0);
 	if(status != APR_SUCCESS) {
-		apr_socket_close(agent->listen_sock);
-		agent->listen_sock = NULL;
+		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
+		mrcp_server_agent_listen_socket_destroy(agent);
+		mrcp_server_agent_control_socket_destroy(agent);
 		return FALSE;
 	}
 	
+	/* add listen socket to pollset */
 	agent->listen_sock_pfd.desc_type = APR_POLL_SOCKET;
 	agent->listen_sock_pfd.reqevents = APR_POLLIN;
 	agent->listen_sock_pfd.desc.s = agent->listen_sock;
 	agent->listen_sock_pfd.client_data = agent->listen_sock;
 	status = apr_pollset_add(agent->pollset, &agent->listen_sock_pfd);
 	if(status != APR_SUCCESS) {
-		apr_socket_close(agent->listen_sock);
-		agent->listen_sock = NULL;
+		apt_log(APT_PRIO_WARNING,"Failed to Add Listen Socket to Pollset");
+		mrcp_server_agent_listen_socket_destroy(agent);
+		mrcp_server_agent_control_socket_destroy(agent);
 		apr_pollset_destroy(agent->pollset);
 		agent->pollset = NULL;
 		return FALSE;
 	}
 
+	/* add control socket to pollset */
 	agent->control_sock_pfd.desc_type = APR_POLL_SOCKET;
 	agent->control_sock_pfd.reqevents = APR_POLLIN;
 	agent->control_sock_pfd.desc.s = agent->control_sock;
 	agent->control_sock_pfd.client_data = agent->control_sock;
 	status = apr_pollset_add(agent->pollset, &agent->control_sock_pfd);
 	if(status != APR_SUCCESS) {
-		apr_socket_close(agent->listen_sock);
-		agent->listen_sock = NULL;
+		apt_log(APT_PRIO_WARNING,"Failed to Add Control Socket to Pollset");
+		mrcp_server_agent_listen_socket_destroy(agent);
+		mrcp_server_agent_control_socket_destroy(agent);
 		apr_pollset_destroy(agent->pollset);
 		agent->pollset = NULL;
 		return FALSE;
@@ -312,15 +358,13 @@ static mrcp_connection_t* mrcp_server_agent_connection_add(mrcp_connection_agent
 		return NULL;
 	}
 	
+	apt_log(APT_PRIO_INFO,"Add MRCPv2 Connection");
 	connection = apr_palloc(pool,sizeof(mrcp_connection_t));
 	connection->pool = pool;
 	apt_string_copy(&connection->remote_ip,&descriptor->ip,pool);
 	connection->sock = NULL;
 	connection->access_count = 0;
 
-	if(apt_list_is_empty(agent->connection_list) == TRUE) {
-		apr_pool_create(&agent->sub_pool,NULL);
-	}
 	connection->it = apt_list_push_back(agent->connection_list,connection);
 	return connection;
 }
@@ -342,6 +386,24 @@ static mrcp_connection_t* mrcp_server_agent_connection_find(mrcp_connection_agen
 	return NULL;
 }
 
+static apt_bool_t mrcp_server_agent_connection_remove(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
+{
+	/* remove from the list */
+	apt_log(APT_PRIO_INFO,"Remove MRCPv2 Connection");
+	if(connection->it) {
+		apt_list_elem_remove(agent->connection_list,connection->it);
+	}
+	if(connection->sock) {
+		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
+		apr_socket_close(connection->sock);
+	}
+	apr_pool_destroy(connection->pool);
+	if(apt_list_is_empty(agent->connection_list) == TRUE) {
+		apr_pool_clear(agent->sub_pool);
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *agent)
 {
 	apr_socket_t *sock;
@@ -350,7 +412,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	apt_str_t remote_ip;
 
 	if(!agent->sub_pool) {
-		apt_log(APT_PRIO_INFO,"No Active Connection to Accept Socket for");
+		apt_log(APT_PRIO_WARNING,"No Pool to Allocate Accepted Socket from");
 		return FALSE;
 	}
 
@@ -395,15 +457,12 @@ static apt_bool_t mrcp_server_agent_channel_modify(mrcp_connection_agent_t *agen
 		if(descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
 			connection = mrcp_server_agent_connection_find(agent,&descriptor->ip);
 			if(connection) {
-				/* send answer */
 				if(!channel->connection) {
 					channel->connection = connection;
 					connection->access_count ++;
 				}
-				if(agent->vtable && agent->vtable->on_modify) {
-					agent->vtable->on_modify(channel,answer);
-				}
-				return TRUE;
+				/* send response */
+				return mrcp_control_channel_modify_respond(agent->vtable,channel,answer);
 			}
 			/* no existing connection found, proceed with the new one */
 			answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
@@ -418,11 +477,8 @@ static apt_bool_t mrcp_server_agent_channel_modify(mrcp_connection_agent_t *agen
 			}
 		}
 	}
-	/* send answer */
-	if(agent->vtable && agent->vtable->on_modify) {
-		agent->vtable->on_modify(channel,answer);
-	}
-	return TRUE;
+	/* send response */
+	return mrcp_control_channel_modify_respond(agent->vtable,channel,answer);
 }
 
 static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel)
@@ -431,26 +487,11 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 	if(connection && connection->access_count) {
 		connection->access_count--;
 		if(!connection->access_count) {
-			/* remove from the list */
-			if(connection->it) {
-				apt_list_elem_remove(agent->connection_list,connection->it);
-			}
-			if(connection->sock) {
-				apr_pollset_remove(agent->pollset,&connection->sock_pfd);
-				apr_socket_close(connection->sock);
-			}
-			apr_pool_destroy(connection->pool);
-			if(apt_list_is_empty(agent->connection_list) == TRUE) {
-				apr_pool_destroy(agent->sub_pool);
-				agent->sub_pool = NULL;
-			}
+			mrcp_server_agent_connection_remove(agent,connection);
 		}
 	}
 	/* send response */
-	if(agent->vtable && agent->vtable->on_remove) {
-		agent->vtable->on_remove(channel);
-	}
-	return TRUE;
+	return mrcp_control_channel_remove_respond(agent->vtable,channel);
 }
 
 static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message)
@@ -503,13 +544,6 @@ static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *ag
 		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
-		if(!connection->access_count) {
-			apr_pool_destroy(connection->pool);
-			if(apt_list_is_empty(agent->connection_list) == TRUE) {
-				apr_pool_destroy(agent->sub_pool);
-				agent->sub_pool = NULL;
-			}
-		}
 		return TRUE;
 	}
 	text_stream.text.buf[text_stream.text.length] = '\0';
@@ -523,11 +557,11 @@ static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *ag
 	do {
 		message = mrcp_message_create(connection->pool);
 		if(mrcp_message_parse(agent->resource_factory,message,&text_stream) == TRUE) {
-			agent->vtable->on_receive(agent,connection,message);
+			mrcp_connection_message_receive(agent->vtable,agent,connection,message);
 		}
 		else {
 			mrcp_message_t *response;
-			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv2 Message\n");
+			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv2 Message");
 			if(message->start_line.version == MRCP_VERSION_2) {
 				/* assume that at least message length field is valid */
 				if(message->start_line.length <= text_stream.text.length) {
@@ -542,7 +576,7 @@ static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *ag
 			response = mrcp_response_create(message,message->pool);
 			response->start_line.status_code = MRCP_STATUS_CODE_UNRECOGNIZED_MESSAGE;
 			if(mrcp_server_agent_messsage_send(agent,connection,response) == FALSE) {
-				apt_log(APT_PRIO_WARNING,"Failed to Send MRCPv2 Response\n");
+				apt_log(APT_PRIO_WARNING,"Failed to Send MRCPv2 Response");
 			}
 		}
 
@@ -644,7 +678,6 @@ static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task)
 {
 	mrcp_connection_agent_t *agent = apt_task_object_get(task);
 	if(agent->control_sock) {
-
 		connection_task_msg_data_t data;
 		apr_size_t size = sizeof(connection_task_msg_data_t);
 		data.type = CONNECTION_TASK_MSG_TERMINATE;

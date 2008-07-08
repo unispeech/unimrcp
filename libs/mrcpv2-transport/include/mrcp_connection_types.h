@@ -64,6 +64,41 @@ struct mrcp_control_channel_t {
 	apr_pool_t              *pool;
 };
 
+/** Send channel modify response */
+static APR_INLINE apt_bool_t mrcp_control_channel_modify_respond(
+						const mrcp_connection_event_vtable_t *vtable, 
+						mrcp_control_channel_t *channel, 
+						mrcp_control_descriptor_t *descriptor)
+{
+	if(vtable && vtable->on_modify) {
+		return vtable->on_modify(channel,descriptor);
+	}
+	return FALSE;
+}
+
+/** Send channel remove response */
+static APR_INLINE apt_bool_t mrcp_control_channel_remove_respond(
+						const mrcp_connection_event_vtable_t *vtable, 
+						mrcp_control_channel_t *channel)
+{
+	if(vtable && vtable->on_remove) {
+		return vtable->on_remove(channel);
+	}
+	return FALSE;
+}
+
+/** Send MRCP message receive event */
+static APR_INLINE apt_bool_t mrcp_connection_message_receive(
+						const mrcp_connection_event_vtable_t *vtable,
+						mrcp_connection_agent_t *agent, 
+						mrcp_connection_t *connection, 
+						mrcp_message_t *message)
+{
+	if(vtable && vtable->on_receive) {
+		return vtable->on_receive(agent,connection,message);
+	}
+	return FALSE;
+}
 
 APT_END_EXTERN_C
 

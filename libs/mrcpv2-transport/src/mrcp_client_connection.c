@@ -296,7 +296,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	}
 	
 	apt_log(APT_PRIO_NOTICE,"Connected to MRCPv2 Server");
-	connection->access_count = 1;
+	connection->access_count = 0;
 	connection->it = apt_list_push_back(agent->connection_list,connection);
 	return connection;
 }
@@ -329,24 +329,24 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 		if(answer->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
 			connection = mrcp_client_agent_connection_find(agent,answer);
 			if(connection) {
-				connection->access_count ++;
-				/* send response */
-				if(agent->vtable && agent->vtable->on_modify) {
-					agent->vtable->on_modify(channel,answer);
+				if(!channel->connection) {
+					connection->access_count ++;
+					channel->connection = connection;
 				}
-				return TRUE;
+				/* send response */
+				return mrcp_control_channel_modify_respond(agent->vtable,channel,answer);
 			}
 			/* no existing connection found, proceed with the new one */
 		}
 		/* create new connection */
 		connection = mrcp_client_agent_connection_create(agent,answer);
-		channel->connection = connection;
+		if(connection) {
+			connection->access_count ++;
+			channel->connection = connection;
+		}
 	}
 	/* send response */
-	if(agent->vtable && agent->vtable->on_modify) {
-		agent->vtable->on_modify(channel,answer);
-	}
-	return TRUE;
+	return mrcp_control_channel_modify_respond(agent->vtable,channel,answer);
 }
 
 static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel)
@@ -369,10 +369,7 @@ static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agen
 		}
 	}
 	/* send response */
-	if(agent->vtable && agent->vtable->on_remove) {
-		agent->vtable->on_remove(channel);
-	}
-	return TRUE;
+	return mrcp_control_channel_remove_respond(agent->vtable,channel);
 }
 
 static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message)
@@ -405,7 +402,7 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 	if(status == FALSE) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		agent->vtable->on_receive(agent,connection,message);
+		mrcp_connection_message_receive(agent->vtable,agent,connection,message);
 	}
 	return TRUE;
 }
