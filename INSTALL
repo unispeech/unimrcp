@@ -8,7 +8,10 @@ Whenever you want to build any part of UniMRCP, you need the
 Apache Portable Runtime (APR) and the APR Utility (APR-util)
 libraries.
 
-More to come
+2. Sofia-SIP [>=1.12.6] (http://sofia-sip.sourceforge.net/)
+Sofia-SIP library is used to implement MRCPv2 specification
+compliant SIP signaling. Sofia-SIP is an open-source SIP User-Agent
+library, compliant with the IETF RFC3261 specification.
 
 
 GNU BUILD
@@ -30,6 +33,10 @@ For example
 $ ./configure --with-apr=/usr/local/apr \
               --with-apr-util=/usr/local/apr
 
+To specify  where to look for the Sofia-SIP library
+use the "--with-sofia-sip=" option. 
+For example
+$ ./configure --with-sofia-sip=/usr/local/sofia-sip
 
 To generate doxygen documentation from the sources use
 $ make dox
@@ -59,5 +66,11 @@ apr.vsprops
 		Value="$(SolutionDir)libs\apr-util"
 	/>
 	
+sofiasip.vsprops
+	<UserMacro
+		Name="SofiaDir"
+		Value="$(SolutionDir)libs\sofia-sip"
+	/>
+
 Build
 Open unimrcp.sln and build it.
