@@ -59,7 +59,7 @@ MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination)
 }
 
 
-apt_bool_t mpf_termination_modify(mpf_termination_t *termination, void *descriptor)
+MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, void *descriptor)
 {
 	if(termination->vtable && termination->vtable->modify) {
 		termination->vtable->modify(termination,descriptor);
@@ -67,12 +67,7 @@ apt_bool_t mpf_termination_modify(mpf_termination_t *termination, void *descript
 	return TRUE;
 }
 
-/**
- * Create MPF termination.
- * @param termination_factory the termination factory to create termination from
- * @param obj the external object associated with termination
- * @param pool the pool to allocate memory from
- */
+/** Create MPF termination by termination factory */
 MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 										mpf_termination_factory_t *termination_factory,
 										void *obj,
@@ -82,4 +77,14 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 		return termination_factory->create_termination(termination_factory,obj,pool);
 	}
 	return NULL;
+}
+
+/** Create raw MPF termination. */
+MPF_DECLARE(mpf_termination_t*) mpf_raw_termination_create(
+										void *obj,
+										mpf_audio_stream_t *audio_stream,
+										mpf_video_stream_t *video_stream,
+										apr_pool_t *pool)
+{
+	return mpf_termination_base_create(NULL,obj,NULL,audio_stream,video_stream,pool);
 }

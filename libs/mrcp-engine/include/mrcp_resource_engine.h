@@ -23,7 +23,8 @@
  */ 
 
 #include "mrcp_types.h"
-#include "mpf_types.h"
+#include "mpf_termination.h"
+#include "mpf_stream.h"
 
 APT_BEGIN_EXTERN_C
 
