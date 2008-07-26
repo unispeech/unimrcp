@@ -169,6 +169,7 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 	rtp_stream->local_media->mode = mpf_stream_mode_negotiate(rtp_stream->remote_media->mode);
 	rtp_stream->local_media->codec_list = rtp_stream->remote_media->codec_list;
 
+	rtp_stream->base.mode = rtp_stream->local_media->mode;
 	return TRUE;
 }
 

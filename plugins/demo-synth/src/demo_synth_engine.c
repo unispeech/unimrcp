@@ -98,6 +98,8 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 	mpf_termination_t *termination;
 	demo_synth_stream_t *synth_stream = apr_palloc(pool,sizeof(demo_synth_stream_t));
 	mpf_audio_stream_init(&synth_stream->base,&audio_stream_vtable);
+	synth_stream->base.mode = STREAM_MODE_RECEIVE;
+	
 	termination = mpf_raw_termination_create(NULL,&synth_stream->base,NULL,pool);
 	return mrcp_engine_channel_create(engine,&channel_vtable,NULL,termination,pool);
 }
@@ -162,7 +164,6 @@ static apt_bool_t demo_synth_channel_request_process(mrcp_engine_channel_t *chan
 	}
 	return status;
 }
-
 
 static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream)
 {

@@ -61,6 +61,11 @@ MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context)
 	return TRUE;
 }
 
+MPF_DECLARE(void*) mpf_context_object_get(mpf_context_t *context)
+{
+	return context->obj;
+}
+
 MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_termination_t *termination)
 {
 	apr_size_t i;
@@ -187,8 +192,13 @@ MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context, mpf
 static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination)
 {
 	mpf_object_t *object = NULL;
-	mpf_audio_stream_t *source = src_termination->audio_stream;
-	mpf_audio_stream_t *sink = sink_termination->audio_stream;
+	mpf_audio_stream_t *source;
+	mpf_audio_stream_t *sink;
+	if(!src_termination || !sink_termination) {
+		return NULL;
+	}
+	source = src_termination->audio_stream;
+	sink = sink_termination->audio_stream;
 	if(source && (source->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE &&
 		sink && (sink->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
 		mpf_codec_t *rx_codec = source->rx_codec;

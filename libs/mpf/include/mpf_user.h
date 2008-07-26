@@ -40,6 +40,12 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termina
  */
 MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
 
+/**
+ * Get external object associated with MPF context.
+ * @param context the context to get object from
+ */
+MPF_DECLARE(void*) mpf_context_object_get(mpf_context_t *context);
+
 
 APT_END_EXTERN_C
 
