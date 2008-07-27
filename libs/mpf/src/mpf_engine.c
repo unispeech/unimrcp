@@ -189,6 +189,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 			if(request->descriptor) {
 				mpf_termination_modify(termination,request->descriptor);
 			}
+			mpf_termination_validate(termination);
 			if(mpf_context_termination_add(context,termination) == FALSE) {
 				response->status_code = MPF_STATUS_CODE_FAILURE;
 				break;
@@ -219,6 +220,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 			if(request->descriptor) {
 				mpf_context_topology_destroy(context,termination);
 				mpf_termination_modify(termination,request->descriptor);
+				mpf_termination_validate(termination);
 				mpf_context_topology_apply(context,termination);
 			}
 			break;
