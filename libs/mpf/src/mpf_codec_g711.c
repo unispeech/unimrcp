@@ -105,7 +105,7 @@ static apt_bool_t g711a_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 	return TRUE;
 }
 
-static mpf_codec_vtable_t g711u_vtable = {
+static const mpf_codec_vtable_t g711u_vtable = {
 	g711_open,
 	g711_close,
 	g711u_encode,
@@ -113,7 +113,7 @@ static mpf_codec_vtable_t g711u_vtable = {
 	NULL
 };
 
-static mpf_codec_vtable_t g711a_vtable = {
+static const mpf_codec_vtable_t g711a_vtable = {
 	g711_open,
 	g711_close,
 	g711a_encode,
@@ -121,7 +121,7 @@ static mpf_codec_vtable_t g711a_vtable = {
 	NULL
 };
 
-static mpf_codec_descriptor_t g711u_descriptor = {
+static const mpf_codec_descriptor_t g711u_descriptor = {
 	0,
 	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},
 	8000,
@@ -129,7 +129,7 @@ static mpf_codec_descriptor_t g711u_descriptor = {
 	NULL
 };
 
-static mpf_codec_descriptor_t g711a_descriptor = {
+static const mpf_codec_descriptor_t g711a_descriptor = {
 	8,
 	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},
 	8000,
@@ -137,7 +137,7 @@ static mpf_codec_descriptor_t g711a_descriptor = {
 	NULL
 };
 
-static mpf_codec_attribs_t g711_attribs = {
+static const mpf_codec_attribs_t g711_attribs = {
 	8 /* bits per sample */
 };
 

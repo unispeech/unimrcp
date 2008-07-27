@@ -19,21 +19,28 @@
 #define L16_CODEC_NAME        "L16"
 #define L16_CODEC_NAME_LENGTH (sizeof(L16_CODEC_NAME)-1)
 
-static mpf_codec_vtable_t l16_vtable;
+static const mpf_codec_vtable_t l16_vtable = {
+	NULL
+};
 
-static mpf_codec_descriptor_t l16_descriptor = {
+static const mpf_codec_descriptor_t l16_descriptor = {
 	11,
 	{L16_CODEC_NAME, L16_CODEC_NAME_LENGTH},
-	8000,
+	8000 /*44100*/,
 	1,
 	NULL
 };
 
-static mpf_codec_attribs_t l16_attribs = {
+static const mpf_codec_attribs_t l16_attribs = {
 	16 /* bits per sample */
 };
 
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool)
 {
 	return mpf_codec_create(&l16_vtable,&l16_attribs,&l16_descriptor,pool);
+}
+
+const mpf_codec_descriptor_t* l16_descriptor_get()
+{
+	return &l16_descriptor;
 }
