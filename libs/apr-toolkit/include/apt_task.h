@@ -167,9 +167,9 @@ struct apt_task_vtable_t {
 	apt_task_event_f on_pre_run;
 	/** Virtual post-run event handler */
 	apt_task_event_f on_post_run;
-	/** Virtual start-complite event handler */
+	/** Virtual start-complete event handler */
 	apt_task_event_f on_start_complete;
-	/** Virtual terminate-complite event handler */
+	/** Virtual terminate-complete event handler */
 	apt_task_event_f on_terminate_complete;
 };
 
