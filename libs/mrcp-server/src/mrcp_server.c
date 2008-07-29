@@ -337,11 +337,39 @@ static APR_INLINE mrcp_server_session_t* mrcp_server_session_find(mrcp_server_t 
 
 static void mrcp_server_on_start_complete(apt_task_t *task)
 {
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+	mrcp_resource_engine_t *resource_engine;
+	apt_list_elem_t *elem;
+	apt_log(APT_PRIO_INFO,"Open Resource Engines");
+	elem = apt_list_first_elem_get(server->resource_engines);
+	/* walk through the list of engines */
+	while(elem) {
+		resource_engine = apt_list_elem_object_get(elem);
+		if(resource_engine) {
+			mrcp_resource_engine_open(resource_engine);
+		}
+		elem = apt_list_next_elem_get(server->resource_engines,elem);
+	}
 	apt_log(APT_PRIO_INFO,"On Server Task Start");
 }
 
 static void mrcp_server_on_terminate_complete(apt_task_t *task)
 {
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+	mrcp_resource_engine_t *resource_engine;
+	apt_list_elem_t *elem;
+	apt_log(APT_PRIO_INFO,"Close Resource Engines");
+	elem = apt_list_first_elem_get(server->resource_engines);
+	/* walk through the list of engines */
+	while(elem) {
+		resource_engine = apt_list_elem_object_get(elem);
+		if(resource_engine) {
+			mrcp_resource_engine_close(resource_engine);
+		}
+		elem = apt_list_next_elem_get(server->resource_engines,elem);
+	}
 	apt_log(APT_PRIO_INFO,"On Server Task Terminate");
 }
 
