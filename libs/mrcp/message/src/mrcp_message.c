@@ -555,7 +555,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *mess
 MRCP_DECLARE(apt_bool_t) mrcp_body_parse(mrcp_message_t *message, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
 	if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
-		mrcp_generic_header_t *generic_header = message->header.generic_header_accessor.data;
+		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
 		if(generic_header && generic_header->content_length) {
 			apt_str_t *body = &message->body;
 			body->length = generic_header->content_length;

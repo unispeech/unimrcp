@@ -212,6 +212,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_body_parse(mrcp_message_t *message, apt_text_strea
 /** Generate MRCP message-body */
 MRCP_DECLARE(apt_bool_t) mrcp_body_generate(mrcp_message_t *message, apt_text_stream_t *text_stream);
 
+/** Get MRCP generic-header */
+static APR_INLINE void* mrcp_generic_header_get(mrcp_message_t *mrcp_message)
+{
+	return mrcp_message->header.generic_header_accessor.data;
+}
 
 /** Prepare MRCP generic-header */
 static APR_INLINE void* mrcp_generic_header_prepare(mrcp_message_t *mrcp_message)
@@ -231,6 +236,12 @@ static APR_INLINE apt_bool_t mrcp_generic_header_property_check(mrcp_message_t *
 	return mrcp_header_property_check(&mrcp_message->header.generic_header_accessor.property_set,id);
 }
 
+
+/** Get MRCP resource-header */
+static APR_INLINE void* mrcp_resource_header_get(const mrcp_message_t *mrcp_message)
+{
+	return mrcp_message->header.resource_header_accessor.data;
+}
 
 /** Prepare MRCP resource-header */
 static APR_INLINE void* mrcp_resource_header_prepare(mrcp_message_t *mrcp_message)
