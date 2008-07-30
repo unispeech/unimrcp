@@ -17,6 +17,8 @@
 #include "demo_synth_engine.h"
 #include "mrcp_synth_resource.h"
 #include "mrcp_message.h"
+#include "mrcp_generic_header.h"
+#include "mrcp_synth_header.h"
 #include "apt_consumer_task.h"
 
 typedef struct demo_synth_engine_t demo_synth_engine_t;
@@ -73,10 +75,12 @@ struct demo_synth_engine_t {
 
 /** Declaration of demo synthesizer channel */
 struct demo_synth_channel_t {
-	mpf_audio_stream_t   audio_stream;
-	demo_synth_engine_t *demo_engine;
+	mpf_audio_stream_t     audio_stream;
+	mrcp_engine_channel_t *channel;
+	demo_synth_engine_t   *demo_engine;
 
-	apt_bool_t           speaking;
+	mrcp_message_t        *speak_request;
+	apr_size_t             estimate_time;
 };
 
 /**  */
@@ -150,21 +154,26 @@ static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
 
 static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
+	mrcp_engine_channel_t *channel;
 	mpf_termination_t *termination;
 	mpf_audio_stream_t *audio_stream;
 	demo_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(demo_synth_channel_t));
 	synth_channel->demo_engine = engine->obj;
-	synth_channel->speaking = FALSE;
+	synth_channel->speak_request = NULL;
+	synth_channel->channel = NULL;
 	audio_stream = &synth_channel->audio_stream;
 	mpf_audio_stream_init(audio_stream,&audio_stream_vtable);
 	audio_stream->mode = STREAM_MODE_RECEIVE;
 	
 	termination = mpf_raw_termination_create(NULL,audio_stream,NULL,pool);
-	return mrcp_engine_channel_create(engine,&channel_vtable,synth_channel,termination,pool);
+	channel = mrcp_engine_channel_create(engine,&channel_vtable,synth_channel,termination,pool);
+	synth_channel->channel = channel;
+	return channel;
 }
 
 static apt_bool_t demo_synth_channel_destroy(mrcp_engine_channel_t *channel)
 {
+	/* nothing to destroy */
 	return TRUE;
 }
 
@@ -188,7 +197,14 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	/* process speak request, and send asynch response */
 	mrcp_message_t *response;
 	demo_synth_channel_t *synth_channel = channel->method_obj;
-	synth_channel->speaking = TRUE;
+	synth_channel->speak_request = request;
+	synth_channel->estimate_time = 0;
+	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
+		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
+		if(generic_header) {
+			synth_channel->estimate_time = generic_header->content_length * 10; /* 10 msec per character */
+		}
+	}
 	
 	response = mrcp_response_create(request,request->pool);
 	return mrcp_engine_channel_message_send(channel,response);
@@ -199,7 +215,7 @@ static apt_bool_t demo_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_m
 	/* process stop request, and send asynch response */
 	mrcp_message_t *response;
 	demo_synth_channel_t *synth_channel = channel->method_obj;
-	synth_channel->speaking = TRUE;
+	synth_channel->speak_request = NULL;
 
 	response = mrcp_response_create(request,request->pool);
 	return mrcp_engine_channel_message_send(channel,response);
@@ -253,9 +269,31 @@ static apt_bool_t demo_synth_stream_close(mpf_audio_stream_t *stream)
 static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	demo_synth_channel_t *synth_channel = (demo_synth_channel_t*)stream;
-	if(synth_channel->speaking == TRUE) {
+	if(synth_channel->speak_request) {
 		frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 		memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
+
+		if(synth_channel->estimate_time >= CODEC_FRAME_TIME_BASE) {
+			synth_channel->estimate_time -= CODEC_FRAME_TIME_BASE;
+		}
+		else {
+			/* raise SPEAK-COMPLETE event */
+			mrcp_message_t *message = mrcp_event_create(
+								synth_channel->speak_request,
+								SYNTHESIZER_SPEAK_COMPLETE,
+								synth_channel->speak_request->pool);
+			if(message) {
+				mrcp_synth_header_t *synth_header = mrcp_resource_header_prepare(message);
+				if(synth_header) {
+					synth_header->completion_cause = SYNTHESIZER_COMPLETION_CAUSE_NORMAL;
+					mrcp_resource_header_property_add(message,SYNTHESIZER_HEADER_COMPLETION_CAUSE);
+				}
+				message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+
+				synth_channel->speak_request = NULL;
+				mrcp_engine_channel_message_send(synth_channel->channel,message);
+			}
+		}
 	}
 	return TRUE;
 }
