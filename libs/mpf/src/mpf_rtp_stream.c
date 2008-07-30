@@ -201,7 +201,6 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		descriptor->local = rtp_stream->local_media;
 	}
 
-//	stream->mode = descriptor->mode;
 	return TRUE;
 }
 
@@ -542,7 +541,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 	transmitter->packet_data = apr_palloc(rtp_stream->pool,
 		mpf_codec_frame_size_calculate(stream->tx_codec->descriptor,stream->tx_codec->attribs));
 	
-	transmitter->marker = 1;
+	transmitter->inactivity = 1;
 	return TRUE;
 }
 
@@ -556,18 +555,24 @@ static APR_INLINE void rtp_header_prepare(rtp_transmitter_t *transmitter, apr_by
 {
 	rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
 
+#if PRINT_RTP_PACKET_STAT
+	printf("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
+		(apr_uint32_t)apr_time_usec(apr_time_now()),
+		transmitter->ssrc, payload_type, transmitter->inactivity ? '*' : ' ',
+		transmitter->timestamp, transmitter->last_seq_num);
+#endif	
 	header->version = RTP_VERSION;
 	header->padding = 0;
 	header->extension = 0;
 	header->count = 0;
-	header->marker = transmitter->marker;
+	header->marker = transmitter->inactivity;
 	header->type = payload_type;
 	header->sequence = htons(++transmitter->last_seq_num);
 	header->timestamp = htonl(transmitter->timestamp);
 	header->ssrc = htonl(transmitter->ssrc);
 
-	if(transmitter->marker) {
-		transmitter->marker = 0;
+	if(transmitter->inactivity) {
+		transmitter->inactivity = 0;
 	}
 
 	transmitter->packet_size = sizeof(rtp_header_t);
@@ -575,28 +580,43 @@ static APR_INLINE void rtp_header_prepare(rtp_transmitter_t *transmitter, apr_by
 
 static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
+	apt_bool_t status = TRUE;
 	mpf_rtp_stream_t *rtp_stream = (mpf_rtp_stream_t*)stream;
 	rtp_transmitter_t *transmitter = &rtp_stream->transmitter;
 
 	transmitter->timestamp += transmitter->samples_per_frame;
 
 	if(transmitter->current_frames == 0) {
-		rtp_header_prepare(transmitter,stream->tx_codec->descriptor->payload_type);
+		if(frame->type == MEDIA_FRAME_TYPE_NONE) {
+			transmitter->inactivity = 1;
+		}
+		else {
+			rtp_header_prepare(transmitter,stream->tx_codec->descriptor->payload_type);
+		}
 	}
-		
-	memcpy(transmitter->packet_data + transmitter->packet_size,
+	
+	if(!transmitter->inactivity) {
+		memcpy(
+			transmitter->packet_data + transmitter->packet_size,
 			frame->codec_frame.buffer,
 			frame->codec_frame.size);
-	transmitter->packet_size += frame->codec_frame.size;
+		transmitter->packet_size += frame->codec_frame.size;
 
-	if(++transmitter->current_frames == transmitter->packet_frames) {
-		apr_socket_sendto(rtp_stream->socket,rtp_stream->remote_sockaddr,0,
-			transmitter->packet_data,&transmitter->packet_size);
-		transmitter->stat.sent_packets++;
-		transmitter->current_frames = 0;
+		if(++transmitter->current_frames == transmitter->packet_frames) {
+			if(apr_socket_sendto(
+					rtp_stream->socket,
+					rtp_stream->remote_sockaddr,
+					0,
+					transmitter->packet_data,
+					&transmitter->packet_size) != APR_SUCCESS) {
+				status = FALSE;
+			}
+			transmitter->stat.sent_packets++;
+			transmitter->current_frames = 0;
+		}
 	}
 
-	return TRUE;
+	return status;
 }
 
 static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media)

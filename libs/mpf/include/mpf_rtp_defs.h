@@ -129,8 +129,8 @@ struct rtp_transmitter_t {
 	/** Samples in frames in timestamp units */
 	apr_uint32_t    samples_per_frame;
 
-	/** Marker bit to set on the first packet of every talkspurt */
-	apr_byte_t      marker;
+	/** Indicate silence period among the talkspurts */
+	apr_byte_t      inactivity;
 	/** Last seq number sent */
 	apr_uint16_t    last_seq_num;
 	/** Current timestamp (samples processed) */
@@ -169,7 +169,7 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 	transmitter->current_frames = 0;
 	transmitter->samples_per_frame = 0;
 
-	transmitter->marker = 0;
+	transmitter->inactivity = 0;
 	transmitter->last_seq_num = 0;
 	transmitter->timestamp = 0;
 
