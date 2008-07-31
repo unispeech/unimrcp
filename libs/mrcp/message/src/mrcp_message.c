@@ -628,6 +628,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request
 	}
 	response_message->start_line.message_type = MRCP_MESSAGE_TYPE_RESPONSE;
 	response_message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+	response_message->start_line.status_code = MRCP_STATUS_CODE_SUCCESS;
 	return response_message;
 }
 
