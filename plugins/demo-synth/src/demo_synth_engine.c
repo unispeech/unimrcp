@@ -16,9 +16,9 @@
 
 #include "demo_synth_engine.h"
 #include "mrcp_synth_resource.h"
-#include "mrcp_message.h"
-#include "mrcp_generic_header.h"
 #include "mrcp_synth_header.h"
+#include "mrcp_generic_header.h"
+#include "mrcp_message.h"
 #include "apt_consumer_task.h"
 
 typedef struct demo_synth_engine_t demo_synth_engine_t;
@@ -80,7 +80,7 @@ struct demo_synth_channel_t {
 	demo_synth_engine_t   *demo_engine;
 
 	mrcp_message_t        *speak_request;
-	apr_size_t             estimate_time;
+	apr_size_t             time_to_complete;
 };
 
 /**  */
@@ -103,8 +103,6 @@ static apt_bool_t demo_synth_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 /** Create demo synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) demo_synth_engine_create(apr_pool_t *pool)
 {
-	mrcp_resource_engine_t *engine;
-
 	demo_synth_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_synth_engine_t));
 	apt_task_vtable_t task_vtable;
 	apt_task_msg_pool_t *msg_pool;
@@ -114,8 +112,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) demo_synth_engine_create(apr_pool_t
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(demo_synth_msg_t),pool);
 	demo_engine->task = apt_consumer_task_create(demo_engine,&task_vtable,msg_pool,pool);
 
-	engine = mrcp_resource_engine_create(MRCP_SYNTHESIZER_RESOURCE,demo_engine,&engine_vtable,pool);
-	return engine;
+	return mrcp_resource_engine_create(MRCP_SYNTHESIZER_RESOURCE,demo_engine,&engine_vtable,pool);
 }
 
 /** Destroy synthesizer engine */
@@ -198,15 +195,16 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	mrcp_message_t *response;
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->speak_request = request;
-	synth_channel->estimate_time = 0;
+	synth_channel->time_to_complete = 0;
 	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
 		if(generic_header) {
-			synth_channel->estimate_time = generic_header->content_length * 10; /* 10 msec per character */
+			synth_channel->time_to_complete = generic_header->content_length * 10; /* 10 msec per character */
 		}
 	}
 	
 	response = mrcp_response_create(request,request->pool);
+	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	return mrcp_engine_channel_message_send(channel,response);
 }
 
@@ -273,8 +271,8 @@ static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 		frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 		memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
 
-		if(synth_channel->estimate_time >= CODEC_FRAME_TIME_BASE) {
-			synth_channel->estimate_time -= CODEC_FRAME_TIME_BASE;
+		if(synth_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
+			synth_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
 		}
 		else {
 			/* raise SPEAK-COMPLETE event */
