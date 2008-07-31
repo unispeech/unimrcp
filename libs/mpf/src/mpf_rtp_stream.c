@@ -169,6 +169,11 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 	rtp_stream->local_media->mode = mpf_stream_mode_negotiate(rtp_stream->remote_media->mode);
 	rtp_stream->local_media->codec_list = rtp_stream->remote_media->codec_list;
 
+	rtp_stream->base.rx_codec = mpf_codec_manager_codec_get(
+							rtp_stream->base.termination->codec_manager,
+							mpf_codec_get(&rtp_stream->local_media->codec_list,0),
+							rtp_stream->base.termination->pool);
+
 	rtp_stream->base.mode = rtp_stream->local_media->mode;
 	return TRUE;
 }
@@ -478,7 +483,7 @@ static apt_bool_t rtp_rx_packet_receive(rtp_receiver_t *receiver, mpf_codec_t *c
 			rtp_rx_failure_threshold_check(receiver);
 		}
 	}
-	else if(header->type == receiver->event_pt) {
+	else if(header->type == receiver->event_pt && receiver->event_pt != 0) {
 		/* named event */
 		mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t *)buffer;
 		if(mpf_jitter_buffer_write_named_event(receiver->jb,named_event,header->timestamp) != JB_OK) {
