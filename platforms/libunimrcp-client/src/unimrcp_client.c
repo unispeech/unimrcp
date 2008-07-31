@@ -75,7 +75,7 @@ static mrcp_sig_agent_t* mrcpv2_sig_agent_create(apr_pool_t *pool)
 	mrcp_sofia_client_config_t *config = mrcp_sofiasip_client_config_alloc(pool);
 	config->local_ip = LOCAL_IP_ADDRESS;
 	config->local_port = 8062;
-	config->remote_ip = LOCAL_IP_ADDRESS;
+	config->remote_ip = REMOTE_IP_ADDRESS;
 	config->remote_port = 8060;
 	config->user_agent_name = "UniMRCP Sofia-SIP";
 	config->origin = "UniMRCPClient";
