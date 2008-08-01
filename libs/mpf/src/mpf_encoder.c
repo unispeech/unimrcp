@@ -20,7 +20,7 @@
 typedef struct mpf_encoder_t mpf_encoder_t;
 
 struct mpf_encoder_t {
-	mpf_audio_stream_t  base;
+	mpf_audio_stream_t *base;
 	mpf_audio_stream_t *sink;
 	mpf_frame_t         frame_out;
 };
@@ -28,25 +28,25 @@ struct mpf_encoder_t {
 
 static apt_bool_t mpf_encoder_destroy(mpf_audio_stream_t *stream)
 {
-	mpf_encoder_t *encoder = (mpf_encoder_t*)stream;
+	mpf_encoder_t *encoder = stream->obj;
 	return mpf_audio_stream_destroy(encoder->sink);
 }
 
 static apt_bool_t mpf_encoder_open(mpf_audio_stream_t *stream)
 {
-	mpf_encoder_t *encoder = (mpf_encoder_t*)stream;
+	mpf_encoder_t *encoder = stream->obj;
 	return mpf_audio_stream_tx_open(encoder->sink);
 }
 
 static apt_bool_t mpf_encoder_close(mpf_audio_stream_t *stream)
 {
-	mpf_encoder_t *encoder = (mpf_encoder_t*)stream;
+	mpf_encoder_t *encoder = stream->obj;
 	return mpf_audio_stream_tx_close(encoder->sink);
 }
 
 static apt_bool_t mpf_encoder_process(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
-	mpf_encoder_t *encoder = (mpf_encoder_t*)stream;
+	mpf_encoder_t *encoder = stream->obj;
 	if(mpf_codec_encode(encoder->sink->tx_codec,&frame->codec_frame,&encoder->frame_out.codec_frame) != TRUE) {
 		return FALSE;
 	}
@@ -75,14 +75,13 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, ap
 		return NULL;
 	}
 	encoder = apr_palloc(pool,sizeof(mpf_encoder_t));
-	mpf_audio_stream_init(&encoder->base,&vtable);
-	encoder->base.mode = STREAM_MODE_SEND;
+	encoder->base = mpf_audio_stream_create(encoder,&vtable,STREAM_MODE_SEND,pool);
 	encoder->sink = sink;
 
 	codec = sink->tx_codec;
 	frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
-	encoder->base.tx_codec = codec;
+	encoder->base->tx_codec = codec;
 	encoder->frame_out.codec_frame.size = frame_size;
 	encoder->frame_out.codec_frame.buffer = apr_palloc(pool,frame_size);
-	return &encoder->base;
+	return encoder->base;
 }

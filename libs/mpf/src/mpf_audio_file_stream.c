@@ -23,14 +23,14 @@
 /** Audio file stream */
 typedef struct mpf_audio_file_stream_t mpf_audio_file_stream_t;
 struct mpf_audio_file_stream_t {
-	mpf_audio_stream_t base;
+	mpf_audio_stream_t *audio_stream;
 
-	FILE              *read_handle;
-	FILE              *write_handle;
+	FILE               *read_handle;
+	FILE               *write_handle;
 
-	apt_bool_t         eof;
-	apr_size_t         max_write_size;
-	apr_size_t         cur_write_size;
+	apt_bool_t          eof;
+	apr_size_t          max_write_size;
+	apr_size_t          cur_write_size;
 };
 
 static APR_INLINE void mpf_audio_file_event_raise(mpf_audio_stream_t *stream, int event_id, void *descriptor);
@@ -38,7 +38,7 @@ static APR_INLINE void mpf_audio_file_event_raise(mpf_audio_stream_t *stream, in
 
 static apt_bool_t mpf_audio_file_destroy(mpf_audio_stream_t *stream)
 {
-	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
+	mpf_audio_file_stream_t *file_stream = stream->obj;
 	if(file_stream->read_handle) {
 		fclose(file_stream->read_handle);
 		file_stream->read_handle = NULL;
@@ -62,7 +62,7 @@ static apt_bool_t mpf_audio_file_reader_close(mpf_audio_stream_t *stream)
 
 static apt_bool_t mpf_audio_file_frame_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
-	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
+	mpf_audio_file_stream_t *file_stream = stream->obj;
 	if(file_stream->read_handle && file_stream->eof == FALSE) {
 		if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,file_stream->read_handle) == frame->codec_frame.size) {
 			frame->type = MEDIA_FRAME_TYPE_AUDIO;
@@ -88,7 +88,7 @@ static apt_bool_t mpf_audio_file_writer_close(mpf_audio_stream_t *stream)
 
 static apt_bool_t mpf_audio_file_frame_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
-	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
+	mpf_audio_file_stream_t *file_stream = stream->obj;
 	if(file_stream->write_handle && 
 		(!file_stream->max_write_size || file_stream->cur_write_size < file_stream->max_write_size)) {
 		file_stream->cur_write_size += fwrite(
@@ -116,20 +116,20 @@ static const mpf_audio_stream_vtable_t vtable = {
 MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-	mpf_audio_stream_init(&file_stream->base,&vtable);
-	file_stream->base.termination = termination;
+	file_stream->audio_stream = mpf_audio_stream_create(file_stream,&vtable,STREAM_MODE_NONE,pool);
+	file_stream->audio_stream->termination = termination;
 
 	file_stream->write_handle = NULL;
 	file_stream->read_handle = NULL;
 	file_stream->eof = FALSE;
 	file_stream->max_write_size = 0;
 	file_stream->cur_write_size = 0;
-	return &file_stream->base;
+	return file_stream->audio_stream;
 }
 
 MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_audio_file_descriptor_t *descriptor)
 {
-	mpf_audio_file_stream_t *file_stream = (mpf_audio_file_stream_t*)stream;
+	mpf_audio_file_stream_t *file_stream = stream->obj;
 	if(descriptor->mask & FILE_READER) {
 		if(file_stream->read_handle) {
 			fclose(file_stream->read_handle);

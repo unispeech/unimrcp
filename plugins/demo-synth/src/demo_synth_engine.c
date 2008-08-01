@@ -52,7 +52,7 @@ static const struct mrcp_engine_channel_method_vtable_t channel_vtable = {
 	demo_synth_channel_request_process
 };
 
-/** Declaration of synthesizer stream methods */
+/** Declaration of synthesizer audio stream methods */
 static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream);
 static apt_bool_t demo_synth_stream_open(mpf_audio_stream_t *stream);
 static apt_bool_t demo_synth_stream_close(mpf_audio_stream_t *stream);
@@ -75,15 +75,19 @@ struct demo_synth_engine_t {
 
 /** Declaration of demo synthesizer channel */
 struct demo_synth_channel_t {
-	mpf_audio_stream_t     audio_stream;
-	mrcp_engine_channel_t *channel;
+	/** Back pointer to engine */
 	demo_synth_engine_t   *demo_engine;
+	/** Base engine channel */
+	mrcp_engine_channel_t *channel;
+	/** Base audio stream */
+	mpf_audio_stream_t     *audio_stream;
 
+	/** Active (inprogress) speak request */
 	mrcp_message_t        *speak_request;
+	/** Estimated time to complete */
 	apr_size_t             time_to_complete;
 };
 
-/**  */
 typedef enum {
 	DEMO_SYNTH_MSG_OPEN_CHANNEL,
 	DEMO_SYNTH_MSG_CLOSE_CHANNEL,
@@ -99,6 +103,7 @@ struct demo_synth_msg_t {
 
 static apt_bool_t demo_synth_msg_signal(demo_synth_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request);
 static apt_bool_t demo_synth_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+
 
 /** Create demo synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) demo_synth_engine_create(apr_pool_t *pool)
@@ -153,16 +158,13 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 {
 	mrcp_engine_channel_t *channel;
 	mpf_termination_t *termination;
-	mpf_audio_stream_t *audio_stream;
 	demo_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(demo_synth_channel_t));
 	synth_channel->demo_engine = engine->obj;
 	synth_channel->speak_request = NULL;
 	synth_channel->channel = NULL;
-	audio_stream = &synth_channel->audio_stream;
-	mpf_audio_stream_init(audio_stream,&audio_stream_vtable);
-	audio_stream->mode = STREAM_MODE_RECEIVE;
+	synth_channel->audio_stream = mpf_audio_stream_create(synth_channel,&audio_stream_vtable,STREAM_MODE_RECEIVE,pool);
 	
-	termination = mpf_raw_termination_create(NULL,audio_stream,NULL,pool);
+	termination = mpf_raw_termination_create(NULL,synth_channel->audio_stream,NULL,pool);
 	channel = mrcp_engine_channel_create(engine,&channel_vtable,synth_channel,termination,pool);
 	synth_channel->channel = channel;
 	return channel;
@@ -266,7 +268,7 @@ static apt_bool_t demo_synth_stream_close(mpf_audio_stream_t *stream)
 
 static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
-	demo_synth_channel_t *synth_channel = (demo_synth_channel_t*)stream;
+	demo_synth_channel_t *synth_channel = stream->obj;
 	if(synth_channel->speak_request) {
 		frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 		memset(frame->codec_frame.buffer,0,frame->codec_frame.size);

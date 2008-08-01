@@ -34,6 +34,8 @@ typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
 
 /** Audio stream */
 struct mpf_audio_stream_t {
+	/** External object */
+	void                            *obj;
 	/** Table of virtual methods */
 	const mpf_audio_stream_vtable_t *vtable;
 	/** Back pointer */
@@ -75,14 +77,17 @@ struct mpf_audio_stream_vtable_t {
 };
 
 
-/** Initialize audio stream */
-static APR_INLINE void mpf_audio_stream_init(mpf_audio_stream_t *stream, const mpf_audio_stream_vtable_t *vtable)
+/** Create audio stream */
+static APR_INLINE mpf_audio_stream_t* mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, mpf_stream_mode_e mode, apr_pool_t *pool)
 {
+	mpf_audio_stream_t *stream = apr_palloc(pool,sizeof(mpf_audio_stream_t));
+	stream->obj = obj;
 	stream->vtable = vtable;
 	stream->termination = NULL;
-	stream->mode = STREAM_MODE_NONE;
+	stream->mode = mode;
 	stream->rx_codec = NULL;
 	stream->tx_codec = NULL;
+	return stream;
 }
 
 /** Destroy audio stream */

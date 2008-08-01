@@ -75,12 +75,18 @@ struct demo_recog_engine_t {
 
 /** Declaration of demo recognizer channel */
 struct demo_recog_channel_t {
-	mpf_audio_stream_t     audio_stream;
-	mrcp_engine_channel_t *channel;
+	/** Back pointer to engine */
 	demo_recog_engine_t   *demo_engine;
+	/** Base engine channel */
+	mrcp_engine_channel_t *channel;
+	/** Base audio stream */
+	mpf_audio_stream_t    *audio_stream;
 
+	/** Active (inprogress) recognition request */
 	mrcp_message_t        *recog_request;
+	/** Start of recognition input */
 	apt_bool_t             start_of_input;
+	/** Estimated time to complete */
 	apr_size_t             time_to_complete;
 };
 
@@ -154,16 +160,13 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 {
 	mrcp_engine_channel_t *channel;
 	mpf_termination_t *termination;
-	mpf_audio_stream_t *audio_stream;
 	demo_recog_channel_t *recog_channel = apr_palloc(pool,sizeof(demo_recog_channel_t));
 	recog_channel->demo_engine = engine->obj;
 	recog_channel->recog_request = NULL;
 	recog_channel->channel = NULL;
-	audio_stream = &recog_channel->audio_stream;
-	mpf_audio_stream_init(audio_stream,&audio_stream_vtable);
-	audio_stream->mode = STREAM_MODE_SEND;
+	recog_channel->audio_stream = mpf_audio_stream_create(recog_channel,&audio_stream_vtable,STREAM_MODE_SEND,pool);
 	
-	termination = mpf_raw_termination_create(NULL,audio_stream,NULL,pool);
+	termination = mpf_raw_termination_create(NULL,recog_channel->audio_stream,NULL,pool);
 	channel = mrcp_engine_channel_create(engine,&channel_vtable,recog_channel,termination,pool);
 	recog_channel->channel = channel;
 	return channel;
@@ -171,6 +174,7 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 
 static apt_bool_t demo_recog_channel_destroy(mrcp_engine_channel_t *channel)
 {
+	/* nothing to destroy */
 	return TRUE;
 }
 
@@ -267,7 +271,7 @@ static apt_bool_t demo_recog_stream_close(mpf_audio_stream_t *stream)
 
 static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
-	demo_recog_channel_t *recog_channel = (demo_recog_channel_t*)stream;
+	demo_recog_channel_t *recog_channel = stream->obj;
 	if(recog_channel->recog_request) {
 		if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO) {
 			/* process audio stream */

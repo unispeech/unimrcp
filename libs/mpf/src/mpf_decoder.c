@@ -20,7 +20,7 @@
 typedef struct mpf_decoder_t mpf_decoder_t;
 
 struct mpf_decoder_t {
-	mpf_audio_stream_t  base;
+	mpf_audio_stream_t *base;
 	mpf_audio_stream_t *source;
 	mpf_frame_t         frame_in;
 };
@@ -28,25 +28,25 @@ struct mpf_decoder_t {
 
 static apt_bool_t mpf_decoder_destroy(mpf_audio_stream_t *stream)
 {
-	mpf_decoder_t *decoder = (mpf_decoder_t*)stream;
+	mpf_decoder_t *decoder = stream->obj;
 	return mpf_audio_stream_destroy(decoder->source);
 }
 
 static apt_bool_t mpf_decoder_open(mpf_audio_stream_t *stream)
 {
-	mpf_decoder_t *decoder = (mpf_decoder_t*)stream;
+	mpf_decoder_t *decoder = stream->obj;
 	return mpf_audio_stream_rx_open(decoder->source);
 }
 
 static apt_bool_t mpf_decoder_close(mpf_audio_stream_t *stream)
 {
-	mpf_decoder_t *decoder = (mpf_decoder_t*)stream;
+	mpf_decoder_t *decoder = stream->obj;
 	return mpf_audio_stream_rx_close(decoder->source);
 }
 
 static apt_bool_t mpf_decoder_process(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
-	mpf_decoder_t *decoder = (mpf_decoder_t*)stream;
+	mpf_decoder_t *decoder = stream->obj;
 	if(mpf_audio_stream_frame_read(decoder->source,&decoder->frame_in) != TRUE) {
 		return FALSE;
 	}
@@ -76,14 +76,13 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 		return NULL;
 	}
 	decoder = apr_palloc(pool,sizeof(mpf_decoder_t));
-	mpf_audio_stream_init(&decoder->base,&vtable);
-	decoder->base.mode = STREAM_MODE_RECEIVE;
+	decoder->base = mpf_audio_stream_create(decoder,&vtable,STREAM_MODE_RECEIVE,pool);
 	decoder->source = source;
 
 	codec = source->rx_codec;
 	frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
-	decoder->base.rx_codec = codec;
+	decoder->base->rx_codec = codec;
 	decoder->frame_in.codec_frame.size = frame_size;
 	decoder->frame_in.codec_frame.buffer = apr_palloc(pool,frame_size);
-	return &decoder->base;
+	return decoder->base;
 }
