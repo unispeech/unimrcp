@@ -82,7 +82,7 @@ struct demo_synth_channel_t {
 	/** Base audio stream */
 	mpf_audio_stream_t     *audio_stream;
 
-	/** Active (inprogress) speak request */
+	/** Active (in-progress) speak request */
 	mrcp_message_t        *speak_request;
 	/** Estimated time to complete */
 	apr_size_t             time_to_complete;
@@ -191,10 +191,9 @@ static apt_bool_t demo_synth_channel_request_process(mrcp_engine_channel_t *chan
 	return demo_synth_msg_signal(DEMO_SYNTH_MSG_REQUEST_PROCESS,channel,request);
 }
 
-static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request)
+static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process speak request, and send asynch response */
-	mrcp_message_t *response;
+	/* process speak request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->speak_request = request;
 	synth_channel->time_to_complete = 0;
@@ -205,35 +204,32 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 		}
 	}
 	
-	response = mrcp_response_create(request,request->pool);
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
-	return mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
 }
 
-static apt_bool_t demo_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request)
+static apt_bool_t demo_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process stop request, and send asynch response */
-	mrcp_message_t *response;
+	/* process stop request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->speak_request = NULL;
-
-	response = mrcp_response_create(request,request->pool);
-	return mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
 }
 
 static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	apt_bool_t status = FALSE;
+	mrcp_message_t *response = mrcp_response_create(request,request->pool);
 	switch(request->start_line.method_id) {
 		case SYNTHESIZER_SET_PARAMS:
 			break;
 		case SYNTHESIZER_GET_PARAMS:
 			break;
 		case SYNTHESIZER_SPEAK:
-			status = demo_synth_channel_speak(channel,request);
+			status = demo_synth_channel_speak(channel,request,response);
 			break;
 		case SYNTHESIZER_STOP:
-			status = demo_synth_channel_stop(channel,request);
+			status = demo_synth_channel_stop(channel,request,response);
 			break;
 		case SYNTHESIZER_PAUSE:
 			break;
@@ -248,7 +244,8 @@ static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *cha
 		default:
 			break;
 	}
-	return status;
+	/* send asynchronous response */
+	return mrcp_engine_channel_message_send(channel,response);
 }
 
 static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream)

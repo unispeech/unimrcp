@@ -82,7 +82,7 @@ struct demo_recog_channel_t {
 	/** Base audio stream */
 	mpf_audio_stream_t    *audio_stream;
 
-	/** Active (inprogress) recognition request */
+	/** Active (in-progress) recognition request */
 	mrcp_message_t        *recog_request;
 	/** Start of recognition input */
 	apt_bool_t             start_of_input;
@@ -194,64 +194,52 @@ static apt_bool_t demo_recog_channel_request_process(mrcp_engine_channel_t *chan
 }
 
 
-
-static apt_bool_t demo_recog_channel_define_grammar(mrcp_engine_channel_t *channel, mrcp_message_t *request)
+static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process define-grammar request, and send asynch response */
-	mrcp_message_t *response = mrcp_response_create(request,request->pool);
-	return mrcp_engine_channel_message_send(channel,response);
-}
-
-static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, mrcp_message_t *request)
-{
-	/* process recognize request, and send asynch response */
-	mrcp_message_t *response;
+	/* process recognize request */
 	demo_recog_channel_t *recog_channel = channel->method_obj;
 	recog_channel->recog_request = request;
 	recog_channel->start_of_input = FALSE;
 	recog_channel->time_to_complete = 5000; /* 5 msec */
 
-	response = mrcp_response_create(request,request->pool);
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
-	return mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
 }
 
-static apt_bool_t demo_recog_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request)
+static apt_bool_t demo_recog_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process stop request, and send asynch response */
-	mrcp_message_t *response;
+	/* process stop request */
 	demo_recog_channel_t *recog_channel = channel->method_obj;
 	recog_channel->recog_request = NULL;
-
-	response = mrcp_response_create(request,request->pool);
-	return mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
 }
 
 static apt_bool_t demo_recog_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	apt_bool_t status = FALSE;
+	mrcp_message_t *response = mrcp_response_create(request,request->pool);
 	switch(request->start_line.method_id) {
 		case RECOGNIZER_SET_PARAMS:
 			break;
 		case RECOGNIZER_GET_PARAMS:
 			break;
 		case RECOGNIZER_DEFINE_GRAMMAR:
-			status = demo_recog_channel_define_grammar(channel,request);
 			break;
 		case RECOGNIZER_RECOGNIZE:
-			status = demo_recog_channel_recognize(channel,request);
+			status = demo_recog_channel_recognize(channel,request,response);
 			break;
 		case RECOGNIZER_GET_RESULT:
 			break;
 		case RECOGNIZER_START_INPUT_TIMERS:
 			break;
 		case RECOGNIZER_STOP:
-			status = demo_recog_channel_stop(channel,request);
+			status = demo_recog_channel_stop(channel,request,response);
 			break;
 		default:
 			break;
 	}
-	return status;
+	/* send asynchronous response */
+	return mrcp_engine_channel_message_send(channel,response);
 }
 
 static apt_bool_t demo_recog_stream_destroy(mpf_audio_stream_t *stream)
