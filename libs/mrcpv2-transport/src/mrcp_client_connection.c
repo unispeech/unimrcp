@@ -267,7 +267,6 @@ static void mrcp_client_agent_socket_destroy(mrcp_connection_agent_t *agent)
 static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_agent_t *agent, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_connection_t *connection;
-	apr_sockaddr_t *sockaddr = NULL;
 	apr_pool_t *pool;
 	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
 		return NULL;
@@ -275,16 +274,16 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	
 	connection = apr_palloc(pool,sizeof(mrcp_connection_t));
 	connection->pool = pool;
-	connection->sockaddr = sockaddr;
+	connection->sockaddr = NULL;
 	connection->sock = NULL;
 
-	apr_sockaddr_info_get(&sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
-	if(!sockaddr) {
+	apr_sockaddr_info_get(&connection->sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
+	if(!connection->sockaddr) {
 		apr_pool_destroy(pool);
 		return NULL;
 	}
 
-	if(apr_socket_create(&connection->sock, sockaddr->family, SOCK_STREAM, APR_PROTO_TCP, connection->pool) != APR_SUCCESS) {
+	if(apr_socket_create(&connection->sock, connection->sockaddr->family, SOCK_STREAM, APR_PROTO_TCP, connection->pool) != APR_SUCCESS) {
 		apr_pool_destroy(pool);
 		return NULL;
 	}
@@ -293,8 +292,8 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	apr_socket_timeout_set(connection->sock, -1);
 	apr_socket_opt_set(connection->sock, APR_SO_REUSEADDR, 1);
 
-	if(apr_socket_connect(connection->sock, sockaddr) != APR_SUCCESS) {
-		apr_socket_close(connection->sock);
+	if(apr_socket_connect(connection->sock, connection->sockaddr) != APR_SUCCESS) {
+		apr_socket_close (connection->sock);
 		apr_pool_destroy(pool);
 		return NULL;
 	}
