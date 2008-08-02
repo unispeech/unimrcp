@@ -142,6 +142,11 @@ static apt_bool_t demo_framework_response_process(demo_application_t *demo_appli
 
 static apt_bool_t demo_framework_event_process(demo_application_t *demo_application, const mrcp_app_message_t *app_message)
 {
+	demo_application->vtable->on_message_receive(
+			demo_application,
+			app_message->session,
+			app_message->channel,
+			app_message->mrcp_message);
 	return TRUE;
 }
 
