@@ -79,11 +79,13 @@ struct mrcp_channel_t {
 	mrcp_session_t         *session;
 	/** MRCP control channel */
 	mrcp_control_channel_t *control_channel;
-
-	/** waiting state */
-	apt_bool_t              waiting;
 	/** Media termination */
 	mpf_termination_t      *termination;
+
+	/** waiting state of control media */
+	apt_bool_t              waiting_for_channel;
+	/** waiting state of media termination */
+	apt_bool_t              waiting_for_termination;
 };
 
 /** MRCP application */

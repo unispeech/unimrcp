@@ -46,7 +46,7 @@ void mrcp_client_session_remove(mrcp_client_t *client, mrcp_client_session_t *se
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session);
 
 static apt_bool_t mrcp_client_application_response_send(mrcp_client_session_t *session, mrcp_app_status_code_e status);
-static apt_bool_t mrcp_client_application_message_send(mrcp_client_session_t *session, mrcp_message_t *mrcp_message);
+static apt_bool_t mrcp_client_application_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message);
 static apt_bool_t mrcp_client_application_request_dispatch(mrcp_client_session_t *session, const mrcp_app_message_t *app_message);
 
 static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
@@ -90,9 +90,10 @@ mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, mrcp_resourc
 	channel->session = session;
 	channel->resource_id = resource_id;
 	channel->control_channel = NULL;
-	channel->termination = NULL;
+	channel->termination = termination;
 	channel->resource = NULL;
-	channel->waiting = FALSE;
+	channel->waiting_for_channel = FALSE;
+	channel->waiting_for_termination = FALSE;
 	return channel;
 }
 
@@ -151,10 +152,10 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_PRIO_DEBUG,"On Control Channel Modify");
-	if(!channel->waiting) {
+	if(!channel->waiting_for_channel) {
 		return FALSE;
 	}
-	channel->waiting = TRUE;
+	channel->waiting_for_channel = FALSE;
 	if(session->answer_flag_count) {
 		session->answer_flag_count--;
 		if(!session->answer_flag_count) {
@@ -169,10 +170,10 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_PRIO_DEBUG,"On Control Channel Remove");
-	if(!channel->waiting) {
+	if(!channel->waiting_for_channel) {
 		return FALSE;
 	}
-	channel->waiting = TRUE;
+	channel->waiting_for_channel = FALSE;
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
 		if(!session->terminate_flag_count) {
@@ -191,7 +192,7 @@ apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_c
 		apt_log(APT_PRIO_WARNING,"No such channel [%d]",message->channel_id.resource_id);
 		return FALSE;
 	}
-	return mrcp_client_application_message_send(session,message);
+	return mrcp_client_application_message_send(session,channel,message);
 }
 
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
@@ -215,8 +216,8 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message)
 {
 	mrcp_client_session_t *session = NULL;
-	if(mpf_message->termination) {
-		session = mpf_termination_object_get(mpf_message->termination);
+	if(mpf_message->context) {
+		session = mpf_context_object_get(mpf_message->context);
 	}
 	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 		switch(mpf_message->command_id) {
@@ -273,23 +274,37 @@ static apt_bool_t mrcp_client_application_response_send(mrcp_client_session_t *s
 	return TRUE;
 }
 
-static apt_bool_t mrcp_client_application_message_send(mrcp_client_session_t *session, mrcp_message_t *mrcp_message)
+static apt_bool_t mrcp_client_application_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message)
 {
-	mrcp_app_message_t *response;
-	if(!session->active_request) {
-		return FALSE;
-	}
-	response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
-	*response = *session->active_request;
-	response->message_type = MRCP_APP_MESSAGE_TYPE_RESPONSE;
-	response->status = MRCP_APP_STATUS_CODE_SUCCESS;
-	response->mrcp_message = mrcp_message;
-	apt_log(APT_PRIO_INFO,"Send MRCP Message to Application");
-	session->application->handler(response);
+	if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
+		mrcp_app_message_t *response;
+		if(!session->active_request) {
+			return FALSE;
+		}
+		response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
+		*response = *session->active_request;
+		response->message_type = MRCP_APP_MESSAGE_TYPE_RESPONSE;
+		response->status = MRCP_APP_STATUS_CODE_SUCCESS;
+		response->mrcp_message = mrcp_message;
+		apt_log(APT_PRIO_INFO,"Send MRCP Message to Application");
+		session->application->handler(response);
 
-	session->active_request = apt_list_pop_front(session->request_queue);
-	if(session->active_request) {
-		mrcp_client_application_request_dispatch(session,session->active_request);
+		session->active_request = apt_list_pop_front(session->request_queue);
+		if(session->active_request) {
+			mrcp_client_application_request_dispatch(session,session->active_request);
+		}
+	}
+	else if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
+		mrcp_app_message_t *app_message;
+		app_message = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
+		app_message->message_type = MRCP_APP_MESSAGE_TYPE_EVENT;
+		app_message->status = MRCP_APP_STATUS_CODE_SUCCESS;
+		app_message->mrcp_message = mrcp_message;
+		app_message->session = &session->base;
+		app_message->application = session->application;
+		app_message->channel = channel;
+		apt_log(APT_PRIO_INFO,"Send MRCP Message to Application");
+		session->application->handler(app_message);
 	}
 	return TRUE;
 }
@@ -336,6 +351,21 @@ static mrcp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_ses
 	return NULL;
 }
 
+static mrcp_channel_t* mrcp_client_channel_termination_find(mrcp_client_session_t *session, mpf_termination_t *termination)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(channel->termination == termination) {
+			return channel;
+		}
+	}
+	return NULL;
+}
+
 static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	apt_log(APT_PRIO_INFO,"Send MRCP Message to Server");
@@ -343,7 +373,7 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 		apt_log(APT_PRIO_DEBUG,"Send Failed MRCP Message to Application");
-		mrcp_client_application_message_send(session,response);
+		mrcp_client_application_message_send(session,channel,response);
 		return TRUE;
 	}
 
@@ -405,6 +435,13 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	apt_log(APT_PRIO_DEBUG,"Add Control Channel");
 	channel_slot = apr_array_push(session->channels);
 	*channel_slot = channel;
+
+	if(channel->termination) {
+		if(mrcp_client_mpf_request_send(session,MPF_COMMAND_ADD,session->context,channel->termination,NULL) == TRUE) {
+			channel->waiting_for_termination = TRUE;
+			session->offer_flag_count++;
+		}
+	}
 	
 	/* create rtp termination */
 	termination = mpf_termination_create(session->application->rtp_termination_factory,session,session->base.pool);
@@ -466,8 +503,19 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 		/* remove channel */
 		apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
 		if(mrcp_client_control_channel_remove(channel->control_channel) == TRUE) {
-			channel->waiting = TRUE;
+			channel->waiting_for_channel = TRUE;
 			session->terminate_flag_count++;
+		}
+
+		if(channel->termination) {		
+			/* send subtract termination request */
+			if(channel->termination) {
+				apt_log(APT_PRIO_DEBUG,"Subtract Channel Termination");
+				if(mrcp_client_mpf_request_send(session,MPF_COMMAND_SUBTRACT,session->context,channel->termination,NULL) == TRUE) {
+					channel->waiting_for_termination = TRUE;
+					session->terminate_flag_count++;
+				}
+			}
 		}
 	}
 
@@ -492,28 +540,44 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session, mpf_message_t *mpf_message)
 {
-	mpf_rtp_termination_descriptor_t *rtp_descriptor;
 	mrcp_termination_slot_t *termination_slot;
-	if(!session || !session->offer) {
+	if(!session) {
 		return FALSE;
 	}
 	termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
-	if(!termination_slot || termination_slot->waiting == FALSE) {
-		return FALSE;
+	if(termination_slot) {
+		/* rtp termination */
+		mpf_rtp_termination_descriptor_t *rtp_descriptor;
+		if(termination_slot->waiting == FALSE) {
+			return FALSE;
+		}
+		termination_slot->waiting = FALSE;
+		rtp_descriptor = mpf_message->descriptor;
+		if(rtp_descriptor->audio.local) {
+			session->offer->ip = rtp_descriptor->audio.local->base.ip;
+			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
+			rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
+		}
+		if(session->offer_flag_count) {
+			session->offer_flag_count--;
+			if(!session->offer_flag_count) {
+				/* send offer to server */
+				mrcp_client_session_offer_send(session);
+			}
+		}
 	}
-	termination_slot->waiting = FALSE;
-	
-	rtp_descriptor = mpf_message->descriptor;
-	if(rtp_descriptor->audio.local) {
-		session->offer->ip = rtp_descriptor->audio.local->base.ip;
-		rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
-		rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
-	}
-	if(session->offer_flag_count) {
-		session->offer_flag_count--;
-		if(!session->offer_flag_count) {
-			/* send offer to server */
-			mrcp_client_session_offer_send(session);
+	else {
+		/* channel termination */
+		mrcp_channel_t *channel = mrcp_client_channel_termination_find(session,mpf_message->termination);
+		if(channel && channel->waiting_for_termination == TRUE) {
+			channel->waiting_for_termination = FALSE;
+			if(session->offer_flag_count) {
+				session->offer_flag_count--;
+				if(!session->offer_flag_count) {
+					/* send offer to server */
+					mrcp_client_session_offer_send(session);
+				}
+			}
 		}
 	}
 	return TRUE;
@@ -521,33 +585,35 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 
 static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *session, mpf_message_t *mpf_message)
 {
-	mpf_rtp_termination_descriptor_t *rtp_descriptor;
 	mrcp_termination_slot_t *termination_slot;
 	if(!session) {
 		return FALSE;
 	}
 	termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
-	if(!termination_slot || termination_slot->waiting == FALSE) {
-		return FALSE;
-	}
-	termination_slot->waiting = FALSE;
-	rtp_descriptor = mpf_message->descriptor;
+	if(termination_slot) {
+		/* rtp termination */
+		mpf_rtp_termination_descriptor_t *rtp_descriptor;
+		if(termination_slot->waiting == FALSE) {
+			return FALSE;
+		}
+		termination_slot->waiting = FALSE;
+		rtp_descriptor = mpf_message->descriptor;
 
-	if(session->offer_flag_count) {
-		session->offer_flag_count--;
-		if(!session->offer_flag_count) {
-			/* send offer to server */
-			mrcp_client_session_offer_send(session);
+		if(session->offer_flag_count) {
+			session->offer_flag_count--;
+			if(!session->offer_flag_count) {
+				/* send offer to server */
+				mrcp_client_session_offer_send(session);
+			}
+		}
+		if(session->answer_flag_count) {
+			session->answer_flag_count--;
+			if(!session->answer_flag_count) {
+				/* send response to application */
+				mrcp_client_application_response_send(session,MRCP_APP_STATUS_CODE_SUCCESS);
+			}
 		}
 	}
-	if(session->answer_flag_count) {
-		session->answer_flag_count--;
-		if(!session->answer_flag_count) {
-			/* send response to application */
-			mrcp_client_application_response_send(session,MRCP_APP_STATUS_CODE_SUCCESS);
-		}
-	}
-	
 	return TRUE;
 }
 
@@ -558,16 +624,33 @@ static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *ses
 		return FALSE;
 	}
 	termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
-	if(!termination_slot || termination_slot->waiting == FALSE) {
-		return FALSE;
+	if(termination_slot) {
+		/* rtp termination */
+		if(termination_slot->waiting == FALSE) {
+			return FALSE;
+		}
+		termination_slot->waiting = FALSE;
+		if(session->terminate_flag_count) {
+			session->terminate_flag_count--;
+			if(!session->terminate_flag_count) {
+				mrcp_client_session_remove(session->application->client,session);
+				/* send response to application */
+				mrcp_client_application_response_send(session,MRCP_APP_STATUS_CODE_SUCCESS);
+			}
+		}
 	}
-	termination_slot->waiting = FALSE;
-	if(session->terminate_flag_count) {
-		session->terminate_flag_count--;
-		if(!session->terminate_flag_count) {
-			mrcp_client_session_remove(session->application->client,session);
-			/* send response to application */
-			mrcp_client_application_response_send(session,MRCP_APP_STATUS_CODE_SUCCESS);
+	else {
+		/* channel termination */
+		mrcp_channel_t *channel = mrcp_client_channel_termination_find(session,mpf_message->termination);
+		if(channel && channel->waiting_for_termination == TRUE) {
+			channel->waiting_for_termination = FALSE;
+			if(session->terminate_flag_count) {
+				session->terminate_flag_count--;
+				if(!session->terminate_flag_count) {
+					/* send response to application */
+					mrcp_client_application_response_send(session,MRCP_APP_STATUS_CODE_SUCCESS);
+				}
+			}
 		}
 	}
 	return TRUE;
@@ -605,7 +688,7 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 		/* modify channel */
 		apt_log(APT_PRIO_DEBUG,"Modify Control Channel");
 		if(mrcp_client_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
-			channel->waiting = TRUE;
+			channel->waiting_for_channel = TRUE;
 			session->answer_flag_count++;
 		}
 	}
