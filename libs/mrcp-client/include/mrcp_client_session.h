@@ -71,6 +71,8 @@ struct mrcp_client_session_t {
 struct mrcp_channel_t {
 	/** Memory pool */
 	apr_pool_t             *pool;
+	/** External object associated with channel */
+	void                   *obj;
 	/** MRCP resource identifier */
 	mrcp_resource_id        resource_id;
 	/** MRCP resource */

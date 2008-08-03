@@ -105,7 +105,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
  * Get external object associated with the application.
  * @param application the application to get object from
  */
-APT_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application);
+MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application);
 
 /**
  * Create session.
@@ -142,6 +142,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
  * @param obj the external object
  */
 MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
+
+/**
+ * Get external object associated with the channel.
+ * @param channel the channel to get object from
+ */
+MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel);
 
 /** 
  * Send channel add request.

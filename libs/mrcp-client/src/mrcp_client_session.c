@@ -88,6 +88,7 @@ mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, mrcp_resourc
 {
 	mrcp_channel_t *channel = apr_palloc(session->pool,sizeof(mrcp_channel_t));
 	channel->pool = session->pool;
+	channel->obj = obj;
 	channel->session = session;
 	channel->resource_id = resource_id;
 	channel->control_channel = NULL;

@@ -332,7 +332,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
 }
 
 /** Get external object associated with the application */
-APT_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
+MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
 {
 	return application->obj;
 }
@@ -389,6 +389,15 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *se
 	}
 	apt_log(APT_PRIO_NOTICE,"Create Channel [%d]",resource_id);
 	return mrcp_client_channel_create(session,resource_id,termination,obj);
+}
+
+/** Get external object associated with the channel */
+MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel)
+{
+	if(!channel) {
+		return FALSE;
+	}
+	return channel->obj;
 }
 
 /** Send channel add request */
