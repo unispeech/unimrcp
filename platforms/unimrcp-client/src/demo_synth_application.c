@@ -17,8 +17,9 @@
 #include "demo_application.h"
 #include "mrcp_session.h"
 #include "mrcp_message.h"
-#include "mrcp_synth_resource.h"
 #include "mrcp_generic_header.h"
+#include "mrcp_synth_header.h"
+#include "mrcp_synth_resource.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
 
@@ -66,6 +67,7 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 };
 
 
+/** Create demo synthesizer application */
 demo_application_t* demo_synth_application_create(apr_pool_t *pool)
 {
 	demo_application_t *synth_application = apr_palloc(pool,sizeof(demo_application_t));
@@ -76,6 +78,7 @@ demo_application_t* demo_synth_application_create(apr_pool_t *pool)
 }
 
 
+/** Create demo MRCP message (SPEAK request) */
 static mrcp_message_t* synth_application_speak_message_create(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	const char text[] = 
@@ -86,33 +89,50 @@ static mrcp_message_t* synth_application_speak_message_create(demo_application_t
 		"</paragraph>\r\n"
 		"</speak>\r\n";
 
+	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,SYNTHESIZER_SPEAK);
 	if(mrcp_message) {
 		mrcp_generic_header_t *generic_header;
+		mrcp_synth_header_t *synth_header;
+		/* get/allocate generic header */
 		generic_header = mrcp_generic_header_prepare(mrcp_message);
 		if(generic_header) {
+			/* set generic header fields */
 			apt_string_assign(&generic_header->content_type,"application/synthesis+ssml",mrcp_message->pool);
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
 		}
+		/* get/allocate synthesizer header */
+		synth_header = mrcp_resource_header_prepare(mrcp_message);
+		if(synth_header) {
+			/* set synthesizer header fields */
+			synth_header->voice_param.age = 25;
+			mrcp_resource_header_property_add(mrcp_message,SYNTHESIZER_HEADER_VOICE_AGE);
+		}
+		/* set message body */
 		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
 	}
 	return mrcp_message;
 }
 
+/** Run demo application */
 static apt_bool_t synth_application_run(demo_application_t *demo_application)
 {
+	/* create session */
 	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,NULL);
 	if(session) {
 		mrcp_channel_t *channel;
 		mpf_termination_t *termination;
+		/* create channel */
 		synth_app_channel_t *synth_channel = apr_palloc(session->pool,sizeof(synth_app_channel_t));
 		synth_channel->audio_stream = mpf_audio_stream_create(synth_channel,&audio_stream_vtable,STREAM_MODE_SEND,session->pool);
 		termination = mpf_raw_termination_create(NULL,synth_channel->audio_stream,NULL,session->pool);
 		channel = mrcp_application_channel_create(session,MRCP_SYNTHESIZER_RESOURCE,termination,synth_channel);
 		if(channel) {
 			mrcp_message_t *mrcp_message;
+			/* add channel to session */
 			mrcp_application_channel_add(session,channel,NULL);
 
+			/* create and send SPEAK request */
 			mrcp_message = synth_application_speak_message_create(demo_application,session,channel);
 			if(mrcp_message) {
 				mrcp_application_message_send(session,channel,mrcp_message);
