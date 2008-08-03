@@ -57,6 +57,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_parse(mrcp_resource_factory_t *resource_fa
 MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *text_stream);
 
 
+/** Associate MRCP resource specific data by resource identifier */
+MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_id(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
+
+/** Associate MRCP resource specific data by resource name */
+MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_name(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
+
+
 APT_END_EXTERN_C
 
 #endif /*__MRCP_RESOURCE_FACTORY_H__*/

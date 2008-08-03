@@ -19,10 +19,6 @@
 #include "mrcp_resource.h"
 #include "mrcp_generic_header.h"
 
-static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message);
-static apt_bool_t mrcp_message_resourcify_by_id(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
-static apt_bool_t mrcp_message_resourcify_by_name(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message);
-
 /** Resource factory definition (aggregation of resources) */
 struct mrcp_resource_factory_t {
 	/** Array of MRCP resources */
@@ -164,8 +160,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource
 	return TRUE;
 }
 
+/** Set header accessor interface */
+static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message)
+{
+	message->header.generic_header_accessor.vtable = mrcp_generic_header_vtable_get(message->start_line.version);
+}
+
 /** Associate MRCP resource specific data by resource identifier */
-static apt_bool_t mrcp_message_resourcify_by_id(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message)
+MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_id(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message)
 {
 	mrcp_resource_t *resource;
 	const apt_str_t *name;
@@ -185,7 +187,7 @@ static apt_bool_t mrcp_message_resourcify_by_id(mrcp_resource_factory_t *resourc
 }
 
 /** Associate MRCP resource specific data by resource name */
-static apt_bool_t mrcp_message_resourcify_by_name(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message)
+MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_name(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message)
 {
 	mrcp_resource_t *resource;
 	/* associate resource_name and resource_id */
@@ -198,12 +200,6 @@ static apt_bool_t mrcp_message_resourcify_by_name(mrcp_resource_factory_t *resou
 
 	mrcp_generic_header_accessor_set(message);
 	return resource->resourcify_message_by_name(resource,message);
-}
-
-/** Set header accessor interface */
-static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message)
-{
-	message->header.generic_header_accessor.vtable = mrcp_generic_header_vtable_get(message->start_line.version);
 }
 
 /** Get resource name associated with specified resource id */
