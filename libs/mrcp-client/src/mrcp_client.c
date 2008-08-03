@@ -414,12 +414,13 @@ mrcp_message_t* mrcp_application_message_create(mrcp_session_t *session, mrcp_ch
 {
 	mrcp_message_t *mrcp_message;
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(!session || !channel) {
+	if(!client_session || !client_session->application || !channel) {
 		return NULL;
 	}
 	mrcp_message = mrcp_request_create(channel->resource_id,method_id,session->pool);
 	if(mrcp_message) {
 		mrcp_message->start_line.version = client_session->application->version;
+		mrcp_message_resourcify_by_id(client_session->application->resource_factory,mrcp_message);
 	}
 	return mrcp_message;
 }

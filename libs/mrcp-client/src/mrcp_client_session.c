@@ -24,6 +24,7 @@
 #include "mrcp_control_descriptor.h"
 #include "mrcp_message.h"
 #include "mpf_termination.h"
+#include "mpf_stream.h"
 #include "mpf_engine.h"
 #include "mpf_user.h"
 #include "apt_consumer_task.h"
@@ -351,6 +352,19 @@ static mrcp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_ses
 	return NULL;
 }
 
+static int mrcp_client_audio_media_find_by_mid(const mrcp_session_descriptor_t *descriptor, apr_size_t mid)
+{
+	int i;
+	mpf_rtp_media_descriptor_t *media;
+	for(i=0; i<descriptor->audio_media_arr->nelts; i++) {
+		media = ((mpf_rtp_media_descriptor_t**)descriptor->audio_media_arr->elts)[i];
+		if(media->mid == mid) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 static mrcp_channel_t* mrcp_client_channel_termination_find(mrcp_client_session_t *session, mpf_termination_t *termination)
 {
 	int i;
@@ -395,6 +409,22 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(session->offer,(apr_size_t)index);
 		if(control_media) {
 			control_media->port = (enable == TRUE) ? 9 : 0;
+		}
+		if(channel->termination && channel->termination->audio_stream) {
+			int i = mrcp_client_audio_media_find_by_mid(session->offer,control_media->cmid);
+			if(i >= 0) {
+				mpf_stream_mode_e mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
+				mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_get(session->offer,(apr_size_t)i);
+				if(audio_media) {
+					if(enable == TRUE) {
+						audio_media->mode |= mode;
+					}
+					else {
+						audio_media->mode &= ~mode;
+					}
+					audio_media->base.state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
+				}
+			}
 		}
 	}
 
@@ -450,11 +480,20 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	termination_slot = apr_array_push(session->terminations);
 	termination_slot->waiting = FALSE;
 	termination_slot->termination = termination;
-	/* send add termination request (add to media context) */
+	/* initialize rtp descriptor */
 	if(!rtp_descriptor) {
 		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
 		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+		if(channel->termination && channel->termination->audio_stream) {
+			mpf_rtp_media_descriptor_t *media;
+			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+			mpf_rtp_media_descriptor_init(media);
+			media->base.state = MPF_MEDIA_ENABLED;
+			media->mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
+			rtp_descriptor->audio.local = media;
+		}
 	}
+	/* send add termination request (add to media context) */
 	if(mrcp_client_mpf_request_send(session,MPF_COMMAND_ADD,session->context,termination,rtp_descriptor) == TRUE) {
 		termination_slot->waiting = TRUE;
 		session->offer_flag_count++;
