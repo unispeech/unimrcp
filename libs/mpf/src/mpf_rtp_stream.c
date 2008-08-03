@@ -83,11 +83,54 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	return rtp_stream->base;
 }
 
+static void mpf_rtp_stream_ip_port_set(mpf_rtp_media_descriptor_t *media, mpf_rtp_config_t *config)
+{
+	if(media->base.ip.length == 0) {
+		media->base.ip = config->ip;
+	}
+	if(media->base.port == 0) {
+		media->base.port = config->rtp_port_cur;
+		config->rtp_port_cur += 2;
+		if(config->rtp_port_cur == config->rtp_port_max) {
+			config->rtp_port_cur = config->rtp_port_min;
+		}
+	}
+}
+
+static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream, mpf_rtp_media_descriptor_t *media)
+{
+	apt_bool_t status = TRUE;
+	if(!media) {
+		/* local media is not specified, create the default one */
+		media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
+		mpf_rtp_media_descriptor_init(media);
+		media->base.state = MPF_MEDIA_ENABLED;
+		media->mode = STREAM_MODE_SEND_RECEIVE;
+	}
+
+	mpf_rtp_stream_ip_port_set(media,rtp_stream->config);
+	if(mpf_rtp_socket_create(rtp_stream,media) == FALSE) {
+		status = FALSE;
+	}
+
+	if(mpf_codec_list_is_empty(&media->codec_list) == TRUE) {
+		mpf_codec_manager_codec_list_get(
+							rtp_stream->base->termination->codec_manager,
+							&media->codec_list,
+							rtp_stream->base->termination->pool);
+	}
+	rtp_stream->base->rx_codec = mpf_codec_manager_codec_get(
+							rtp_stream->base->termination->codec_manager,
+							mpf_codec_get(&media->codec_list,0),
+							rtp_stream->base->termination->pool);
+	rtp_stream->local_media = media;
+	return status;
+}
+
 static apt_bool_t mpf_rtp_stream_local_media_update(mpf_rtp_stream_t *rtp_stream, mpf_rtp_media_descriptor_t *media)
 {
 	apt_bool_t status = TRUE;
-	if(!rtp_stream->local_media || 
-		apt_string_compare(&rtp_stream->local_media->base.ip,&media->base.ip) == FALSE ||
+	if(apt_string_compare(&rtp_stream->local_media->base.ip,&media->base.ip) == FALSE ||
 		rtp_stream->local_media->base.port != media->base.port) {
 
 		if(mpf_rtp_socket_create(rtp_stream,media) == FALSE) {
@@ -96,9 +139,9 @@ static apt_bool_t mpf_rtp_stream_local_media_update(mpf_rtp_stream_t *rtp_stream
 	}
 	if(mpf_codec_list_is_empty(&media->codec_list) == TRUE) {
 		mpf_codec_manager_codec_list_get(
-			rtp_stream->base->termination->codec_manager,
-			&media->codec_list,
-			rtp_stream->base->termination->pool);
+							rtp_stream->base->termination->codec_manager,
+							&media->codec_list,
+							rtp_stream->base->termination->pool);
 	}
 	rtp_stream->base->rx_codec = mpf_codec_manager_codec_get(
 							rtp_stream->base->termination->codec_manager,
@@ -130,35 +173,18 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 							rtp_stream->base->termination->codec_manager,
 							mpf_codec_get(&media->codec_list,0),
 							rtp_stream->base->termination->pool);
-	rtp_stream->transmitter.samples_per_frame = 
-		(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_codec->descriptor);
+	if(rtp_stream->base->tx_codec) {
+		rtp_stream->transmitter.samples_per_frame = 
+			(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_codec->descriptor);
+	}
 	rtp_stream->remote_media = media;
 	return status;
 }
 
-static void mpf_rtp_stream_ip_port_set(mpf_rtp_media_descriptor_t *media, mpf_rtp_config_t *config)
-{
-	media->base.ip = config->ip;
-	media->base.port = config->rtp_port_cur;
-	config->rtp_port_cur += 2;
-	if(config->rtp_port_cur == config->rtp_port_max) {
-		config->rtp_port_cur = config->rtp_port_min;
-	}
-}
-
 static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 {
-	if(!rtp_stream->remote_media) {
+	if(!rtp_stream->remote_media || !rtp_stream->remote_media) {
 		return FALSE;
-	}
-
-	if(!rtp_stream->local_media) {
-		rtp_stream->local_media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
-		mpf_rtp_media_descriptor_init(rtp_stream->local_media);
-		mpf_rtp_stream_ip_port_set(rtp_stream->local_media,rtp_stream->config);
-		if(mpf_rtp_socket_create(rtp_stream,rtp_stream->local_media) == FALSE) {
-			return FALSE;
-		}
 	}
 
 	rtp_stream->local_media->base.id = rtp_stream->remote_media->base.id;
@@ -181,10 +207,19 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor)
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	if(descriptor->local) {
+	if(!rtp_stream) {
+		return FALSE;
+	}
+
+	if(!rtp_stream->local_media) {
+		/* create local media */
+		mpf_rtp_stream_local_media_create(rtp_stream,descriptor->local);
+	}
+	else if(descriptor->local) {
 		/* update local media */
 		mpf_rtp_stream_local_media_update(rtp_stream,descriptor->local);
 	}
+	
 	if(descriptor->remote) {
 		/* update remote media */
 		mpf_rtp_stream_remote_media_update(rtp_stream,descriptor->remote);
@@ -193,19 +228,9 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		mpf_rtp_stream_media_negotiate(rtp_stream);
 	}
 
-	if(!rtp_stream->local_media) {
-		/* create local media */
-		mpf_rtp_media_descriptor_t *local_media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
-		mpf_rtp_media_descriptor_init(local_media);
-		local_media->base.state = MPF_MEDIA_ENABLED;
-		local_media->mode = STREAM_MODE_SEND_RECEIVE;
-		mpf_rtp_stream_ip_port_set(local_media,rtp_stream->config);
-		mpf_rtp_stream_local_media_update(rtp_stream,local_media);
-	}
 	if(!descriptor->local) {
 		descriptor->local = rtp_stream->local_media;
 	}
-
 	return TRUE;
 }
 
@@ -255,11 +280,14 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 	}
 
 	mpf_jitter_buffer_destroy(receiver->jb);
-	apt_log(APT_PRIO_INFO,"Close RTP Receive %s:%hu <- %s:%hu",
+	apt_log(APT_PRIO_INFO,"Close RTP Receive %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu]",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
-			rtp_stream->remote_media->base.port);
+			rtp_stream->remote_media->base.port,
+			receiver->stat.received_packets,
+			receiver->stat.lost_packets,
+			receiver->stat.jitter);
 	return TRUE;
 }
 
@@ -569,11 +597,12 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	apt_log(APT_PRIO_INFO,"Close RTP Transmit %s:%hu -> %s:%hu",
+	apt_log(APT_PRIO_INFO,"Close RTP Transmit %s:%hu -> %s:%hu [s:%lu]",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
-			rtp_stream->remote_media->base.port);
+			rtp_stream->remote_media->base.port,
+			rtp_stream->transmitter.stat.sent_packets);
 	return TRUE;
 }
 
