@@ -29,12 +29,19 @@ APT_BEGIN_EXTERN_C
 /** Opaque demo framework declaration */
 typedef struct demo_framework_t demo_framework_t;
 
-/** 
+/**
  * Create demo framework.
  */
 demo_framework_t* demo_framework_create();
 
-/** 
+/**
+ * Run demo application.
+ * @param framework the framework to run application for
+ * @param app_name the name of the application to run
+ */
+apt_bool_t demo_framework_app_run(demo_framework_t *framework, const char *app_name);
+
+/**
  * Destroy demo framework.
  * @param framework the framework to destroy
  */

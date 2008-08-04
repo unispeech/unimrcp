@@ -73,6 +73,7 @@ demo_application_t* demo_synth_application_create(apr_pool_t *pool)
 	demo_application_t *synth_application = apr_palloc(pool,sizeof(demo_application_t));
 	synth_application->application = NULL;
 	synth_application->framework = NULL;
+	synth_application->name = "synth";
 	synth_application->vtable = &synth_application_vtable;
 	return synth_application;
 }

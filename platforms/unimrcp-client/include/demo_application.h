@@ -26,6 +26,8 @@
 
 APT_BEGIN_EXTERN_C
 
+#define MAX_APP_NAME_LENGTH 16
+
 /** Demo application declaration */
 typedef struct demo_application_t demo_application_t;
 /** Demo application vtable declaration */
@@ -37,6 +39,8 @@ struct demo_application_t {
 	mrcp_application_t              *application;
 	/** Demo framework */
 	void                            *framework;
+	/** Application name */
+	const char                      *name;
 	/** Table of demo application virtaul methods */
 	const demo_application_vtable_t *vtable;
 };

@@ -75,6 +75,7 @@ demo_application_t* demo_recog_application_create(apr_pool_t *pool)
 	demo_application_t *recog_application = apr_palloc(pool,sizeof(demo_application_t));
 	recog_application->application = NULL;
 	recog_application->framework = NULL;
+	recog_application->name = "recog";
 	recog_application->vtable = &recog_application_vtable;
 	return recog_application;
 }
