@@ -48,9 +48,6 @@
       <param name="media-engine" value="Media-Engine-1"/>
     </profile>
 
-    <profile name="MRCPv2-Alternate">
-    </profile>
-    
-    <!-- more profile may exist -->
+    <!-- more profiles may exist -->
   </profiles>
 </unimrcpclient>
