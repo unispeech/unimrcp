@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "demo_framework.h"
 #include "apt_log.h"
 
