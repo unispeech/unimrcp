@@ -49,10 +49,10 @@ static apt_bool_t demo_framework_event_handler(const mrcp_app_message_t *app_mes
 static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framework);
 
 /** Create demo framework */
-demo_framework_t* demo_framework_create()
+demo_framework_t* demo_framework_create(const char *conf_file_path)
 {
 	demo_framework_t *framework = NULL;
-	mrcp_client_t *client = unimrcp_client_create("unimrcpclient.xml");
+	mrcp_client_t *client = unimrcp_client_create(conf_file_path);
 	if(client) {
 		apr_pool_t *pool = mrcp_client_memory_pool_get(client);
 		framework = apr_palloc(pool,sizeof(demo_framework_t));

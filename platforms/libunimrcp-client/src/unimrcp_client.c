@@ -23,14 +23,15 @@
 #include "mrcp_client_connection.h"
 #include "apt_log.h"
 
-#define LOCAL_IP_ADDRESS "127.0.0.1"
-#define REMOTE_IP_ADDRESS "127.0.0.1"
+#define DEFAULT_CONF_FILE_PATH    "unimrcpclient.xml"
+#define DEFAULT_LOCAL_IP_ADDRESS  "127.0.0.1"
+#define DEFAULT_REMOTE_IP_ADDRESS "127.0.0.1"
 
 static apr_xml_doc* unimrcp_client_config_parse(const char *path, apr_pool_t *pool);
 static apt_bool_t unimrcp_client_config_load(mrcp_client_t *client, const apr_xml_doc *doc, apr_pool_t *pool);
 
 /** Start UniMRCP client */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *config_file_path)
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_file_path)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
@@ -46,7 +47,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *config_file_path)
 		mrcp_client_resource_factory_register(client,resource_factory);
 	}
 
-	doc = unimrcp_client_config_parse(config_file_path,pool);
+	doc = unimrcp_client_config_parse(conf_file_path,pool);
 	if(doc) {
 		unimrcp_client_config_load(client,doc,pool);
 	}
@@ -61,7 +62,12 @@ static apr_xml_doc* unimrcp_client_config_parse(const char *path, apr_pool_t *po
 	apr_xml_doc *doc;
 	apr_file_t *fd;
 	apr_status_t rv;
+
+	if(!path) {
+		path = DEFAULT_CONF_FILE_PATH;
+	}
     
+	apt_log(APT_PRIO_INFO,"Loading Config File [%s]",path);
 	rv = apr_file_open(&fd,path,APR_READ|APR_BINARY,0,pool);
 	if(rv != APR_SUCCESS) {
 		apt_log(APT_PRIO_WARNING,"Failed to Open Config File [%s]",path);
@@ -103,9 +109,9 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 {
 	const apr_xml_elem *elem;
 	mrcp_sofia_client_config_t *config = mrcp_sofiasip_client_config_alloc(pool);
-	config->local_ip = LOCAL_IP_ADDRESS;
+	config->local_ip = DEFAULT_LOCAL_IP_ADDRESS;
 	config->local_port = 8062;
-	config->remote_ip = REMOTE_IP_ADDRESS;
+	config->remote_ip = DEFAULT_REMOTE_IP_ADDRESS;
 	config->remote_port = 8060;
 	config->user_agent_name = "UniMRCP Sofia-SIP";
 	config->origin = "UniMRCPClient";
@@ -209,7 +215,7 @@ static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, c
 /** Load RTP termination factory */
 static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	char *rtp_ip = LOCAL_IP_ADDRESS;
+	char *rtp_ip = DEFAULT_LOCAL_IP_ADDRESS;
 	apr_port_t rtp_port_min = 4000;
 	apr_port_t rtp_port_max = 5000;
 	const apr_xml_elem *elem;
