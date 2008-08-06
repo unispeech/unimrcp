@@ -119,7 +119,7 @@ static mrcp_message_t* synth_application_speak_message_create(demo_application_t
 static apt_bool_t synth_application_run(demo_application_t *demo_application)
 {
 	/* create session */
-	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,NULL);
+	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,"",NULL);
 	if(session) {
 		mrcp_channel_t *channel;
 		mpf_termination_t *termination;

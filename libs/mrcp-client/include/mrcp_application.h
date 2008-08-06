@@ -88,12 +88,11 @@ struct mrcp_app_message_t {
 
 /**
  * Create application instance.
- * @param obj the external object
- * @param version the MRCP protocol version
  * @param handler the event handler
+ * @param obj the external object
  * @param pool the pool to allocate memory from
  */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_app_message_handler_f handler, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(const mrcp_app_message_handler_f handler, void *obj, apr_pool_t *pool);
 
 /**
  * Destroy application instance.
@@ -110,10 +109,11 @@ MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
 /**
  * Create session.
  * @param application the entire application
+ * @param profile the name of the profile to use
  * @param obj the external object
  * @return the created session instance
  */
-MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj);
+MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile, void *obj);
 
 /** 
  * Send session update request.

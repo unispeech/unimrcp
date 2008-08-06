@@ -134,7 +134,7 @@ static mrcp_message_t* recog_application_recognize_message_create(demo_applicati
 static apt_bool_t recog_application_run(demo_application_t *demo_application)
 {
 	/* create session */
-	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,NULL);
+	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,"",NULL);
 	if(session) {
 		/* create channel */
 		mrcp_channel_t *channel;

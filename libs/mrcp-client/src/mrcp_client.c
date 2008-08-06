@@ -43,6 +43,9 @@ struct mrcp_client_t {
 	mrcp_connection_agent_t   *connection_agent;
 	/** Connection task message pool */
 	apt_task_msg_pool_t       *connection_msg_pool;
+
+	/** Profiles */
+	mrcp_profile_t            *default_profile;
 	
 	/** MRCP sessions table */
 	apr_hash_t                *session_table;
@@ -138,6 +141,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create()
 	client->signaling_agent = NULL;
 	client->connection_agent = NULL;
 	client->connection_msg_pool = NULL;
+	client->default_profile = NULL;
 	client->session_table = NULL;
 
 	apt_task_vtable_reset(&vtable);
@@ -292,11 +296,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client,
 	apt_log(APT_PRIO_INFO,"Register Application");
 	application->client = client;
 	application->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mrcp_app_message_t*),client->pool);
-	application->resource_factory = client->resource_factory;
-	application->media_engine = client->media_engine;
-	application->rtp_termination_factory = client->rtp_termination_factory;
-	application->signaling_agent = client->signaling_agent;
-	application->connection_agent = client->connection_agent;
 	return TRUE;
 }
 
@@ -308,19 +307,13 @@ MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(mrcp_client_t *client)
 
 
 /** Create application instance */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(void *obj, mrcp_version_e version, const mrcp_app_message_handler_f handler, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(const mrcp_app_message_handler_f handler, void *obj, apr_pool_t *pool)
 {
 	mrcp_application_t *application = apr_palloc(pool,sizeof(mrcp_application_t));
 	apt_log(APT_PRIO_NOTICE,"Create Application");
 	application->obj = obj;
-	application->version = version;
 	application->handler = handler;
 	application->client = NULL;
-	application->resource_factory = NULL;
-	application->media_engine = NULL;
-	application->rtp_termination_factory = NULL;
-	application->signaling_agent = NULL;
-	application->connection_agent = NULL;
 	return application;
 }
 
@@ -339,12 +332,18 @@ MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
 
 
 /** Create client session */
-MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, void *obj)
+MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile, void *obj)
 {
-	mrcp_client_session_t *session = mrcp_client_session_create(application,obj);
+	mrcp_client_session_t *session;
+	if(!application || !application->client) {
+		return NULL;
+	}
+
+	session = mrcp_client_session_create(application,obj);
 	if(!session) {
 		return NULL;
 	}
+	session->profile = application->client->default_profile;
 	apt_log(APT_PRIO_NOTICE,"Create Session <new>");
 	session->base.response_vtable = &session_response_vtable;
 	session->base.event_vtable = &session_event_vtable;
@@ -422,14 +421,19 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session
 mrcp_message_t* mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id)
 {
 	mrcp_message_t *mrcp_message;
+	mrcp_profile_t *profile;
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(!client_session || !client_session->application || !channel) {
+	if(!client_session || !channel) {
+		return NULL;
+	}
+	profile = client_session->profile;
+	if(!profile || !profile->resource_factory) {
 		return NULL;
 	}
 	mrcp_message = mrcp_request_create(channel->resource_id,method_id,session->pool);
 	if(mrcp_message) {
-		mrcp_message->start_line.version = client_session->application->version;
-		mrcp_message_resourcify_by_id(client_session->application->resource_factory,mrcp_message);
+		mrcp_message->start_line.version = profile->signaling_agent->mrcp_version;
+		mrcp_message_resourcify_by_id(profile->resource_factory,mrcp_message);
 	}
 	return mrcp_message;
 }
@@ -478,7 +482,22 @@ static APR_INLINE mrcp_client_session_t* mrcp_client_session_find(mrcp_client_t 
 
 static void mrcp_client_on_start_complete(apt_task_t *task)
 {
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_client_t *client = apt_consumer_task_object_get(consumer_task);
+	if(!client) {
+		return;
+	}
 	apt_log(APT_PRIO_INFO,"On Client Task Start");
+	if(!client->default_profile) {
+		mrcp_profile_t *profile = apr_palloc(client->pool,sizeof(mrcp_profile_t));
+		profile->resource_factory = client->resource_factory;
+		profile->media_engine = client->media_engine;
+		profile->rtp_termination_factory = client->rtp_termination_factory;
+		profile->signaling_agent = client->signaling_agent;
+		profile->connection_agent = client->connection_agent;
+
+		client->default_profile = profile;
+	}
 }
 
 static void mrcp_client_on_terminate_complete(apt_task_t *task)

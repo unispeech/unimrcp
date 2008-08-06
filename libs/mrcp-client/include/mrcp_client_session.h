@@ -40,6 +40,8 @@ struct mrcp_client_session_t {
 	mrcp_session_t             base;
 	/** Application session belongs to */
 	mrcp_application_t        *application;
+	/** Profile to use */
+	mrcp_profile_t            *profile;
 
 	/** Media context */
 	mpf_context_t             *context;
@@ -90,19 +92,8 @@ struct mrcp_channel_t {
 	apt_bool_t              waiting_for_termination;
 };
 
-/** MRCP application */
-struct mrcp_application_t {
-	/** External object associated with the application */
-	void                      *obj;
-	/** MRCP protocol version */
-	mrcp_version_e             version;
-	/** Application message handler */
-	mrcp_app_message_handler_f handler;
-	/** MRCP client */
-	mrcp_client_t             *client;
-	/** Application task message pool */
-	apt_task_msg_pool_t       *msg_pool;
-
+/** MRCP profile */
+struct mrcp_profile_t {
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;
 	/** Media processing engine */
@@ -113,6 +104,18 @@ struct mrcp_application_t {
 	mrcp_sig_agent_t          *signaling_agent;
 	/** Connection agent */
 	mrcp_connection_agent_t   *connection_agent;
+};
+
+/** MRCP application */
+struct mrcp_application_t {
+	/** External object associated with the application */
+	void                      *obj;
+	/** Application message handler */
+	mrcp_app_message_handler_f handler;
+	/** MRCP client */
+	mrcp_client_t             *client;
+	/** Application task message pool */
+	apt_task_msg_pool_t       *msg_pool;
 };
 
 /** Create client session */

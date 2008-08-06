@@ -148,9 +148,8 @@ static void demo_framework_app_do_run(demo_framework_t *framework, const char *a
 			apt_log(APT_PRIO_NOTICE,"Run Demo Application [%s]",app_name);
 			if(!demo_application->application) {
 				demo_application->application = mrcp_application_create(
-													demo_application,
-													MRCP_VERSION_2,
 													demo_framework_event_handler,
+													demo_application,
 													framework->pool);
 				demo_application->framework = framework;
 				mrcp_client_application_register(framework->client,demo_application->application);
