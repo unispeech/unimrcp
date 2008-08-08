@@ -26,7 +26,7 @@ static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 	"[ALERT]  ",
 	"[CRITIC] ",
 	"[ERROR]  ",
-	"[WARNING]",
+	"[WARN]   ",
 	"[NOTICE] ",
 	"[INFO]   ",
 	"[DEBUG]  "
