@@ -36,7 +36,7 @@ struct recog_app_channel_t {
 };
 
 /** Declaration of recognizer application methods */
-static apt_bool_t recog_application_run(demo_application_t *demo_application);
+static apt_bool_t recog_application_run(demo_application_t *demo_application, const char *profile);
 static apt_bool_t recog_application_on_session_update(demo_application_t *demo_application, mrcp_session_t *session);
 static apt_bool_t recog_application_on_session_terminate(demo_application_t *demo_application, mrcp_session_t *session);
 static apt_bool_t recog_application_on_channel_add(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
@@ -131,10 +131,10 @@ static mrcp_message_t* recog_application_recognize_message_create(demo_applicati
 }
 
 /** Run demo application */
-static apt_bool_t recog_application_run(demo_application_t *demo_application)
+static apt_bool_t recog_application_run(demo_application_t *demo_application, const char *profile)
 {
 	/* create session */
-	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,"",NULL);
+	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,profile,NULL);
 	if(session) {
 		/* create channel */
 		mrcp_channel_t *channel;

@@ -164,23 +164,26 @@ static apt_bool_t unimrcp_client_signaling_agents_load(mrcp_client_t *client, co
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"agent") == 0) {
 			mrcp_sig_agent_t *sig_agent = NULL;
+			const char *name = NULL;
 			const apr_xml_attr *attr;
 			for(attr = elem->attr; attr; attr = attr->next) {
-				if(strcasecmp(attr->name,"class") == 0) {
+				if(strcasecmp(attr->name,"name") == 0) {
+					name = apr_pstrdup(pool,attr->value);
+				}
+				else if(strcasecmp(attr->name,"class") == 0) {
 					if(strcasecmp(attr->value,"SofiaSIP") == 0) {
 						sig_agent = unimrcp_client_sofiasip_agent_load(client,elem,pool);
 					}
 					else if(strcasecmp(attr->value,"UniRTSP") == 0) {
 						sig_agent = unimrcp_client_rtsp_agent_load(client,elem,pool);
 					}
-					break;
 				}
 				else {
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 				}
 			}
 			if(sig_agent) {
-				mrcp_client_signaling_agent_register(client,sig_agent);
+				mrcp_client_signaling_agent_register(client,sig_agent,name);
 			}
 		}
 		else {
@@ -198,11 +201,21 @@ static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, c
 	apt_log(APT_PRIO_DEBUG,"Loading Connection Agents");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"agent") == 0) {
-			mrcp_connection_agent_t *connection_agent;
+			mrcp_connection_agent_t *connection_agent = NULL;
+			const char *name = NULL;
+			const apr_xml_attr *attr;
+			for(attr = elem->attr; attr; attr = attr->next) {
+				if(strcasecmp(attr->name,"name") == 0) {
+					name = apr_pstrdup(pool,attr->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+				}
+			}
 			apt_log(APT_PRIO_INFO,"Loading Connection Agent");
 			connection_agent = mrcp_client_connection_agent_create(pool);
 			if(connection_agent) {
-				mrcp_client_connection_agent_register(client,connection_agent);
+				mrcp_client_connection_agent_register(client,connection_agent,name);
 			}
 		}
 		else {
@@ -252,17 +265,37 @@ static apt_bool_t unimrcp_client_media_engines_load(mrcp_client_t *client, const
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"engine") == 0) {
 			mpf_engine_t *media_engine;
+			const char *name = NULL;
+			const apr_xml_attr *attr;
+			for(attr = elem->attr; attr; attr = attr->next) {
+				if(strcasecmp(attr->name,"name") == 0) {
+					name = apr_pstrdup(pool,attr->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+				}
+			}
 			apt_log(APT_PRIO_INFO,"Loading Media Engine");
 			media_engine = mpf_engine_create(pool);
 			if(media_engine) {
-				mrcp_client_media_engine_register(client,media_engine);
+				mrcp_client_media_engine_register(client,media_engine,name);
 			}
 		}
 		else if(strcasecmp(elem->name,"rtp") == 0) {
 			mpf_termination_factory_t *rtp_factory;
+			const char *name = NULL;
+			const apr_xml_attr *attr;
+			for(attr = elem->attr; attr; attr = attr->next) {
+				if(strcasecmp(attr->name,"name") == 0) {
+					name = apr_pstrdup(pool,attr->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+				}
+			}
 			rtp_factory = unimrcp_client_rtp_factory_load(client,elem,pool);
 			if(rtp_factory) {
-				mrcp_client_rtp_termination_factory_register(client,rtp_factory);
+				mrcp_client_rtp_factory_register(client,rtp_factory,name);
 			}
 		}
 		else {
@@ -294,16 +327,69 @@ static apt_bool_t unimrcp_client_settings_load(mrcp_client_t *client, const apr_
 	return TRUE;
 }
 
+/** Load profile */
+static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const char *name = NULL;
+	mrcp_profile_t *profile;
+	mrcp_sig_agent_t *sig_agent = NULL;
+	mrcp_connection_agent_t *cnt_agent = NULL;
+	mpf_engine_t *media_engine = NULL;
+	mpf_termination_factory_t *rtp_factory = NULL;
+	const apr_xml_elem *elem;
+	const apr_xml_attr *attr;
+	for(attr = root->attr; attr; attr = attr->next) {
+		if(strcasecmp(attr->name,"name") == 0) {
+			name = apr_pstrdup(pool,attr->value);
+			apt_log(APT_PRIO_INFO,"Loading Profile [%s]",name);
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+		}
+	}
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			const apr_xml_attr *attr_name;
+			const apr_xml_attr *attr_value;
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				if(strcasecmp(attr_name->value,"signaling-agent") == 0) {
+					sig_agent = mrcp_client_signaling_agent_get(client,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"connection-agent") == 0) {
+					cnt_agent = mrcp_client_connection_agent_get(client,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"media-engine") == 0) {
+					media_engine = mrcp_client_media_engine_get(client,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtp-factory") == 0) {
+					rtp_factory = mrcp_client_rtp_factory_get(client,attr_value->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
+				}
+			}
+		}
+	}
+
+	profile = mrcp_client_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,pool);
+	return mrcp_client_profile_register(client,profile,name);
+}
+
 /** Load profiles */
 static apt_bool_t unimrcp_client_profiles_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
 	apt_log(APT_PRIO_DEBUG,"Loading Profiles");
 	for(elem = root->first_child; elem; elem = elem->next) {
-		apt_log(APT_PRIO_INFO,"Loading <%s>",elem->name);
+		if(strcasecmp(elem->name,"profile") == 0) {
+			unimrcp_client_profile_load(client,elem,pool);
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
+		}
 	}
-    
-	return TRUE;
+    return TRUE;
 }
 
 /** Load configuration (settings and profiles) */
@@ -312,7 +398,7 @@ static apt_bool_t unimrcp_client_config_load(mrcp_client_t *client, const apr_xm
 	const apr_xml_elem *elem;
 	const apr_xml_elem *root = doc->root;
 	if(!root || strcasecmp(root->name,"unimrcpclient") != 0) {
-		apt_log(APT_PRIO_WARNING,"Unknown Document to Load");
+		apt_log(APT_PRIO_WARNING,"Unknown Document");
 		return FALSE;
 	}
 	for(elem = root->first_child; elem; elem = elem->next) {

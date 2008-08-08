@@ -17,33 +17,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <apr_getopt.h>
+#include <apr_strings.h>
 #include "demo_framework.h"
 #include "apt_log.h"
 
-static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, const char *cmdline)
+static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, char *cmdline)
 {
 	apt_bool_t running = TRUE;
-	const char* name = cmdline;
-	char* arg;
-	if((arg = strchr(cmdline, ' ')) != 0) {
-		*arg++ = '\0';
-	}
+	char *name;
+	char *last;
+	name = apr_strtok((char*)cmdline, " ", &last);
 
-	if(strcmp(name,"run") == 0) {
-		char *app_name = arg;
+	if(strcasecmp(name,"run") == 0) {
+		char *app_name = apr_strtok(NULL, " ", &last);
 		if(app_name) {
-			demo_framework_app_run(framework,app_name);
+			char *profile_name = apr_strtok(NULL, " ", &last);
+			if(!profile_name) {
+				profile_name = "MRCPv2-Default";
+			}
+			demo_framework_app_run(framework,app_name,profile_name);
 		}
 	}
-	else if(strcmp(name,"loglevel") == 0) {
-		if(arg) {
-			apt_log_priority_set(atol(arg));
+	else if(strcasecmp(name,"loglevel") == 0) {
+		char *priority = apr_strtok(NULL, " ", &last);
+		if(priority) {
+			apt_log_priority_set(atol(priority));
 		}
 	}
-	else if(strcmp(name,"exit") == 0 || strcmp(name,"quit") == 0) {
+	else if(strcasecmp(name,"exit") == 0 || strcmp(name,"quit") == 0) {
 		running = FALSE;
 	}
-	else if(strcmp(name,"help") == 0) {
+	else if(strcasecmp(name,"help") == 0) {
 		printf("usage:\n");
 		printf("- run [app_name] (run demo application, app_name is one of 'synth', 'recog')\n");
 		printf("- loglevel [level] (set loglevel, one of 0,1...7)\n");

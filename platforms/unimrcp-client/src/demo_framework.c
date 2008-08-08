@@ -21,6 +21,9 @@
 #include "apt_obj_list.h"
 #include "apt_log.h"
 
+#define MAX_APP_NAME_LENGTH     16
+#define MAX_PROFILE_NAME_LENGTH 16
+
 /** Demo framework */
 struct demo_framework_t {
 	/** MRCP client stack instance */
@@ -36,6 +39,7 @@ struct demo_framework_t {
 typedef struct framework_task_data_t framework_task_data_t;
 struct framework_task_data_t {
 	char                      app_name[MAX_APP_NAME_LENGTH];
+	char                      profile_name[MAX_PROFILE_NAME_LENGTH];
 	demo_application_t       *demo_application;
 	const mrcp_app_message_t *app_message;
 };
@@ -74,7 +78,7 @@ demo_framework_t* demo_framework_create(const char *conf_file_path)
 }
 
 /** Run demo application */
-apt_bool_t demo_framework_app_run(demo_framework_t *framework, const char *app_name)
+apt_bool_t demo_framework_app_run(demo_framework_t *framework, const char *app_name, const char *profile_name)
 {
 	apt_task_t *task = apt_consumer_task_base_get(framework->task);
 	apt_task_msg_t *task_msg = apt_task_msg_get(task);
@@ -84,6 +88,7 @@ apt_bool_t demo_framework_app_run(demo_framework_t *framework, const char *app_n
 		task_msg->sub_type = DEMO_CONSOLE_MSG_ID;
 		framework_task_data = (framework_task_data_t*) task_msg->data;
 		strcpy(framework_task_data->app_name,app_name);
+		strcpy(framework_task_data->profile_name,profile_name);
 		framework_task_data->app_message = NULL;
 		framework_task_data->demo_application = NULL;
 		apt_task_msg_signal(task,task_msg);
@@ -137,7 +142,7 @@ static void demo_framework_on_terminate_complete(apt_task_t *task)
 {
 }
 
-static void demo_framework_app_do_run(demo_framework_t *framework, const char *app_name)
+static void demo_framework_app_do_run(demo_framework_t *framework, const char *app_name, const char *profile_name)
 {
 	demo_application_t *demo_application;
 	apt_list_elem_t *elem = apt_list_first_elem_get(framework->application_list);
@@ -155,8 +160,8 @@ static void demo_framework_app_do_run(demo_framework_t *framework, const char *a
 				mrcp_client_application_register(framework->client,demo_application->application);
 			}
 
-			demo_application->vtable->run(demo_application);
-			break;
+			demo_application->vtable->run(demo_application,profile_name);
+			return;
 		}
 		elem = apt_list_next_elem_get(framework->application_list,elem);
 	}
@@ -233,7 +238,10 @@ static apt_bool_t demo_framework_msg_process(apt_task_t *task, apt_task_msg_t *m
 				framework_task_data_t *framework_task_data = (framework_task_data_t*)msg->data;
 				apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 				demo_framework_t *framework = apt_consumer_task_object_get(consumer_task);
-				demo_framework_app_do_run(framework,framework_task_data->app_name);
+				demo_framework_app_do_run(
+							framework,
+							framework_task_data->app_name,
+							framework_task_data->profile_name);
 				break;
 			}
 		}

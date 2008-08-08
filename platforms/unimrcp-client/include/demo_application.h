@@ -26,8 +26,6 @@
 
 APT_BEGIN_EXTERN_C
 
-#define MAX_APP_NAME_LENGTH 16
-
 /** Demo application declaration */
 typedef struct demo_application_t demo_application_t;
 /** Demo application vtable declaration */
@@ -48,7 +46,7 @@ struct demo_application_t {
 /** Demo application vtable */
 struct demo_application_vtable_t {
 	/** Virtual run method */
-	apt_bool_t (*run)(demo_application_t *application);
+	apt_bool_t (*run)(demo_application_t *application, const char *profile);
 
 	/** Session update event handler */
 	apt_bool_t (*on_session_update)(demo_application_t *application, mrcp_session_t *session);
