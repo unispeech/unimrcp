@@ -17,27 +17,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <apr_getopt.h>
+#include <apr_strings.h>
 #include "unimrcp_server.h"
 #include "apt_log.h"
 
-static apt_bool_t cmdline_process(const char *cmdline)
+static apt_bool_t cmdline_process(char *cmdline)
 {
 	apt_bool_t running = TRUE;
-	const char* name = cmdline;
-	char* arg;
-	if((arg = strchr(cmdline, ' ')) != 0) {
-		*arg++ = '\0';
-	}
+	char *name;
+	char *last;
+	name = apr_strtok((char*)cmdline, " ", &last);
 
-	if(strcmp(name,"loglevel") == 0) {
-		if(arg) {
-			apt_log_priority_set(atol(arg));
+	if(strcasecmp(name,"loglevel") == 0) {
+		char *priority = apr_strtok(NULL, " ", &last);
+		if(priority) {
+			apt_log_priority_set(atol(priority));
 		}
 	}
-	else if(strcmp(name,"exit") == 0 || strcmp(name,"quit") == 0) {
+	else if(strcasecmp(name,"exit") == 0 || strcmp(name,"quit") == 0) {
 		running = FALSE;
 	}
-	else if(strcmp(name,"help") == 0) {
+	else if(strcasecmp(name,"help") == 0) {
 		printf("usage:\n");
 		printf("- loglevel [level] (set loglevel, one of 0,1...7)\n");
 		printf("- quit, exit\n");
@@ -77,7 +77,7 @@ static void usage()
 		"\n"
 		"Usage:\n"
 		"\n"
-		"  unimrcpclient [options]\n"
+		"  unimrcpserver [options]\n"
 		"\n"
 		"  Available options:\n"
 		"\n"
