@@ -31,7 +31,7 @@
 
 APT_BEGIN_EXTERN_C
 
-typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
+typedef struct rtp_termination_slot_t rtp_termination_slot_t;
 
 /** MRCP client session declaration */
 typedef struct mrcp_client_session_t mrcp_client_session_t;
@@ -42,6 +42,8 @@ struct mrcp_client_session_t {
 	mrcp_session_t             base;
 	/** Application session belongs to */
 	mrcp_application_t        *application;
+	/** External object associated with session */
+	void                      *app_obj;
 	/** Profile to use */
 	mrcp_profile_t            *profile;
 
@@ -74,27 +76,38 @@ struct mrcp_client_session_t {
 /** MRCP channel */
 struct mrcp_channel_t {
 	/** Memory pool */
-	apr_pool_t              *pool;
+	apr_pool_t             *pool;
 	/** External object associated with channel */
-	void                    *obj;
+	void                   *obj;
 	/** MRCP resource identifier */
-	mrcp_resource_id         resource_id;
+	mrcp_resource_id        resource_id;
 	/** MRCP resource */
-	mrcp_resource_t         *resource;
+	mrcp_resource_t        *resource;
 	/** MRCP session entire channel belongs to */
-	mrcp_session_t          *session;
+	mrcp_session_t         *session;
 	/** MRCP control channel */
-	mrcp_control_channel_t  *control_channel;
+	mrcp_control_channel_t *control_channel;
 	/** Media termination */
-	mpf_termination_t       *termination;
+	mpf_termination_t      *termination;
 	/** Associated RTP termination slot */
-	mrcp_termination_slot_t *rtp_termination_slot;
+	rtp_termination_slot_t *rtp_termination_slot;
 
-	/** waiting state of control media */
-	apt_bool_t               waiting_for_channel;
+	/** waiting state of control channel */
+	apt_bool_t              waiting_for_channel;         
 	/** waiting state of media termination */
-	apt_bool_t               waiting_for_termination;
+	apt_bool_t              waiting_for_termination;
 };
+
+/** RTP termination slot */
+struct rtp_termination_slot_t {
+	/** waiting state */
+	apt_bool_t                        waiting;
+	/** RTP termination */
+	mpf_termination_t                *termination;
+	/** RTP termination descriptor */
+	mpf_rtp_termination_descriptor_t *descriptor;
+};
+
 
 /** MRCP profile */
 struct mrcp_profile_t {
@@ -125,7 +138,12 @@ struct mrcp_application_t {
 /** Create client session */
 mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj);
 /** Create channel */
-mrcp_channel_t* mrcp_client_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
+mrcp_channel_t* mrcp_client_channel_create(
+					mrcp_session_t *session, 
+					mrcp_resource_id resource_id, 
+					mpf_termination_t *termination, 
+					mpf_rtp_termination_descriptor_t *rtp_descriptor, 
+					void *obj);
 
 /** Process application message */
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message);

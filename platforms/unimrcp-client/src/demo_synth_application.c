@@ -15,6 +15,7 @@
  */
 
 #include "demo_application.h"
+#include "demo_util.h"
 #include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
@@ -27,7 +28,7 @@ typedef struct synth_app_channel_t synth_app_channel_t;
 
 /** Declaration of synthesizer application channel */
 struct synth_app_channel_t {
-	/** MRCP signaling channel */
+	/** MRCP control channel */
 	mrcp_channel_t     *channel;
 	/** Audio stream */
 	mpf_audio_stream_t *audio_stream;
@@ -35,14 +36,16 @@ struct synth_app_channel_t {
 
 /** Declaration of synthesizer application methods */
 static apt_bool_t synth_application_run(demo_application_t *demo_application, const char *profile);
-static apt_bool_t synth_application_on_session_update(demo_application_t *demo_application, mrcp_session_t *session);
-static apt_bool_t synth_application_on_session_terminate(demo_application_t *demo_application, mrcp_session_t *session);
-static apt_bool_t synth_application_on_channel_add(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
-static apt_bool_t synth_application_on_channel_remove(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel);
-static apt_bool_t synth_application_on_message_receive(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
+static apt_bool_t synth_application_handler(demo_application_t *application, const mrcp_app_message_t *app_message);
 
-static const demo_application_vtable_t synth_application_vtable = {
-	synth_application_run,
+/** Declaration of application message handlers */
+static apt_bool_t synth_application_on_session_update(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
+static apt_bool_t synth_application_on_session_terminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
+static apt_bool_t synth_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status);
+static apt_bool_t synth_application_on_channel_remove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status);
+static apt_bool_t synth_application_on_message_receive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
+
+static const mrcp_app_message_dispatcher_t synth_application_dispatcher = {
 	synth_application_on_session_update,
 	synth_application_on_session_terminate,
 	synth_application_on_channel_add,
@@ -73,48 +76,13 @@ demo_application_t* demo_synth_application_create(apr_pool_t *pool)
 	demo_application_t *synth_application = apr_palloc(pool,sizeof(demo_application_t));
 	synth_application->application = NULL;
 	synth_application->framework = NULL;
-	synth_application->vtable = &synth_application_vtable;
+	synth_application->handler = synth_application_handler;
+	synth_application->run = synth_application_run;
 	return synth_application;
 }
 
 
-/** Create demo MRCP message (SPEAK request) */
-static mrcp_message_t* synth_application_speak_message_create(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel)
-{
-	const char text[] = 
-		"<?xml version=\"1.0\"?>\r\n"
-		"<speak>\r\n"
-		"<paragraph>\r\n"
-		"    <sentence>Hello World.</sentence>\r\n"
-		"</paragraph>\r\n"
-		"</speak>\r\n";
-
-	/* create MRCP message */
-	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,SYNTHESIZER_SPEAK);
-	if(mrcp_message) {
-		mrcp_generic_header_t *generic_header;
-		mrcp_synth_header_t *synth_header;
-		/* get/allocate generic header */
-		generic_header = mrcp_generic_header_prepare(mrcp_message);
-		if(generic_header) {
-			/* set generic header fields */
-			apt_string_assign(&generic_header->content_type,"application/synthesis+ssml",mrcp_message->pool);
-			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
-		}
-		/* get/allocate synthesizer header */
-		synth_header = mrcp_resource_header_prepare(mrcp_message);
-		if(synth_header) {
-			/* set synthesizer header fields */
-			synth_header->voice_param.age = 25;
-			mrcp_resource_header_property_add(mrcp_message,SYNTHESIZER_HEADER_VOICE_AGE);
-		}
-		/* set message body */
-		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
-	}
-	return mrcp_message;
-}
-
-/** Run demo application */
+/** Run demo synthesizer scenario */
 static apt_bool_t synth_application_run(demo_application_t *demo_application, const char *profile)
 {
 	/* create session */
@@ -126,14 +94,14 @@ static apt_bool_t synth_application_run(demo_application_t *demo_application, co
 		synth_app_channel_t *synth_channel = apr_palloc(session->pool,sizeof(synth_app_channel_t));
 		synth_channel->audio_stream = mpf_audio_stream_create(synth_channel,&audio_stream_vtable,STREAM_MODE_SEND,session->pool);
 		termination = mpf_raw_termination_create(NULL,synth_channel->audio_stream,NULL,session->pool);
-		channel = mrcp_application_channel_create(session,MRCP_SYNTHESIZER_RESOURCE,termination,synth_channel);
+		channel = mrcp_application_channel_create(session,MRCP_SYNTHESIZER_RESOURCE,termination,NULL,synth_channel);
 		if(channel) {
 			mrcp_message_t *mrcp_message;
 			/* add channel to session */
-			mrcp_application_channel_add(session,channel,NULL);
+			mrcp_application_channel_add(session,channel);
 
 			/* create and send SPEAK request */
-			mrcp_message = synth_application_speak_message_create(demo_application,session,channel);
+			mrcp_message = demo_speak_message_create(session,channel);
 			if(mrcp_message) {
 				mrcp_application_message_send(session,channel,mrcp_message);
 			}
@@ -142,29 +110,34 @@ static apt_bool_t synth_application_run(demo_application_t *demo_application, co
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_session_update(demo_application_t *demo_application, mrcp_session_t *session)
+static apt_bool_t synth_application_handler(demo_application_t *application, const mrcp_app_message_t *app_message)
+{
+	return mrcp_application_message_dispatch(&synth_application_dispatcher,app_message);
+}
+
+static apt_bool_t synth_application_on_session_update(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
 {
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_session_terminate(demo_application_t *demo_application, mrcp_session_t *session)
+static apt_bool_t synth_application_on_session_terminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
 {
 	mrcp_application_session_destroy(session);
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_channel_add(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor)
+static apt_bool_t synth_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_channel_remove(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel)
+static apt_bool_t synth_application_on_channel_remove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
 	mrcp_application_session_terminate(session);
 	return TRUE;
 }
 
-static apt_bool_t synth_application_on_message_receive(demo_application_t *demo_application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
+static apt_bool_t synth_application_on_message_receive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		/* received response to SPEAK request, waiting for SPEAK-COMPLETE event */

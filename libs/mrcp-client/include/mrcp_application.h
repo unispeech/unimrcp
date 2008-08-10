@@ -30,49 +30,68 @@ APT_BEGIN_EXTERN_C
 /** MRCP application message declaration */
 typedef struct mrcp_app_message_t mrcp_app_message_t;
 
-/** MRCP application event handler declaration */
+/** MRCP signaling message declaration */
+typedef struct mrcp_sig_message_t mrcp_sig_message_t;
+
+/** MRCP application message dispatcher declaration */
+typedef struct mrcp_app_message_dispatcher_t mrcp_app_message_dispatcher_t;
+
+/** MRCP application message handler */
 typedef apt_bool_t (*mrcp_app_message_handler_f)(const mrcp_app_message_t *app_message);
+
+/** Enumeration of MRCP signaling message types */
+typedef enum {
+	MRCP_SIG_MESSAGE_TYPE_REQUEST,  /**< request message */
+	MRCP_SIG_MESSAGE_TYPE_RESPONSE, /**< response message */
+	MRCP_SIG_MESSAGE_TYPE_EVENT     /**< event message */
+} mrcp_sig_message_type_e;
+
+/** Enumeration of MRCP signaling status codes */
+typedef enum {
+	MRCP_SIG_STATUS_CODE_SUCCESS,   /**< indicates success */
+	MRCP_SIG_STATUS_CODE_FAILURE,   /**< indicates failure */
+	MRCP_SIG_STATUS_CODE_TERMINATE
+} mrcp_sig_status_code_e;
+
+
+/** Enumeration of MRCP signaling commands (requests/responses) */
+typedef enum {
+	MRCP_SIG_COMMAND_SESSION_UPDATE,
+	MRCP_SIG_COMMAND_SESSION_TERMINATE,
+	MRCP_SIG_COMMAND_CHANNEL_ADD,
+	MRCP_SIG_COMMAND_CHANNEL_REMOVE,
+	MRCP_SIG_COMMAND_MESSAGE,
+} mrcp_sig_command_e;
+
+/** Enumeration of MRCP signaling events */
+typedef enum {
+	MRCP_SIG_EVENT_TERMINATE,
+} mrcp_sig_event_e;
+
 
 /** Enumeration of MRCP application message types */
 typedef enum {
-	MRCP_APP_MESSAGE_TYPE_REQUEST,  /**< request message */
-	MRCP_APP_MESSAGE_TYPE_RESPONSE, /**< response message */
-	MRCP_APP_MESSAGE_TYPE_EVENT     /**< event message */
+	MRCP_APP_MESSAGE_TYPE_SIGNALING, /**< signaling message type */
+	MRCP_APP_MESSAGE_TYPE_CONTROL    /**< control message type */
 } mrcp_app_message_type_e;
 
-/** Enumeration of MRCP application status codes */
-typedef enum {
-	MRCP_APP_STATUS_CODE_SUCCESS,   /**< indicates success */
-	MRCP_APP_STATUS_CODE_FAILURE,   /**< indicates failure */
-	MRCP_APP_STATUS_CODE_TERMINATE
-} mrcp_app_status_code_e;
-
-
-/** Enumeration of MRCP application commands (requests/responses) */
-typedef enum {
-	MRCP_APP_COMMAND_SESSION_UPDATE,
-	MRCP_APP_COMMAND_SESSION_TERMINATE,
-	MRCP_APP_COMMAND_CHANNEL_ADD,
-	MRCP_APP_COMMAND_CHANNEL_REMOVE,
-	MRCP_APP_COMMAND_MESSAGE,
-} mrcp_app_command_e;
-
-/** Enumeration of MRCP application events */
-typedef enum {
-	MRCP_APP_EVENT_MESSAGE,
-} mrcp_app_event_e;
+/** MRCP signaling message definition */
+struct mrcp_sig_message_t {
+	/** Message type (request/response/event) */
+	mrcp_sig_message_type_e           message_type;
+	/** Command (request/response) identifier */
+	mrcp_sig_command_e                command_id;
+	/** Event identifier */
+	mrcp_sig_event_e                  event_id;
+	/** Status code used in response */
+	mrcp_sig_status_code_e            status;
+};
 
 
 /** MRCP application message definition */
 struct mrcp_app_message_t {
-	/** Message type (request/response/event) */
+	/** Message type (signaling/control) */
 	mrcp_app_message_type_e           message_type;
-	/** Command (request/response) identifier */
-	mrcp_app_command_e                command_id;
-	/** Event identifier */
-	mrcp_app_event_e                  event_id;
-	/** Status code used in response */
-	mrcp_app_status_code_e            status;
 
 	/** Application */
 	mrcp_application_t               *application;
@@ -80,11 +99,30 @@ struct mrcp_app_message_t {
 	mrcp_session_t                   *session;
 	/** Channel */
 	mrcp_channel_t                   *channel;
-	/** MRCP message */
-	mrcp_message_t                   *mrcp_message;
-	/** Optional RTP descriptor */
-	mpf_rtp_termination_descriptor_t *descriptor;
+
+	/** MRCP signaling message (used if message_type == MRCP_APP_MESSAGE_SIGNALING) */
+	mrcp_sig_message_t                sig_message;
+	/** MRCP control message (used if message_type == MRCP_APP_MESSAGE_CONTROL) */
+	mrcp_message_t                   *control_message;
 };
+
+/** MRCP application message dispatcher interface */
+struct mrcp_app_message_dispatcher_t {
+	/** Session update event handler */
+	apt_bool_t (*on_session_update)(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
+	/** Session terminate event handler */
+	apt_bool_t (*on_session_terminate)(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
+	
+	/** Channel add event handler */
+	apt_bool_t (*on_channel_add)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status);
+	/** Channel remove event handler */
+	apt_bool_t (*on_channel_remove)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status);
+
+	/** MRCP message receive event handler */
+	apt_bool_t (*on_message_receive)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
+};
+
+
 
 /**
  * Create application instance.
@@ -115,6 +153,12 @@ MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
  */
 MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile, void *obj);
 
+/**
+ * Get external object associated with the session.
+ * @param session the session to get object from
+ */
+MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session);
+
 /** 
  * Send session update request.
  * @param session the session to update
@@ -139,9 +183,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
  * @param session the session to create channel for
  * @param resource_id the resource identifier of the channel
  * @param termination the media termination
+ * @param rtp_descriptor the RTP termination descriptor (NULL by default)
  * @param obj the external object
  */
-MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj);
+MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
+									mrcp_session_t *session, 
+									mrcp_resource_id resource_id, 
+									mpf_termination_t *termination, 
+									mpf_rtp_termination_descriptor_t *rtp_descriptor, 
+									void *obj);
 
 /**
  * Get external object associated with the channel.
@@ -149,13 +199,18 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *se
  */
 MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel);
 
+/**
+ * Get RTP termination descriptor.
+ * @param channel the channel to get descriptor from
+ */
+MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(mrcp_channel_t *channel);
+
 /** 
  * Send channel add request.
  * @param session the session to create channel for
  * @param channel the control channel
- * @param descriptor the descriptor of RTP termination assoiciated with control channel (NULL by default)
  */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor);
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel);
 
 /** 
  * Create MRCP message.
@@ -180,11 +235,18 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
  */
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session, mrcp_channel_t *channel);
 
-/** 
+/**
  * Destroy channel.
  * @param channel the control channel to destroy
  */
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_destroy(mrcp_channel_t *channel);
+
+/**
+ * Dispatch application message.
+ * @param dispatcher the dispatcher inteface
+ * @param app_message the message to dispatch
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_message_dispatcher_t *dispatcher, const mrcp_app_message_t *app_message);
 
 
 APT_END_EXTERN_C

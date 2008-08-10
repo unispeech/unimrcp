@@ -116,7 +116,8 @@ static const mrcp_connection_event_vtable_t connection_method_vtable = {
 static void mrcp_client_on_start_complete(apt_task_t *task);
 static void mrcp_client_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg);
-static apt_bool_t mrcp_application_task_msg_signal(mrcp_app_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message, mpf_rtp_termination_descriptor_t *descriptor);
+static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel);
+static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
 
 
 /** Create MRCP client instance */
@@ -388,8 +389,12 @@ MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(mrcp_client_t *client)
 /** Create application instance */
 MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(const mrcp_app_message_handler_f handler, void *obj, apr_pool_t *pool)
 {
-	mrcp_application_t *application = apr_palloc(pool,sizeof(mrcp_application_t));
+	mrcp_application_t *application;
+	if(!handler) {
+		return FALSE;
+	}
 	apt_log(APT_PRIO_NOTICE,"Create Application");
+	application = apr_palloc(pool,sizeof(mrcp_application_t));
 	application->obj = obj;
 	application->handler = handler;
 	application->client = NULL;
@@ -437,13 +442,24 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 	return &session->base;
 }
 
+/** Get external object associated with the session */
+MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session)
+{
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	if(!client_session) {
+		return NULL;
+	}
+	return client_session->app_obj;
+}
+
+
 /** Send session update request */
 MRCP_DECLARE(apt_bool_t) mrcp_application_session_update(mrcp_session_t *session)
 {
 	if(!session) {
 		return FALSE;
 	}
-	return mrcp_application_task_msg_signal(MRCP_APP_COMMAND_SESSION_UPDATE,session,NULL,NULL,NULL);
+	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_SESSION_UPDATE,session,NULL);
 }
 
 /** Send session termination request */
@@ -452,7 +468,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_terminate(mrcp_session_t *sess
 	if(!session) {
 		return FALSE;
 	}
-	return mrcp_application_task_msg_signal(MRCP_APP_COMMAND_SESSION_TERMINATE,session,NULL,NULL,NULL);
+	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_SESSION_TERMINATE,session,NULL);
 }
 
 /** Destroy client session (session must be terminated prior to destroy) */
@@ -468,13 +484,18 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 
 
 /** Create control channel */
-MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(mrcp_session_t *session, mrcp_resource_id resource_id, mpf_termination_t *termination, void *obj)
+MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
+									mrcp_session_t *session, 
+									mrcp_resource_id resource_id, 
+									mpf_termination_t *termination, 
+									mpf_rtp_termination_descriptor_t *rtp_descriptor, 
+									void *obj)
 {
 	if(!session) {
 		return FALSE;
 	}
 	apt_log(APT_PRIO_NOTICE,"Create Channel [%d]",resource_id);
-	return mrcp_client_channel_create(session,resource_id,termination,obj);
+	return mrcp_client_channel_create(session,resource_id,termination,rtp_descriptor,obj);
 }
 
 /** Get external object associated with the channel */
@@ -486,13 +507,22 @@ MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel)
 	return channel->obj;
 }
 
+/** Get RTP termination descriptor */
+MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(mrcp_channel_t *channel)
+{
+	if(!channel || !channel->rtp_termination_slot) {
+		return FALSE;
+	}
+	return channel->rtp_termination_slot->descriptor;
+}
+
 /** Send channel add request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel, mpf_rtp_termination_descriptor_t *descriptor)
+MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	if(!session || !channel) {
 		return FALSE;
 	}
-	return mrcp_application_task_msg_signal(MRCP_APP_COMMAND_CHANNEL_ADD,session,channel,NULL,descriptor);
+	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_CHANNEL_ADD,session,channel);
 }
 
 /** Send channel removal request */
@@ -501,7 +531,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session
 	if(!session || !channel) {
 		return FALSE;
 	}
-	return mrcp_application_task_msg_signal(MRCP_APP_COMMAND_CHANNEL_REMOVE,session,channel,NULL,NULL);
+	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_CHANNEL_REMOVE,session,channel);
 }
 
 /** Create MRCP message */
@@ -531,7 +561,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
 	if(!session || !channel || !message) {
 		return FALSE;
 	}
-	return mrcp_application_task_msg_signal(MRCP_APP_COMMAND_MESSAGE,session,channel,message,NULL);
+	return mrcp_app_control_task_msg_signal(session,channel,message);
 }
 
 /** Destroy channel */
@@ -644,7 +674,7 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_CLIENT_APPLICATION_TASK_MSG:
 		{
 			mrcp_app_message_t **app_message = (mrcp_app_message_t**) msg->data;
-			apt_log(APT_PRIO_DEBUG,"Receive Application Task Message [%d]", (*app_message)->command_id);
+			apt_log(APT_PRIO_DEBUG,"Receive Application Task Message [%d]", (*app_message)->message_type);
 			mrcp_client_app_message_process(*app_message);
 			break;
 		}
@@ -657,7 +687,7 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	return TRUE;
 }
 
-static apt_bool_t mrcp_application_task_msg_signal(mrcp_app_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message, mpf_rtp_termination_descriptor_t *descriptor)
+static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	mrcp_application_t *application = client_session->application;
@@ -669,13 +699,36 @@ static apt_bool_t mrcp_application_task_msg_signal(mrcp_app_command_e command_id
 		task_msg->type = MRCP_CLIENT_APPLICATION_TASK_MSG;
 
 		app_message = apr_palloc(session->pool,sizeof(mrcp_app_message_t));
-		app_message->message_type = MRCP_APP_MESSAGE_TYPE_REQUEST;
-		app_message->command_id = command_id;
+		app_message->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
+		app_message->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_REQUEST;
+		app_message->sig_message.command_id = command_id;
 		app_message->application = client_session->application;
 		app_message->session = session;
 		app_message->channel = channel;
-		app_message->mrcp_message = message;
-		app_message->descriptor = descriptor;
+		app_message->control_message = NULL;
+		*slot = app_message;
+	}
+	apt_log(APT_PRIO_DEBUG,"Signal Application Task Message");
+	return apt_task_msg_signal(task,task_msg);
+}
+
+static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
+{
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	mrcp_application_t *application = client_session->application;
+	apt_task_t *task = apt_consumer_task_base_get(application->client->task);
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(application->msg_pool);
+	if(task_msg) {
+		mrcp_app_message_t **slot = ((mrcp_app_message_t**)task_msg->data);
+		mrcp_app_message_t *app_message;
+		task_msg->type = MRCP_CLIENT_APPLICATION_TASK_MSG;
+
+		app_message = apr_palloc(session->pool,sizeof(mrcp_app_message_t));
+		app_message->message_type = MRCP_APP_MESSAGE_TYPE_CONTROL;
+		app_message->application = client_session->application;
+		app_message->session = session;
+		app_message->channel = channel;
+		app_message->control_message = message;
 		*slot = app_message;
 	}
 	apt_log(APT_PRIO_DEBUG,"Signal Application Task Message");

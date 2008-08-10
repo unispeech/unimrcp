@@ -49,7 +49,7 @@ typedef enum {
 	DEMO_CONSOLE_MSG_ID
 } framework_msg_type_e;
 
-static apt_bool_t demo_framework_event_handler(const mrcp_app_message_t *app_message);
+static apt_bool_t demo_framework_message_handler(const mrcp_app_message_t *app_message);
 static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framework);
 
 /** Create demo framework */
@@ -133,105 +133,42 @@ static void demo_framework_on_start_complete(apt_task_t *task)
 	}
 }
 
-static void demo_framework_on_terminate_complete(apt_task_t *task)
-{
-}
-
-static void demo_framework_app_do_run(demo_framework_t *framework, const char *app_name, const char *profile_name)
+static apt_bool_t demo_framework_console_msg_process(demo_framework_t *framework, const char *app_name, const char *profile_name)
 {
 	demo_application_t *demo_application = apr_hash_get(framework->application_table,app_name,APR_HASH_KEY_STRING);
 	if(!demo_application) {
 		apt_log(APT_PRIO_WARNING,"No Such Demo Application [%s]",app_name);
-		return;
+		return FALSE;
 	}
 	
-	apt_log(APT_PRIO_NOTICE,"Run Demo Application [%s]",app_name);
 	if(!demo_application->application) {
 		demo_application->application = mrcp_application_create(
-											demo_framework_event_handler,
+											demo_framework_message_handler,
 											demo_application,
 											framework->pool);
 		demo_application->framework = framework;
 		mrcp_client_application_register(framework->client,demo_application->application);
 	}
 
-	demo_application->vtable->run(demo_application,profile_name);
-}
-
-static apt_bool_t demo_framework_response_process(demo_application_t *demo_application, const mrcp_app_message_t *app_message)
-{
-	switch(app_message->command_id) {
-		case MRCP_APP_COMMAND_SESSION_UPDATE:
-			demo_application->vtable->on_session_update(demo_application,app_message->session);
-			break;
-		case MRCP_APP_COMMAND_SESSION_TERMINATE:
-			demo_application->vtable->on_session_terminate(demo_application,app_message->session);
-			break;
-		case MRCP_APP_COMMAND_CHANNEL_ADD:
-			demo_application->vtable->on_channel_add(
-					demo_application,
-					app_message->session,
-					app_message->channel,
-					app_message->descriptor);
-			break;
-		case MRCP_APP_COMMAND_CHANNEL_REMOVE:
-			demo_application->vtable->on_channel_remove(
-					demo_application,
-					app_message->session,
-					app_message->channel);
-			break;
-		case MRCP_APP_COMMAND_MESSAGE:
-			demo_application->vtable->on_message_receive(
-					demo_application,
-					app_message->session,
-					app_message->channel,
-					app_message->mrcp_message);
-			break;
-		default:
-			break;
-	}
-	return TRUE;
-}
-
-static apt_bool_t demo_framework_event_process(demo_application_t *demo_application, const mrcp_app_message_t *app_message)
-{
-	demo_application->vtable->on_message_receive(
-			demo_application,
-			app_message->session,
-			app_message->channel,
-			app_message->mrcp_message);
-	return TRUE;
+	apt_log(APT_PRIO_NOTICE,"Run Demo Application Scenario [%s]",app_name);
+	return demo_application->run(demo_application,profile_name);
 }
 
 static apt_bool_t demo_framework_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	if(msg->type == TASK_MSG_USER) {
+		framework_task_data_t *data = (framework_task_data_t*)msg->data;
 		switch(msg->sub_type) {
 			case DEMO_APPLICATION_MSG_ID:
 			{
-				framework_task_data_t *framework_task_data = (framework_task_data_t*)msg->data;
-				const mrcp_app_message_t *app_message = framework_task_data->app_message;
-				switch(app_message->message_type) {
-					case MRCP_APP_MESSAGE_TYPE_RESPONSE:
-						demo_framework_response_process(framework_task_data->demo_application,app_message);
-						break;
-					case MRCP_APP_MESSAGE_TYPE_EVENT:
-						demo_framework_event_process(framework_task_data->demo_application,app_message);
-						break;
-					default:
-						break;
-				}
+				data->demo_application->handler(data->demo_application,data->app_message);
 				break;
 			}
 			case DEMO_CONSOLE_MSG_ID:
 			{
-				framework_task_data_t *framework_task_data = (framework_task_data_t*)msg->data;
 				apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 				demo_framework_t *framework = apt_consumer_task_object_get(consumer_task);
-				demo_framework_app_do_run(
-							framework,
-							framework_task_data->app_name,
-							framework_task_data->profile_name);
+				demo_framework_console_msg_process(framework,data->app_name,data->profile_name);
 				break;
 			}
 		}
@@ -247,14 +184,17 @@ static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framewor
 	apt_task_vtable_reset(&vtable);
 	vtable.process_msg = demo_framework_msg_process;
 	vtable.on_start_complete = demo_framework_on_start_complete;
-	vtable.on_terminate_complete = demo_framework_on_terminate_complete;
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(framework_task_data_t),framework->pool);
 	framework->task = apt_consumer_task_create(framework, &vtable, msg_pool, framework->pool);
 	return TRUE;
 }
 
-static apt_bool_t demo_framework_event_handler(const mrcp_app_message_t *app_message)
+/** Callback is called from MRCP client stack (task) context.
+ *  Signal app_message to the main consumer task of the demo framework
+ *  for further processing (see demo_framework_msg_process).
+ */
+static apt_bool_t demo_framework_message_handler(const mrcp_app_message_t *app_message)
 {
 	demo_application_t *demo_application;
 	if(!app_message->application) {
