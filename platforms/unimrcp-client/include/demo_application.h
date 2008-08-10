@@ -37,8 +37,6 @@ struct demo_application_t {
 	mrcp_application_t              *application;
 	/** Demo framework */
 	void                            *framework;
-	/** Application name */
-	const char                      *name;
 	/** Table of demo application virtaul methods */
 	const demo_application_vtable_t *vtable;
 };

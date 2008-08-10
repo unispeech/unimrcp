@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <apr_hash.h>
 #include "demo_framework.h"
 #include "demo_application.h"
 #include "unimrcp_client.h"
 #include "apt_consumer_task.h"
-#include "apt_obj_list.h"
 #include "apt_log.h"
 
 #define MAX_APP_NAME_LENGTH     16
@@ -30,8 +30,8 @@ struct demo_framework_t {
 	mrcp_client_t       *client;
 	/** Message processing task */
 	apt_consumer_task_t *task;
-	/** List of available demo applications */
-	apt_obj_list_t      *application_list;
+	/** Table of demo applications */
+	apr_hash_t          *application_table;
 	/** Memory to allocate memory from */
 	apr_pool_t          *pool;
 };
@@ -62,7 +62,7 @@ demo_framework_t* demo_framework_create(const char *conf_file_path)
 		framework = apr_palloc(pool,sizeof(demo_framework_t));
 		framework->pool = pool;
 		framework->client = client;
-		framework->application_list = apt_list_create(pool);
+		framework->application_table = apr_hash_make(pool);
 		
 		demo_framework_consumer_task_create(framework);
 
@@ -110,11 +110,6 @@ apt_bool_t demo_framework_destroy(demo_framework_t *framework)
 		framework->task = NULL;
 	}
 
-	if(framework->application_list) {
-		apt_list_destroy(framework->application_list);
-		framework->application_list = NULL;
-	}
-
 	mrcp_client_shutdown(framework->client);
 	return mrcp_client_destroy(framework->client);
 }
@@ -128,12 +123,12 @@ static void demo_framework_on_start_complete(apt_task_t *task)
 		demo_application_t *demo_application;
 		demo_application = demo_synth_application_create(framework->pool);
 		if(demo_application) {
-			apt_list_push_back(framework->application_list,demo_application);
+			apr_hash_set(framework->application_table,"synth",APR_HASH_KEY_STRING,demo_application);
 		}
 
 		demo_application = demo_recog_application_create(framework->pool);
 		if(demo_application) {
-			apt_list_push_back(framework->application_list,demo_application);
+			apr_hash_set(framework->application_table,"recog",APR_HASH_KEY_STRING,demo_application);
 		}
 	}
 }
@@ -144,28 +139,23 @@ static void demo_framework_on_terminate_complete(apt_task_t *task)
 
 static void demo_framework_app_do_run(demo_framework_t *framework, const char *app_name, const char *profile_name)
 {
-	demo_application_t *demo_application;
-	apt_list_elem_t *elem = apt_list_first_elem_get(framework->application_list);
-	/* walk through the list of the applications */
-	while(elem) {
-		demo_application = apt_list_elem_object_get(elem);
-		if(demo_application && strcasecmp(demo_application->name,app_name) == 0) {
-			apt_log(APT_PRIO_NOTICE,"Run Demo Application [%s]",app_name);
-			if(!demo_application->application) {
-				demo_application->application = mrcp_application_create(
-													demo_framework_event_handler,
-													demo_application,
-													framework->pool);
-				demo_application->framework = framework;
-				mrcp_client_application_register(framework->client,demo_application->application);
-			}
-
-			demo_application->vtable->run(demo_application,profile_name);
-			return;
-		}
-		elem = apt_list_next_elem_get(framework->application_list,elem);
+	demo_application_t *demo_application = apr_hash_get(framework->application_table,app_name,APR_HASH_KEY_STRING);
+	if(!demo_application) {
+		apt_log(APT_PRIO_WARNING,"No Such Demo Application [%s]",app_name);
+		return;
 	}
-	apt_log(APT_PRIO_WARNING,"No Such Demo Application [%s]",app_name);
+	
+	apt_log(APT_PRIO_NOTICE,"Run Demo Application [%s]",app_name);
+	if(!demo_application->application) {
+		demo_application->application = mrcp_application_create(
+											demo_framework_event_handler,
+											demo_application,
+											framework->pool);
+		demo_application->framework = framework;
+		mrcp_client_application_register(framework->client,demo_application->application);
+	}
+
+	demo_application->vtable->run(demo_application,profile_name);
 }
 
 static apt_bool_t demo_framework_response_process(demo_application_t *demo_application, const mrcp_app_message_t *app_message)
