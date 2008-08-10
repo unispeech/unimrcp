@@ -31,6 +31,8 @@
 
 APT_BEGIN_EXTERN_C
 
+typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
+
 /** MRCP client session declaration */
 typedef struct mrcp_client_session_t mrcp_client_session_t;
 
@@ -72,24 +74,26 @@ struct mrcp_client_session_t {
 /** MRCP channel */
 struct mrcp_channel_t {
 	/** Memory pool */
-	apr_pool_t             *pool;
+	apr_pool_t              *pool;
 	/** External object associated with channel */
-	void                   *obj;
+	void                    *obj;
 	/** MRCP resource identifier */
-	mrcp_resource_id        resource_id;
+	mrcp_resource_id         resource_id;
 	/** MRCP resource */
-	mrcp_resource_t        *resource;
+	mrcp_resource_t         *resource;
 	/** MRCP session entire channel belongs to */
-	mrcp_session_t         *session;
+	mrcp_session_t          *session;
 	/** MRCP control channel */
-	mrcp_control_channel_t *control_channel;
+	mrcp_control_channel_t  *control_channel;
 	/** Media termination */
-	mpf_termination_t      *termination;
+	mpf_termination_t       *termination;
+	/** Associated RTP termination slot */
+	mrcp_termination_slot_t *rtp_termination_slot;
 
 	/** waiting state of control media */
-	apt_bool_t              waiting_for_channel;
+	apt_bool_t               waiting_for_channel;
 	/** waiting state of media termination */
-	apt_bool_t              waiting_for_termination;
+	apt_bool_t               waiting_for_termination;
 };
 
 /** MRCP profile */
