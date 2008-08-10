@@ -161,6 +161,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\demo_util.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\main.c"
 				>
 			</File>
@@ -176,6 +180,10 @@
 			</File>
 			<File
 				RelativePath=".\include\demo_framework.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\demo_util.h"
 				>
 			</File>
 		</Filter>
