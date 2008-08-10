@@ -26,7 +26,7 @@ static apt_bool_t cmdline_process(char *cmdline)
 	apt_bool_t running = TRUE;
 	char *name;
 	char *last;
-	name = apr_strtok((char*)cmdline, " ", &last);
+	name = apr_strtok(cmdline, " ", &last);
 
 	if(strcasecmp(name,"loglevel") == 0) {
 		char *priority = apr_strtok(NULL, " ", &last);
