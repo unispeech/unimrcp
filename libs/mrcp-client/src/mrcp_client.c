@@ -435,7 +435,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 		return NULL;
 	}
 	
-	apt_log(APT_PRIO_NOTICE,"Create Session <new>");
+	apt_log(APT_PRIO_NOTICE,"Create Session [%s] <new>",profile_name);
 	session->profile = profile;
 	session->base.response_vtable = &session_response_vtable;
 	session->base.event_vtable = &session_event_vtable;

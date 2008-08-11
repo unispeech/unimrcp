@@ -208,7 +208,7 @@ apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_c
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)app_message->session;
-	apt_log(APT_PRIO_INFO,"Receive Request from Application [%d]",app_message->sig_message.command_id);
+	apt_log(APT_PRIO_INFO,"Receive Request from Application [%d]",app_message->message_type);
 	if(session->active_request) {
 		apt_log(APT_PRIO_DEBUG,"Push Request to Queue");
 		apt_list_push_back(session->request_queue,app_message);
@@ -271,7 +271,7 @@ static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp
 	*response = *session->active_request;
 	response->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_RESPONSE;
 	response->sig_message.status = status;
-	apt_log(APT_PRIO_INFO,"Send Response to Application [%d]", response->sig_message.command_id);
+	apt_log(APT_PRIO_INFO,"Send Response to Application [%d]", response->message_type);
 	session->application->handler(response);
 
 	session->active_request = apt_list_pop_front(session->request_queue);
@@ -543,7 +543,7 @@ static apt_bool_t mrcp_client_session_update(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_DEBUG,"Update Session");
+	apt_log(APT_PRIO_INFO,"Update Session");
 	return mrcp_client_session_offer_send(session);
 }
 
@@ -556,7 +556,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_DEBUG,"Terminate Session");
+	apt_log(APT_PRIO_INFO,"Terminate Session");
 	profile = session->profile;
 	/* remove existing control channels */
 	for(i=0; i<session->channels->nelts; i++) {
