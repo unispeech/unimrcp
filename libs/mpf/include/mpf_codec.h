@@ -152,10 +152,10 @@ static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void **buffer
 	else {
 		/* default dissector */
 		if(*size >= frame->size && frame->size) {
-			memcpy(frame->buffer,buffer,frame->size);
+			memcpy(frame->buffer,*buffer,frame->size);
 			
-			*buffer = (char*)(*buffer) + frame->size;
-			*size -= frame->size;
+			*buffer = (apr_byte_t*)*buffer + frame->size;
+			*size = *size - frame->size;
 		}
 		else {
 			rv = FALSE;
