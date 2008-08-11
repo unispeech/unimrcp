@@ -46,6 +46,8 @@ struct mrcp_session_t {
 
 	/** Session identifier */
 	apt_str_t         id;
+	/** Last request identifier sent for client, received for server */
+	mrcp_request_id   last_request_id;
 
 	/** Virtual request methods */
 	const mrcp_session_request_vtable_t  *request_vtable;

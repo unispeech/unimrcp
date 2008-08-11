@@ -395,9 +395,8 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	}
 
 	message->channel_id.session_id = session->base.id;
-	mrcp_client_control_message_send(
-		channel->control_channel,
-		message);
+	message->start_line.request_id = ++session->base.last_request_id;
+	mrcp_client_control_message_send(channel->control_channel,message);
 	return TRUE;
 }
 

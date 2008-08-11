@@ -46,6 +46,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding)
 	session->response_vtable = NULL;
 	session->event_vtable = NULL;
 	apt_string_reset(&session->id);
+	session->last_request_id = 0;
 	return session;
 }
 
