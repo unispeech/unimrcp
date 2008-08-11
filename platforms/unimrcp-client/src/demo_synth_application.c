@@ -32,6 +32,8 @@ struct synth_app_channel_t {
 	mrcp_channel_t     *channel;
 	/** Audio stream */
 	mpf_audio_stream_t *audio_stream;
+	/** File to write audio stream to */
+	FILE               *audio_out;
 };
 
 /** Declaration of synthesizer application methods */
@@ -81,89 +83,179 @@ demo_application_t* demo_synth_application_create(apr_pool_t *pool)
 	return synth_application;
 }
 
+/** Create demo synthesizer channel */
+static mrcp_channel_t* synth_application_channel_create(mrcp_session_t *session)
+{
+	mrcp_channel_t *channel;
+	mpf_termination_t *termination;
+	/* create channel */
+	synth_app_channel_t *synth_channel = apr_palloc(session->pool,sizeof(synth_app_channel_t));
+	synth_channel->audio_out = NULL;
+	/* create audio stream */
+	synth_channel->audio_stream = mpf_audio_stream_create(
+			synth_channel,        /* object to associate */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			STREAM_MODE_SEND,     /* stream mode/direction */
+			session->pool);       /* memory pool to allocate memory from */
+	/* create raw termination */
+	termination = mpf_raw_termination_create(
+			NULL,                        /* no object to associate */
+			synth_channel->audio_stream, /* audio stream */
+			NULL,                        /* no video stream */
+			session->pool);              /* memory pool to allocate memory from */
+	channel = mrcp_application_channel_create(
+			session,                     /* session, channel belongs to */
+			MRCP_SYNTHESIZER_RESOURCE,   /* MRCP resource identifier */
+			termination,                 /* media termination, used to terminate audio stream */
+			NULL,                        /* RTP descriptor, used to create RTP termination (NULL by default) */
+			synth_channel);              /* object to associate */
+	return channel;
+}
+
 
 /** Run demo synthesizer scenario */
 static apt_bool_t synth_application_run(demo_application_t *demo_application, const char *profile)
 {
+	mrcp_channel_t *channel;
 	/* create session */
 	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,profile,NULL);
-	if(session) {
-		mrcp_channel_t *channel;
-		mpf_termination_t *termination;
-		/* create channel */
-		synth_app_channel_t *synth_channel = apr_palloc(session->pool,sizeof(synth_app_channel_t));
-		synth_channel->audio_stream = mpf_audio_stream_create(synth_channel,&audio_stream_vtable,STREAM_MODE_SEND,session->pool);
-		termination = mpf_raw_termination_create(NULL,synth_channel->audio_stream,NULL,session->pool);
-		channel = mrcp_application_channel_create(session,MRCP_SYNTHESIZER_RESOURCE,termination,NULL,synth_channel);
-		if(channel) {
-			mrcp_message_t *mrcp_message;
-			/* add channel to session */
-			mrcp_application_channel_add(session,channel);
+	if(!session) {
+		return FALSE;
+	}
+	
+	/* create channel and associate all the required data */
+	channel = synth_application_channel_create(session);
+	if(!channel) {
+		mrcp_session_destroy(session);
+		return FALSE;
+	}
 
-			/* create and send SPEAK request */
-			mrcp_message = demo_speak_message_create(session,channel);
-			if(mrcp_message) {
-				mrcp_application_message_send(session,channel,mrcp_message);
-			}
+	/* add channel to session (send asynchronous request) */
+	if(mrcp_application_channel_add(session,channel) != TRUE) {
+		/* session and channel are still not referenced 
+		and both are allocated from session pool and will
+		be freed with session destroy call */
+		mrcp_session_destroy(session);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+/** Handle the messages sent from the MRCP client stack */
+static apt_bool_t synth_application_handler(demo_application_t *application, const mrcp_app_message_t *app_message)
+{
+	/* app_message should be dispatched now,
+	*  the default dispatcher is used in demo. */
+	return mrcp_application_message_dispatch(&synth_application_dispatcher,app_message);
+}
+
+/** Handle the responses sent to session update requests */
+static apt_bool_t synth_application_on_session_update(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
+{
+	/* not used in demo */
+	return TRUE;
+}
+
+/** Handle the responses sent to session terminate requests */
+static apt_bool_t synth_application_on_session_terminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
+{
+	/* received response to session termination request,
+	now it's safe to destroy no more referenced session */
+	mrcp_application_session_destroy(session);
+	return TRUE;
+}
+
+/** Handle the responses sent to channel add requests */
+static apt_bool_t synth_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
+{
+	synth_app_channel_t *synth_channel = mrcp_application_channel_object_get(channel);
+	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
+		mrcp_message_t *mrcp_message;
+		/* create and send SPEAK request */
+		mrcp_message = demo_speak_message_create(session,channel);
+		if(mrcp_message) {
+			mrcp_application_message_send(session,channel,mrcp_message);
+		}
+
+		if(synth_channel && session) {
+			char *file_name = apr_pstrcat(session->pool,"synth-",session->id.buf,".pcm",NULL);
+			synth_channel->audio_out = fopen(file_name,"wb");
+		}
+	}
+	else {
+		/* error case, just terminate the demo */
+		mrcp_application_session_terminate(session);
+	}
+	return TRUE;
+}
+
+/** Handle the responses sent to channel remove requests */
+static apt_bool_t synth_application_on_channel_remove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
+{
+	synth_app_channel_t *synth_channel = mrcp_application_channel_object_get(channel);
+
+	/* terminate the demo */
+	mrcp_application_session_terminate(session);
+
+	if(synth_channel) {
+		FILE *audio_out = synth_channel->audio_out;
+		if(audio_out) {
+			synth_channel->audio_out = NULL;
+			fclose(audio_out);
 		}
 	}
 	return TRUE;
 }
 
-static apt_bool_t synth_application_handler(demo_application_t *application, const mrcp_app_message_t *app_message)
-{
-	return mrcp_application_message_dispatch(&synth_application_dispatcher,app_message);
-}
-
-static apt_bool_t synth_application_on_session_update(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
-{
-	return TRUE;
-}
-
-static apt_bool_t synth_application_on_session_terminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
-{
-	mrcp_application_session_destroy(session);
-	return TRUE;
-}
-
-static apt_bool_t synth_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
-{
-	return TRUE;
-}
-
-static apt_bool_t synth_application_on_channel_remove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
-{
-	mrcp_application_session_terminate(session);
-	return TRUE;
-}
-
+/** Handle the MRCP responses/events */
 static apt_bool_t synth_application_on_message_receive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
-		/* received response to SPEAK request, waiting for SPEAK-COMPLETE event */
+		/* received MRCP response */
+		if(message->start_line.method_id == SYNTHESIZER_SPEAK) {
+			/* received the response to SPEAK request, 
+			waiting for SPEAK-COMPLETE event */
+		}
+		else {
+			/* received unexpected response */
+		}
 	}
 	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
-		mrcp_application_channel_remove(session,channel);
+		/* received MRCP event */
+		if(message->start_line.method_id == SYNTHESIZER_SPEAK_COMPLETE) {
+			/* received SPEAK-COMPLETE event, remove channel */
+			mrcp_application_channel_remove(session,channel);
+		}
 	}
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to destroy any additional data associated with audio stream */
 static apt_bool_t synth_app_stream_destroy(mpf_audio_stream_t *stream)
 {
+	/* nothing to destroy in demo */
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform application stream specific action before open */
 static apt_bool_t synth_app_stream_open(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform application stream specific action after close */
 static apt_bool_t synth_app_stream_close(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to make new frame available to write/send */
 static apt_bool_t synth_app_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
+	synth_app_channel_t *synth_channel = stream->obj;
+	if(synth_channel && synth_channel->audio_out) {
+		fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,synth_channel->audio_out);
+	}
 	return TRUE;
 }

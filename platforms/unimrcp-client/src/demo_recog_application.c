@@ -83,53 +83,103 @@ demo_application_t* demo_recog_application_create(apr_pool_t *pool)
 	return recog_application;
 }
 
-/** Run demo application */
+/** Create demo recognizer channel */
+static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
+{
+	mrcp_channel_t *channel;
+	mpf_termination_t *termination;
+	/* create channel */
+	recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
+	recog_channel->start_of_input = FALSE;
+	/* create audio stream */
+	recog_channel->audio_stream = mpf_audio_stream_create(
+			recog_channel,        /* object to associate */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			STREAM_MODE_RECEIVE,  /* stream mode/direction */
+			session->pool);       /* memory pool to allocate memory from */
+	/* create raw termination */
+	termination = mpf_raw_termination_create(
+			NULL,                        /* no object to associate */
+			recog_channel->audio_stream, /* audio stream */
+			NULL,                        /* no video stream */
+			session->pool);              /* memory pool to allocate memory from */
+	channel = mrcp_application_channel_create(
+			session,                     /* session, channel belongs to */
+			MRCP_RECOGNIZER_RESOURCE,    /* MRCP resource identifier */
+			termination,                 /* media termination, used to terminate audio stream */
+			NULL,                        /* RTP descriptor, used to create RTP termination (NULL by default) */
+			recog_channel);              /* object to associate */
+	return channel;
+}
+
+/** Run demo recognizer scenario */
 static apt_bool_t recog_application_run(demo_application_t *demo_application, const char *profile)
 {
+	mrcp_channel_t *channel;
 	/* create session */
 	mrcp_session_t *session = mrcp_application_session_create(demo_application->application,profile,NULL);
-	if(session) {
-		/* create channel */
-		mrcp_channel_t *channel;
-		mpf_termination_t *termination;
-		recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
-		recog_channel->start_of_input = FALSE;
-		recog_channel->audio_stream = mpf_audio_stream_create(recog_channel,&audio_stream_vtable,STREAM_MODE_RECEIVE,session->pool);
-		termination = mpf_raw_termination_create(NULL,recog_channel->audio_stream,NULL,session->pool);
-		channel = mrcp_application_channel_create(session,MRCP_RECOGNIZER_RESOURCE,termination,NULL,recog_channel);
-		if(channel) {
-			mrcp_message_t *mrcp_message;
-			/* add channel to session */
-			mrcp_application_channel_add(session,channel);
-
-			/* create and send RECOGNIZE request */
-			mrcp_message = demo_recognize_message_create(session,channel);
-			if(mrcp_message) {
-				mrcp_application_message_send(session,channel,mrcp_message);
-			}
-		}
+	if(!session) {
+		return FALSE;
 	}
+	
+	/* create channel and associate all the required data */
+	channel = recog_application_channel_create(session);
+	if(!channel) {
+		mrcp_session_destroy(session);
+		return FALSE;
+	}
+
+	/* add channel to session (send asynchronous request) */
+	if(mrcp_application_channel_add(session,channel) != TRUE) {
+		/* session and channel are still not referenced 
+		and both are allocated from session pool and will
+		be freed with session destroy call */
+		mrcp_session_destroy(session);
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
+/** Handle the messages sent from the MRCP client stack */
 static apt_bool_t recog_application_handler(demo_application_t *application, const mrcp_app_message_t *app_message)
 {
+	/* app_message should be dispatched now,
+	*  the default dispatcher is used in demo. */
 	return mrcp_application_message_dispatch(&recog_application_dispatcher,app_message);
 }
 
+/** Handle the responses sent to session update requests */
 static apt_bool_t recog_application_on_session_update(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
 {
+	/* not used in demo */
 	return TRUE;
 }
 
+/** Handle the responses sent to session terminate requests */
 static apt_bool_t recog_application_on_session_terminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
 {
+	/* received response to session termination request,
+	now it's safe to destroy no more referenced session */
 	mrcp_application_session_destroy(session);
 	return TRUE;
 }
 
+/** Handle the responses sent to channel add requests */
 static apt_bool_t recog_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
+	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
+		mrcp_message_t *mrcp_message;
+		/* create and send RECOGNIZE request */
+		mrcp_message = demo_recognize_message_create(session,channel);
+		if(mrcp_message) {
+			mrcp_application_message_send(session,channel,mrcp_message);
+		}
+	}
+	else {
+		/* error case, just terminate the demo */
+		mrcp_application_session_terminate(session);
+	}
 	return TRUE;
 }
 
@@ -159,21 +209,25 @@ static apt_bool_t recog_application_on_message_receive(mrcp_application_t *appli
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to destroy any additional data associated with audio stream */
 static apt_bool_t recog_app_stream_destroy(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform application stream specific action before open */
 static apt_bool_t recog_app_stream_open(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform application stream specific action after close */
 static apt_bool_t recog_app_stream_close(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to read new frame */
 static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	recog_app_channel_t *recog_channel = stream->obj;
