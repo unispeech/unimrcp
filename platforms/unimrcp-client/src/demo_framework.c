@@ -130,6 +130,11 @@ static void demo_framework_on_start_complete(apt_task_t *task)
 		if(demo_application) {
 			apr_hash_set(framework->application_table,"recog",APR_HASH_KEY_STRING,demo_application);
 		}
+
+		demo_application = demo_bypass_application_create(framework->pool);
+		if(demo_application) {
+			apr_hash_set(framework->application_table,"bypass",APR_HASH_KEY_STRING,demo_application);
+		}
 	}
 }
 
