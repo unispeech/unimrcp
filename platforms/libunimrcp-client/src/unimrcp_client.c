@@ -67,7 +67,7 @@ static apr_xml_doc* unimrcp_client_config_parse(const char *path, apr_pool_t *po
 		path = DEFAULT_CONF_FILE_PATH;
 	}
     
-	apt_log(APT_PRIO_INFO,"Loading Config File [%s]",path);
+	apt_log(APT_PRIO_NOTICE,"Open Config File [%s]",path);
 	rv = apr_file_open(&fd,path,APR_READ|APR_BINARY,0,pool);
 	if(rv != APR_SUCCESS) {
 		apt_log(APT_PRIO_WARNING,"Failed to Open Config File [%s]",path);
@@ -116,7 +116,7 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 	config->user_agent_name = "UniMRCP Sofia-SIP";
 	config->origin = "UniMRCPClient";
 
-	apt_log(APT_PRIO_INFO,"Loading SofiaSIP Agent");
+	apt_log(APT_PRIO_DEBUG,"Loading SofiaSIP Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
 			const apr_xml_attr *attr_name;
@@ -212,7 +212,7 @@ static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, c
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 				}
 			}
-			apt_log(APT_PRIO_INFO,"Loading Connection Agent");
+			apt_log(APT_PRIO_DEBUG,"Loading Connection Agent");
 			connection_agent = mrcp_client_connection_agent_create(pool);
 			if(connection_agent) {
 				mrcp_client_connection_agent_register(client,connection_agent,name);
@@ -232,7 +232,7 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 	apr_port_t rtp_port_min = 4000;
 	apr_port_t rtp_port_max = 5000;
 	const apr_xml_elem *elem;
-	apt_log(APT_PRIO_INFO,"Loading RTP Termination Factory");
+	apt_log(APT_PRIO_DEBUG,"Loading RTP Termination Factory");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
 			const apr_xml_attr *attr_name;
@@ -275,7 +275,7 @@ static apt_bool_t unimrcp_client_media_engines_load(mrcp_client_t *client, const
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 				}
 			}
-			apt_log(APT_PRIO_INFO,"Loading Media Engine");
+			apt_log(APT_PRIO_DEBUG,"Loading Media Engine");
 			media_engine = mpf_engine_create(pool);
 			if(media_engine) {
 				mrcp_client_media_engine_register(client,media_engine,name);
@@ -341,11 +341,15 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 	for(attr = root->attr; attr; attr = attr->next) {
 		if(strcasecmp(attr->name,"name") == 0) {
 			name = apr_pstrdup(pool,attr->value);
-			apt_log(APT_PRIO_INFO,"Loading Profile [%s]",name);
+			apt_log(APT_PRIO_DEBUG,"Loading Profile [%s]",name);
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 		}
+	}
+	if(!name) {
+		apt_log(APT_PRIO_WARNING,"Failed to Load Profile: no profile name specified");
+		return FALSE;
 	}
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
@@ -372,6 +376,7 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 		}
 	}
 
+	apt_log(APT_PRIO_NOTICE,"Create Profile [%s]",name);
 	profile = mrcp_client_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,pool);
 	return mrcp_client_profile_register(client,profile,name);
 }
