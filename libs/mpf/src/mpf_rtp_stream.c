@@ -570,6 +570,7 @@ static apt_bool_t mpf_rtp_stream_receive(mpf_audio_stream_t *stream, mpf_frame_t
 
 static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 {
+	apr_size_t frame_size;
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
 	rtp_transmitter_t *transmitter = &rtp_stream->transmitter;
 	if(!rtp_stream->socket || !rtp_stream->remote_media) {
@@ -582,8 +583,12 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 	transmitter->packet_frames = transmitter->ptime / CODEC_FRAME_TIME_BASE;
 	transmitter->current_frames = 0;
 
-	transmitter->packet_data = apr_palloc(rtp_stream->pool,
-		mpf_codec_frame_size_calculate(stream->tx_codec->descriptor,stream->tx_codec->attribs));
+	frame_size = mpf_codec_frame_size_calculate(
+							stream->tx_codec->descriptor,
+							stream->tx_codec->attribs);
+	transmitter->packet_data = apr_palloc(
+							rtp_stream->pool,
+							transmitter->packet_frames * frame_size);
 	
 	transmitter->inactivity = 1;
 	apt_log(APT_PRIO_INFO,"Open RTP Transmit %s:%hu -> %s:%hu",
