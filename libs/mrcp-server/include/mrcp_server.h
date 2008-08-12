@@ -77,29 +77,33 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
  * Register media engine.
  * @param server the MRCP server to set media engine for
  * @param media_engine the media engine to set
+ * @param name the name of the media engine
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine);
+MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine, const char *name);
 
 /**
  * Register RTP termination factory.
  * @param server the MRCP server to set termination factory for
  * @param rtp_termination_factory the termination factory
+ * @param name the name of the factory
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory);
+MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory, const char *name);
 
 /**
  * Register MRCP signaling agent.
  * @param server the MRCP server to set signaling agent for
  * @param signaling_agent the signaling agent to set
+ * @param name the name of the agent
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent);
+MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent, const char *name);
 
 /**
  * Register MRCP connection agent (MRCPv2 only).
  * @param server the MRCP server to set connection agent for
  * @param connection_agent the connection agent to set
+ * @param name the name of the agent
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent);
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent, const char *name);
 
 /**
  * Get memory pool.
@@ -107,6 +111,33 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *se
  */
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server);
 
+/**
+ * Get media engine by name.
+ * @param server the MRCP server to get media engine from
+ * @param name the name of the media engine to lookup
+ */
+MRCP_DECLARE(mpf_engine_t*) mrcp_server_media_engine_get(mrcp_server_t *server, const char *name);
+
+/**
+ * Get RTP termination factory by name.
+ * @param server the MRCP server to get from
+ * @param name the name to lookup
+ */
+MRCP_DECLARE(mpf_termination_factory_t*) mrcp_server_rtp_factory_get(mrcp_server_t *server, const char *name);
+
+/**
+ * Get signaling agent by name.
+ * @param server the MRCP server to get from
+ * @param name the name to lookup
+ */
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_server_signaling_agent_get(mrcp_server_t *server, const char *name);
+
+/**
+ * Get connection agent by name.
+ * @param server the MRCP server to get from
+ * @param name the name to lookup
+ */
+MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_get(mrcp_server_t *server, const char *name);
 
 APT_END_EXTERN_C
 

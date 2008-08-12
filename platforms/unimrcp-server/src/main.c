@@ -164,7 +164,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* start server */
-	server = unimrcp_server_start();
+	server = unimrcp_server_start(conf_file_path);
 	if(server) {
 		/* run command line */
 		cmdline_run();

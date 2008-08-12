@@ -249,9 +249,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
 }
 
 /** Register media engine */
-MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine)
+MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine, const char *name)
 {
-	if(!media_engine) {
+	if(!media_engine || !name) {
 		return FALSE;
 	}
 	server->media_engine = media_engine;
@@ -265,9 +265,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server
 }
 
 /** Register RTP termination factory */
-MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory)
+MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory, const char *name)
 {
-	if(!rtp_termination_factory) {
+	if(!rtp_termination_factory || !name) {
 		return FALSE;
 	}
 	server->rtp_termination_factory = rtp_termination_factory;
@@ -275,9 +275,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_termination_factory_register(mrcp_serve
 }
 
 /** Register MRCP signaling agent */
-MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent)
+MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent, const char *name)
 {
-	if(!signaling_agent) {
+	if(!signaling_agent || !name) {
 		return FALSE;
 	}
 	signaling_agent->parent = server;
@@ -292,9 +292,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 }
 
 /** Register MRCP connection agent (MRCPv2 only) */
-MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent)
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent, const char *name)
 {
-	if(!connection_agent) {
+	if(!connection_agent || !name) {
 		return FALSE;
 	}
 	mrcp_server_connection_resource_factory_set(connection_agent,server->resource_factory);
