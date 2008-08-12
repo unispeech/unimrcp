@@ -28,6 +28,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 
 #include "mrcp_sofiasip_client_agent.h"
 #include "mrcp_session.h"
+#include "mrcp_session_descriptor.h"
 #include "mrcp_sdp.h"
 #include "apt_log.h"
 
@@ -97,7 +98,9 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_cli
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
-	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP Agent %s:%hu",config->local_ip,config->local_port);
+	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP Agent %s:%hu -> %s:%hu",
+			config->local_ip,config->local_port,
+			config->remote_ip,config->remote_port);
 	return sofia_agent->sig_agent;
 }
 
@@ -235,6 +238,12 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 		return FALSE;
 	}
 
+	if(session->signaling_agent) {
+		mrcp_sofia_agent_t *sofia_agent = session->signaling_agent->obj;
+		if(sofia_agent && sofia_agent->config->origin) {
+			apt_string_set(&descriptor->origin,sofia_agent->config->origin);
+		}
+	}
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
 		local_sdp_str = sdp_str;
 		apt_log(APT_PRIO_INFO,"Local SDP\n%s", local_sdp_str);
