@@ -1,0 +1,57 @@
+<!-- unimrcpserver document -->
+<unimrcpserver>
+  <!-- Server settings (signaling, media, ...) -->
+  <settings>
+    <!-- SIP, RTSP signaling agents -->
+    <signaling>
+      <agent name="SIP-Agent-1" class="SofiaSIP">
+        <param name="sip-ip" value="127.0.0.1"/>
+        <param name="sip-port" value="8060"/>
+ 
+        <param name="ua-name" value="UniMRCP SofiaSIP"/>
+        <param name="sdp-origin" value="UniMRCPServer"/>
+      </agent>
+      <agent name="RTSP-Agent-1" class="UniRTSP">
+        <param name="rtsp-ip" value="127.0.0.1"/>
+        <param name="rtsp-port" value="1554"/>
+      </agent>
+    </signaling>
+
+    <!-- MRCPv2 connection agents -->
+    <connection>
+      <agent name="MRCPv2-Agent-1">
+        <param name="mrcp-ip" value="127.0.0.1"/>
+        <param name="mrcp-port" value="1544"/>
+      </agent>
+    </connection>
+
+    <!-- Media engines -->
+    <media>
+      <engine name="Media-Engine-1"/>
+      <rtp name="RTP-Factory-1">
+        <param name="rtp-ip" value="127.0.0.1"/>
+        <param name="rtp-port-min" value="5000"/>
+        <param name="rtp-port-max" value="6000"/>
+      </rtp>
+    </media>
+  </settings>
+
+  <!-- Server profiles -->
+  <profiles>
+    <!-- MRCPv2 default profile -->
+    <profile name="MRCPv2-Default">
+      <param name="signaling-agent" value="SIP-Agent-1"/>
+      <param name="connection-agent" value="MRCPv2-Agent-1"/>
+      <param name="media-engine" value="Media-Engine-1"/>
+      <param name="rtp-factory" value="RTP-Factory-1"/>
+    </profile>
+    <!-- MRCPv1 default profile -->
+    <profile name="MRCPv1-Default">
+      <param name="signaling-agent" value="RTSP-Agent-1"/>
+      <param name="media-engine" value="Media-Engine-1"/>
+      <param name="rtp-factory" value="RTP-Factory-1"/>
+    </profile>
+
+    <!-- more profiles might be added here -->
+  </profiles>
+</unimrcpserver>
