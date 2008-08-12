@@ -253,11 +253,16 @@ static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t 
 	if(recog_channel && recog_channel->start_of_input == TRUE) {
 		if(recog_channel->audio_in) {
 			if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_in) == frame->codec_frame.size) {
+				/* normal read */
 				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+			}
+			else {
+				/* file is over */
 				recog_channel->start_of_input = FALSE;
 			}
 		}
 		else {
+			/* no audio file available, just fill with silence */
 			frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 			memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
 		}
