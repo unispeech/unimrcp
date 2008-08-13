@@ -137,6 +137,10 @@
 				RelativePath=".\include\mrcp_server_session.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\mrcp_server_types.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"

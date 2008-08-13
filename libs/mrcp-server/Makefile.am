@@ -14,7 +14,8 @@ INCLUDES                    = -I$(top_srcdir)/libs/mrcp-server/include \
 
 noinst_LTLIBRARIES          = libmrcpserver.la
 
-include_HEADERS             = include/mrcp_server.h \
+include_HEADERS             = include/mrcp_server_types.h \
+                              include/mrcp_server.h \
                               include/mrcp_server_session.h
 
 libmrcpserver_la_SOURCES    = src/mrcp_server.c \
