@@ -417,11 +417,16 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 			apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv2 Message");
 		}
 	}
+	else {
+		apt_log(APT_PRIO_WARNING,"No MRCPv2 Connection");
+	}
 
 	if(status == FALSE) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
+		response->start_line.method_id = message->start_line.method_id;
+		response->start_line.method_name = message->start_line.method_name;
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		mrcp_connection_message_receive(agent->vtable,agent,connection,message);
+		mrcp_connection_message_receive(agent->vtable,agent,connection,response);
 	}
 	return TRUE;
 }
