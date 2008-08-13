@@ -126,7 +126,7 @@ static apt_bool_t synth_application_run(demo_application_t *demo_application, co
 	/* create channel and associate all the required data */
 	channel = synth_application_channel_create(session);
 	if(!channel) {
-		mrcp_session_destroy(session);
+		mrcp_application_session_destroy(session);
 		return FALSE;
 	}
 
@@ -135,7 +135,7 @@ static apt_bool_t synth_application_run(demo_application_t *demo_application, co
 		/* session and channel are still not referenced 
 		and both are allocated from session pool and will
 		be freed with session destroy call */
-		mrcp_session_destroy(session);
+		mrcp_application_session_destroy(session);
 		return FALSE;
 	}
 
@@ -214,8 +214,14 @@ static apt_bool_t synth_application_on_message_receive(mrcp_application_t *appli
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		/* received MRCP response */
 		if(message->start_line.method_id == SYNTHESIZER_SPEAK) {
-			/* received the response to SPEAK request, 
-			waiting for SPEAK-COMPLETE event */
+			/* received the response to SPEAK request */
+			if(message->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS) {
+				/* waiting for SPEAK-COMPLETE event */
+			}
+			else {
+				/* received unexpected response, remove channel */
+				mrcp_application_channel_remove(session,channel);
+			}
 		}
 		else {
 			/* received unexpected response */

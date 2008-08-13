@@ -129,7 +129,7 @@ static apt_bool_t recog_application_run(demo_application_t *demo_application, co
 	/* create channel and associate all the required data */
 	channel = recog_application_channel_create(session);
 	if(!channel) {
-		mrcp_session_destroy(session);
+		mrcp_application_session_destroy(session);
 		return FALSE;
 	}
 
@@ -138,7 +138,7 @@ static apt_bool_t recog_application_run(demo_application_t *demo_application, co
 		/* session and channel are still not referenced 
 		and both are allocated from session pool and will
 		be freed with session destroy call */
-		mrcp_session_destroy(session);
+		mrcp_application_session_destroy(session);
 		return FALSE;
 	}
 

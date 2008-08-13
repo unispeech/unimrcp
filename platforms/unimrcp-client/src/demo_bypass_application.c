@@ -91,7 +91,7 @@ static apt_bool_t demo_application_run(demo_application_t *demo_application, con
 	/* create channel and associate all the required data */
 	channel = demo_application_channel_create(session);
 	if(!channel) {
-		mrcp_session_destroy(session);
+		mrcp_application_session_destroy(session);
 		return FALSE;
 	}
 
@@ -100,7 +100,7 @@ static apt_bool_t demo_application_run(demo_application_t *demo_application, con
 		/* session and channel are still not referenced 
 		and both are allocated from session pool and will
 		be freed with session destroy call */
-		mrcp_session_destroy(session);
+		mrcp_application_session_destroy(session);
 		return FALSE;
 	}
 
