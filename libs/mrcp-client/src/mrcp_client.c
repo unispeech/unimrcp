@@ -491,8 +491,24 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 									mpf_rtp_termination_descriptor_t *rtp_descriptor, 
 									void *obj)
 {
-	if(!session) {
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	if(!client_session || !client_session->profile) {
+		/* Invalid params */
 		return FALSE;
+	}
+	if(termination) {
+		/* Media engine and RTP factory must be specified in this case */
+		if(!client_session->profile->media_engine || !client_session->profile->rtp_termination_factory) {
+			apt_log(APT_PRIO_WARNING,"Failed to Create Channel: invalid profile");
+			return FALSE;
+		}
+	}
+	else {
+		/* Either termination or rtp_descriptor must be specified */
+		if(!rtp_descriptor) {
+			apt_log(APT_PRIO_WARNING,"Failed to Create Channel: missing both termination and RTP descriptor");
+			return FALSE;
+		}
 	}
 	apt_log(APT_PRIO_NOTICE,"Create Channel [%d]",resource_id);
 	return mrcp_client_channel_create(session,resource_id,termination,rtp_descriptor,obj);
