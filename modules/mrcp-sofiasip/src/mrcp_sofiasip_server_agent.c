@@ -171,6 +171,9 @@ static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia
 {
 	mrcp_sofia_session_t *sofia_session;
 	mrcp_session_t* session = sofia_agent->sig_agent->create_server_session(sofia_agent->sig_agent);
+	if(!session) {
+		return NULL;
+	}
 	session->response_vtable = &session_response_vtable;
 	session->event_vtable = NULL;
 

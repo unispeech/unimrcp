@@ -23,6 +23,7 @@
 #include "mrcp_server_connection.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
+#include "mrcp_state_machine.h"
 #include "mrcp_message.h"
 #include "mpf_user.h"
 #include "mpf_termination.h"
@@ -43,6 +44,8 @@ struct mrcp_channel_t {
 	mrcp_control_channel_t *control_channel;
 	/** MRCP resource engine channel */
 	mrcp_engine_channel_t  *engine_channel;
+	/** MRCP resource state machine  */
+	mrcp_state_machine_t   *state_machine;
 	/** waiting state of control media */
 	apt_bool_t              waiting_for_channel;
 	/** waiting state of media termination */
@@ -101,14 +104,15 @@ mrcp_server_session_t* mrcp_server_session_create()
 static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_resource_id resource_id)
 {
 	mrcp_resource_engine_t *resource_engine;
-	apt_list_elem_t *elem = apt_list_first_elem_get(session->resource_engines);
+	void *val;
+	apr_hash_index_t *it = apr_hash_first(session->base.pool,session->profile->resource_engine_table);
 	/* walk through the list of engines */
-	while(elem) {
-		resource_engine = apt_list_elem_object_get(elem);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		resource_engine = val;
 		if(resource_engine && resource_engine->resource_id == resource_id) {
 			return resource_engine->method_vtable->create_channel(resource_engine,session->base.pool);
 		}
-		elem = apt_list_next_elem_get(session->resource_engines,elem);
 	}
 	return NULL;
 }
@@ -120,8 +124,8 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	mrcp_engine_channel_t *engine_channel;
 	mrcp_channel_t *channel;
 
-	resource_id = mrcp_resource_id_find(session->resource_factory,resource_name,session->base.signaling_agent->mrcp_version);
-	resource = mrcp_resource_get(session->resource_factory,resource_id);
+	resource_id = mrcp_resource_id_find(session->profile->resource_factory,resource_name,session->base.signaling_agent->mrcp_version);
+	resource = mrcp_resource_get(session->profile->resource_factory,resource_id);
 	if(!resource) {
 		return NULL;
 	}
@@ -135,7 +139,10 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	channel->pool = session->base.pool;
 	channel->resource = resource;
 	channel->session = &session->base;
-	channel->control_channel = mrcp_server_control_channel_create(session->connection_agent,channel,session->base.pool);
+	channel->control_channel = mrcp_server_control_channel_create(
+									session->profile->connection_agent,
+									channel,
+									session->base.pool);
 	channel->engine_channel = engine_channel;
 	channel->waiting_for_channel = FALSE;
 	channel->waiting_for_termination = FALSE;
@@ -255,9 +262,6 @@ apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_m
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message)
 {
 	mrcp_server_session_t *session = NULL;
-//	if(mpf_message->termination) {
-//		session = mpf_termination_object_get(mpf_message->termination);
-//	}
 	if(mpf_message->context) {
 		session = mpf_context_object_get(mpf_message->context);
 	}
@@ -503,7 +507,7 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		mpf_termination_t *termination;
 		/* create new RTP termination instance */
-		termination = mpf_termination_create(session->rtp_termination_factory,session,session->base.pool);
+		termination = mpf_termination_create(session->profile->rtp_termination_factory,session,session->base.pool);
 		/* add to termination array */
 		apt_log(APT_PRIO_DEBUG,"Add RTP Termination");
 		slot = apr_array_push(session->terminations);
@@ -676,7 +680,7 @@ static apt_bool_t mrcp_server_mpf_request_send(
 						mpf_termination_t *termination, 
 						void *descriptor)
 {
-	apt_task_t *media_task = mpf_task_get(session->media_engine);
+	apt_task_t *media_task = mpf_task_get(session->profile->media_engine);
 	apt_task_msg_t *msg;
 	mpf_message_t *mpf_message;
 	msg = apt_task_msg_get(media_task);

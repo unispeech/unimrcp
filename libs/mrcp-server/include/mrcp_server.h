@@ -22,16 +22,11 @@
  * @brief MRCP Server
  */ 
 
-#include "mrcp_sig_types.h"
-#include "mrcp_connection_types.h"
+#include "mrcp_server_types.h"
 #include "mrcp_resource_engine.h"
-#include "mpf_types.h"
 #include "apt_task.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Opaque MRCP server declaration */
-typedef struct mrcp_server_t mrcp_server_t;
 
 /**
  * Create MRCP server instance.
@@ -70,8 +65,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
  * Register MRCP resource engine.
  * @param server the MRCP server to set engine for
  * @param engine the resource engine to set
+ * @param name the name of the resource engine
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine);
+MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine, const char *name);
 
 /**
  * Register media engine.
@@ -105,11 +101,35 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent, const char *name);
 
+/** Create MRCP profile */
+MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
+									mrcp_resource_factory_t *resource_factory,
+									mrcp_sig_agent_t *signaling_agent,
+									mrcp_connection_agent_t *connection_agent,
+									mpf_engine_t *media_engine,
+									mpf_termination_factory_t *rtp_factory,
+									apr_pool_t *pool);
+
+/**
+ * Register MRCP profile.
+ * @param server the MRCP server to set profile for
+ * @param profile the profile to set
+ * @param name the name of the profile
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(mrcp_server_t *server, mrcp_profile_t *profile, const char *name);
+
 /**
  * Get memory pool.
  * @param server the MRCP server to get memory pool from
  */
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server);
+
+/**
+ * Get resource engine by name.
+ * @param server the MRCP server to get resource engine from
+ * @param name the name of the resource engine to lookup
+ */
+MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_server_resource_engine_get(mrcp_server_t *server, const char *name);
 
 /**
  * Get media engine by name.
@@ -138,6 +158,13 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_server_signaling_agent_get(mrcp_server_t *s
  * @param name the name to lookup
  */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_get(mrcp_server_t *server, const char *name);
+
+/**
+ * Get profile by name.
+ * @param server the MRCP client to get from
+ * @param name the name to lookup
+ */
+MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(mrcp_server_t *server, const char *name);
 
 APT_END_EXTERN_C
 

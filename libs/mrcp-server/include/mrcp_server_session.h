@@ -22,6 +22,7 @@
  * @brief MRCP Server Session
  */ 
 
+#include <apr_hash.h>
 #include "mrcp_session.h"
 #include "mpf_message.h"
 #include "apt_task.h"
@@ -63,16 +64,8 @@ struct mrcp_server_session_t {
 	mrcp_session_t             base;
 	/** MRCP server */
 	mrcp_server_t             *server;
-	/** MRCP resource factory */
-	mrcp_resource_factory_t   *resource_factory;
-	/** MRCP resource engine list */
-	apt_obj_list_t            *resource_engines;
-	/** Media processing engine */
-	mpf_engine_t              *media_engine;
-	/** RTP termination factory */
-	mpf_termination_factory_t *rtp_termination_factory;
-	/** Connection agent */
-	mrcp_connection_agent_t   *connection_agent;
+	/** MRCP profile */
+	mrcp_profile_t            *profile;
 
 	/** Media context */
 	mpf_context_t             *context;
@@ -96,6 +89,22 @@ struct mrcp_server_session_t {
 	apr_size_t                 answer_flag_count;
 	/** Number of in-progress terminate requests (flags) */
 	apr_size_t                 terminate_flag_count;
+};
+
+/** MRCP profile */
+struct mrcp_profile_t {
+	/** Table of resource engines (mrcp_resource_engine_t*) */
+	apr_hash_t               *resource_engine_table;
+	/** MRCP resource factory */
+	mrcp_resource_factory_t   *resource_factory;
+	/** Media processing engine */
+	mpf_engine_t              *media_engine;
+	/** RTP termination factory */
+	mpf_termination_factory_t *rtp_termination_factory;
+	/** Signaling agent */
+	mrcp_sig_agent_t          *signaling_agent;
+	/** Connection agent */
+	mrcp_connection_agent_t   *connection_agent;
 };
 
 /** Create server session */

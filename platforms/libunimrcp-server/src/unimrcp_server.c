@@ -50,11 +50,11 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_file_path)
 	}
 	resource_engine = demo_synth_engine_create(pool);
 	if(resource_engine) {
-		mrcp_server_resource_engine_register(server,resource_engine);
+		mrcp_server_resource_engine_register(server,resource_engine,"demo-synth");
 	}
 	resource_engine = demo_recog_engine_create(pool);
 	if(resource_engine) {
-		mrcp_server_resource_engine_register(server,resource_engine);
+		mrcp_server_resource_engine_register(server,resource_engine,"demo-recog");
 	}
 
 	doc = unimrcp_server_config_parse(conf_file_path,pool);
@@ -371,7 +371,6 @@ static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const apr_
 /** Load profile */
 static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
-#if 0
 	const char *name = NULL;
 	mrcp_profile_t *profile;
 	mrcp_sig_agent_t *sig_agent = NULL;
@@ -421,8 +420,6 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 	apt_log(APT_PRIO_NOTICE,"Create Profile [%s]",name);
 	profile = mrcp_server_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,pool);
 	return mrcp_server_profile_register(server,profile,name);
-#endif
-	return FALSE;
 }
 
 /** Load profiles */
