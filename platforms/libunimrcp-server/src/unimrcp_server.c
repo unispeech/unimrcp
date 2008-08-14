@@ -346,6 +346,45 @@ static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const
 	return TRUE;
 }
 
+/** Load resource engine */
+static apt_bool_t unimrcp_server_resource_engine_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	mrcp_resource_engine_t *engine = NULL;
+	const char *name = NULL;
+	const apr_xml_attr *attr;
+	for(attr = root->attr; attr; attr = attr->next) {
+		if(strcasecmp(attr->name,"name") == 0) {
+			name = apr_pstrdup(pool,attr->value);
+		}
+		else if(strcasecmp(attr->name,"class") == 0) {
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+		}
+	}
+	if(!engine) {
+		return FALSE;
+	}
+	return mrcp_server_resource_engine_register(server,engine,name);
+}
+
+/** Load resource engines */
+static apt_bool_t unimrcp_server_resource_engines_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	apt_log(APT_PRIO_DEBUG,"Loading Resource Engines");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"engine") == 0) {
+			unimrcp_server_resource_engine_load(server,elem,pool);
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
+		}
+	}    
+	return TRUE;
+}
+
+
 /** Load settings */
 static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
@@ -360,6 +399,9 @@ static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const apr_
 		}
 		else if(strcasecmp(elem->name,"media") == 0) {
 			unimrcp_server_media_engines_load(server,elem,pool);
+		}
+		else if(strcasecmp(elem->name,"plugin") == 0) {
+			unimrcp_server_resource_engines_load(server,elem,pool);
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
