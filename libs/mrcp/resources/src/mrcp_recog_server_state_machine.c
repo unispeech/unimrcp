@@ -196,7 +196,7 @@ static apt_bool_t recog_state_update(mrcp_state_machine_t *state_machine, mrcp_m
 }
 
 /** Create MRCP recognizer server state machine */
-MRCP_DECLARE(mrcp_state_machine_t*) mrcp_recog_server_state_machine_create(void *obj, mrcp_message_dispatcher_f dispatcher, apr_pool_t *pool)
+mrcp_state_machine_t* mrcp_recog_server_state_machine_create(void *obj, mrcp_message_dispatcher_f dispatcher, apr_pool_t *pool)
 {
 	mrcp_recog_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_recog_state_machine_t));
 	mrcp_state_machine_init(&state_machine->base,obj,dispatcher);
