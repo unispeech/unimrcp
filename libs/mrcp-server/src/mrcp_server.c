@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <apr_dso.h>
 #include "mrcp_server.h"
 #include "mrcp_server_session.h"
 #include "mrcp_message.h"
@@ -44,9 +45,10 @@ struct mrcp_server_t {
 	apr_hash_t              *sig_agent_table;
 	/** Table of connection agents (mrcp_connection_agent_t*) */
 	apr_hash_t              *cnt_agent_table;
-
 	/** Table of profiles (mrcp_profile_t*) */
 	apr_hash_t              *profile_table;
+	/** Table of plugins (apr_dso_handle_t*) */
+	apr_hash_t              *plugin_table;
 
 	/** Table of sessions */
 	apr_hash_t                *session_table;
@@ -159,6 +161,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	server->sig_agent_table = NULL;
 	server->cnt_agent_table = NULL;
 	server->profile_table = NULL;
+	server->plugin_table = NULL;
 	server->session_table = NULL;
 	server->connection_msg_pool = NULL;
 	server->resource_engine_msg_pool = NULL;
@@ -183,6 +186,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	server->cnt_agent_table = apr_hash_make(server->pool);
 
 	server->profile_table = apr_hash_make(server->pool);
+	server->plugin_table = apr_hash_make(server->pool);
 	
 	server->session_table = apr_hash_make(server->pool);
 	return server;
@@ -382,7 +386,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(mrcp_server_t *server, mrcp_profile_t *profile, const char *name)
 {
 	if(!profile || !name) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Profile: no name",name);
+		apt_log(APT_PRIO_WARNING,"Failed to Register Profile: no name");
 		return FALSE;
 	}
 	if(!profile->resource_factory) {
@@ -418,6 +422,60 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(mrcp_server_t *server, mrc
 MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(mrcp_server_t *server, const char *name)
 {
 	return apr_hash_get(server->profile_table,name,APR_HASH_KEY_STRING);
+}
+
+/** Register resource engine plugin */
+MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, const char *name)
+{
+	apr_dso_handle_t *plugin = NULL;
+	apr_dso_handle_sym_t func_handle = NULL;
+	apt_bool_t dso_err = FALSE;
+	mrcp_plugin_creator_f plugin_creator = NULL;
+	mrcp_resource_engine_t *engine;
+	if(!path || !name) {
+		apt_log(APT_PRIO_WARNING,"Failed to Register Plugin: no name");
+		return FALSE;
+	}
+
+	apt_log(APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,name);
+	if(apr_dso_load(&plugin,path,server->pool) == APR_SUCCESS) {
+		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_SYM_NAME) == APR_SUCCESS) {
+			if(func_handle) {
+				plugin_creator = (mrcp_plugin_creator_f)(intptr_t)func_handle;
+			}
+		}
+		else {
+			dso_err = TRUE;
+		}
+	}
+	else {
+		dso_err = TRUE;
+	}
+
+	if(dso_err == TRUE) {
+		char derr[512] = "";
+		apr_dso_error(plugin,derr,sizeof(derr));
+		apt_log(APT_PRIO_WARNING,"Failed to Load DSO Symbol: %s", derr);
+		apr_dso_unload(plugin);
+		return FALSE;
+	}
+
+	if(!plugin_creator) {
+		apt_log(APT_PRIO_WARNING,"No Entry Point Found for Plugin");
+		apr_dso_unload(plugin);
+		return FALSE;
+	}
+
+	engine = plugin_creator(server->pool);
+	if(!engine) {
+		apt_log(APT_PRIO_WARNING,"Null Resource Engine");
+		apr_dso_unload(plugin);
+		return FALSE;
+	}
+
+	mrcp_server_resource_engine_register(server,engine,name);
+	apr_hash_set(server->plugin_table,name,APR_HASH_KEY_STRING,plugin);
+	return TRUE;
 }
 
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server)
@@ -470,6 +528,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
 	mrcp_resource_engine_t *resource_engine;
+	apr_dso_handle_t *plugin;
 	apr_hash_index_t *it;
 	void *val;
 	apt_log(APT_PRIO_INFO,"Close Resource Engines");
@@ -479,6 +538,15 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 		resource_engine = val;
 		if(resource_engine) {
 			mrcp_resource_engine_close(resource_engine);
+		}
+	}
+	apt_log(APT_PRIO_INFO,"Unload Plugins");
+	it=apr_hash_first(server->pool,server->plugin_table);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		plugin = val;
+		if(plugin) {
+			apr_dso_unload(plugin);
 		}
 	}
 	apt_log(APT_PRIO_INFO,"On Server Task Terminate");

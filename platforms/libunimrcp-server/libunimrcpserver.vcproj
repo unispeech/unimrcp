@@ -39,7 +39,6 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(ProjectRootDir)modules\mrcp-sofiasip\include&quot;"
-				PreprocessorDefinitions="MRCP_PLUGIN_IMPORT"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -94,7 +93,6 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(ProjectRootDir)modules\mrcp-sofiasip\include&quot;"
-				PreprocessorDefinitions="MRCP_PLUGIN_IMPORT"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

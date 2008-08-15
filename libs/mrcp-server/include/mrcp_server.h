@@ -119,6 +119,14 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(mrcp_server_t *server, mrcp_profile_t *profile, const char *name);
 
 /**
+ * Register resource engine plugin.
+ * @param server the MRCP server to set engine for
+ * @param path the path to plugin
+ * @param name the name of the plugin
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, const char *name);
+
+/**
  * Get memory pool.
  * @param server the MRCP server to get memory pool from
  */

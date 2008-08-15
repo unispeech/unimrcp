@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "demo_synth_engine.h"
+#include "mrcp_resource_engine.h"
 #include "mrcp_synth_resource.h"
 #include "mrcp_synth_header.h"
 #include "mrcp_generic_header.h"
@@ -106,7 +106,7 @@ static apt_bool_t demo_synth_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 
 /** Create demo synthesizer engine */
-MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) demo_synth_engine_create(apr_pool_t *pool)
+MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	demo_synth_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_synth_engine_t));
 	apt_task_vtable_t task_vtable;

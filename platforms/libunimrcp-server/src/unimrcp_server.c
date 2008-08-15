@@ -21,8 +21,6 @@
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_server_connection.h"
-#include "demo_synth_engine.h"
-#include "demo_recog_engine.h"
 #include "apt_log.h"
 
 #define DEFAULT_CONF_FILE_PATH    "unimrcpserver.xml"
@@ -37,7 +35,6 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_file_path)
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
 	mrcp_resource_factory_t *resource_factory;
-	mrcp_resource_engine_t *resource_engine;
 	mrcp_server_t *server = mrcp_server_create();
 	if(!server) {
 		return NULL;
@@ -47,14 +44,6 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_file_path)
 	resource_factory = mrcp_default_factory_create(pool);
 	if(resource_factory) {
 		mrcp_server_resource_factory_register(server,resource_factory);
-	}
-	resource_engine = demo_synth_engine_create(pool);
-	if(resource_engine) {
-		mrcp_server_resource_engine_register(server,resource_engine,"demo-synth");
-	}
-	resource_engine = demo_recog_engine_create(pool);
-	if(resource_engine) {
-		mrcp_server_resource_engine_register(server,resource_engine,"demo-recog");
 	}
 
 	doc = unimrcp_server_config_parse(conf_file_path,pool);
@@ -346,36 +335,34 @@ static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const
 	return TRUE;
 }
 
-/** Load resource engine */
-static apt_bool_t unimrcp_server_resource_engine_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+/** Load plugin */
+static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	mrcp_resource_engine_t *engine = NULL;
 	const char *name = NULL;
+	const char *path = NULL;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
 		if(strcasecmp(attr->name,"name") == 0) {
 			name = apr_pstrdup(pool,attr->value);
 		}
-		else if(strcasecmp(attr->name,"class") == 0) {
+		else if(strcasecmp(attr->name,"path") == 0) {
+			path = attr->value;
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 		}
 	}
-	if(!engine) {
-		return FALSE;
-	}
-	return mrcp_server_resource_engine_register(server,engine,name);
+	return mrcp_server_plugin_register(server,path,name);
 }
 
-/** Load resource engines */
-static apt_bool_t unimrcp_server_resource_engines_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+/** Load plugins */
+static apt_bool_t unimrcp_server_plugins_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
-	apt_log(APT_PRIO_DEBUG,"Loading Resource Engines");
+	apt_log(APT_PRIO_DEBUG,"Loading Plugins (Resource Engines)");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"engine") == 0) {
-			unimrcp_server_resource_engine_load(server,elem,pool);
+			unimrcp_server_plugin_load(server,elem,pool);
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
@@ -401,7 +388,7 @@ static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const apr_
 			unimrcp_server_media_engines_load(server,elem,pool);
 		}
 		else if(strcasecmp(elem->name,"plugin") == 0) {
-			unimrcp_server_resource_engines_load(server,elem,pool);
+			unimrcp_server_plugins_load(server,elem,pool);
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);

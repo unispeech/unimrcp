@@ -28,26 +28,23 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Plugin export/import defines */
+/** Plugin export defines */
 #ifdef WIN32
-#ifdef MRCP_STATIC_PLUGIN
-#define MRCP_PLUGIN_DECLARE(type)   type __stdcall
-#else
-#ifdef MRCP_PLUGIN_IMPORT
-#define MRCP_PLUGIN_DECLARE(type)   __declspec(dllimport) type __stdcall
-#else
-#define MRCP_PLUGIN_DECLARE(type)   __declspec(dllexport) type __stdcall
-#endif
-#endif
+#define MRCP_PLUGIN_DECLARE(type) __declspec(dllexport) type
 #else
 #define MRCP_PLUGIN_DECLARE(type) type
 #endif
 
 /** MRCP resource engine declaration */
 typedef struct mrcp_resource_engine_t mrcp_resource_engine_t;
+
+/** Symbol name of the entry point in plugin DSO */
+#define MRCP_PLUGIN_SYM_NAME "mrcp_plugin_create"
+/** Prototype of resource engine creator (entry point of plugin DSO) */
+typedef mrcp_resource_engine_t* (*mrcp_plugin_creator_f)(apr_pool_t *pool);
+
 /** MRCP resource engine vtable declaration */
 typedef struct mrcp_engine_method_vtable_t mrcp_engine_method_vtable_t;
-
 /** MRCP engine channel declaration */
 typedef struct mrcp_engine_channel_t mrcp_engine_channel_t;
 /** MRCP engine channel virtual method table declaration */
