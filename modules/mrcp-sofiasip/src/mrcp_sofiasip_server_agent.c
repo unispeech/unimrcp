@@ -28,6 +28,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 
 #include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_session.h"
+#include "mrcp_session_descriptor.h"
 #include "mrcp_sdp.h"
 #include "apt_log.h"
 
@@ -196,6 +197,10 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 
 	if(!sofia_agent || !sofia_session || !sofia_session->nh) {
 		return FALSE;
+	}
+
+	if(sofia_agent->config->origin) {
+		apt_string_set(&descriptor->origin,sofia_agent->config->origin);
 	}
 
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,FALSE) > 0) {
