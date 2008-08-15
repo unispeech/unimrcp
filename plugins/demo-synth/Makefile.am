@@ -12,6 +12,4 @@ INCLUDES                   = -Iinclude \
 
 lib_LTLIBRARIES            = libdemosynth.la
 
-include_HEADERS            = include/demo_synth_engine.h
-
 libdemosynth_la_SOURCES    = src/demo_synth_engine.c

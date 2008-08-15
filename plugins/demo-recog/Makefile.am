@@ -12,6 +12,4 @@ INCLUDES                   = -Iinclude \
 
 lib_LTLIBRARIES            = libdemorecog.la
 
-include_HEADERS            = include/demo_recog_engine.h
-
 libdemorecog_la_SOURCES    = src/demo_recog_engine.c
