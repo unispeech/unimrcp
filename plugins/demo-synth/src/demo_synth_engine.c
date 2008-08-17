@@ -20,6 +20,7 @@
 #include "mrcp_generic_header.h"
 #include "mrcp_message.h"
 #include "apt_consumer_task.h"
+#include "apt_log.h"
 
 typedef struct demo_synth_engine_t demo_synth_engine_t;
 typedef struct demo_synth_channel_t demo_synth_channel_t;
@@ -77,15 +78,21 @@ struct demo_synth_engine_t {
 struct demo_synth_channel_t {
 	/** Back pointer to engine */
 	demo_synth_engine_t   *demo_engine;
-	/** Base engine channel */
+	/** Engine channel base */
 	mrcp_engine_channel_t *channel;
-	/** Base audio stream */
+	/** Audio stream base */
 	mpf_audio_stream_t     *audio_stream;
 
 	/** Active (in-progress) speak request */
 	mrcp_message_t        *speak_request;
+	/** Pending stop response */
+	mrcp_message_t        *stop_response;
 	/** Estimated time to complete */
 	apr_size_t             time_to_complete;
+	/** Is paused */
+	apt_bool_t             paused;
+	/** Speech source (used instead of actual synthesizing) */
+	FILE                  *audio_file;
 };
 
 typedef enum {
@@ -100,6 +107,8 @@ struct demo_synth_msg_t {
 	mrcp_engine_channel_t *channel; 
 	mrcp_message_t        *request;
 };
+
+#define DEMO_SPEECH_SOURCE_FILE "demo.pcm"
 
 static apt_bool_t demo_synth_msg_signal(demo_synth_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request);
 static apt_bool_t demo_synth_msg_process(apt_task_t *task, apt_task_msg_t *msg);
@@ -161,6 +170,10 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 	demo_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(demo_synth_channel_t));
 	synth_channel->demo_engine = engine->obj;
 	synth_channel->speak_request = NULL;
+	synth_channel->stop_response = NULL;
+	synth_channel->time_to_complete = 0;
+	synth_channel->paused = FALSE;
+	synth_channel->audio_file = NULL;
 	synth_channel->channel = NULL;
 	synth_channel->audio_stream = mpf_audio_stream_create(synth_channel,&audio_stream_vtable,STREAM_MODE_RECEIVE,pool);
 	
@@ -193,32 +206,63 @@ static apt_bool_t demo_synth_channel_request_process(mrcp_engine_channel_t *chan
 
 static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process speak request */
+	/* process SPEAK request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
-	synth_channel->speak_request = request;
 	synth_channel->time_to_complete = 0;
-	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
-		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
-		if(generic_header) {
-			synth_channel->time_to_complete = generic_header->content_length * 10; /* 10 msec per character */
+	synth_channel->audio_file = fopen(DEMO_SPEECH_SOURCE_FILE,"rb");
+	if(synth_channel->audio_file) {
+		apt_log(APT_PRIO_INFO,"Set Audio File [%s] As Speech Source",DEMO_SPEECH_SOURCE_FILE);
+	}
+	else {
+		apt_log(APT_PRIO_INFO,"Cannot Find Audio File [%s]",DEMO_SPEECH_SOURCE_FILE);
+		/* calculate estimated time to complete */
+		if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
+			mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
+			if(generic_header) {
+				synth_channel->time_to_complete = generic_header->content_length * 10; /* 10 msec per character */
+			}
 		}
 	}
 	
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
+	synth_channel->speak_request = request;
 	return TRUE;
 }
 
 static apt_bool_t demo_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process stop request */
+	/* process STOP request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
-	synth_channel->speak_request = NULL;
+	synth_channel->stop_response = response;
+	/* make sure there is no more activity and only then send the response*/
+	return TRUE;
+}
+
+static apt_bool_t demo_synth_channel_pause(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	/* process PAUSE request */
+	demo_synth_channel_t *synth_channel = channel->method_obj;
+	synth_channel->paused = TRUE;
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
+}
+
+static apt_bool_t demo_synth_channel_resume(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	/* process RESUME request */
+	demo_synth_channel_t *synth_channel = channel->method_obj;
+	synth_channel->paused = FALSE;
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
 	return TRUE;
 }
 
 static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
-	apt_bool_t status = FALSE;
+	apt_bool_t processed = FALSE;
 	mrcp_message_t *response = mrcp_response_create(request,request->pool);
 	switch(request->start_line.method_id) {
 		case SYNTHESIZER_SET_PARAMS:
@@ -226,16 +270,19 @@ static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *cha
 		case SYNTHESIZER_GET_PARAMS:
 			break;
 		case SYNTHESIZER_SPEAK:
-			status = demo_synth_channel_speak(channel,request,response);
+			processed = demo_synth_channel_speak(channel,request,response);
 			break;
 		case SYNTHESIZER_STOP:
-			status = demo_synth_channel_stop(channel,request,response);
+			processed = demo_synth_channel_stop(channel,request,response);
 			break;
 		case SYNTHESIZER_PAUSE:
+			processed = demo_synth_channel_pause(channel,request,response);
 			break;
 		case SYNTHESIZER_RESUME:
+			processed = demo_synth_channel_resume(channel,request,response);
 			break;
 		case SYNTHESIZER_BARGE_IN_OCCURRED:
+			processed = demo_synth_channel_stop(channel,request,response);
 			break;
 		case SYNTHESIZER_CONTROL:
 			break;
@@ -244,8 +291,11 @@ static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *cha
 		default:
 			break;
 	}
-	/* send asynchronous response */
-	return mrcp_engine_channel_message_send(channel,response);
+	if(processed == FALSE) {
+		/* send asynchronous response */
+		mrcp_engine_channel_message_send(channel,response);
+	}
+	return TRUE;
 }
 
 static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream)
@@ -266,14 +316,44 @@ static apt_bool_t demo_synth_stream_close(mpf_audio_stream_t *stream)
 static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	demo_synth_channel_t *synth_channel = stream->obj;
-	if(synth_channel->speak_request) {
-		frame->type |= MEDIA_FRAME_TYPE_AUDIO;
-		memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
+	if(synth_channel->stop_response) {
+		/* send asynchronous response to STOP request */
+		mrcp_engine_channel_message_send(synth_channel->channel,synth_channel->stop_response);
+		synth_channel->stop_response = NULL;
+		synth_channel->speak_request = NULL;
+		synth_channel->paused = FALSE;
+		if(synth_channel->audio_file) {
+			fclose(synth_channel->audio_file);
+			synth_channel->audio_file = NULL;
+		}
+		return TRUE;
+	}
 
-		if(synth_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
-			synth_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
+	if(synth_channel->speak_request && synth_channel->paused == FALSE) {
+		/* normal processing */
+		apt_bool_t completed = FALSE;
+		if(synth_channel->audio_file) {
+			/* read speech from file */
+			apr_size_t size = frame->codec_frame.size;
+			if(fread(frame->codec_frame.buffer,1,size,synth_channel->audio_file) == size) {
+				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+			}
+			else {
+				completed = TRUE;
+			}
 		}
 		else {
+			/* fill with silence in case no file available */
+			if(synth_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
+				memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
+				synth_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
+			}
+			else {
+				completed = TRUE;
+			}
+		}
+		
+		if(completed) {
 			/* raise SPEAK-COMPLETE event */
 			mrcp_message_t *message = mrcp_event_create(
 								synth_channel->speak_request,
