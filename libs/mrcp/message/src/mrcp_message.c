@@ -605,6 +605,7 @@ MRCP_DECLARE(void) mrcp_message_init_by_request(mrcp_message_t *message, const m
 	message->channel_id = request_message->channel_id;
 	message->start_line.request_id = request_message->start_line.request_id;
 	message->start_line.version = request_message->start_line.version;
+	message->start_line.method_id = request_message->start_line.method_id;
 	message->header.generic_header_accessor.vtable = request_message->header.generic_header_accessor.vtable;
 	message->header.resource_header_accessor.vtable = request_message->header.resource_header_accessor.vtable;
 }
