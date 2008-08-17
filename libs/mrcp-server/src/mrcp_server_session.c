@@ -117,14 +117,45 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 	return NULL;
 }
 
+static apt_bool_t mrcp_server_message_dispatch(mrcp_state_machine_t *state_machine, mrcp_message_t *message)
+{
+	mrcp_channel_t *channel = state_machine->obj;
+
+	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
+		/* send request message to resource engine for actual processing */
+		mrcp_engine_channel_request_process(channel->engine_channel,message);
+	}
+	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
+		mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
+		/* send response message to client */
+		mrcp_server_control_message_send(channel->control_channel,message);
+
+		if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
+			session->active_request = apt_list_pop_front(session->request_queue);
+			if(session->active_request) {
+				mrcp_server_signaling_message_dispatch(session,session->active_request);
+			}
+		}
+	}
+	else { 
+		/* send event message to client */
+		mrcp_server_control_message_send(channel->control_channel,message);
+	}
+	return TRUE;
+}
+
 static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, apt_str_t *resource_name)
 {
 	mrcp_resource_id resource_id;
 	mrcp_resource_t *resource;
 	mrcp_engine_channel_t *engine_channel;
 	mrcp_channel_t *channel;
+	apr_pool_t *pool = session->base.pool;
 
-	resource_id = mrcp_resource_id_find(session->profile->resource_factory,resource_name,session->base.signaling_agent->mrcp_version);
+	resource_id = mrcp_resource_id_find(
+							session->profile->resource_factory,
+							resource_name,
+							session->base.signaling_agent->mrcp_version);
 	resource = mrcp_resource_get(session->profile->resource_factory,resource_id);
 	if(!resource) {
 		return NULL;
@@ -135,14 +166,19 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 		return NULL;
 	}
 
-	channel = apr_palloc(session->base.pool,sizeof(mrcp_channel_t));
-	channel->pool = session->base.pool;
+	channel = apr_palloc(pool,sizeof(mrcp_channel_t));
+	channel->pool = pool;
 	channel->resource = resource;
 	channel->session = &session->base;
 	channel->control_channel = mrcp_server_control_channel_create(
 									session->profile->connection_agent,
 									channel,
-									session->base.pool);
+									pool);
+	channel->state_machine = resource->create_server_state_machine(
+									channel,
+									mrcp_server_message_dispatch,
+									session->base.signaling_agent->mrcp_version,
+									pool);
 	channel->engine_channel = engine_channel;
 	channel->waiting_for_channel = FALSE;
 	channel->waiting_for_termination = FALSE;
@@ -242,20 +278,8 @@ apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel)
 
 apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_message_t *message)
 {
-	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
-
 	/* update state machine */
-
-	/* send response/event message to client */
-	mrcp_server_control_message_send(channel->control_channel,message);
-
-	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
-		session->active_request = apt_list_pop_front(session->request_queue);
-		if(session->active_request) {
-			mrcp_server_signaling_message_dispatch(session,session->active_request);
-		}
-	}
-	return TRUE;
+	return mrcp_state_machine_update(channel->state_machine,message);
 }
 
 
@@ -378,9 +402,7 @@ static apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session,
 	}
 
 	/* update state machine */
-
-	/* send message to resource engine for actual processing */
-	return mrcp_engine_channel_request_process(channel->engine_channel,message);
+	return mrcp_state_machine_update(channel->state_machine,message);
 }
 
 static apt_bool_t mrcp_server_signaling_message_dispatch(mrcp_server_session_t *session, mrcp_signaling_message_t *signaling_message)

@@ -208,7 +208,7 @@ static apt_bool_t synth_state_update(mrcp_state_machine_t *state_machine, mrcp_m
 }
 
 /** Create MRCP synthesizer server state machine */
-mrcp_state_machine_t* mrcp_synth_server_state_machine_create(void *obj, mrcp_message_dispatcher_f dispatcher, apr_pool_t *pool)
+mrcp_state_machine_t* mrcp_synth_server_state_machine_create(void *obj, mrcp_message_dispatcher_f dispatcher, mrcp_version_e version, apr_pool_t *pool)
 {
 	mrcp_synth_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_synth_state_machine_t));
 	mrcp_state_machine_init(&state_machine->base,obj,dispatcher);
