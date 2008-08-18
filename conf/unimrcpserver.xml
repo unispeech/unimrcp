@@ -39,8 +39,8 @@
     <plugin>
       <engine name="Demo-Synth-1" path="demosynth.dll"/>
       <!-- <engine name="Demo-Synth-1" path="../lib/libdemosynth.so"/> -->
-      <engine name="Demo-Recog-1" path="demosynth.dll"/>
-      <!-- <engine name="Demo-Recog-1" path="../lib/libdemorecog.dll"/> -->
+      <engine name="Demo-Recog-1" path="demorecog.dll"/>
+      <!-- <engine name="Demo-Recog-1" path="../lib/libdemorecog.so"/> -->
     </plugin>
   </settings>
 
