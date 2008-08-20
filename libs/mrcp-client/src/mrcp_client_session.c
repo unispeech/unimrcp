@@ -517,15 +517,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	termination_slot->descriptor = rtp_descriptor;
 	channel->rtp_termination_slot = termination_slot;
 
-	control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
-	mrcp_control_descriptor_init(control_media);
+	control_media = mrcp_control_offer_create(pool);
 	control_media->id = mrcp_session_control_media_add(session->offer,control_media);
 	control_media->cmid = session->offer->control_media_arr->nelts;
-
-	control_media->proto = MRCP_PROTO_TCP;
-	control_media->port = 9;
-	control_media->setup_type = MRCP_SETUP_TYPE_ACTIVE;
-	control_media->connection_type = MRCP_CONNECTION_TYPE_EXISTING;
 	resource_name = mrcp_resource_name_get(profile->resource_factory,channel->resource_id,profile->signaling_agent->mrcp_version);
 	if(resource_name) {
 		control_media->resource_name = *resource_name;

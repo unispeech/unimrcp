@@ -84,3 +84,29 @@ MRCP_DECLARE(mrcp_connection_type_e) mrcp_connection_type_find(const apt_str_t *
 {
 	return apt_string_table_id_find(mrcp_connection_value_table,MRCP_CONNECTION_TYPE_COUNT,attrib);
 }
+
+/** Create MRCP control offer */
+MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_create(apr_pool_t *pool)
+{
+	mrcp_control_descriptor_t *offer;
+	offer = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
+	mrcp_control_descriptor_init(offer);
+	offer->proto = MRCP_PROTO_TCP;
+	offer->port = 9;
+	offer->setup_type = MRCP_SETUP_TYPE_ACTIVE;
+	offer->connection_type = MRCP_CONNECTION_TYPE_EXISTING;
+	return offer;
+}
+
+/** Create MRCP control answer */
+MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(mrcp_control_descriptor_t *offer, apr_pool_t *pool)
+{
+	mrcp_control_descriptor_t *answer;
+	answer = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
+	mrcp_control_descriptor_init(answer);
+	if(offer) {
+		*answer = *offer;
+	}
+	answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
+	return answer;
+}

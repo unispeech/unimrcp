@@ -451,12 +451,8 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 static apt_bool_t mrcp_server_agent_channel_modify(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_connection_t *connection = NULL;
-	mrcp_control_descriptor_t *answer;
-	answer = apr_palloc(channel->pool,sizeof(mrcp_control_descriptor_t));
-	mrcp_control_descriptor_init(answer);
-	*answer = *descriptor;
-	answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
-	if(answer->port) {
+	mrcp_control_descriptor_t *answer = mrcp_control_answer_create(descriptor,channel->pool);
+	if(descriptor->port) {
 		answer->port = agent->sockaddr->port;
 
 		if(descriptor->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
