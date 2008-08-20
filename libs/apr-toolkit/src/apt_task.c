@@ -133,6 +133,7 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 
 APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_till_complete)
 {
+	apt_bool_t status = FALSE;
 	apr_thread_mutex_lock(task->data_guard);
 	if(task->state == TASK_STATE_START_REQUESTED || task->state == TASK_STATE_RUNNING) {
 		task->state = TASK_STATE_TERMINATE_REQUESTED;
@@ -142,15 +143,15 @@ APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_til
 	if(task->state == TASK_STATE_TERMINATE_REQUESTED) {
 		/* raise virtual terminate method */
 		if(task->vtable.terminate) {
-			task->vtable.terminate(task);
+			status = task->vtable.terminate(task);
 		}
 
-		if(wait_till_complete == TRUE) {
+		if(wait_till_complete == TRUE && status == TRUE) {
 			apt_task_wait_till_complete(task);
 		}
 	}
 
-	return TRUE;
+	return status;
 }
 
 APT_DECLARE(apt_bool_t) apt_task_wait_till_complete(apt_task_t *task)

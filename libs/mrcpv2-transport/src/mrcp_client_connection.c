@@ -588,14 +588,18 @@ static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task)
 
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task)
 {
+	apt_bool_t status = FALSE;
 	mrcp_connection_agent_t *agent = apt_task_object_get(task);
 	if(agent->control_sock) {
 		connection_task_msg_data_t task_msg_data;
 		apr_size_t size = sizeof(connection_task_msg_data_t);
 		task_msg_data.type = CONNECTION_TASK_MSG_TERMINATE;
-		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&task_msg_data,&size) != APR_SUCCESS) {
+		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&task_msg_data,&size) == APR_SUCCESS) {
+			status = TRUE;
+		}
+		else {
 			apt_log(APT_PRIO_WARNING,"Failed to Send Control Message");
 		}
 	}
-	return TRUE;
+	return status;
 }
