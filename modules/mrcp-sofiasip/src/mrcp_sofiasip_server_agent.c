@@ -222,6 +222,7 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 	mrcp_sofia_session_t *sofia_session = session->obj;
 	if(sofia_session) {
 		if(sofia_session->session) {
+			apt_log(APT_PRIO_NOTICE,"Destroy Session");
 			mrcp_session_destroy(sofia_session->session);
 			sofia_session->session = NULL;
 		}
@@ -259,6 +260,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 	if(!sofia_session) {
 		sofia_session = mrcp_sofia_session_create(sofia_agent,nh);
 		if(!sofia_session) {
+			nua_respond(nh, SIP_488_NOT_ACCEPTABLE, TAG_END());
 			return;
 		}
 	}

@@ -49,8 +49,8 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 			"c=IN IP4 %s\r\n"
 			"t=0 0\r\n",
 			descriptor->origin.buf ? descriptor->origin.buf : "-",
-			descriptor->ip.buf,
-			descriptor->ip.buf);
+			descriptor->ip.buf ? descriptor->ip.buf : "0",
+			descriptor->ip.buf ? descriptor->ip.buf : "0");
 	count = mrcp_session_media_count_get(descriptor);
 	for(i=0; i<count; i++) {
 		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
