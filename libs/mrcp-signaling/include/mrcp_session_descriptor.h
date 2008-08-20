@@ -123,7 +123,7 @@ static APR_INLINE mpf_rtp_media_descriptor_t* mrcp_session_video_media_get(const
 	return ((mpf_rtp_media_descriptor_t**)descriptor->video_media_arr->elts)[id];
 }
 
-static apt_bool_t mrcp_session_video_media_set(mrcp_session_descriptor_t *descriptor, apr_size_t id, mpf_rtp_media_descriptor_t* media)
+static APR_INLINE apt_bool_t mrcp_session_video_media_set(mrcp_session_descriptor_t *descriptor, apr_size_t id, mpf_rtp_media_descriptor_t* media)
 {
 	if((int)id >= descriptor->video_media_arr->nelts) {
 		return FALSE;
