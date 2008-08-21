@@ -165,6 +165,12 @@ static APR_INLINE mrcp_engine_channel_t* mrcp_engine_channel_create(
 	return channel;
 }
 
+/** Destroy engine channel */
+static APR_INLINE apt_bool_t mrcp_engine_channel_destroy(mrcp_engine_channel_t *channel)
+{
+	return channel->method_vtable->destroy(channel);
+}
+
 /** Open engine channel */
 static APR_INLINE apt_bool_t mrcp_engine_channel_open(mrcp_engine_channel_t *channel)
 {
