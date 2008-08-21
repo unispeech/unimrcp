@@ -260,24 +260,27 @@ static apt_bool_t mrcp_client_agent_pollset_create(mrcp_connection_agent_t *agen
 	/* create pollset */
 	status = apr_pollset_create(&agent->pollset, MRCP_CONNECTION_MAX_COUNT + 1, agent->pool, 0);
 	if(status != APR_SUCCESS) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
 	}
 
 	/* create control socket */
-	if(mrcp_client_agent_control_socket_create(agent) == TRUE) {
-		/* add control socket to pollset */
-		agent->control_sock_pfd.desc_type = APR_POLL_SOCKET;
-		agent->control_sock_pfd.reqevents = APR_POLLIN;
-		agent->control_sock_pfd.desc.s = agent->control_sock;
-		agent->control_sock_pfd.client_data = agent->control_sock;
-		status = apr_pollset_add(agent->pollset, &agent->control_sock_pfd);
-		if(status != APR_SUCCESS) {
-			apt_log(APT_PRIO_WARNING,"Failed to Add Control Socket to Pollset");
-			mrcp_client_agent_control_socket_destroy(agent);
-		}
-	}
-	else {
+	if(mrcp_client_agent_control_socket_create(agent) != TRUE) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create Control Socket");
+		apr_pollset_destroy(agent->pollset);
+		return FALSE;
+	}
+	/* add control socket to pollset */
+	agent->control_sock_pfd.desc_type = APR_POLL_SOCKET;
+	agent->control_sock_pfd.reqevents = APR_POLLIN;
+	agent->control_sock_pfd.desc.s = agent->control_sock;
+	agent->control_sock_pfd.client_data = agent->control_sock;
+	status = apr_pollset_add(agent->pollset, &agent->control_sock_pfd);
+	if(status != APR_SUCCESS) {
+		apt_log(APT_PRIO_WARNING,"Failed to Add Control Socket to Pollset");
+		mrcp_client_agent_control_socket_destroy(agent);
+		apr_pollset_destroy(agent->pollset);
+		return FALSE;
 	}
 
 	return TRUE;
