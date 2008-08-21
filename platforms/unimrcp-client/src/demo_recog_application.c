@@ -212,9 +212,22 @@ static apt_bool_t recog_application_on_message_receive(mrcp_application_t *appli
 {
 	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
-		/* received response to RECOGNIZE request, start to stream the speech to recognize */
-		if(recog_channel) {
-			recog_channel->start_of_input = TRUE;
+		/* received MRCP response */
+		if(message->start_line.method_id == RECOGNIZER_RECOGNIZE) {
+			/* received the response to RECOGNIZE request */
+			if(message->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS) {
+				/* start to stream the speech to recognize */
+				if(recog_channel) {
+					recog_channel->start_of_input = TRUE;
+				}
+			}
+			else {
+				/* received unexpected response, remove channel */
+				mrcp_application_channel_remove(session,channel);
+			}
+		}
+		else {
+			/* received unexpected response */
 		}
 	}
 	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
