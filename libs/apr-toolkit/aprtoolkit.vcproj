@@ -138,6 +138,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_cyclic_queue.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_log.h"
 				>
 			</File>
@@ -176,6 +180,10 @@
 			>
 			<File
 				RelativePath=".\src\apt_consumer_task.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_cyclic_queue.c"
 				>
 			</File>
 			<File
