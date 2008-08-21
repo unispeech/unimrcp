@@ -161,9 +161,22 @@ APT_DECLARE(mrcp_control_channel_t*) mrcp_client_control_channel_create(mrcp_con
 	mrcp_control_channel_t *channel = apr_palloc(pool,sizeof(mrcp_control_channel_t));
 	channel->agent = agent;
 	channel->connection = NULL;
+	channel->removed = FALSE;
 	channel->obj = obj;
 	channel->pool = pool;
 	return channel;
+}
+
+/** Destroy MRCPv2 control channel */
+APT_DECLARE(apt_bool_t) mrcp_client_control_channel_destroy(mrcp_control_channel_t *channel)
+{
+	if(channel && channel->connection && channel->removed == TRUE) {
+		mrcp_connection_t *connection = channel->connection;
+		channel->connection = NULL;
+		apt_log(APT_PRIO_NOTICE,"Destroy Connection");
+		apr_pool_destroy(connection->pool);
+	}
+	return TRUE;
 }
 
 static apt_bool_t mrcp_client_control_message_signal(
@@ -191,8 +204,6 @@ static apt_bool_t mrcp_client_control_message_signal(
 	}
 	return TRUE;
 }
-
-
 
 /** Modify MRCPv2 control channel */
 APT_DECLARE(apt_bool_t) mrcp_client_control_channel_modify(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
@@ -325,7 +336,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 		return NULL;
 	}
 	
-	apt_log(APT_PRIO_NOTICE,"Connected TCP/MRCPv2 Connection");
+	apt_log(APT_PRIO_NOTICE,"Established TCP/MRCPv2 Connection");
 	connection->access_count = 0;
 	connection->it = apt_list_push_back(agent->connection_list,connection);
 	return connection;
@@ -362,7 +373,6 @@ static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *a
 		apr_socket_close(connection->sock);
 	}
 	apt_log(APT_PRIO_NOTICE,"Disconnected TCP/MRCPv2 Connection");
-	apr_pool_destroy(connection->pool);
 	return TRUE;
 }
 
@@ -404,7 +414,7 @@ static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agen
 		connection->access_count--;
 		if(!connection->access_count) {
 			mrcp_client_agent_connection_remove(agent,connection);
-			channel->connection = NULL;
+			channel->removed = TRUE;
 		}
 	}
 	/* send response */

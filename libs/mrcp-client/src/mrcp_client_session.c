@@ -37,6 +37,7 @@ void mrcp_client_session_remove(mrcp_client_t *client, mrcp_client_session_t *se
 
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session);
 
+static apt_bool_t mrcp_client_session_terminate_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status);
 static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status);
 static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message);
 static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, const mrcp_app_message_t *app_message);
@@ -139,9 +140,7 @@ apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t 
 	}
 
 	if(!session->terminate_flag_count) {
-		mrcp_client_session_remove(session->application->client,session);
-		/* send response to application */
-		mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+		mrcp_client_session_terminate_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
 	}
 	return TRUE;
 }
@@ -187,9 +186,7 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
 		if(!session->terminate_flag_count) {
-			mrcp_client_session_remove(session->application->client,session);
-			/* send response to application */
-			mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+			mrcp_client_session_terminate_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
 		}
 	}
 	return TRUE;
@@ -259,6 +256,25 @@ static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session)
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts);
 	return mrcp_session_offer(&session->base,descriptor);
+}
+
+static apt_bool_t mrcp_client_session_terminate_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(channel->control_channel) {
+			mrcp_client_control_channel_destroy(channel->control_channel);
+			channel->control_channel = NULL;
+		}
+	}
+
+	mrcp_client_session_remove(session->application->client,session);
+	/* send response to application */
+	return mrcp_app_sig_message_send(session,status);
 }
 
 static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status)
@@ -690,9 +706,7 @@ static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *ses
 		if(session->terminate_flag_count) {
 			session->terminate_flag_count--;
 			if(!session->terminate_flag_count) {
-				mrcp_client_session_remove(session->application->client,session);
-				/* send response to application */
-				mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+				mrcp_client_session_terminate_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
 			}
 		}
 	}

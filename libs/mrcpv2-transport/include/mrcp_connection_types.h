@@ -58,6 +58,8 @@ struct mrcp_control_channel_t {
 	mrcp_connection_agent_t *agent;
 	/** MRCPv2 (shared) connection */
 	mrcp_connection_t       *connection;
+	/** Indicate removed connection (safe to destroy) */
+	apt_bool_t              removed;
 	/** External object associated with the channel */
 	void                    *obj;
 	/** Pool to allocate memory from */

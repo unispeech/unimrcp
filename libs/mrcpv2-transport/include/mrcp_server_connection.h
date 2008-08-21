@@ -111,6 +111,12 @@ APT_DECLARE(apt_bool_t) mrcp_server_control_channel_modify(mrcp_control_channel_
 APT_DECLARE(apt_bool_t) mrcp_server_control_channel_remove(mrcp_control_channel_t *channel);
 
 /**
+ * Destroy MRCPv2 control channel.
+ * @param channel the control channel to destroy
+ */
+APT_DECLARE(apt_bool_t) mrcp_server_control_channel_destroy(mrcp_control_channel_t *channel);
+
+/**
  * Send MRCPv2 message.
  * @param channel the control channel to send message through
  * @param message the message to send

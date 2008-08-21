@@ -79,6 +79,7 @@ static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *sessi
 static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *session, const mpf_message_t *mpf_message);
 
 static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session);
+static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session);
 
 static mrcp_channel_t* mrcp_server_channel_find_by_id(mrcp_server_session_t *session, mrcp_resource_id resource_id);
 
@@ -265,8 +266,7 @@ apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel)
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
 		if(!session->terminate_flag_count) {
-			/* send termination response to client */
-			mrcp_session_terminate_response(&session->base);
+			mrcp_server_session_terminate_send(session);
 		}
 	}
 	return TRUE;
@@ -293,8 +293,7 @@ apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel)
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
 		if(!session->terminate_flag_count) {
-			/* send termination response to client */
-			mrcp_session_terminate_response(&session->base);
+			mrcp_server_session_terminate_send(session);
 		}
 	}
 	return TRUE;
@@ -632,7 +631,6 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 			session->answer_flag_count++;
 		}
 	}
-
 	return TRUE;
 }
 
@@ -655,6 +653,29 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session
 	}
 	return status;
 }
+
+static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(channel->control_channel) {
+			mrcp_server_control_channel_destroy(channel->control_channel);
+			channel->control_channel = NULL;
+		}
+		if(channel->engine_channel) {
+			mrcp_engine_channel_destroy(channel->engine_channel);
+			channel->engine_channel = NULL;
+		}
+	}
+	apt_log(APT_PRIO_INFO,"Send Session Terminate Response <%s>",session->base.id.buf);
+	mrcp_session_terminate_response(&session->base);
+	return TRUE;
+}
+
 
 static mrcp_channel_t* mrcp_server_channel_find_by_id(mrcp_server_session_t *session, mrcp_resource_id resource_id)
 {
@@ -757,8 +778,7 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *ses
 		if(session->terminate_flag_count) {
 			session->terminate_flag_count--;
 			if(!session->terminate_flag_count) {
-				/* send response to client */
-				mrcp_session_terminate_response(&session->base);
+				mrcp_server_session_terminate_send(session);
 			}
 		}
 	}
@@ -770,8 +790,7 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *ses
 			if(session->terminate_flag_count) {
 				session->terminate_flag_count--;
 				if(!session->terminate_flag_count) {
-					/* send response to client */
-					mrcp_session_terminate_response(&session->base);
+					mrcp_server_session_terminate_send(session);
 				}
 			}
 		}
