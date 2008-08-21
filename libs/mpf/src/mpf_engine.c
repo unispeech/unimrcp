@@ -23,6 +23,7 @@
 #include "mpf_codec_descriptor.h"
 #include "mpf_codec_manager.h"
 #include "apt_obj_list.h"
+#include "apt_cyclic_queue.h"
 #include "apt_log.h"
 
 struct mpf_engine_t {
@@ -30,7 +31,7 @@ struct mpf_engine_t {
 	apt_task_t          *task;
 	apt_task_msg_type_e  task_msg_type;
 	apr_thread_mutex_t  *request_queue_guard;
-	apt_obj_list_t      *request_queue;
+	apt_cyclic_queue_t  *request_queue;
 	apt_obj_list_t      *contexts;
 	mpf_timer_t         *timer;
 	mpf_codec_manager_t *codec_manager;
@@ -86,7 +87,7 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	engine->request_queue = apt_list_create(engine->pool);
+	engine->request_queue = apt_cyclic_queue_create(100,engine->pool);
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
 
 	engine->contexts = apt_list_create(engine->pool);
@@ -109,7 +110,7 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 
 	apt_list_destroy(engine->contexts);
 
-	apt_list_destroy(engine->request_queue);
+	apt_cyclic_queue_destroy(engine->request_queue);
 	apr_thread_mutex_destroy(engine->request_queue_guard);
 	return TRUE;
 }
@@ -154,7 +155,9 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 	mpf_engine_t *engine = apt_task_object_get(task);
 	
 	apr_thread_mutex_lock(engine->request_queue_guard);
-	apt_list_push_back(engine->request_queue,msg);
+	if(apt_cyclic_queue_push(engine->request_queue,msg) == FALSE) {
+		apt_log(APT_PRIO_ERROR,"MPF Request Queue is Full");
+	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 	return TRUE;
 }
@@ -243,12 +246,12 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 
 	/* process request queue */
 	apr_thread_mutex_lock(engine->request_queue_guard);
-	msg = apt_list_pop_front(engine->request_queue);
+	msg = apt_cyclic_queue_pop(engine->request_queue);
 	while(msg) {
 		mpf_engine_msg_process(engine,msg);
 		apt_task_msg_release(msg);
 		
-		msg = apt_list_pop_front(engine->request_queue);
+		msg = apt_cyclic_queue_pop(engine->request_queue);
 	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 
