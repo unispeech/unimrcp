@@ -120,6 +120,8 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 /**
  * Create raw MPF termination.
  * @param obj the external object associated with termination
+ * @param audio_stream the audio stream of the termination
+ * @param video_stream the video stream of the termination
  * @param pool the pool to allocate memory from
  */
 MPF_DECLARE(mpf_termination_t*) mpf_raw_termination_create(

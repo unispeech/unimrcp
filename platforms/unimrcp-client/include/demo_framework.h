@@ -38,7 +38,7 @@ demo_framework_t* demo_framework_create(const char *conf_file_path);
  * Run demo application.
  * @param framework the framework to run application for
  * @param app_name the name of the application to run
- * @param app_name the name of the profile to use
+ * @param profile_name the name of the profile to use
  */
 apt_bool_t demo_framework_app_run(demo_framework_t *framework, const char *app_name, const char *profile_name);
 

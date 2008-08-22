@@ -32,6 +32,7 @@ typedef struct apt_cyclic_queue_t apt_cyclic_queue_t;
 
 /**
  * Create cyclic queue.
+ * @param size the queue size
  * @param pool the pool to allocate memory from
  * @return the created queue
  */

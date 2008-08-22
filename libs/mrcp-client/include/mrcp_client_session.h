@@ -31,6 +31,7 @@
 
 APT_BEGIN_EXTERN_C
 
+/** RTP termination slot declaration */
 typedef struct rtp_termination_slot_t rtp_termination_slot_t;
 
 /** MRCP client session declaration */
