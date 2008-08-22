@@ -721,6 +721,7 @@ static mrcp_profile_t* mrcp_server_profile_get_by_agent(mrcp_server_t *server, m
 			return profile;
 		}
 	}
+	apt_log(APT_PRIO_WARNING,"Cannot Find Profile by Agent <%s>",session->base.id.buf);
 	return NULL;
 }
 

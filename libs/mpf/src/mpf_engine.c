@@ -199,7 +199,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 			}
 			mpf_context_topology_apply(context,termination);
 			if(context->termination_count == 1) {
-				apt_log(APT_PRIO_INFO,"Add Context");
+				apt_log(APT_PRIO_DEBUG,"Add Context");
 				request->context->elem = apt_list_push_back(engine->contexts,context);
 			}
 			break;
@@ -212,7 +212,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 				break;
 			}
 			if(context->termination_count == 0) {
-				apt_log(APT_PRIO_INFO,"Remove Context");
+				apt_log(APT_PRIO_DEBUG,"Remove Context");
 				apt_list_elem_remove(engine->contexts,context->elem);
 				context->elem = NULL;
 			}
