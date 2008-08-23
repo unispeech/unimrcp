@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+/* 
+ * Some mandatory rules for plugin implementation.
+ * 1. Each plugin MUST contain the following function as an entry point of the plugin
+ *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+ * 2. One and only one response MUST be sent back to the received request.
+ * 3. Methods (callbacks) of the MRCP engine channel MUST not block.
+ *   (asynch response can be sent from the context of other thread)
+ * 4. Methods (callbacks) of the MPF engine stream MUST not block.
+ */
+
 #include "mrcp_resource_engine.h"
 #include "mrcp_synth_resource.h"
 #include "mrcp_synth_header.h"
@@ -117,16 +127,23 @@ static apt_bool_t demo_synth_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 /** Create demo synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
+	/* create demo engine */
 	demo_synth_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_synth_engine_t));
 	apt_task_vtable_t task_vtable;
 	apt_task_msg_pool_t *msg_pool;
 
+	/* create task/thread to run demo engine in the context of this task */
 	apt_task_vtable_reset(&task_vtable);
 	task_vtable.process_msg = demo_synth_msg_process;
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(demo_synth_msg_t),pool);
 	demo_engine->task = apt_consumer_task_create(demo_engine,&task_vtable,msg_pool,pool);
 
-	return mrcp_resource_engine_create(MRCP_SYNTHESIZER_RESOURCE,demo_engine,&engine_vtable,pool);
+	/* create resource engine base */
+	return mrcp_resource_engine_create(
+					MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
+					demo_engine,               /* object to associate */
+					&engine_vtable,            /* virtual methods table of resource engine */
+					pool);                     /* pool to allocate memory from */
 }
 
 /** Destroy synthesizer engine */
@@ -163,10 +180,12 @@ static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
 	return TRUE;
 }
 
+/** Create demo synthesizer channel derived from engine channel base */
 static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
 	mrcp_engine_channel_t *channel;
 	mpf_termination_t *termination;
+	/* create demo synth channel */
 	demo_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(demo_synth_channel_t));
 	synth_channel->demo_engine = engine->obj;
 	synth_channel->speak_request = NULL;
@@ -175,38 +194,58 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 	synth_channel->paused = FALSE;
 	synth_channel->audio_file = NULL;
 	synth_channel->channel = NULL;
-	synth_channel->audio_stream = mpf_audio_stream_create(synth_channel,&audio_stream_vtable,STREAM_MODE_RECEIVE,pool);
+	/* create audio stream */
+	synth_channel->audio_stream = mpf_audio_stream_create(
+			synth_channel,        /* object to associate */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			STREAM_MODE_RECEIVE,  /* stream mode/direction */
+			pool);                /* pool to allocate memory from */
 	
-	termination = mpf_raw_termination_create(NULL,synth_channel->audio_stream,NULL,pool);
-	channel = mrcp_engine_channel_create(engine,&channel_vtable,synth_channel,termination,pool);
+	/* create media termination */
+	termination = mpf_raw_termination_create(
+			NULL,                        /* no object to associate */
+			synth_channel->audio_stream, /* audio stream */
+			NULL,                        /* no video stream */
+			pool);                       /* pool to allocate memory from */
+	/* create engine channel base */
+	channel = mrcp_engine_channel_create(
+			engine,          /* resource engine */
+			&channel_vtable, /* virtual methods table of engine channel */
+			synth_channel,   /* object to associate */
+			termination,     /* media termination, used to terminate audio stream */
+			pool);           /* pool to allocate memory from */
 	synth_channel->channel = channel;
 	return channel;
 }
 
+/** Destroy engine channel */
 static apt_bool_t demo_synth_channel_destroy(mrcp_engine_channel_t *channel)
 {
 	/* nothing to destroy */
 	return TRUE;
 }
 
+/** Open engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t demo_synth_channel_open(mrcp_engine_channel_t *channel)
 {
 	return demo_synth_msg_signal(DEMO_SYNTH_MSG_OPEN_CHANNEL,channel,NULL);
 }
 
+/** Close engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t demo_synth_channel_close(mrcp_engine_channel_t *channel)
 {
 	return demo_synth_msg_signal(DEMO_SYNTH_MSG_CLOSE_CHANNEL,channel,NULL);
 }
 
+/** Process MRCP channel request (asynchronous response MUST be sent)*/
 static apt_bool_t demo_synth_channel_request_process(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	return demo_synth_msg_signal(DEMO_SYNTH_MSG_REQUEST_PROCESS,channel,request);
 }
 
+/** Process SPEAK request */
 static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process SPEAK request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->time_to_complete = 0;
 	synth_channel->audio_file = fopen(DEMO_SPEECH_SOURCE_FILE,"rb");
@@ -231,18 +270,18 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	return TRUE;
 }
 
+/** Process STOP request */
 static apt_bool_t demo_synth_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process STOP request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
+	/* store the request, make sure there is no more activity and only then send the response */
 	synth_channel->stop_response = response;
-	/* make sure there is no more activity and only then send the response*/
 	return TRUE;
 }
 
+/** Process PAUSE request */
 static apt_bool_t demo_synth_channel_pause(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process PAUSE request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->paused = TRUE;
 	/* send asynchronous response */
@@ -250,9 +289,9 @@ static apt_bool_t demo_synth_channel_pause(mrcp_engine_channel_t *channel, mrcp_
 	return TRUE;
 }
 
+/** Process RESUME request */
 static apt_bool_t demo_synth_channel_resume(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	/* process RESUME request */
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->paused = FALSE;
 	/* send asynchronous response */
@@ -260,6 +299,7 @@ static apt_bool_t demo_synth_channel_resume(mrcp_engine_channel_t *channel, mrcp
 	return TRUE;
 }
 
+/** Dispatch MRCP request */
 static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	apt_bool_t processed = FALSE;
@@ -292,30 +332,35 @@ static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *cha
 			break;
 	}
 	if(processed == FALSE) {
-		/* send asynchronous response */
+		/* send asynchronous response for not handled request */
 		mrcp_engine_channel_message_send(channel,response);
 	}
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to destroy any additional data associated with audio stream */
 static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform any action before open */
 static apt_bool_t demo_synth_stream_open(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform any action after close */
 static apt_bool_t demo_synth_stream_close(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to read/get new frame */
 static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	demo_synth_channel_t *synth_channel = stream->obj;
+	/* check if STOP was requested */
 	if(synth_channel->stop_response) {
 		/* send asynchronous response to STOP request */
 		mrcp_engine_channel_message_send(synth_channel->channel,synth_channel->stop_response);
@@ -329,6 +374,7 @@ static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 		return TRUE;
 	}
 
+	/* check if there is active SPEAK request and it isn't in paused state */
 	if(synth_channel->speak_request && synth_channel->paused == FALSE) {
 		/* normal processing */
 		apt_bool_t completed = FALSE;
@@ -360,14 +406,18 @@ static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 								SYNTHESIZER_SPEAK_COMPLETE,
 								synth_channel->speak_request->pool);
 			if(message) {
+				/* get/allocate synthesizer header */
 				mrcp_synth_header_t *synth_header = mrcp_resource_header_prepare(message);
 				if(synth_header) {
+					/* set completion cause */
 					synth_header->completion_cause = SYNTHESIZER_COMPLETION_CAUSE_NORMAL;
 					mrcp_resource_header_property_add(message,SYNTHESIZER_HEADER_COMPLETION_CAUSE);
 				}
+				/* set request state */
 				message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 
 				synth_channel->speak_request = NULL;
+				/* send asynch event */
 				mrcp_engine_channel_message_send(synth_channel->channel,message);
 			}
 		}

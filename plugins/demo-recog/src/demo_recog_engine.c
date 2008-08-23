@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+/* 
+ * Some mandatory rules for plugin implementation.
+ * 1. Each plugin MUST contain the following function as an entry point of the plugin
+ *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+ * 2. One and only one response MUST be sent back to the received request.
+ * 3. Methods (callbacks) of the MRCP engine channel MUST not block.
+ *   (asynch response can be sent from the context of other thread)
+ * 4. Methods (callbacks) of the MPF engine stream MUST not block.
+ */
+
 #include "mrcp_resource_engine.h"
 #include "mrcp_recog_resource.h"
 #include "mrcp_recog_header.h"
@@ -121,7 +131,12 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(demo_recog_msg_t),pool);
 	demo_engine->task = apt_consumer_task_create(demo_engine,&task_vtable,msg_pool,pool);
 
-	return mrcp_resource_engine_create(MRCP_RECOGNIZER_RESOURCE,demo_engine,&engine_vtable,pool);
+	/* create resource engine base */
+	return mrcp_resource_engine_create(
+					MRCP_RECOGNIZER_RESOURCE,  /* MRCP resource identifier */
+					demo_engine,               /* object to associate */
+					&engine_vtable,            /* virtual methods table of resource engine */
+					pool);                     /* pool to allocate memory from */
 }
 
 /** Destroy recognizer engine */
@@ -162,41 +177,62 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 {
 	mrcp_engine_channel_t *channel;
 	mpf_termination_t *termination;
+	/* create demo recog channel */
 	demo_recog_channel_t *recog_channel = apr_palloc(pool,sizeof(demo_recog_channel_t));
 	recog_channel->demo_engine = engine->obj;
 	recog_channel->recog_request = NULL;
 	recog_channel->stop_response = NULL;
 	recog_channel->channel = NULL;
-	recog_channel->audio_stream = mpf_audio_stream_create(recog_channel,&audio_stream_vtable,STREAM_MODE_SEND,pool);
+	/* create audio stream */
+	recog_channel->audio_stream = mpf_audio_stream_create(
+			recog_channel,          /* object to associate */
+			&audio_stream_vtable,   /* virtual methods table of audio stream */
+			STREAM_MODE_SEND,       /* stream mode/direction */
+			pool);                  /* pool to allocate memory from */
 	
-	termination = mpf_raw_termination_create(NULL,recog_channel->audio_stream,NULL,pool);
-	channel = mrcp_engine_channel_create(engine,&channel_vtable,recog_channel,termination,pool);
+	/* create media termination */
+	termination = mpf_raw_termination_create(
+			NULL,                        /* no object to associate */
+			recog_channel->audio_stream, /* audio stream */
+			NULL,                        /* no video stream */
+			pool);                       /* pool to allocate memory from */
+	/* create engine channel base */
+	channel = mrcp_engine_channel_create(
+			engine,          /* resource engine */
+			&channel_vtable, /* virtual methods table of engine channel */
+			recog_channel,   /* object to associate */
+			termination,     /* media termination, used to terminate audio stream */
+			pool);           /* pool to allocate memory from */
 	recog_channel->channel = channel;
 	return channel;
 }
 
+/** Destroy engine channel */
 static apt_bool_t demo_recog_channel_destroy(mrcp_engine_channel_t *channel)
 {
 	/* nothing to destroy */
 	return TRUE;
 }
 
+/** Open engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t demo_recog_channel_open(mrcp_engine_channel_t *channel)
 {
 	return demo_recog_msg_signal(DEMO_RECOG_MSG_OPEN_CHANNEL,channel,NULL);
 }
 
+/** Close engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t demo_recog_channel_close(mrcp_engine_channel_t *channel)
 {
 	return demo_recog_msg_signal(DEMO_RECOG_MSG_CLOSE_CHANNEL,channel,NULL);
 }
 
+/** Process MRCP channel request (asynchronous response MUST be sent)*/
 static apt_bool_t demo_recog_channel_request_process(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	return demo_recog_msg_signal(DEMO_RECOG_MSG_REQUEST_PROCESS,channel,request);
 }
 
-
+/** Process RECOGNIZE request */
 static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
 	/* process RECOGNIZE request */
@@ -211,6 +247,7 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	return TRUE;
 }
 
+/** Process STOP request */
 static apt_bool_t demo_recog_channel_stop(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
 	/* process STOP request */
@@ -220,6 +257,7 @@ static apt_bool_t demo_recog_channel_stop(mrcp_engine_channel_t *channel, mrcp_m
 	return TRUE;
 }
 
+/** Dispatch MRCP request */
 static apt_bool_t demo_recog_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
 	apt_bool_t processed = FALSE;
@@ -245,27 +283,31 @@ static apt_bool_t demo_recog_channel_request_dispatch(mrcp_engine_channel_t *cha
 			break;
 	}
 	if(processed == FALSE) {
-		/* send asynchronous response */
+		/* send asynchronous response for not handled request */
 		mrcp_engine_channel_message_send(channel,response);
 	}
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to destroy any additional data associated with audio stream */
 static apt_bool_t demo_recog_stream_destroy(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform any action before open */
 static apt_bool_t demo_recog_stream_open(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to perform any action after close */
 static apt_bool_t demo_recog_stream_close(mpf_audio_stream_t *stream)
 {
 	return TRUE;
 }
 
+/** Callback is called from MPF engine context to write/send new frame */
 static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	demo_recog_channel_t *recog_channel = stream->obj;
@@ -280,7 +322,6 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 	if(recog_channel->recog_request) {
 		if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO) {
 			/* process audio stream */
-			
 			if(recog_channel->start_of_input == FALSE) {
 				/* raise START-OF-INPUT event */
 				mrcp_message_t *message = mrcp_event_create(
@@ -288,12 +329,16 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 									RECOGNIZER_START_OF_INPUT,
 									recog_channel->recog_request->pool);
 				if(message) {
+					/* get/allocate recognizer header */
 					mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
 					if(recog_header) {
+						/* set completion cause */
 						recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
 						mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
 					}
+					/* set request state */
 					message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+					/* send asynch event */
 					mrcp_engine_channel_message_send(recog_channel->channel,message);
 				}
 				recog_channel->start_of_input = TRUE;
@@ -311,14 +356,18 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 									RECOGNIZER_RECOGNITION_COMPLETE,
 									recog_channel->recog_request->pool);
 				if(message) {
+					/* get/allocate recognizer header */
 					mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
 					if(recog_header) {
+						/* set completion cause */
 						recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
 						mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
 					}
+					/* set request state */
 					message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 
 					recog_channel->recog_request = NULL;
+					/* send asynch event */
 					mrcp_engine_channel_message_send(recog_channel->channel,message);
 				}
 			}
