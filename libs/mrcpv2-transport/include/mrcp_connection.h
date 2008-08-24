@@ -52,12 +52,20 @@ struct mrcp_connection_t {
 	apr_hash_t      *channel_table;
 };
 
+/** Create MRCP connection. */
 mrcp_connection_t* mrcp_connection_create();
-void mrcp_connection_destroy(mrcp_connection_t *connection);
-apt_bool_t mrcp_connection_channel_add(mrcp_connection_t *connection, mrcp_control_channel_t *channel);
-mrcp_control_channel_t* mrcp_connection_channel_find(mrcp_connection_t *connection, const apt_str_t *identifier);
-apt_bool_t mrcp_connection_channel_remove(mrcp_connection_t *connection, mrcp_control_channel_t *channel);
 
+/** Destroy MRCP connection. */
+void mrcp_connection_destroy(mrcp_connection_t *connection);
+
+/** Add Control Channel to MRCP connection. */
+apt_bool_t mrcp_connection_channel_add(mrcp_connection_t *connection, mrcp_control_channel_t *channel);
+
+/** Find Control Channel by Channel Identifier. */
+mrcp_control_channel_t* mrcp_connection_channel_find(mrcp_connection_t *connection, const apt_str_t *identifier);
+
+/** Remove Control Channel from MRCP connection. */
+apt_bool_t mrcp_connection_channel_remove(mrcp_connection_t *connection, mrcp_control_channel_t *channel);
 
 
 APT_END_EXTERN_C
