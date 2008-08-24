@@ -23,6 +23,9 @@
 #include "mrcp_recog_resource.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
+#include "apt_log.h"
+
+#define DEMO_SPEECH_SOURCE_FILE "demo.pcm"
 
 typedef struct recog_app_channel_t recog_app_channel_t;
 
@@ -37,6 +40,8 @@ struct recog_app_channel_t {
 	apt_bool_t          start_of_input;
 	/** File to read audio stream from */
 	FILE               *audio_in;
+	/** Estimated time to complete (used if no audio_in available) */
+	apr_size_t          time_to_complete;
 };
 
 /** Declaration of recognizer application methods */
@@ -95,6 +100,7 @@ static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
 	recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
 	recog_channel->start_of_input = FALSE;
 	recog_channel->audio_in = NULL;
+	recog_channel->time_to_complete = 0;
 	/* create audio stream */
 	recog_channel->audio_stream = mpf_audio_stream_create(
 			recog_channel,        /* object to associate */
@@ -182,6 +188,14 @@ static apt_bool_t recog_application_on_channel_add(mrcp_application_t *applicati
 		}
 		if(recog_channel) {
 			recog_channel->audio_in = fopen("demo.pcm","rb");
+			if(recog_channel->audio_in) {
+				apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",DEMO_SPEECH_SOURCE_FILE);
+			}
+			else {
+				apt_log(APT_PRIO_INFO,"Cannot Find [%s]",DEMO_SPEECH_SOURCE_FILE);
+				/* set some estimated time to complete */
+				recog_channel->time_to_complete = 5000; // 5 sec
+			}
 		}
 	}
 	else {
@@ -275,9 +289,15 @@ static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t 
 			}
 		}
 		else {
-			/* no audio file available, just fill with silence */
-			frame->type |= MEDIA_FRAME_TYPE_AUDIO;
-			memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
+			/* fill with silence in case no file available */
+			if(recog_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
+				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+				memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
+				recog_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
+			}
+			else {
+				recog_channel->start_of_input = FALSE;
+			}
 		}
 	}
 	return TRUE;
