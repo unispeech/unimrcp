@@ -201,6 +201,7 @@ static mrcp_connection_agent_t* unimrcp_server_connection_agent_load(mrcp_server
 	const apr_xml_elem *elem;
 	char *mrcp_ip = DEFAULT_IP_ADDRESS;
 	apr_port_t mrcp_port = 1544;
+	apr_size_t max_connection_count = 100;
 
 	apt_log(APT_PRIO_DEBUG,"Loading MRCPv2 Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -215,15 +216,17 @@ static mrcp_connection_agent_t* unimrcp_server_connection_agent_load(mrcp_server
 				else if(strcasecmp(attr_name->value,"mrcp-port") == 0) {
 					mrcp_port = (apr_port_t)atol(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
+					max_connection_count = atol(attr_value->value);
+				}
 				else {
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
 			}
 		}
 	}    
-	return mrcp_server_connection_agent_create(mrcp_ip,mrcp_port,pool);
+	return mrcp_server_connection_agent_create(mrcp_ip,mrcp_port,max_connection_count,pool);
 }
-
 
 /** Load MRCPv2 conection agents */
 static apt_bool_t unimrcp_server_connection_agents_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
@@ -426,7 +429,7 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 			const apr_xml_attr *attr_name;
 			const apr_xml_attr *attr_value;
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
-				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				apt_log(APT_PRIO_INFO,"Loading Profile %s [%s]",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"signaling-agent") == 0) {
 					sig_agent = mrcp_server_signaling_agent_get(server,attr_value->value);
 				}

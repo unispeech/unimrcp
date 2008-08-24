@@ -36,6 +36,7 @@ APT_BEGIN_EXTERN_C
 APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										const char *listen_ip, 
 										apr_port_t listen_port, 
+										apr_size_t max_connection_count,
 										apr_pool_t *pool);
 
 /**

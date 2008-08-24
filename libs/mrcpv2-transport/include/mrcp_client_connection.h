@@ -31,7 +31,7 @@ APT_BEGIN_EXTERN_C
  * Create connection agent.
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_pool_t *pool);
+APT_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_size_t max_connection_count, apr_pool_t *pool);
 
 /**
  * Destroy connection agent.

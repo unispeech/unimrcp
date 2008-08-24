@@ -193,6 +193,30 @@ static apt_bool_t unimrcp_client_signaling_agents_load(mrcp_client_t *client, co
 	return TRUE;
 }
 
+/** Load MRCPv2 connection agent */
+static mrcp_connection_agent_t* unimrcp_client_connection_agent_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	apr_size_t max_connection_count = 100;
+
+	apt_log(APT_PRIO_DEBUG,"Loading MRCPv2 Agent");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			const apr_xml_attr *attr_name;
+			const apr_xml_attr *attr_value;
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
+					max_connection_count = atol(attr_value->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
+				}
+			}
+		}
+	}    
+	return mrcp_client_connection_agent_create(max_connection_count,pool);
+}
 
 /** Load MRCPv2 conection agents */
 static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
@@ -213,7 +237,7 @@ static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, c
 				}
 			}
 			apt_log(APT_PRIO_DEBUG,"Loading Connection Agent");
-			connection_agent = mrcp_client_connection_agent_create(pool);
+			connection_agent = unimrcp_client_connection_agent_load(client,elem,pool);
 			if(connection_agent) {
 				mrcp_client_connection_agent_register(client,connection_agent,name);
 			}
@@ -356,7 +380,7 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 			const apr_xml_attr *attr_name;
 			const apr_xml_attr *attr_value;
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
-				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				apt_log(APT_PRIO_INFO,"Loading Profile %s [%s]",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"signaling-agent") == 0) {
 					sig_agent = mrcp_client_signaling_agent_get(client,attr_value->value);
 				}

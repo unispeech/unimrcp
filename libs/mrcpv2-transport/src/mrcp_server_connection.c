@@ -23,7 +23,6 @@
 #include "apt_task.h"
 #include "apt_log.h"
 
-#define MRCP_CONNECTION_MAX_COUNT 10
 #define MRCP_MESSAGE_MAX_SIZE 2048
 
 struct mrcp_connection_agent_t {
@@ -31,6 +30,7 @@ struct mrcp_connection_agent_t {
 	apt_task_t              *task;
 	mrcp_resource_factory_t *resource_factory;
 
+	apr_size_t               max_connection_count;
 	apr_pollset_t           *pollset;
 
 	apr_sockaddr_t          *sockaddr;
@@ -72,8 +72,9 @@ static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task);
 
 /** Create connection agent */
 APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
-										const char *listen_ip, 
-										apr_port_t listen_port, 
+										const char *listen_ip,
+										apr_port_t listen_port,
+										apr_size_t max_connection_count,
 										apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
@@ -87,6 +88,7 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->control_sockaddr = NULL;
 	agent->control_sock = NULL;
 	agent->pollset = NULL;
+	agent->max_connection_count = max_connection_count;
 
 	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,agent->pool);
 	if(!agent->sockaddr) {
@@ -309,7 +311,7 @@ static apt_bool_t mrcp_server_agent_pollset_create(mrcp_connection_agent_t *agen
 {
 	apr_status_t status;
 	/* create pollset */
-	status = apr_pollset_create(&agent->pollset, MRCP_CONNECTION_MAX_COUNT + 2, agent->pool, 0);
+	status = apr_pollset_create(&agent->pollset, (apr_uint32_t)agent->max_connection_count + 2, agent->pool, 0);
 	if(status != APR_SUCCESS) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
@@ -453,7 +455,12 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
-	apr_pollset_add(agent->pollset, &connection->sock_pfd);
+	if(apr_pollset_add(agent->pollset, &connection->sock_pfd) != APR_SUCCESS) {
+		apt_log(APT_PRIO_WARNING,"Failed to Add to Pollset");
+		apr_socket_close(sock);
+		mrcp_connection_destroy(connection);
+		return FALSE;
+	}
 
 	connection->it = apt_list_push_back(agent->connection_list,connection);
 

@@ -23,19 +23,20 @@
 #include "apt_task.h"
 #include "apt_log.h"
 
-#define MRCP_CONNECTION_MAX_COUNT 10
 #define MRCP_MESSAGE_MAX_SIZE 2048
 
 
 struct mrcp_connection_agent_t {
 	apr_pool_t              *pool;
 	apt_task_t              *task;
+
 	mrcp_resource_factory_t *resource_factory;
 
+	apr_size_t               max_connection_count;
 	apr_pollset_t           *pollset;
 
-	apr_sockaddr_t          *control_sockaddr;
 	/* Control socket */
+	apr_sockaddr_t          *control_sockaddr;
 	apr_socket_t            *control_sock;
 	apr_pollfd_t             control_sock_pfd;
 
@@ -67,17 +68,18 @@ static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task);
 
 /** Create connection agent. */
-APT_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_pool_t *pool)
+APT_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_size_t max_connection_count, apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
 	mrcp_connection_agent_t *agent;
 	
-	apt_log(APT_PRIO_NOTICE,"Create TCP/MRCPv2 Connection Agent");
+	apt_log(APT_PRIO_NOTICE,"Create TCP/MRCPv2 Connection Agent [%d]",max_connection_count);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
 	agent->control_sockaddr = NULL;
 	agent->control_sock = NULL;
 	agent->pollset = NULL;
+	agent->max_connection_count = max_connection_count;
 
 	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,7856,0,agent->pool);
 	if(!agent->control_sockaddr) {
@@ -255,7 +257,7 @@ static apt_bool_t mrcp_client_agent_pollset_create(mrcp_connection_agent_t *agen
 	apr_status_t status;
 	
 	/* create pollset */
-	status = apr_pollset_create(&agent->pollset, MRCP_CONNECTION_MAX_COUNT + 1, agent->pool, 0);
+	status = apr_pollset_create(&agent->pollset, (apr_uint32_t)agent->max_connection_count + 1, agent->pool, 0);
 	if(status != APR_SUCCESS) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
