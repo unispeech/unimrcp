@@ -67,7 +67,7 @@ struct mrcp_control_channel_t {
 	void                    *obj;
 	/** Pool to allocate memory from */
 	apr_pool_t              *pool;
-	/** Channel identifier id@resource */
+	/** Channel identifier (id at resource) */
 	apt_str_t                identifier;
 };
 
