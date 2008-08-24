@@ -302,11 +302,15 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 {
 	if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		mrcp_app_message_t *response;
-		if(!session->active_request) {
+		mrcp_message_t *mrcp_request;
+		if(!session->active_request || !session->active_request->control_message) {
 			return FALSE;
 		}
 		response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
 		*response = *session->active_request;
+		mrcp_request = session->active_request->control_message;
+		mrcp_message->start_line.method_id = mrcp_request->start_line.method_id;
+		mrcp_message->start_line.method_name = mrcp_request->start_line.method_name;
 		response->control_message = mrcp_message;
 		apt_log(APT_PRIO_INFO,"Send MRCP Response to Application <%s>",	mrcp_session_str(session));
 		session->application->handler(response);
@@ -324,7 +328,7 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 		app_message->application = session->application;
 		app_message->session = &session->base;
 		app_message->channel = channel;
-		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application <%>",	mrcp_session_str(session));
+		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application <%s>",	mrcp_session_str(session));
 		session->application->handler(app_message);
 	}
 	return TRUE;
