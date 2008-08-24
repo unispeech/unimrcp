@@ -419,16 +419,18 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 
 static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel)
 {
-	mrcp_connection_t *connection = channel->connection;
-	mrcp_connection_channel_remove(connection,channel);
-	apt_log(APT_PRIO_INFO,"Remove Control Channel <%s> [%d]",
-			channel->identifier.buf,
-			apr_hash_count(connection->channel_table));
-	if(!connection->access_count) {
-		mrcp_client_agent_connection_remove(agent,connection);
-		/* set connection to be destroyed on channel destroy */
-		channel->connection = connection;
-		channel->removed = TRUE;
+	if(channel->connection) {
+		mrcp_connection_t *connection = channel->connection;
+		mrcp_connection_channel_remove(connection,channel);
+		apt_log(APT_PRIO_INFO,"Remove Control Channel <%s> [%d]",
+				channel->identifier.buf,
+				apr_hash_count(connection->channel_table));
+		if(!connection->access_count) {
+			mrcp_client_agent_connection_remove(agent,connection);
+			/* set connection to be destroyed on channel destroy */
+			channel->connection = connection;
+			channel->removed = TRUE;
+		}
 	}
 	
 	/* send response */

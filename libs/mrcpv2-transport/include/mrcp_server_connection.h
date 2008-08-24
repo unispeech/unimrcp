@@ -31,6 +31,7 @@ APT_BEGIN_EXTERN_C
  * Create connection agent.
  * @param listen_ip the listen IP address
  * @param listen_port the listen port
+ * @param max_connection_count the number of max MRCPv2 connections
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
