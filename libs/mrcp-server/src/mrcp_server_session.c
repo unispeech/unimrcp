@@ -691,19 +691,6 @@ static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *sess
 }
 
 
-static mrcp_channel_t* mrcp_server_channel_find_by_id(mrcp_server_session_t *session, mrcp_resource_id resource_id)
-{
-	int i;
-	mrcp_channel_t *channel;
-	for(i=0; i<session->channels->nelts; i++) {
-		channel = ((mrcp_channel_t**)session->channels->elts)[i];
-		if(channel && channel->resource && channel->resource->id == resource_id) {
-			return channel;
-		}
-	}
-	return NULL;
-}
-
 static mrcp_termination_slot_t* mrcp_server_rtp_termination_find(mrcp_server_session_t *session, mpf_termination_t *termination)
 {
 	int i;
