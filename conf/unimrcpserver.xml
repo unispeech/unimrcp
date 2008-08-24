@@ -22,6 +22,7 @@
       <agent name="MRCPv2-Agent-1">
         <param name="mrcp-ip" value="127.0.0.1"/>
         <param name="mrcp-port" value="1544"/>
+        <param name="max-connection-count" value="100"/>
       </agent>
     </connection>
 

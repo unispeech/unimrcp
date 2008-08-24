@@ -24,7 +24,9 @@
 
     <!-- MRCPv2 connection agents -->
     <connection>
-      <agent name="MRCPv2-Agent-1"/>
+      <agent name="MRCPv2-Agent-1">
+        <param name="max-connection-count" value="100"/>
+      </agent>
     </connection>
 
     <!-- Media engines -->
