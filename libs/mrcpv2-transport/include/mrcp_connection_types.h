@@ -23,6 +23,7 @@
  */ 
 
 #include <apr_network_io.h>
+#include "apt_string.h"
 #include "mrcp_types.h"
 
 APT_BEGIN_EXTERN_C
@@ -44,12 +45,14 @@ typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
 
 /** MRCPv2 connection event vtable */
 struct mrcp_connection_event_vtable_t {
+	/** Channel add event handler */
+	apt_bool_t (*on_add)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
 	/** Channel modify event handler */
 	apt_bool_t (*on_modify)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
 	/** Channel remove event handler */
 	apt_bool_t (*on_remove)(mrcp_control_channel_t *channel);
 	/** Message receive event handler */
-	apt_bool_t (*on_receive)(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message);
+	apt_bool_t (*on_receive)(mrcp_control_channel_t *channel, mrcp_message_t *message);
 };
 
 /** MRCPv2 control channel */
@@ -59,12 +62,26 @@ struct mrcp_control_channel_t {
 	/** MRCPv2 (shared) connection */
 	mrcp_connection_t       *connection;
 	/** Indicate removed connection (safe to destroy) */
-	apt_bool_t              removed;
+	apt_bool_t               removed;
 	/** External object associated with the channel */
 	void                    *obj;
 	/** Pool to allocate memory from */
 	apr_pool_t              *pool;
+	/** Channel identifier id@resource */
+	apt_str_t                identifier;
 };
+
+/** Send channel add response */
+static APR_INLINE apt_bool_t mrcp_control_channel_add_respond(
+						const mrcp_connection_event_vtable_t *vtable, 
+						mrcp_control_channel_t *channel, 
+						mrcp_control_descriptor_t *descriptor)
+{
+	if(vtable && vtable->on_add) {
+		return vtable->on_add(channel,descriptor);
+	}
+	return FALSE;
+}
 
 /** Send channel modify response */
 static APR_INLINE apt_bool_t mrcp_control_channel_modify_respond(
@@ -92,12 +109,11 @@ static APR_INLINE apt_bool_t mrcp_control_channel_remove_respond(
 /** Send MRCP message receive event */
 static APR_INLINE apt_bool_t mrcp_connection_message_receive(
 						const mrcp_connection_event_vtable_t *vtable,
-						mrcp_connection_agent_t *agent, 
-						mrcp_connection_t *connection, 
+						mrcp_control_channel_t *channel, 
 						mrcp_message_t *message)
 {
 	if(vtable && vtable->on_receive) {
-		return vtable->on_receive(agent,connection,message);
+		return vtable->on_receive(channel,message);
 	}
 	return FALSE;
 }

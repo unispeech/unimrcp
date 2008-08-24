@@ -49,10 +49,14 @@ typedef enum {
 struct mrcp_signaling_message_t {
 	/** Signaling message type */
 	mrcp_signaling_message_type_e type;
+
 	/** Session */
 	mrcp_server_session_t        *session;
 	/** Descriptor */
 	mrcp_session_descriptor_t    *descriptor;
+
+	/** Channel */
+	mrcp_channel_t               *channel;
 	/** MRCP message */
 	mrcp_message_t               *message;
 };
@@ -116,9 +120,11 @@ apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signa
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 
 /** Process channel modify event */
-apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_connection_t *connection, mrcp_control_descriptor_t *answer);
+apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *answer);
 /** Process channel remove event */
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);
+/** Process channel message receive */
+apt_bool_t mrcp_server_on_channel_message(mrcp_channel_t *channel, mrcp_message_t *message);
 
 /** Process channel open event */
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status);

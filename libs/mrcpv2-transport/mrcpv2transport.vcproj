@@ -134,6 +134,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_connection.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_connection_types.h"
 				>
 			</File>
@@ -152,6 +156,10 @@
 			>
 			<File
 				RelativePath=".\src\mrcp_client_connection.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_connection.c"
 				>
 			</File>
 			<File

@@ -98,6 +98,13 @@ APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent
 APT_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_connection_agent_t *agent, void *obj, apr_pool_t *pool);
 
 /**
+ * Add MRCPv2 control channel.
+ * @param channel the control channel to add
+ * @param descriptor the control descriptor
+ */
+APT_DECLARE(apt_bool_t) mrcp_server_control_channel_add(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+
+/**
  * Modify MRCPv2 control channel.
  * @param channel the control channel to modify
  * @param descriptor the control descriptor

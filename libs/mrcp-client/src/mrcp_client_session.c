@@ -58,6 +58,10 @@ static apt_bool_t mrcp_client_mpf_request_send(
 						mpf_termination_t *termination, 
 						void *descriptor);
 
+static APR_INLINE const char* mrcp_session_str(mrcp_client_session_t *session)
+{
+	return session->base.id.buf ? session->base.id.buf : "new";
+}
 
 mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj)
 {
@@ -110,8 +114,8 @@ mrcp_channel_t* mrcp_client_channel_create(
 
 apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
-	apt_log(APT_PRIO_INFO,"Receive Session Answer <%s> [c:%d a:%d v:%d]",
-		session->base.id.buf ? session->base.id.buf : "new",
+	apt_log(APT_PRIO_INFO,"Receive Answer <%s> [c:%d a:%d v:%d]",
+		mrcp_session_str(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts);
@@ -132,8 +136,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session)
 {
-	apt_log(APT_PRIO_INFO,"Receive Session Termination Response <%s>",
-		session->base.id.buf ? session->base.id.buf : "new");
+	apt_log(APT_PRIO_INFO,"Receive Terminate Response <%s>", mrcp_session_str(session));
 
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
@@ -192,20 +195,18 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 	return TRUE;
 }
 
-apt_bool_t mrcp_client_on_message_receive(mrcp_client_session_t *session, mrcp_connection_t *connection, mrcp_message_t *message)
+apt_bool_t mrcp_client_on_message_receive(mrcp_channel_t *channel, mrcp_message_t *message)
 {
-	mrcp_channel_t *channel = mrcp_client_channel_find_by_id(session,message->channel_id.resource_id);
-	if(!channel) {
-		apt_log(APT_PRIO_WARNING,"No such channel [%d]",message->channel_id.resource_id);
-		return FALSE;
-	}
+	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	return mrcp_app_control_message_send(session,channel,message);
 }
 
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)app_message->session;
-	apt_log(APT_PRIO_INFO,"Receive Request from Application [%d]",app_message->message_type);
+	apt_log(APT_PRIO_INFO,"Receive Request from Application <%s> [%d]",
+		mrcp_session_str(session),
+		app_message->message_type);
 	if(session->active_request) {
 		apt_log(APT_PRIO_DEBUG,"Push Request to Queue");
 		apt_list_push_back(session->request_queue,app_message);
@@ -250,8 +251,8 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message)
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session)
 {
 	mrcp_session_descriptor_t *descriptor = session->offer;
-	apt_log(APT_PRIO_INFO,"Send Session Offer <%s> [c:%d a:%d v:%d]",
-		session->base.id.buf ? session->base.id.buf : "new",
+	apt_log(APT_PRIO_INFO,"Send Offer <%s> [c:%d a:%d v:%d]",
+		mrcp_session_str(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts);
@@ -287,7 +288,9 @@ static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp
 	*response = *session->active_request;
 	response->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_RESPONSE;
 	response->sig_message.status = status;
-	apt_log(APT_PRIO_INFO,"Send Response to Application [%d]", response->message_type);
+	apt_log(APT_PRIO_INFO,"Send Response to Application <%s> [%d]", 
+		mrcp_session_str(session),
+		response->message_type);
 	session->application->handler(response);
 
 	session->active_request = apt_list_pop_front(session->request_queue);
@@ -307,7 +310,7 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 		response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
 		*response = *session->active_request;
 		response->control_message = mrcp_message;
-		apt_log(APT_PRIO_INFO,"Send MRCP Response to Application");
+		apt_log(APT_PRIO_INFO,"Send MRCP Response to Application <%s>",	mrcp_session_str(session));
 		session->application->handler(response);
 
 		session->active_request = apt_list_pop_front(session->request_queue);
@@ -323,7 +326,7 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 		app_message->application = session->application;
 		app_message->session = &session->base;
 		app_message->channel = channel;
-		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application");
+		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application <%>",	mrcp_session_str(session));
 		session->application->handler(app_message);
 	}
 	return TRUE;
@@ -401,19 +404,20 @@ static mrcp_channel_t* mrcp_client_channel_termination_find(mrcp_client_session_
 
 static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
-	apt_log(APT_PRIO_INFO,"Send MRCP Message to Server");
 	if(!session->base.id.length) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		apt_log(APT_PRIO_DEBUG,"Send Failed MRCP Message to Application");
+		apt_log(APT_PRIO_DEBUG,"Send Failure MRCP Response to Application");
 		mrcp_app_control_message_send(session,channel,response);
 		return TRUE;
 	}
 
 	message->channel_id.session_id = session->base.id;
 	message->start_line.request_id = ++session->base.last_request_id;
-	mrcp_client_control_message_send(channel->control_channel,message);
-	return TRUE;
+	apt_log(APT_PRIO_INFO,"Send MRCP Request to Server <%s> [%d]",
+					mrcp_session_str(session),
+					message->start_line.request_id);
+	return mrcp_client_control_message_send(channel->control_channel,message);
 }
 
 static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrcp_channel_t *channel, apt_bool_t enable)
@@ -566,7 +570,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Terminate Session");
+	apt_log(APT_PRIO_INFO,"Terminate Session <%s>", mrcp_session_str(session));
 	profile = session->profile;
 	/* remove existing control channels */
 	for(i=0; i<session->channels->nelts; i++) {
