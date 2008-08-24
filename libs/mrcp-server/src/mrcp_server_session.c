@@ -81,8 +81,6 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *ses
 static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session);
 static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session);
 
-static mrcp_channel_t* mrcp_server_channel_find_by_id(mrcp_server_session_t *session, mrcp_resource_id resource_id);
-
 static apt_bool_t mrcp_server_mpf_request_send(
 						mrcp_server_session_t *session, 
 						mpf_command_type_e command_id, 

@@ -49,8 +49,6 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 
-static mrcp_channel_t* mrcp_client_channel_find_by_id(mrcp_client_session_t *session, mrcp_resource_id resource_id);
-
 static apt_bool_t mrcp_client_mpf_request_send(
 						mpf_engine_t *engine, 
 						mpf_command_type_e command_id, 
@@ -346,19 +344,6 @@ static apt_bool_t mrcp_client_channel_find(mrcp_client_session_t *session, mrcp_
 		}
 	}
 	return FALSE;
-}
-
-static mrcp_channel_t* mrcp_client_channel_find_by_id(mrcp_client_session_t *session, mrcp_resource_id resource_id)
-{
-	int i;
-	mrcp_channel_t *channel;
-	for(i=0; i<session->channels->nelts; i++) {
-		channel = ((mrcp_channel_t**)session->channels->elts)[i];
-		if(channel && channel->resource && channel->resource->id == resource_id) {
-			return channel;
-		}
-	}
-	return NULL;
 }
 
 static rtp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_session_t *session, mpf_termination_t *termination)
