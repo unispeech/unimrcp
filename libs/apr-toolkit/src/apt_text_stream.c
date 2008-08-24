@@ -145,6 +145,19 @@ APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separat
 	return TRUE;
 }
 
+/** Generate id@resource string */
+APT_DECLARE(apt_bool_t) apt_id_resource_generate(const apt_str_t *id, const apt_str_t *resource, char separator, apt_str_t *str, apr_pool_t *pool)
+{
+	apr_size_t length = id->length+resource->length+1;
+	char *buf = apr_palloc(pool,length+1);
+	memcpy(buf,id->buf,id->length);
+	buf[id->length] = separator;
+	memcpy(buf+id->length+1,resource->buf,resource->length);
+	buf[length] = '\0';
+	str->buf = buf;
+	str->length = length;
+	return TRUE;
+}
 
 /** Generate header */
 APT_DECLARE(apt_bool_t) apt_header_generate(const apt_name_value_t *pair, apt_text_stream_t *stream)

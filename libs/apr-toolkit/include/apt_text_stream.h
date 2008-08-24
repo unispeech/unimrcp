@@ -169,6 +169,9 @@ static APR_INLINE void apt_text_spaces_skip(apt_text_stream_t *stream)
 /** Parse id at resource string */
 APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separator, apt_str_t *id, apt_str_t *resource, apr_pool_t *pool);
 
+/** Generate id at resource string */
+APT_DECLARE(apt_bool_t) apt_id_resource_generate(const apt_str_t *id, const apt_str_t *resource, char separator, apt_str_t *str, apr_pool_t *pool);
+
 /** Generate value plus the length (number of digits) of the value itself */
 APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_size_t max_count, apt_str_t *str);
 
