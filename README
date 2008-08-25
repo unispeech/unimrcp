@@ -10,8 +10,9 @@ See the file "INSTALLATION" for installation tips.
 
 DOCUMENTATION
 =============
-See the file "INSTALLATION" for doxygen generated documentation.
-More to come (Enterpise Architect generated documentation).
+See the directory "docs/dox" for doxygen generated documentation.
+See the directory "docs/ea" for UML based design concepts
+   (Enterpise Architect generated HTML pages).
 
 
 REFERENCES
@@ -31,10 +32,13 @@ Issue Tracker:
 Discussion Group:
    http://groups.google.com/group/unimrcp
 
-Version control repository (SVN):
+Version Control Repository (SVN):
    http://unimrcp.googlecode.com/svn/trunk/
 
-Commit monitor:
+UML Documentation File (Enterpise Architect):
+   http://unimrcp.googlecode.com/svn/misc/unimrcp.eap
+
+Commit Monitor:
    http://code.google.com/p/unimrcp/source/list
    http://groups.google.com/group/unimrcp-svn-commits
 

@@ -38,9 +38,11 @@ use the "--with-sofia-sip=" option.
 For example
 $ ./configure --with-sofia-sip=/usr/local/sofia-sip
 
+To install the default configuration use
+$ make def-conf
+
 To generate doxygen documentation from the sources use
 $ make dox
-Find output in docs/dox
 
 To build distribution tarball use
 $ make dist
