@@ -146,6 +146,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_net.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_obj_list.h"
 				>
 			</File>
@@ -188,6 +192,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_log.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_net.c"
 				>
 			</File>
 			<File
