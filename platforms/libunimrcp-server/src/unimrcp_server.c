@@ -21,10 +21,21 @@
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_server_connection.h"
+#include "apt_net.h"
 #include "apt_log.h"
 
-#define DEFAULT_CONF_FILE_PATH    "unimrcpserver.xml"
-#define DEFAULT_IP_ADDRESS        "127.0.0.1"
+#define UNI_XML_FILE_SIZE 2000
+#define DEFAULT_CONF_FILE_PATH   "unimrcpserver.xml"
+
+#define DEFAULT_IP_ADDRESS       "127.0.0.1"
+#define DEFAULT_SIP_PORT         8060
+#define DEFAULT_MRCP_PORT        1544
+#define DEFAULT_RTP_PORT_MIN     5000
+#define DEFAULT_RTP_PORT_MAX     6000
+
+#define DEFAULT_SOFIASIP_UA_NAME "UniMRCP SofiaSIP"
+#define DEFAULT_SDP_ORIGIN       "UniMRCPServer"
+
 
 static apr_xml_doc* unimrcp_server_config_parse(const char *path, apr_pool_t *pool);
 static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const apr_xml_doc *doc, apr_pool_t *pool);
@@ -84,7 +95,7 @@ static apr_xml_doc* unimrcp_server_config_parse(const char *path, apr_pool_t *po
 		return NULL;
 	}
 
-	rv = apr_xml_parse_file(pool,&parser,&doc,fd,2000);
+	rv = apr_xml_parse_file(pool,&parser,&doc,fd,UNI_XML_FILE_SIZE);
 	if(rv != APR_SUCCESS) {
 		apt_log(APT_PRIO_WARNING,"Failed to Parse Config File [%s]",path);
 		return NULL;
@@ -114,15 +125,25 @@ static apt_bool_t param_name_value_get(const apr_xml_elem *elem, const apr_xml_a
 	return (*name && *value) ? TRUE : FALSE;
 }
 
+static char* ip_addr_get(const char *value, apr_pool_t *pool)
+{
+	if(!value || strcasecmp(value,"auto") == 0) {
+		char *addr = DEFAULT_IP_ADDRESS;
+		apt_ip_get(&addr,pool);
+		return addr;
+	}
+	return apr_pstrdup(pool,value);
+}
+
 /** Load SofiaSIP signaling agent */
 static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
 	mrcp_sofia_server_config_t *config = mrcp_sofiasip_server_config_alloc(pool);
 	config->local_ip = DEFAULT_IP_ADDRESS;
-	config->local_port = 8060;
-	config->user_agent_name = "UniMRCP SofiaSIP";
-	config->origin = "UniMRCPServer";
+	config->local_port = DEFAULT_SIP_PORT;
+	config->user_agent_name = DEFAULT_SOFIASIP_UA_NAME;
+	config->origin = DEFAULT_SDP_ORIGIN;
 
 	apt_log(APT_PRIO_DEBUG,"Loading SofiaSIP Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -132,7 +153,7 @@ static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *serve
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
 				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"sip-ip") == 0) {
-					config->local_ip = apr_pstrdup(pool,attr_value->value);
+					config->local_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"sip-port") == 0) {
 					config->local_port = (apr_port_t)atol(attr_value->value);
@@ -200,7 +221,7 @@ static mrcp_connection_agent_t* unimrcp_server_connection_agent_load(mrcp_server
 {
 	const apr_xml_elem *elem;
 	char *mrcp_ip = DEFAULT_IP_ADDRESS;
-	apr_port_t mrcp_port = 1544;
+	apr_port_t mrcp_port = DEFAULT_MRCP_PORT;
 	apr_size_t max_connection_count = 100;
 
 	apt_log(APT_PRIO_DEBUG,"Loading MRCPv2 Agent");
@@ -211,7 +232,7 @@ static mrcp_connection_agent_t* unimrcp_server_connection_agent_load(mrcp_server
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
 				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"mrcp-ip") == 0) {
-					mrcp_ip = apr_pstrdup(pool,attr_value->value);
+					mrcp_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"mrcp-port") == 0) {
 					mrcp_port = (apr_port_t)atol(attr_value->value);
@@ -262,8 +283,8 @@ static apt_bool_t unimrcp_server_connection_agents_load(mrcp_server_t *server, c
 static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	char *rtp_ip = DEFAULT_IP_ADDRESS;
-	apr_port_t rtp_port_min = 5000;
-	apr_port_t rtp_port_max = 6000;
+	apr_port_t rtp_port_min = DEFAULT_RTP_PORT_MIN;
+	apr_port_t rtp_port_max = DEFAULT_RTP_PORT_MAX;
 	const apr_xml_elem *elem;
 	apt_log(APT_PRIO_DEBUG,"Loading RTP Termination Factory");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -273,7 +294,7 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
 				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"rtp-ip") == 0) {
-					rtp_ip = apr_pstrdup(pool,attr_value->value);
+					rtp_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-min") == 0) {
 					rtp_port_min = (apr_port_t)atol(attr_value->value);
