@@ -7,9 +7,9 @@ AC_INIT([unimrcp], [0.0.1])
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/acmacros])
 AC_PREFIX_DEFAULT(/usr/local/unimrcp)
-plugindir='${prefix}/plugin'
 
 plugindir='${prefix}/plugin'
+confdir='${prefix}/conf'
 
 AM_INIT_AUTOMAKE(foreign)
 
@@ -34,6 +34,7 @@ UNIMRCP_CHECK_SOFIA
 AC_SUBST(ac_aux_dir)
 AC_SUBST(ac_macro_dir)
 AC_SUBST(plugindir)
+AC_SUBST(confdir)
 
 AC_DEFUN([AX_COMPILER_VENDOR],
 [

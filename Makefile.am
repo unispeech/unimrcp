@@ -19,3 +19,13 @@ SUBDIRS                 = libs modules plugins platforms tests
 
 dox:
 	doxygen $(top_srcdir)/docs/doxygen.conf
+
+def-conf:
+	test -d $(confdir) || $(mkinstalldirs) $(confdir)
+	for conffile in `find conf -name \*.xml` ; do \
+	    filename=`echo $$conffile | sed -e 's|^.*/||'`; \
+	    $(INSTALL) -m 644 conf/$$filename $(confdir); \
+	done
+           
+install-data-local:
+	test -d $(confdir) || $(MAKE) def-conf
