@@ -253,7 +253,7 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 		apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",DEMO_SPEECH_SOURCE_FILE);
 	}
 	else {
-		apt_log(APT_PRIO_INFO,"Cannot Find [%s]",DEMO_SPEECH_SOURCE_FILE);
+		apt_log(APT_PRIO_INFO,"No Speech Source [%s] Found",DEMO_SPEECH_SOURCE_FILE);
 		/* calculate estimated time to complete */
 		if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
 			mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
@@ -392,6 +392,7 @@ static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 			/* fill with silence in case no file available */
 			if(synth_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
 				memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
+				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 				synth_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
 			}
 			else {
