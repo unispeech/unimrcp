@@ -38,10 +38,8 @@
 
     <!-- Resource plugins -->
     <plugin>
-      <engine name="Demo-Synth-1" path="demosynth.dll"/>
-      <!-- <engine name="Demo-Synth-1" path="../lib/libdemosynth.so"/> -->
-      <engine name="Demo-Recog-1" path="demorecog.dll"/>
-      <!-- <engine name="Demo-Recog-1" path="../lib/libdemorecog.so"/> -->
+      <engine name="Demo-Synth-1" class="demosynth"/>
+      <engine name="Demo-Recog-1" class="demorecog"/>
     </plugin>
   </settings>
 
