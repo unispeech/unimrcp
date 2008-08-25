@@ -10,6 +10,7 @@ INCLUDES                   = -Iinclude \
                              -I$(top_srcdir)/libs/apr-toolkit/include \
                              $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
 
-lib_LTLIBRARIES            = libdemorecog.la
+plugin_LTLIBRARIES         = demorecog.la
 
-libdemorecog_la_SOURCES    = src/demo_recog_engine.c
+demorecog_la_SOURCES       = src/demo_recog_engine.c
+demorecog_la_LDFLAGS       = -module

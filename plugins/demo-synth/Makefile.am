@@ -10,6 +10,7 @@ INCLUDES                   = -Iinclude \
                              -I$(top_srcdir)/libs/apr-toolkit/include \
                              $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
 
-lib_LTLIBRARIES            = libdemosynth.la
+plugin_LTLIBRARIES         = demosynth.la
 
-libdemosynth_la_SOURCES    = src/demo_synth_engine.c
+demosynth_la_SOURCES       = src/demo_synth_engine.c
+demosynth_la_LDFLAGS       = -module
