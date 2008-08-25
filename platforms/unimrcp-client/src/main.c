@@ -92,15 +92,15 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -f [--conf-file] path : Set the path to configuration file.\n"
+		"   -c [--conf-dir] path : Set the path to config directory.\n"
 		"\n"
-		"   -l [--log] priority   : Set the log priority (0-emergency, ..., 7-debug).\n"
+		"   -l [--log] priority  : Set the log priority (0-emergency, ..., 7-debug).\n"
 		"\n"
-		"   -h [--help]           : Show the help.\n"
+		"   -h [--help]          : Show the help.\n"
 		"\n");
 }
 
-static apt_bool_t demo_framework_options_load(const char **conf_file_path, int argc, const char * const *argv, apr_pool_t *pool)
+static apt_bool_t demo_framework_options_load(const char **conf_dir_path, int argc, const char * const *argv, apr_pool_t *pool)
 {
 	apr_status_t rv;
 	apr_getopt_t *opt;
@@ -109,7 +109,7 @@ static apt_bool_t demo_framework_options_load(const char **conf_file_path, int a
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "conf-file",    'f', TRUE,  "path to conf file" }, /* -f arg or --conf-file arg */
+		{ "conf-dir",     'c', TRUE,  "path to config dir" },/* -c arg or --conf-dir arg */
 		{ "log",          'l', TRUE,  "log priority" },      /* -l arg or --log arg */
 		{ "help",         'h', FALSE, "show help" },         /* -h or --help */
 		{ NULL, 0, 0, NULL },                                /* end */
@@ -125,9 +125,9 @@ static apt_bool_t demo_framework_options_load(const char **conf_file_path, int a
 
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
-			case 'f':
-				if(conf_file_path) {
-					*conf_file_path = optarg;
+			case 'c':
+				if(conf_dir_path) {
+					*conf_dir_path = optarg;
 				}
 				break;
 			case 'l':
@@ -152,7 +152,7 @@ static apt_bool_t demo_framework_options_load(const char **conf_file_path, int a
 int main(int argc, const char * const *argv)
 {
 	apr_pool_t *pool;
-	const char *conf_file_path = NULL;
+	const char *conf_dir_path = NULL;
 	demo_framework_t *framework;
 
 	/* APR global initialization */
@@ -168,14 +168,14 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* load options */
-	if(demo_framework_options_load(&conf_file_path,argc,argv,pool) != TRUE) {
+	if(demo_framework_options_load(&conf_dir_path,argc,argv,pool) != TRUE) {
 		apr_pool_destroy(pool);
 		apr_terminate();
 		return 0;
 	}
 
 	/* create demo framework */
-	framework = demo_framework_create(conf_file_path);
+	framework = demo_framework_create(conf_dir_path);
 	if(framework) {
 		/* run command line  */
 		demo_framework_cmdline_run(framework);

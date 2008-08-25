@@ -24,8 +24,12 @@
 #include "apt_net.h"
 #include "apt_log.h"
 
-#define UNI_XML_FILE_SIZE 2000
-#define DEFAULT_CONF_FILE_PATH    "unimrcpclient.xml"
+#define CONF_FILE_NAME            "unimrcpclient.xml"
+#ifdef WIN32
+#define DEFAULT_CONF_DIR_PATH     ""
+#else
+#define DEFAULT_CONF_DIR_PATH     "../conf"
+#endif
 
 #define DEFAULT_LOCAL_IP_ADDRESS  "127.0.0.1"
 #define DEFAULT_REMOTE_IP_ADDRESS "127.0.0.1"
@@ -34,14 +38,16 @@
 #define DEFAULT_RTP_PORT_MIN      4000
 #define DEFAULT_RTP_PORT_MAX      5000
 
-#define DEFAULT_SOFIASIP_UA_NAME "UniMRCP SofiaSIP"
-#define DEFAULT_SDP_ORIGIN       "UniMRCPClient"
+#define DEFAULT_SOFIASIP_UA_NAME  "UniMRCP SofiaSIP"
+#define DEFAULT_SDP_ORIGIN        "UniMRCPClient"
+
+#define XML_FILE_BUFFER_LENGTH    2000
 
 static apr_xml_doc* unimrcp_client_config_parse(const char *path, apr_pool_t *pool);
 static apt_bool_t unimrcp_client_config_load(mrcp_client_t *client, const apr_xml_doc *doc, apr_pool_t *pool);
 
 /** Start UniMRCP client */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_file_path)
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
@@ -57,7 +63,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_file_path)
 		mrcp_client_resource_factory_register(client,resource_factory);
 	}
 
-	doc = unimrcp_client_config_parse(conf_file_path,pool);
+	doc = unimrcp_client_config_parse(conf_dir_path,pool);
 	if(doc) {
 		unimrcp_client_config_load(client,doc,pool);
 	}
@@ -66,27 +72,34 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_file_path)
 }
 
 /** Parse config file */
-static apr_xml_doc* unimrcp_client_config_parse(const char *path, apr_pool_t *pool)
+static apr_xml_doc* unimrcp_client_config_parse(const char *dir_path, apr_pool_t *pool)
 {
 	apr_xml_parser *parser;
 	apr_xml_doc *doc;
 	apr_file_t *fd;
 	apr_status_t rv;
+	const char *file_path;
 
-	if(!path) {
-		path = DEFAULT_CONF_FILE_PATH;
+	if(!dir_path) {
+		dir_path = DEFAULT_CONF_DIR_PATH;
 	}
-    
-	apt_log(APT_PRIO_NOTICE,"Open Config File [%s]",path);
-	rv = apr_file_open(&fd,path,APR_READ|APR_BINARY,0,pool);
+	if(*dir_path == '\0') {
+		file_path = CONF_FILE_NAME;
+	}
+	else {
+		file_path = apr_psprintf(pool,"%s/%s",dir_path,CONF_FILE_NAME);
+	}
+
+	apt_log(APT_PRIO_NOTICE,"Open Config File [%s]",file_path);
+	rv = apr_file_open(&fd,file_path,APR_READ|APR_BINARY,0,pool);
 	if(rv != APR_SUCCESS) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open Config File [%s]",path);
+		apt_log(APT_PRIO_WARNING,"Failed to Open Config File [%s]",file_path);
 		return NULL;
 	}
 
-	rv = apr_xml_parse_file(pool,&parser,&doc,fd,2000);
+	rv = apr_xml_parse_file(pool,&parser,&doc,fd,XML_FILE_BUFFER_LENGTH);
 	if(rv != APR_SUCCESS) {
-		apt_log(APT_PRIO_WARNING,"Failed to Parse Config File [%s]",path);
+		apt_log(APT_PRIO_WARNING,"Failed to Parse Config File [%s]",file_path);
 		return NULL;
 	}
 
@@ -256,7 +269,6 @@ static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, c
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 				}
 			}
-			apt_log(APT_PRIO_DEBUG,"Loading Connection Agent");
 			connection_agent = unimrcp_client_connection_agent_load(client,elem,pool);
 			if(connection_agent) {
 				mrcp_client_connection_agent_register(client,connection_agent,name);

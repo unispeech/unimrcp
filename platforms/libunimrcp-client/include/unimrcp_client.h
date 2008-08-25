@@ -28,9 +28,9 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create UniMRCP client.
- * @param conf_file_path the path to config file
+ * @param conf_dir_path the path to config directory
  */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_file_path);
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path);
 
 
 APT_END_EXTERN_C

@@ -28,9 +28,10 @@ APT_BEGIN_EXTERN_C
 
 /** 
  * Start UniMRCP server.
- * @param conf_file_path the path to config file
+ * @param conf_dir_path the path to config directory
+ * @param plugin_dir_path the path to plugin directory
  */
-MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_file_path);
+MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_dir_path, const char *plugin_dir_path);
 
 /** 
  * Shutdown UniMRCP server.

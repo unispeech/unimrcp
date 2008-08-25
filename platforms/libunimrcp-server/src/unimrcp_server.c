@@ -24,8 +24,16 @@
 #include "apt_net.h"
 #include "apt_log.h"
 
-#define UNI_XML_FILE_SIZE 2000
-#define DEFAULT_CONF_FILE_PATH   "unimrcpserver.xml"
+#define CONF_FILE_NAME           "unimrcpserver.xml"
+#ifdef WIN32
+#define DEFAULT_CONF_DIR_PATH    ""
+#define DEFAULT_PLUGIN_DIR_PATH  ""
+#define DEFAULT_PLUGIN_EXT       "dll"
+#else
+#define DEFAULT_CONF_DIR_PATH    "../conf"
+#define DEFAULT_PLUGIN_DIR_PATH  "../plugin"
+#define DEFAULT_PLUGIN_EXT       "so"
+#endif
 
 #define DEFAULT_IP_ADDRESS       "127.0.0.1"
 #define DEFAULT_SIP_PORT         8060
@@ -36,12 +44,13 @@
 #define DEFAULT_SOFIASIP_UA_NAME "UniMRCP SofiaSIP"
 #define DEFAULT_SDP_ORIGIN       "UniMRCPServer"
 
+#define XML_FILE_BUFFER_LENGTH   2000
 
 static apr_xml_doc* unimrcp_server_config_parse(const char *path, apr_pool_t *pool);
-static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const apr_xml_doc *doc, apr_pool_t *pool);
+static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_doc *doc, apr_pool_t *pool);
 
 /** Start UniMRCP server */
-MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_file_path)
+MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_dir_path, const char *plugin_dir_path)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
@@ -57,9 +66,9 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_file_path)
 		mrcp_server_resource_factory_register(server,resource_factory);
 	}
 
-	doc = unimrcp_server_config_parse(conf_file_path,pool);
+	doc = unimrcp_server_config_parse(conf_dir_path,pool);
 	if(doc) {
-		unimrcp_server_config_load(server,doc,pool);
+		unimrcp_server_config_load(server,plugin_dir_path,doc,pool);
 	}
 
 	mrcp_server_start(server);
@@ -77,27 +86,34 @@ MRCP_DECLARE(apt_bool_t) unimrcp_server_shutdown(mrcp_server_t *server)
 
 
 /** Parse config file */
-static apr_xml_doc* unimrcp_server_config_parse(const char *path, apr_pool_t *pool)
+static apr_xml_doc* unimrcp_server_config_parse(const char *dir_path, apr_pool_t *pool)
 {
 	apr_xml_parser *parser;
 	apr_xml_doc *doc;
 	apr_file_t *fd;
 	apr_status_t rv;
+	const char *file_path;
 
-	if(!path) {
-		path = DEFAULT_CONF_FILE_PATH;
+	if(!dir_path) {
+		dir_path = DEFAULT_CONF_DIR_PATH;
 	}
-    
-	apt_log(APT_PRIO_NOTICE,"Open Config File [%s]",path);
-	rv = apr_file_open(&fd,path,APR_READ|APR_BINARY,0,pool);
+	if(*dir_path == '\0') {
+		file_path = CONF_FILE_NAME;
+	}
+	else {
+		file_path = apr_psprintf(pool,"%s/%s",dir_path,CONF_FILE_NAME);
+	}
+
+	apt_log(APT_PRIO_NOTICE,"Open Config File [%s]",file_path);
+	rv = apr_file_open(&fd,file_path,APR_READ|APR_BINARY,0,pool);
 	if(rv != APR_SUCCESS) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open Config File [%s]",path);
+		apt_log(APT_PRIO_WARNING,"Failed to Open Config File [%s]",file_path);
 		return NULL;
 	}
 
-	rv = apr_xml_parse_file(pool,&parser,&doc,fd,UNI_XML_FILE_SIZE);
+	rv = apr_xml_parse_file(pool,&parser,&doc,fd,XML_FILE_BUFFER_LENGTH);
 	if(rv != APR_SUCCESS) {
-		apt_log(APT_PRIO_WARNING,"Failed to Parse Config File [%s]",path);
+		apt_log(APT_PRIO_WARNING,"Failed to Parse Config File [%s]",file_path);
 		return NULL;
 	}
 
@@ -360,33 +376,56 @@ static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const
 }
 
 /** Load plugin */
-static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	const char *name = NULL;
-	const char *path = NULL;
+	const char *plugin_name = NULL;
+	const char *plugin_class = NULL;
+	const char *plugin_ext = NULL;
+	const char *plugin_path = NULL;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
 		if(strcasecmp(attr->name,"name") == 0) {
-			name = apr_pstrdup(pool,attr->value);
+			plugin_name = apr_pstrdup(pool,attr->value);
 		}
-		else if(strcasecmp(attr->name,"path") == 0) {
-			path = attr->value;
+		else if(strcasecmp(attr->name,"class") == 0) {
+			plugin_class = attr->value;
+		}
+		else if(strcasecmp(attr->name,"ext") == 0) {
+			plugin_ext = attr->value;
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 		}
 	}
-	return mrcp_server_plugin_register(server,path,name);
+
+	if(!plugin_class) {
+		return FALSE;
+	}
+	if(!plugin_dir_path) {
+		plugin_dir_path = DEFAULT_PLUGIN_DIR_PATH;
+	}
+	if(!plugin_ext) {
+		plugin_ext = DEFAULT_PLUGIN_EXT;
+	}
+
+	if(*plugin_dir_path == '\0') {
+		plugin_path = apr_psprintf(pool,"%s.%s",plugin_class,plugin_ext);
+	}
+	else {
+		plugin_path = apr_psprintf(pool,"%s/%s.%s",plugin_dir_path,plugin_class,plugin_ext);
+	}
+
+	return mrcp_server_plugin_register(server,plugin_path,plugin_name);
 }
 
 /** Load plugins */
-static apt_bool_t unimrcp_server_plugins_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+static apt_bool_t unimrcp_server_plugins_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
 	apt_log(APT_PRIO_DEBUG,"Loading Plugins (Resource Engines)");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"engine") == 0) {
-			unimrcp_server_plugin_load(server,elem,pool);
+			unimrcp_server_plugin_load(server,plugin_dir_path,elem,pool);
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
@@ -397,7 +436,7 @@ static apt_bool_t unimrcp_server_plugins_load(mrcp_server_t *server, const apr_x
 
 
 /** Load settings */
-static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
 	apt_log(APT_PRIO_DEBUG,"Loading Settings");
@@ -412,7 +451,7 @@ static apt_bool_t unimrcp_server_settings_load(mrcp_server_t *server, const apr_
 			unimrcp_server_media_engines_load(server,elem,pool);
 		}
 		else if(strcasecmp(elem->name,"plugin") == 0) {
-			unimrcp_server_plugins_load(server,elem,pool);
+			unimrcp_server_plugins_load(server,plugin_dir_path,elem,pool);
 		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
@@ -492,7 +531,7 @@ static apt_bool_t unimrcp_server_profiles_load(mrcp_server_t *server, const apr_
 }
 
 /** Load configuration (settings and profiles) */
-static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const apr_xml_doc *doc, apr_pool_t *pool)
+static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_doc *doc, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
 	const apr_xml_elem *root = doc->root;
@@ -502,7 +541,7 @@ static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const apr_xm
 	}
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"settings") == 0) {
-			unimrcp_server_settings_load(server,elem,pool);
+			unimrcp_server_settings_load(server,plugin_dir_path,elem,pool);
 		}
 		else if(strcasecmp(elem->name,"profiles") == 0) {
 			unimrcp_server_profiles_load(server,elem,pool);
