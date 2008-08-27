@@ -14,8 +14,10 @@ MAINTAINERCLEANFILES 	= Makefile.in aclocal.m4 configure $(AUX_DIST)
 
 ACLOCAL			= aclocal -I $(macrodir)
 
-SUBDIRS                 = libs modules plugins platforms tests
-
+SUBDIRS                 = libs modules plugins platforms
+if TEST_SUITES
+SUBDIRS                += tests
+endif
 
 dox:
 	doxygen $(top_srcdir)/docs/doxygen.conf

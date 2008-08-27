@@ -67,18 +67,25 @@ if test "${enable_maintainer_mode}" != "no"; then
     fi
 fi
 
+AC_ARG_ENABLE(test-suites,
+    [AC_HELP_STRING([--enable-test-suites  ],[build test suites])],
+    [enable_test_suites="$enableval"],
+    [enable_test_suites="no"])
+
+AM_CONDITIONAL([TEST_SUITES],[test "${enable_test_suites}" != "no"])
 
 AC_ARG_ENABLE(demosynth-plugin,
     [AC_HELP_STRING([--disable-demosynth-plugin  ],[exclude demo synthesizer plugin from build])],
     [enable_demosynth_plugin="$enableval"],
     [enable_demosynth_plugin="yes"])
 
+AM_CONDITIONAL([DEMOSYNTH_PLUGIN],[test "${enable_demosynth_plugin}" = "yes"])
+
 AC_ARG_ENABLE(demorecog-plugin,
     [AC_HELP_STRING([--disable-demorecog-plugin  ],[exclude demo recognizer plugin from build])],
     [enable_demorecog_plugin="$enableval"],
     [enable_demorecog_plugin="yes"])
 
-AM_CONDITIONAL([DEMOSYNTH_PLUGIN],[test "${enable_demosynth_plugin}" = "yes"])
 AM_CONDITIONAL([DEMORECOG_PLUGIN],[test "${enable_demorecog_plugin}" = "yes"])
 
 
