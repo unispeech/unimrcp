@@ -31,6 +31,9 @@ UNIMRCP_CHECK_APU
 
 UNIMRCP_CHECK_SOFIA
 
+UNIMRCP_CHECK_SWIFT
+
+
 AC_SUBST(ac_aux_dir)
 AC_SUBST(ac_macro_dir)
 AC_SUBST(plugindir)
