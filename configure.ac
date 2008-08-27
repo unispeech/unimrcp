@@ -56,8 +56,9 @@ AX_COMPILER_VENDOR
 
 
 AC_ARG_ENABLE(maintainer-mode,
-[AC_HELP_STRING([--enable-maintainer-mode  ],[turn on debugging and compile time warnings])],
-[enable_maintainer_mode="$enable_maintainer_mode"],[enable_maintainer_mode="no"])
+    [AC_HELP_STRING([--enable-maintainer-mode  ],[turn on debugging and compile time warnings])],
+    [enable_maintainer_mode="$enableval"],
+    [enable_maintainer_mode="no"])
 
 if test "${enable_maintainer_mode}" != "no"; then
     CFLAGS="$CFLAGS -g"
@@ -65,6 +66,20 @@ if test "${enable_maintainer_mode}" != "no"; then
       CFLAGS="$CFLAGS -Wall -Werror"
     fi
 fi
+
+
+AC_ARG_ENABLE(demosynth-plugin,
+    [AC_HELP_STRING([--disable-demosynth-plugin  ],[exclude demo synthesizer plugin from build])],
+    [enable_demosynth_plugin="$enableval"],
+    [enable_demosynth_plugin="yes"])
+
+AC_ARG_ENABLE(demorecog-plugin,
+    [AC_HELP_STRING([--disable-demorecog-plugin  ],[exclude demo recognizer plugin from build])],
+    [enable_demorecog_plugin="$enableval"],
+    [enable_demorecog_plugin="yes"])
+
+AM_CONDITIONAL([DEMOSYNTH_PLUGIN],[test "${enable_demosynth_plugin}" = "yes"])
+AM_CONDITIONAL([DEMORECOG_PLUGIN],[test "${enable_demorecog_plugin}" = "yes"])
 
 
 AC_CONFIG_FILES([

@@ -1,3 +1,11 @@
 MAINTAINERCLEANFILES   = Makefile.in
 
-SUBDIRS                = demo-synth demo-recog
+SUBDIRS                =
+
+if DEMOSYNTH_PLUGIN
+SUBDIRS               += demo-synth
+endif
+
+if DEMORECOG_PLUGIN
+SUBDIRS               += demo-recog
+endif
