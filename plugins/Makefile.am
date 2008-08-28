@@ -9,3 +9,7 @@ endif
 if DEMORECOG_PLUGIN
 SUBDIRS               += demo-recog
 endif
+
+if CEPSTRAL_PLUGIN
+SUBDIRS               += mrcp-cepstral
+endif

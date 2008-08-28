@@ -106,6 +106,7 @@ AC_CONFIG_FILES([
   modules/Makefile
   modules/mrcp-sofiasip/Makefile
   plugins/Makefile
+  plugins/mrcp-cepstral/Makefile
   plugins/demo-synth/Makefile
   plugins/demo-recog/Makefile
   platforms/Makefile
