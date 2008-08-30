@@ -52,6 +52,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
 	mrcp_resource_factory_t *resource_factory;
+	mpf_codec_manager_t *codec_manager;
 	mrcp_client_t *client = mrcp_client_create();
 	if(!client) {
 		return NULL;
@@ -61,6 +62,11 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
 	resource_factory = mrcp_default_factory_create(pool);
 	if(resource_factory) {
 		mrcp_client_resource_factory_register(client,resource_factory);
+	}
+
+	codec_manager = mpf_engine_codec_manager_create(pool);
+	if(codec_manager) {
+		mrcp_client_codec_manager_register(client,codec_manager);
 	}
 
 	doc = unimrcp_client_config_parse(conf_dir_path,pool);

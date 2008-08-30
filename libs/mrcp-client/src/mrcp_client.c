@@ -32,6 +32,8 @@ struct mrcp_client_t {
 
 	/** MRCP resource factory */
 	mrcp_resource_factory_t *resource_factory;
+	/** Codec manager */
+	mpf_codec_manager_t     *codec_manager;
 	/** Table of media processing engines (mpf_engine_t*) */
 	apr_hash_t              *media_engine_table;
 	/** Table of RTP termination factories (mpf_termination_factory_t*) */
@@ -232,6 +234,16 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_resource_factory_register(mrcp_client_t *cl
 	return TRUE;
 }
 
+/** Register codec manager */
+MRCP_DECLARE(apt_bool_t) mrcp_client_codec_manager_register(mrcp_client_t *client, mpf_codec_manager_t *codec_manager)
+{
+	if(!codec_manager) {
+		return FALSE;
+	}
+	client->codec_manager = codec_manager;
+	return TRUE;
+}
+
 /** Register media engine */
 MRCP_DECLARE(apt_bool_t) mrcp_client_media_engine_register(mrcp_client_t *client, mpf_engine_t *media_engine, const char *name)
 {
@@ -239,6 +251,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_media_engine_register(mrcp_client_t *client
 		return FALSE;
 	}
 	apt_log(APT_PRIO_INFO,"Register Media Engine [%s]",name);
+	mpf_engine_codec_manager_register(media_engine,client->codec_manager);
 	apr_hash_set(client->media_engine_table,name,APR_HASH_KEY_STRING,media_engine);
 	mpf_engine_task_msg_type_set(media_engine,MRCP_CLIENT_MEDIA_TASK_MSG);
 	if(client->task) {

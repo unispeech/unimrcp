@@ -34,6 +34,19 @@ APT_BEGIN_EXTERN_C
 MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool);
 
 /**
+ * Create MPF codec manager.
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *pool);
+
+/**
+ * Register MPF codec manager.
+ * @param engine the engine to register codec manager for
+ * @param codec_manager the codec manager to register
+ */
+MPF_DECLARE(apt_bool_t) mpf_engine_codec_manager_register(mpf_engine_t *engine, const mpf_codec_manager_t *codec_manager);
+
+/**
  * Get task.
  * @param engine the engine to get task from
  */

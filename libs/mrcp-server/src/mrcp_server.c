@@ -35,6 +35,8 @@ struct mrcp_server_t {
 
 	/** MRCP resource factory */
 	mrcp_resource_factory_t *resource_factory;
+	/** Codec manager */
+	mpf_codec_manager_t     *codec_manager;
 	/** Table of resource engines (mrcp_resource_engine_t*) */
 	apr_hash_t              *resource_engine_table;
 	/** Table of media processing engines (mpf_engine_t*) */
@@ -276,6 +278,16 @@ MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_server_resource_engine_get(mrcp_serve
 	return apr_hash_get(server->resource_engine_table,name,APR_HASH_KEY_STRING);
 }
 
+/** Register codec manager */
+MRCP_DECLARE(apt_bool_t) mrcp_server_codec_manager_register(mrcp_server_t *server, mpf_codec_manager_t *codec_manager)
+{
+	if(!codec_manager) {
+		return FALSE;
+	}
+	server->codec_manager = codec_manager;
+	return TRUE;
+}
+
 /** Register media engine */
 MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine, const char *name)
 {
@@ -283,6 +295,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server
 		return FALSE;
 	}
 	apt_log(APT_PRIO_INFO,"Register Media Engine [%s]",name);
+	mpf_engine_codec_manager_register(media_engine,server->codec_manager);
 	apr_hash_set(server->media_engine_table,name,APR_HASH_KEY_STRING,media_engine);
 	mpf_engine_task_msg_type_set(media_engine,MRCP_SERVER_MEDIA_TASK_MSG);
 	if(server->task) {

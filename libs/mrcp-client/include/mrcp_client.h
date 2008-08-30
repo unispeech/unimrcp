@@ -61,6 +61,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_destroy(mrcp_client_t *client);
 MRCP_DECLARE(apt_bool_t) mrcp_client_resource_factory_register(mrcp_client_t *client, mrcp_resource_factory_t *resource_factory);
 
 /**
+ * Register codec manager.
+ * @param server the MRCP server to set codec manager for
+ * @param codec_manager the codec manager to set
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_client_codec_manager_register(mrcp_client_t *client, mpf_codec_manager_t *codec_manager);
+
+/**
  * Register media engine.
  * @param client the MRCP client to set media engine for
  * @param media_engine the media engine to set

@@ -70,6 +70,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
 MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine, const char *name);
 
 /**
+ * Register codec manager.
+ * @param server the MRCP server to set codec manager for
+ * @param codec_manager the codec manager to set
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_codec_manager_register(mrcp_server_t *server, mpf_codec_manager_t *codec_manager);
+
+/**
  * Register media engine.
  * @param server the MRCP server to set media engine for
  * @param media_engine the media engine to set

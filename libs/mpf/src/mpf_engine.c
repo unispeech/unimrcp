@@ -34,7 +34,7 @@ struct mpf_engine_t {
 	apt_cyclic_queue_t  *request_queue;
 	apt_obj_list_t      *contexts;
 	mpf_timer_t         *timer;
-	mpf_codec_manager_t *codec_manager;
+	const mpf_codec_manager_t *codec_manager;
 };
 
 static void mpf_engine_main(mpf_timer_t *timer, void *data);
@@ -44,7 +44,6 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 
 static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine);
 
-static apt_bool_t mpf_engine_codec_manager_create(mpf_engine_t *engine);
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
@@ -57,13 +56,12 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	engine->pool = pool;
 	engine->request_queue = NULL;
 	engine->contexts = NULL;
+	engine->codec_manager = NULL;
 
 	apt_task_vtable_reset(&vtable);
 	vtable.start = mpf_engine_start;
 	vtable.terminate = mpf_engine_terminate;
 	vtable.signal_msg = mpf_engine_msg_signal;
-
-	mpf_engine_codec_manager_create(engine);
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
@@ -266,20 +264,25 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 	}
 }
 
-static apt_bool_t mpf_engine_codec_manager_create(mpf_engine_t *engine)
+MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *pool)
 {
-	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(20,engine->pool);
+	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(20,pool);
 	if(codec_manager) {
 		mpf_codec_t *codec;
-		codec = mpf_codec_g711u_create(engine->pool);
+		codec = mpf_codec_g711u_create(pool);
 		mpf_codec_manager_codec_register(codec_manager,codec);
 
-		codec = mpf_codec_g711a_create(engine->pool);
+		codec = mpf_codec_g711a_create(pool);
 		mpf_codec_manager_codec_register(codec_manager,codec);
 
-		codec = mpf_codec_l16_create(engine->pool);
+		codec = mpf_codec_l16_create(pool);
 		mpf_codec_manager_codec_register(codec_manager,codec);
 	}
+	return codec_manager;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_engine_codec_manager_register(mpf_engine_t *engine, const mpf_codec_manager_t *codec_manager)
+{
 	engine->codec_manager = codec_manager;
-	return codec_manager ? TRUE : FALSE;
+	return TRUE;
 }

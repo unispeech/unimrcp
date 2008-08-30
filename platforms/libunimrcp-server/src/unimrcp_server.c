@@ -55,6 +55,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_dir_path, con
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
 	mrcp_resource_factory_t *resource_factory;
+	mpf_codec_manager_t *codec_manager;
 	mrcp_server_t *server = mrcp_server_create();
 	if(!server) {
 		return NULL;
@@ -64,6 +65,11 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(const char *conf_dir_path, con
 	resource_factory = mrcp_default_factory_create(pool);
 	if(resource_factory) {
 		mrcp_server_resource_factory_register(server,resource_factory);
+	}
+
+	codec_manager = mpf_engine_codec_manager_create(pool);
+	if(codec_manager) {
+		mrcp_server_codec_manager_register(server,codec_manager);
 	}
 
 	doc = unimrcp_server_config_parse(conf_dir_path,pool);

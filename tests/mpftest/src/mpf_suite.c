@@ -86,6 +86,7 @@ apt_test_suite_t* mpf_suite_create(apr_pool_t *pool)
 static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
 {
 	mpf_suite_engine_t *suite_engine;
+	mpf_codec_manager_t *codec_manager;
 	mpf_engine_t *engine;
 
 	apt_task_t *task;
@@ -98,6 +99,10 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	if(!engine) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create MPF Engine");
 		return FALSE;
+	}
+	codec_manager = mpf_engine_codec_manager_create(suite->pool);
+	if(codec_manager) {
+		mpf_engine_codec_manager_register(engine,codec_manager);
 	}
 	suite_engine->engine_task = mpf_task_get(engine);
 
