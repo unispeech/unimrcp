@@ -16,8 +16,6 @@
 
 #include "mpf_jitter_buffer.h"
 
-#define MAX_DISSECT_FRAME_COUNT 20
-
 struct mpf_jitter_buffer_t {
 	mpf_jb_config_t *config;
 
