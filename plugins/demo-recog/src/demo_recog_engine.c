@@ -89,8 +89,6 @@ struct demo_recog_channel_t {
 	demo_recog_engine_t   *demo_engine;
 	/** Base engine channel */
 	mrcp_engine_channel_t *channel;
-	/** Base audio stream */
-	mpf_audio_stream_t    *audio_stream;
 
 	/** Active (in-progress) recognition request */
 	mrcp_message_t        *recog_request;
@@ -175,36 +173,20 @@ static apt_bool_t demo_recog_engine_close(mrcp_resource_engine_t *engine)
 
 static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
-	mrcp_engine_channel_t *channel;
-	mpf_termination_t *termination;
 	/* create demo recog channel */
 	demo_recog_channel_t *recog_channel = apr_palloc(pool,sizeof(demo_recog_channel_t));
 	recog_channel->demo_engine = engine->obj;
 	recog_channel->recog_request = NULL;
 	recog_channel->stop_response = NULL;
-	recog_channel->channel = NULL;
-	/* create audio stream */
-	recog_channel->audio_stream = mpf_audio_stream_create(
-			recog_channel,          /* object to associate */
-			&audio_stream_vtable,   /* virtual methods table of audio stream */
-			STREAM_MODE_SEND,       /* stream mode/direction */
-			pool);                  /* pool to allocate memory from */
-	
-	/* create media termination */
-	termination = mpf_raw_termination_create(
-			NULL,                        /* no object to associate */
-			recog_channel->audio_stream, /* audio stream */
-			NULL,                        /* no video stream */
-			pool);                       /* pool to allocate memory from */
 	/* create engine channel base */
-	channel = mrcp_engine_channel_create(
-			engine,          /* resource engine */
-			&channel_vtable, /* virtual methods table of engine channel */
-			recog_channel,   /* object to associate */
-			termination,     /* media termination, used to terminate audio stream */
-			pool);           /* pool to allocate memory from */
-	recog_channel->channel = channel;
-	return channel;
+	recog_channel->channel = mrcp_engine_sink_channel_create(
+			engine,               /* resource engine */
+			&channel_vtable,      /* virtual methods table of engine channel */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			recog_channel,        /* object to associate */
+			NULL,                 /* codec descriptor might be NULL by default */
+			pool);                /* pool to allocate memory from */
+	return recog_channel->channel;
 }
 
 /** Destroy engine channel */

@@ -90,8 +90,6 @@ struct demo_synth_channel_t {
 	demo_synth_engine_t   *demo_engine;
 	/** Engine channel base */
 	mrcp_engine_channel_t *channel;
-	/** Audio stream base */
-	mpf_audio_stream_t     *audio_stream;
 
 	/** Active (in-progress) speak request */
 	mrcp_message_t        *speak_request;
@@ -183,8 +181,6 @@ static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
 /** Create demo synthesizer channel derived from engine channel base */
 static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
-	mrcp_engine_channel_t *channel;
-	mpf_termination_t *termination;
 	/* create demo synth channel */
 	demo_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(demo_synth_channel_t));
 	synth_channel->demo_engine = engine->obj;
@@ -193,29 +189,15 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 	synth_channel->time_to_complete = 0;
 	synth_channel->paused = FALSE;
 	synth_channel->audio_file = NULL;
-	synth_channel->channel = NULL;
-	/* create audio stream */
-	synth_channel->audio_stream = mpf_audio_stream_create(
-			synth_channel,        /* object to associate */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
-			STREAM_MODE_RECEIVE,  /* stream mode/direction */
-			pool);                /* pool to allocate memory from */
-	
-	/* create media termination */
-	termination = mpf_raw_termination_create(
-			NULL,                        /* no object to associate */
-			synth_channel->audio_stream, /* audio stream */
-			NULL,                        /* no video stream */
-			pool);                       /* pool to allocate memory from */
 	/* create engine channel base */
-	channel = mrcp_engine_channel_create(
-			engine,          /* resource engine */
-			&channel_vtable, /* virtual methods table of engine channel */
-			synth_channel,   /* object to associate */
-			termination,     /* media termination, used to terminate audio stream */
-			pool);           /* pool to allocate memory from */
-	synth_channel->channel = channel;
-	return channel;
+	synth_channel->channel = mrcp_engine_source_channel_create(
+			engine,               /* resource engine */
+			&channel_vtable,      /* virtual methods table of engine channel */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			synth_channel,        /* object to associate */
+			NULL,                 /* codec descriptor might be NULL by default */
+			pool);                /* pool to allocate memory from */
+	return synth_channel->channel;
 }
 
 /** Destroy engine channel */
