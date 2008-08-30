@@ -267,6 +267,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
 	if(!server->resource_engine_msg_pool) {
 		server->resource_engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(resource_engine_task_msg_data_t),server->pool);
 	}
+	engine->codec_manager = server->codec_manager;
 	apt_log(APT_PRIO_INFO,"Register Resource Engine [%s]",name);
 	apr_hash_set(server->resource_engine_table,name,APR_HASH_KEY_STRING,engine);
 	return TRUE;

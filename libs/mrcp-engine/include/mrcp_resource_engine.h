@@ -110,24 +110,18 @@ struct mrcp_resource_engine_t {
 	void                              *obj;
 	/** Table of virtual methods */
 	const mrcp_engine_method_vtable_t *method_vtable;
+	/** Codec manager */
+	const mpf_codec_manager_t *codec_manager;
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
 };
 
 /** Create resource engine */
-static APR_INLINE mrcp_resource_engine_t* mrcp_resource_engine_create(
+mrcp_resource_engine_t* mrcp_resource_engine_create(
 								mrcp_resource_id resource_id,
 								void *obj, 
 								const mrcp_engine_method_vtable_t *vtable,
-								apr_pool_t *pool)
-{
-	mrcp_resource_engine_t *engine = apr_palloc(pool,sizeof(mrcp_resource_engine_t));
-	engine->resource_id = resource_id;
-	engine->obj = obj;
-	engine->method_vtable =vtable;
-	engine->pool = pool;
-	return engine;
-}
+								apr_pool_t *pool);
 
 /** Destroy resource engine */
 static APR_INLINE apt_bool_t mrcp_resource_engine_destroy(mrcp_resource_engine_t *engine)
@@ -148,22 +142,30 @@ static APR_INLINE apt_bool_t mrcp_resource_engine_close(mrcp_resource_engine_t *
 }
 
 /** Create engine channel */
-static APR_INLINE mrcp_engine_channel_t* mrcp_engine_channel_create(
-								mrcp_resource_engine_t *engine, 
+mrcp_engine_channel_t* mrcp_engine_channel_create(
+								mrcp_resource_engine_t *engine,
 								const mrcp_engine_channel_method_vtable_t *method_vtable,
 								void *method_obj,
 								mpf_termination_t *termination,
-								apr_pool_t *pool)
-{
-	mrcp_engine_channel_t *channel = apr_palloc(pool,sizeof(mrcp_engine_channel_t));
-	channel->method_vtable = method_vtable;
-	channel->method_obj = method_obj;
-	channel->event_vtable = NULL;
-	channel->event_obj = NULL;
-	channel->termination = termination;
-	channel->pool = pool;
-	return channel;
-}
+								apr_pool_t *pool);
+
+/** Create engine channel and source media termination */
+mrcp_engine_channel_t* mrcp_engine_source_channel_create(
+								mrcp_resource_engine_t *engine,
+								const mrcp_engine_channel_method_vtable_t *channel_vtable,
+								const mpf_audio_stream_vtable_t *stream_vtable,
+								void *method_obj,
+								mpf_codec_descriptor_t *codec_descriptor,
+								apr_pool_t *pool);
+
+/** Create engine channel and sink media termination */
+mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
+								mrcp_resource_engine_t *engine,
+								const mrcp_engine_channel_method_vtable_t *channel_vtable,
+								const mpf_audio_stream_vtable_t *stream_vtable,
+								void *method_obj,
+								mpf_codec_descriptor_t *codec_descriptor,
+								apr_pool_t *pool);
 
 /** Destroy engine channel */
 static APR_INLINE apt_bool_t mrcp_engine_channel_destroy(mrcp_engine_channel_t *channel)
@@ -206,6 +208,12 @@ static APR_INLINE apt_bool_t mrcp_engine_channel_message_send(mrcp_engine_channe
 {
 	return channel->event_vtable->on_message(channel,message);
 }
+
+/** Get codec of the audio source stream */
+mpf_codec_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
+
+/** Get codec of the audio sink stream */
+mpf_codec_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
 
 
 APT_END_EXTERN_C
