@@ -15,7 +15,7 @@
  */
 
 /* 
- * Some mandatory rules for plugin implementation.
+ * Some mandatory rules concerning plugin implementation.
  * 1. Each plugin MUST contain the following function as an entry point of the plugin
  *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
  * 2. One and only one response MUST be sent back to the received request.
@@ -30,6 +30,7 @@
 #include "mrcp_synth_header.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_message.h"
+#include "mpf_buffer.h"
 #include "apt_log.h"
 
 typedef struct mrcp_swift_channel_t mrcp_swift_channel_t;
@@ -83,10 +84,12 @@ struct mrcp_swift_channel_t {
 	swift_port            *port;
 	swift_background_t     tts_stream;
 
+	/** Audio buffer */
+	mpf_buffer_t          *audio_buffer;
+	float                  last_write_time;
+
 	/** Engine channel base */
 	mrcp_engine_channel_t *channel;
-	/** Audio stream base */
-	mpf_audio_stream_t    *audio_stream;
 
 	/** Active (in-progress) speak request */
 	mrcp_message_t        *speak_request;
@@ -96,20 +99,22 @@ struct mrcp_swift_channel_t {
 	apt_bool_t             paused;
 };
 
-static void swift_list_voices(swift_engine *engine);
+static void swift_voices_show(swift_engine *engine);
 static swift_result_t swift_write_audio(swift_event *event, swift_event_t type, void *udata);
+static apt_bool_t synth_speak_complete_raise(mrcp_swift_channel_t *synth_channel);
 
 /** Create swift synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	swift_engine *engine = NULL;
+	apt_log_priority_set(APT_PRIO_DEBUG);
 	/* open swift engine */
 	apt_log(APT_PRIO_INFO,"Open Swift Engine");
 	if((engine = swift_engine_open(NULL)) ==  NULL) {
 		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Engine");
 		return NULL;
 	}
-	swift_list_voices(engine);
+	swift_voices_show(engine);
 
 	/* create resource engine base */
 	return mrcp_resource_engine_create(
@@ -148,15 +153,23 @@ static apt_bool_t mrcp_swift_engine_close(mrcp_resource_engine_t *engine)
 static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
 	swift_engine *synth_engine = engine->obj;
-	mrcp_engine_channel_t *channel;
-	mpf_termination_t *termination;
 	mrcp_swift_channel_t *synth_channel;
+	mrcp_engine_channel_t *channel;
 	swift_params *params;
 	swift_port *port;
+	mpf_codec_descriptor_t *codec_descriptor;
+	mpf_codec_t *codec;
+
+	codec_descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_init(codec_descriptor);
+	codec_descriptor->channel_count = 1;
+	codec_descriptor->payload_type = 96;
+	apt_string_set(&codec_descriptor->name,"L16");
+	codec_descriptor->sampling_rate = 8000;
 
 	params = swift_params_new(NULL);
 	swift_params_set_string(params, "audio/encoding", "pcm16");
-	swift_params_set_int(params, "audio/sampling-rate", 8000);
+	swift_params_set_int(params, "audio/sampling-rate", codec_descriptor->sampling_rate);
 	/* open swift port */ 
 	apt_log(APT_PRIO_INFO,"Open Swift Port");
 	if((port = swift_port_open(synth_engine,params)) == NULL) {
@@ -172,30 +185,29 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 	synth_channel->channel = NULL;
 	synth_channel->port = port;
 	synth_channel->tts_stream = 0;
-	/* create audio stream */
-	synth_channel->audio_stream = mpf_audio_stream_create(
-			synth_channel,        /* object to associate */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
-			STREAM_MODE_RECEIVE,  /* stream mode/direction */
-			pool);                /* pool to allocate memory from */
-	
-	/* create media termination */
-	termination = mpf_raw_termination_create(
-			NULL,                        /* no object to associate */
-			synth_channel->audio_stream, /* audio stream */
-			NULL,                        /* no video stream */
-			pool);                       /* pool to allocate memory from */
 	/* create engine channel base */
-	channel = mrcp_engine_channel_create(
-			engine,          /* resource engine */
-			&channel_vtable, /* virtual methods table of engine channel */
-			synth_channel,   /* object to associate */
-			termination,     /* media termination, used to terminate audio stream */
-			pool);           /* pool to allocate memory from */
-	synth_channel->channel = channel;
+	channel = mrcp_engine_source_channel_create(
+			engine,               /* resource engine */
+			&channel_vtable,      /* virtual methods table of engine channel */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			synth_channel,        /* object to associate */
+			codec_descriptor,     /* codec descriptor might be NULL by default */
+			pool);                /* pool to allocate memory from */
+
+	codec = mrcp_engine_source_stream_codec_get(channel);
+
+	if(!channel || !codec) {
+		swift_port_close(port);
+		synth_channel->port = NULL;
+		return NULL;
+	}
+
+	synth_channel->audio_buffer = mpf_buffer_create(pool);
+	synth_channel->last_write_time = 0;
 
 	/* set swift_write_audio as a callback, with the output file as its param */
-	swift_port_set_callback(port,&swift_write_audio, SWIFT_EVENT_AUDIO | SWIFT_EVENT_END, synth_channel);
+	swift_port_set_callback(port, &swift_write_audio, SWIFT_EVENT_AUDIO | SWIFT_EVENT_END, synth_channel);
+	synth_channel->channel = channel;
 	return channel;
 }
 
@@ -231,7 +243,12 @@ static apt_bool_t mrcp_swift_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 {
 	mrcp_swift_channel_t *synth_channel = channel->method_obj;
 
+	mpf_buffer_restart(synth_channel->audio_buffer);
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	if(swift_port_speak_text(synth_channel->port,request->body.buf,0,NULL,&synth_channel->tts_stream,NULL) != SWIFT_SUCCESS) {
+		response->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+	}
 	/* send asynchronous response */
 	mrcp_engine_channel_message_send(channel,response);
 	synth_channel->speak_request = request;
@@ -243,6 +260,7 @@ static apt_bool_t mrcp_swift_channel_stop(mrcp_engine_channel_t *channel, mrcp_m
 {
 	mrcp_swift_channel_t *synth_channel = channel->method_obj;
 	/* store the request, make sure there is no more activity and only then send the response */
+	swift_port_stop(synth_channel->port,synth_channel->tts_stream,SWIFT_EVENT_NOW);
 	synth_channel->stop_response = response;
 	return TRUE;
 }
@@ -329,16 +347,95 @@ static apt_bool_t synth_stream_close(mpf_audio_stream_t *stream)
 /** Callback is called from MPF engine context to read/get new frame */
 static apt_bool_t synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
+	mrcp_swift_channel_t *synth_channel = stream->obj;
+	/* check if STOP was requested */
+	if(synth_channel->stop_response) {
+		/* send asynchronous response to STOP request */
+		mrcp_engine_channel_message_send(synth_channel->channel,synth_channel->stop_response);
+		synth_channel->stop_response = NULL;
+		synth_channel->speak_request = NULL;
+		synth_channel->paused = FALSE;
+		return TRUE;
+	}
+
+	/* check if there is active SPEAK request and it isn't in paused state */
+	if(synth_channel->speak_request && synth_channel->paused == FALSE) {
+		/* normal processing */
+		mpf_buffer_frame_read(synth_channel->audio_buffer,frame);
+		
+		if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
+			synth_speak_complete_raise(synth_channel);
+		}
+	}
 	return TRUE;
 }
 
-static void swift_list_voices(swift_engine *engine) 
+/** Swift engine callback */
+static swift_result_t swift_write_audio(swift_event *event, swift_event_t type, void *udata)
+{
+	void *buf;
+	int len;
+	mrcp_swift_channel_t *synth_channel = udata;
+	swift_event_t rv = SWIFT_SUCCESS;
+
+	if(type & SWIFT_EVENT_END) {
+		apt_log(APT_PRIO_INFO,"Swift Event: end\n");
+		mpf_buffer_event_write(synth_channel->audio_buffer,MEDIA_FRAME_TYPE_EVENT);
+		return rv;
+	}
+
+	rv = swift_event_get_audio(event, &buf, &len);
+	if(!SWIFT_FAILED(rv)) {
+		/* Get the event times */
+		float time_start, time_len; 
+		swift_event_get_times(event, &time_start, &time_len);
+		apt_log(APT_PRIO_DEBUG,"Swift Engine: Write Audio [%d | %0.4f | %0.4f]",len, time_start, time_len);
+		synth_channel->last_write_time = time_start + time_len;
+		mpf_buffer_audio_write(synth_channel->audio_buffer,buf,len);
+	}
+
+	return rv;
+}
+
+/** Raise SPEAK-COMPLETE event */
+static apt_bool_t synth_speak_complete_raise(mrcp_swift_channel_t *synth_channel)
+{
+	mrcp_message_t *message;
+	mrcp_synth_header_t *synth_header;
+	if(!synth_channel->speak_request) {
+		return FALSE;
+	}
+	message = mrcp_event_create(
+						synth_channel->speak_request,
+						SYNTHESIZER_SPEAK_COMPLETE,
+						synth_channel->speak_request->pool);
+	if(!message) {
+		return FALSE;
+	}
+	
+	/* get/allocate synthesizer header */
+	synth_header = mrcp_resource_header_prepare(message);
+	if(synth_header) {
+		/* set completion cause */
+		synth_header->completion_cause = SYNTHESIZER_COMPLETION_CAUSE_NORMAL;
+		mrcp_resource_header_property_add(message,SYNTHESIZER_HEADER_COMPLETION_CAUSE);
+	}
+	/* set request state */
+	message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+
+	synth_channel->speak_request = NULL;
+	/* send asynch event */
+	return mrcp_engine_channel_message_send(synth_channel->channel,message);
+}
+
+/** Show swift available voices */
+static void swift_voices_show(swift_engine *engine) 
 {
 	swift_port *port;
 	swift_voice *voice;
 	const char *license_status;
 
-	/* open swift port*/ 
+	/* open swift port*/
 	if((port = swift_port_open(engine, NULL)) == NULL) {
 		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Port");
 		return;    
@@ -353,25 +450,20 @@ static void swift_list_voices(swift_engine *engine)
 	/* go through all of the voices on the system and print some info about each */
 	apt_log(APT_PRIO_INFO,"Swift Available Voices:");
 	for(; voice; voice = swift_port_find_next_voice(port)) {
-		if (swift_voice_get_attribute(voice, "license/key")) {
-			 license_status = "licensed";
+		if(swift_voice_get_attribute(voice, "license/key")) {
+			license_status = "licensed";
 		}
 		else {
-			 license_status = "unlicensed";
+			license_status = "unlicensed";
 		}
 		apt_log(APT_PRIO_INFO,"%s: %s, age %s, %s, %sHz, %s",
-			   swift_voice_get_attribute(voice, "name"),
-			   swift_voice_get_attribute(voice, "speaker/gender"),
-			   swift_voice_get_attribute(voice, "speaker/age"),
-			   swift_voice_get_attribute(voice, "language/name"),
-			   swift_voice_get_attribute(voice, "sample-rate"),
-			   license_status);
+			swift_voice_get_attribute(voice, "name"),
+			swift_voice_get_attribute(voice, "speaker/gender"),
+			swift_voice_get_attribute(voice, "speaker/age"),
+			swift_voice_get_attribute(voice, "language/name"),
+			swift_voice_get_attribute(voice, "sample-rate"),
+			license_status);
 	}
 
 	swift_port_close(port);
-}
-
-static swift_result_t swift_write_audio(swift_event *event, swift_event_t type, void *udata)
-{
-	return 0;
 }
