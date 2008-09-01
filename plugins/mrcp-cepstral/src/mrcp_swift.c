@@ -33,8 +33,6 @@
 #include "mpf_buffer.h"
 #include "apt_log.h"
 
-typedef struct mrcp_swift_channel_t mrcp_swift_channel_t;
-
 /** Declaration of synthesizer engine methods */
 static apt_bool_t mrcp_swift_engine_destroy(mrcp_resource_engine_t *engine);
 static apt_bool_t mrcp_swift_engine_open(mrcp_resource_engine_t *engine);
@@ -78,6 +76,7 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	NULL
 };
 
+typedef struct mrcp_swift_channel_t mrcp_swift_channel_t;
 /** Declaration of swift synthesizer channel */
 struct mrcp_swift_channel_t {
 	/** Swift port */
@@ -106,32 +105,38 @@ static apt_bool_t synth_speak_complete_raise(mrcp_swift_channel_t *synth_channel
 /** Create swift synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
-	swift_engine *engine = NULL;
-	apt_log_priority_set(APT_PRIO_DEBUG);
+	swift_engine *synth_engine;
+	mrcp_resource_engine_t *engine;
+	apt_log_priority_set(APT_PRIO_INFO);
 	/* open swift engine */
 	apt_log(APT_PRIO_INFO,"Open Swift Engine");
-	if((engine = swift_engine_open(NULL)) ==  NULL) {
+	if((synth_engine = swift_engine_open(NULL)) ==  NULL) {
 		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Engine");
 		return NULL;
 	}
-	swift_voices_show(engine);
+	swift_voices_show(synth_engine);
 
 	/* create resource engine base */
-	return mrcp_resource_engine_create(
+	engine = mrcp_resource_engine_create(
 					MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
-					engine,                    /* object to associate */
+					synth_engine,              /* object to associate */
 					&engine_vtable,            /* virtual methods table of resource engine */
 					pool);                     /* pool to allocate memory from */
+	if(!engine) {
+		apt_log(APT_PRIO_WARNING,"Failed to Create Resource Engine");
+		swift_engine_close(synth_engine);
+	}
+	return engine;
 }
 
 /** Destroy synthesizer engine */
 static apt_bool_t mrcp_swift_engine_destroy(mrcp_resource_engine_t *engine)
 {
-	swift_engine *mrcp_swift_engine = engine->obj;
+	swift_engine *synth_engine = engine->obj;
 	/* close swift engine */
 	apt_log(APT_PRIO_INFO,"Close Swift Engine");
-	if(NULL != mrcp_swift_engine) {
-		swift_engine_close(mrcp_swift_engine);
+	if(synth_engine) {
+		swift_engine_close(synth_engine);
 		engine->obj = NULL;
 	}
 	return TRUE;
@@ -158,7 +163,6 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 	swift_params *params;
 	swift_port *port;
 	mpf_codec_descriptor_t *codec_descriptor;
-	mpf_codec_t *codec;
 
 	codec_descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
 	mpf_codec_descriptor_init(codec_descriptor);
@@ -194,9 +198,7 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 			codec_descriptor,     /* codec descriptor might be NULL by default */
 			pool);                /* pool to allocate memory from */
 
-	codec = mrcp_engine_source_stream_codec_get(channel);
-
-	if(!channel || !codec) {
+	if(!channel) {
 		swift_port_close(port);
 		synth_channel->port = NULL;
 		return NULL;
@@ -216,7 +218,7 @@ static apt_bool_t mrcp_swift_channel_destroy(mrcp_engine_channel_t *channel)
 {
 	mrcp_swift_channel_t *synth_channel = channel->method_obj;
 	apt_log(APT_PRIO_INFO,"Close Swift Port");
-	if(NULL != synth_channel->port) {
+	if(synth_channel->port) {
 		/* close swift port */ 
 		swift_port_close(synth_channel->port);
 		synth_channel->port = NULL;
@@ -379,7 +381,7 @@ static swift_result_t swift_write_audio(swift_event *event, swift_event_t type, 
 	swift_event_t rv = SWIFT_SUCCESS;
 
 	if(type & SWIFT_EVENT_END) {
-		apt_log(APT_PRIO_INFO,"Swift Event: end\n");
+		apt_log(APT_PRIO_DEBUG,"Swift Event: end\n");
 		mpf_buffer_event_write(synth_channel->audio_buffer,MEDIA_FRAME_TYPE_EVENT);
 		return rv;
 	}
