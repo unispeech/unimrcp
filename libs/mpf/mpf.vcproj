@@ -164,6 +164,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_buffer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_codec.h"
 				>
 			</File>
@@ -278,6 +282,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_bridge.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_buffer.c"
 				>
 			</File>
 			<File

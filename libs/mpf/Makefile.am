@@ -12,6 +12,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_audio_file_descriptor.h \
                            include/mpf_audio_file_stream.h \
                            include/mpf_bridge.h \
+                           include/mpf_buffer.h \
                            include/mpf_codec.h \
                            include/mpf_codec_descriptor.h \
                            include/mpf_codec_manager.h \
@@ -42,6 +43,7 @@ include_HEADERS          = codecs/g711/g711.h \
 libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_audio_file_stream.c \
                            src/mpf_bridge.c \
+                           src/mpf_buffer.c \
                            src/mpf_codec_g711.c \
                            src/mpf_codec_linear.c \
                            src/mpf_codec_manager.c \
