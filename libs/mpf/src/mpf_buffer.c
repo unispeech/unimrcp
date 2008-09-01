@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+#pragma warning(disable: 4127)
+#endif
+#include <apr_ring.h>
 #include "mpf_buffer.h"
-#include "apt_cyclic_queue.h"
-#include "apt_log.h"
+
+typedef struct mpf_chunk_t mpf_chunk_t;
+
+struct mpf_chunk_t {
+	APR_RING_ENTRY(mpf_chunk_t) link;
+	mpf_frame_t                 frame;
+};
 
 struct mpf_buffer_t {
-	apt_cyclic_queue_t *cyclic_queue;
-	mpf_frame_t        *cur_chunk;
-	apr_size_t          remaining_chunk_size;
-	apr_thread_mutex_t *guard;
-	apr_pool_t         *pool;
+	APR_RING_HEAD(mpf_chunk_head_t, mpf_chunk_t) head;
+	mpf_chunk_t                                 *cur_chunk;
+	apr_size_t                                   remaining_chunk_size;
+	apr_thread_mutex_t                          *guard;
+	apr_pool_t                                  *pool;
 };
 
 
@@ -33,7 +42,7 @@ mpf_buffer_t* mpf_buffer_create(apr_pool_t *pool)
 	buffer->pool = pool;
 	buffer->cur_chunk = NULL;
 	buffer->remaining_chunk_size = 0;
-	buffer->cyclic_queue = apt_cyclic_queue_create(1000,pool);
+	APR_RING_INIT(&buffer->head, mpf_chunk_t, link);
 	apr_thread_mutex_create(&buffer->guard,APR_THREAD_MUTEX_UNNESTED,pool);
 	return buffer;
 }
@@ -49,33 +58,38 @@ void mpf_buffer_destroy(mpf_buffer_t *buffer)
 apt_bool_t mpf_buffer_restart(mpf_buffer_t *buffer)
 {
 	apr_thread_mutex_lock(buffer->guard);
-	apt_cyclic_queue_clear(buffer->cyclic_queue);
+	APR_RING_INIT(&buffer->head, mpf_chunk_t, link);
 	apr_thread_mutex_unlock(buffer->guard);
 	return TRUE;
 }
 
-static APR_INLINE apt_bool_t mpf_buffer_chunk_write(mpf_buffer_t *buffer, mpf_frame_t *chunk)
+static APR_INLINE apt_bool_t mpf_buffer_chunk_write(mpf_buffer_t *buffer, mpf_chunk_t *chunk)
 {
-	if(apt_cyclic_queue_push(buffer->cyclic_queue,chunk) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Write Chunk [queue is full]");
-		return FALSE;
-	}
-
-	apt_log(APT_PRIO_INFO,"Write Chunk [%d]", chunk->codec_frame.size);
+	APR_RING_INSERT_TAIL(&buffer->head,chunk,mpf_chunk_t,link);
 	return TRUE;
+}
+
+static APR_INLINE mpf_chunk_t* mpf_buffer_chunk_read(mpf_buffer_t *buffer)
+{
+	mpf_chunk_t *chunk = NULL;
+	if(!APR_RING_EMPTY(&buffer->head,mpf_chunk_t,link)) {
+		chunk = APR_RING_FIRST(&buffer->head);
+		APR_RING_REMOVE(chunk,link);
+	}
+	return chunk;
 }
 
 apt_bool_t mpf_buffer_audio_write(mpf_buffer_t *buffer, void *data, apr_size_t size)
 {
-	mpf_frame_t *chunk;
+	mpf_chunk_t *chunk;
 	apt_bool_t status = TRUE;
 	apr_thread_mutex_lock(buffer->guard);
 
-	chunk = apr_palloc(buffer->pool,sizeof(mpf_frame_t));
-	chunk->codec_frame.buffer = apr_palloc(buffer->pool,size);
-	memcpy(chunk->codec_frame.buffer,data,size);
-	chunk->codec_frame.size = size;
-	chunk->type = MEDIA_FRAME_TYPE_AUDIO;
+	chunk = apr_palloc(buffer->pool,sizeof(mpf_chunk_t));
+	chunk->frame.codec_frame.buffer = apr_palloc(buffer->pool,size);
+	memcpy(chunk->frame.codec_frame.buffer,data,size);
+	chunk->frame.codec_frame.size = size;
+	chunk->frame.type = MEDIA_FRAME_TYPE_AUDIO;
 	status = mpf_buffer_chunk_write(buffer,chunk);
 	
 	apr_thread_mutex_unlock(buffer->guard);
@@ -84,14 +98,14 @@ apt_bool_t mpf_buffer_audio_write(mpf_buffer_t *buffer, void *data, apr_size_t s
 
 apt_bool_t mpf_buffer_event_write(mpf_buffer_t *buffer, mpf_frame_type_e event_type)
 {
-	mpf_frame_t *chunk;
+	mpf_chunk_t *chunk;
 	apt_bool_t status = TRUE;
 	apr_thread_mutex_lock(buffer->guard);
 
-	chunk = apr_palloc(buffer->pool,sizeof(mpf_frame_t));
-	chunk->codec_frame.buffer = NULL;
-	chunk->codec_frame.size = 0;
-	chunk->type = event_type;
+	chunk = apr_palloc(buffer->pool,sizeof(mpf_chunk_t));
+	chunk->frame.codec_frame.buffer = NULL;
+	chunk->frame.codec_frame.size = 0;
+	chunk->frame.type = event_type;
 	status = mpf_buffer_chunk_write(buffer,chunk);
 	
 	apr_thread_mutex_unlock(buffer->guard);
@@ -104,24 +118,21 @@ apt_bool_t mpf_buffer_frame_read(mpf_buffer_t *buffer, mpf_frame_t *media_frame)
 	mpf_codec_frame_t *src;
 	apr_size_t remaining_frame_size = media_frame->codec_frame.size;
 	apr_thread_mutex_lock(buffer->guard);
-	apt_log(APT_PRIO_INFO,"Read Frame");
 	do {
 		if(!buffer->cur_chunk) {
-			buffer->cur_chunk = apt_cyclic_queue_pop(buffer->cyclic_queue);
-			if(buffer->cur_chunk) {
-				buffer->remaining_chunk_size = buffer->cur_chunk->codec_frame.size;
-			}
-			else {
-				apt_log(APT_PRIO_INFO,"Buffer is Empty");
+			buffer->cur_chunk = mpf_buffer_chunk_read(buffer);
+			if(!buffer->cur_chunk) {
+				/* buffer is empty */
 				break;
 			}
+			buffer->remaining_chunk_size = buffer->cur_chunk->frame.codec_frame.size;
 		}
 
 		dest = &media_frame->codec_frame;
-		src = &buffer->cur_chunk->codec_frame;
+		src = &buffer->cur_chunk->frame.codec_frame;
+		media_frame->type |= buffer->cur_chunk->frame.type;
 		if(remaining_frame_size < buffer->remaining_chunk_size) {
 			/* copy remaining_frame_size */
-			media_frame->type |= buffer->cur_chunk->type;
 			memcpy(
 				(char*)dest->buffer + dest->size - remaining_frame_size,
 				(char*)src->buffer + src->size - buffer->remaining_chunk_size,
@@ -131,7 +142,6 @@ apt_bool_t mpf_buffer_frame_read(mpf_buffer_t *buffer, mpf_frame_t *media_frame)
 		}
 		else {
 			/* copy remaining_chunk_size and proceed to the next chunk */
-			media_frame->type |= buffer->cur_chunk->type;
 			memcpy(
 				(char*)dest->buffer + dest->size - remaining_frame_size,
 				(char*)src->buffer + src->size - buffer->remaining_chunk_size,
