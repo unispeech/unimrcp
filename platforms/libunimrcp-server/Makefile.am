@@ -24,6 +24,7 @@ libunimrcpserver_la_LIBADD  = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofia
                               $(top_builddir)/libs/mrcp-server/libmrcpserver.la \
                               $(top_builddir)/libs/mrcp-signaling/libmrcpsignaling.la \
                               $(top_builddir)/libs/mrcpv2-transport/libmrcpv2transport.la \
+                              $(top_builddir)/libs/mrcp-engine/libmrcpengine.la \
                               $(top_builddir)/libs/mrcp/libmrcp.la \
                               $(top_builddir)/libs/mpf/libmpf.la \
                               $(top_builddir)/libs/apr-toolkit/libaprtoolkit.la \
