@@ -58,6 +58,12 @@ APT_DECLARE(apt_bool_t) apt_cyclic_queue_push(apt_cyclic_queue_t *queue, void *o
 APT_DECLARE(void*) apt_cyclic_queue_pop(apt_cyclic_queue_t *queue);
 
 /**
+ * Clear the queue (remove all the elements from the queue).
+ * @param queue the queue to clear
+ */
+APT_DECLARE(void) apt_cyclic_queue_clear(apt_cyclic_queue_t *queue);
+
+/**
  * Query whether the queue is empty.
  * @param queue the queue to query
  * @return TRUE if empty, otherwise FALSE

@@ -66,6 +66,12 @@ APT_DECLARE(void*) apt_cyclic_queue_pop(apt_cyclic_queue_t *queue)
 	return obj;
 }
 
+APT_DECLARE(void) apt_cyclic_queue_clear(apt_cyclic_queue_t *queue)
+{
+	queue->actual_size = 0;
+	queue->head = queue->tail = 0;
+}
+
 APT_DECLARE(apt_bool_t) apt_cyclic_queue_is_empty(apt_cyclic_queue_t *queue)
 {
 	return queue->actual_size ? TRUE : FALSE;
