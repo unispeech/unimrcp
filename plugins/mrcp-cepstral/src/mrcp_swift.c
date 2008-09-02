@@ -77,7 +77,7 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 };
 
 typedef struct mrcp_swift_channel_t mrcp_swift_channel_t;
-/** Declaration of swift synthesizer channel */
+/** Declaration of Swift synthesizer channel */
 struct mrcp_swift_channel_t {
 	/** Swift port */
 	swift_port            *port;
@@ -85,7 +85,6 @@ struct mrcp_swift_channel_t {
 
 	/** Audio buffer */
 	mpf_buffer_t          *audio_buffer;
-	float                  last_write_time;
 
 	/** Engine channel base */
 	mrcp_engine_channel_t *channel;
@@ -98,11 +97,33 @@ struct mrcp_swift_channel_t {
 	apt_bool_t             paused;
 };
 
-static void swift_voices_show(swift_engine *engine);
-static swift_result_t swift_write_audio(swift_event *event, swift_event_t type, void *udata);
-static apt_bool_t synth_speak_complete_raise(mrcp_swift_channel_t *synth_channel);
+/** Table of prosody volumes for Swift engine */
+static const int swift_prosody_volume_table[PROSODY_VOLUME_COUNT] = {
+	25,  /* PROSODY_VOLUME_SILENT */
+	50,  /* PROSODY_VOLUME_XSOFT */
+	75,  /* PROSODY_VOLUME_SOFT */
+	100, /* PROSODY_VOLUME_MEDIUM */
+	125, /* PROSODY_VOLUME_LOUD */
+	150, /* PROSODY_VOLUME_XLOUD */
+	100  /* PROSODY_VOLUME_DEFAULT */
+};
 
-/** Create swift synthesizer engine */
+/** Table of prosody rates for Swift engine */
+static const int swift_prosody_rate_table[PROSODY_RATE_COUNT] = {
+	85,  /* PROSODY_RATE_XSLOW */
+	113, /* PROSODY_RATE_SLOW */
+	170, /* PROSODY_RATE_MEDIUM */
+	225, /* PROSODY_RATE_FAST */
+	340, /* PROSODY_RATE_XFAST */
+	170  /* PROSODY_RATE_DEFAULT */
+};
+
+static void mrcp_swift_voices_show(swift_engine *engine);
+static swift_result_t mrcp_swift_write_audio(swift_event *event, swift_event_t type, void *udata);
+static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message);
+static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message);
+
+/** Create Swift synthesizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	swift_engine *synth_engine;
@@ -114,7 +135,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Engine");
 		return NULL;
 	}
-	swift_voices_show(synth_engine);
+	mrcp_swift_voices_show(synth_engine);
 
 	/* create resource engine base */
 	engine = mrcp_resource_engine_create(
@@ -205,10 +226,9 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 	}
 
 	synth_channel->audio_buffer = mpf_buffer_create(pool);
-	synth_channel->last_write_time = 0;
 
 	/* set swift_write_audio as a callback, with the output file as its param */
-	swift_port_set_callback(port, &swift_write_audio, SWIFT_EVENT_AUDIO | SWIFT_EVENT_END, synth_channel);
+	swift_port_set_callback(port, &mrcp_swift_write_audio, SWIFT_EVENT_AUDIO | SWIFT_EVENT_END, synth_channel);
 	synth_channel->channel = channel;
 	return channel;
 }
@@ -245,8 +265,14 @@ static apt_bool_t mrcp_swift_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 {
 	mrcp_swift_channel_t *synth_channel = channel->method_obj;
 
+	/* set voice */
+	mrcp_swift_channel_voice_set(synth_channel,request);
+	/* set params */
+	mrcp_swift_channel_params_set(synth_channel,request);
+	/* (re)start audio buffer */
 	mpf_buffer_restart(synth_channel->audio_buffer);
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	/* start to synthesize */
 	if(swift_port_speak_text(synth_channel->port,request->body.buf,0,NULL,&synth_channel->tts_stream,NULL) != SWIFT_SUCCESS) {
 		response->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
@@ -287,6 +313,17 @@ static apt_bool_t mrcp_swift_channel_resume(mrcp_engine_channel_t *channel, mrcp
 	return TRUE;
 }
 
+/** Process CONTROL request */
+static apt_bool_t mrcp_swift_channel_control(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	mrcp_swift_channel_t *synth_channel = channel->method_obj;
+	/* set params */
+	mrcp_swift_channel_params_set(synth_channel,request);
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
+}
+
 /** Process MRCP channel request (asynchronous response MUST be sent)*/
 static apt_bool_t mrcp_swift_channel_request_process(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
@@ -313,6 +350,7 @@ static apt_bool_t mrcp_swift_channel_request_process(mrcp_engine_channel_t *chan
 			processed = mrcp_swift_channel_stop(channel,request,response);
 			break;
 		case SYNTHESIZER_CONTROL:
+			processed = mrcp_swift_channel_control(channel,request,response);
 			break;
 		case SYNTHESIZER_DEFINE_LEXICON:
 			break;
@@ -346,59 +384,6 @@ static apt_bool_t synth_stream_close(mpf_audio_stream_t *stream)
 	return TRUE;
 }
 
-/** Callback is called from MPF engine context to read/get new frame */
-static apt_bool_t synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
-{
-	mrcp_swift_channel_t *synth_channel = stream->obj;
-	/* check if STOP was requested */
-	if(synth_channel->stop_response) {
-		/* send asynchronous response to STOP request */
-		mrcp_engine_channel_message_send(synth_channel->channel,synth_channel->stop_response);
-		synth_channel->stop_response = NULL;
-		synth_channel->speak_request = NULL;
-		synth_channel->paused = FALSE;
-		return TRUE;
-	}
-
-	/* check if there is active SPEAK request and it isn't in paused state */
-	if(synth_channel->speak_request && synth_channel->paused == FALSE) {
-		/* normal processing */
-		mpf_buffer_frame_read(synth_channel->audio_buffer,frame);
-		
-		if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
-			synth_speak_complete_raise(synth_channel);
-		}
-	}
-	return TRUE;
-}
-
-/** Swift engine callback */
-static swift_result_t swift_write_audio(swift_event *event, swift_event_t type, void *udata)
-{
-	void *buf;
-	int len;
-	mrcp_swift_channel_t *synth_channel = udata;
-	swift_event_t rv = SWIFT_SUCCESS;
-
-	if(type & SWIFT_EVENT_END) {
-		apt_log(APT_PRIO_DEBUG,"Swift Event: end\n");
-		mpf_buffer_event_write(synth_channel->audio_buffer,MEDIA_FRAME_TYPE_EVENT);
-		return rv;
-	}
-
-	rv = swift_event_get_audio(event, &buf, &len);
-	if(!SWIFT_FAILED(rv)) {
-		/* Get the event times */
-		float time_start, time_len; 
-		swift_event_get_times(event, &time_start, &time_len);
-		apt_log(APT_PRIO_DEBUG,"Swift Engine: Write Audio [%d | %0.4f | %0.4f]",len, time_start, time_len);
-		synth_channel->last_write_time = time_start + time_len;
-		mpf_buffer_audio_write(synth_channel->audio_buffer,buf,len);
-	}
-
-	return rv;
-}
-
 /** Raise SPEAK-COMPLETE event */
 static apt_bool_t synth_speak_complete_raise(mrcp_swift_channel_t *synth_channel)
 {
@@ -430,8 +415,184 @@ static apt_bool_t synth_speak_complete_raise(mrcp_swift_channel_t *synth_channel
 	return mrcp_engine_channel_message_send(synth_channel->channel,message);
 }
 
-/** Show swift available voices */
-static void swift_voices_show(swift_engine *engine) 
+/** Callback is called from MPF engine context to read/get new frame */
+static apt_bool_t synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
+{
+	mrcp_swift_channel_t *synth_channel = stream->obj;
+	/* check if STOP was requested */
+	if(synth_channel->stop_response) {
+		/* send asynchronous response to STOP request */
+		mrcp_engine_channel_message_send(synth_channel->channel,synth_channel->stop_response);
+		synth_channel->stop_response = NULL;
+		synth_channel->speak_request = NULL;
+		synth_channel->paused = FALSE;
+		return TRUE;
+	}
+
+	/* check if there is active SPEAK request and it isn't in paused state */
+	if(synth_channel->speak_request && synth_channel->paused == FALSE) {
+		/* normal processing */
+		mpf_buffer_frame_read(synth_channel->audio_buffer,frame);
+		
+		if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
+			synth_speak_complete_raise(synth_channel);
+		}
+	}
+	return TRUE;
+}
+
+/** Swift engine callback */
+static swift_result_t mrcp_swift_write_audio(swift_event *event, swift_event_t type, void *udata)
+{
+	void *buf;
+	int len;
+	mrcp_swift_channel_t *synth_channel = udata;
+	swift_event_t rv = SWIFT_SUCCESS;
+
+	if(type & SWIFT_EVENT_END) {
+		apt_log(APT_PRIO_DEBUG,"Swift Engine: Write End-of-Speech Event");
+		mpf_buffer_event_write(synth_channel->audio_buffer,MEDIA_FRAME_TYPE_EVENT);
+		return rv;
+	}
+
+	rv = swift_event_get_audio(event, &buf, &len);
+	if(!SWIFT_FAILED(rv)) {
+#if 0
+		/* Get the event times */
+		float time_start, time_len; 
+		swift_event_get_times(event, &time_start, &time_len);
+		apt_log(APT_PRIO_DEBUG,"Swift Engine: Write Audio [%d | %0.4f | %0.4f]",len, time_start, time_len);
+#endif
+		mpf_buffer_audio_write(synth_channel->audio_buffer,buf,len);
+	}
+
+	return rv;
+}
+
+/** Add delimiter (&) to search criteria */
+static APR_INLINE int search_criteria_delimiter_add(char *search_criteria, int size, apt_bool_t initial)
+{
+	if(initial == FALSE && size >= 3) {
+		search_criteria[0] = ' ';
+		search_criteria[1] = '&';
+		search_criteria[2] = ' ';
+		return 3;
+	}
+	return 0;
+}
+
+/** Set voice matching specified criteria */
+static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message)
+{
+	mrcp_synth_header_t *synth_header = mrcp_resource_header_get(message);
+	char search_criteria[1024];
+	int offset = 0;
+	swift_voice *voice;
+	swift_result_t res;
+
+	if(!synth_header) {
+		/* no params to set */
+		return TRUE;
+	}
+
+	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_VOICE_NAME) == TRUE) {
+		offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,(offset == 0));
+		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/name=%s",synth_header->voice_param.name);
+	}
+	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_VOICE_GENDER) == TRUE) {
+		switch(synth_header->voice_param.gender) {
+			case VOICE_GENDER_MALE:
+				offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,offset == 0);
+				offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/gender=male");
+				break;
+			case VOICE_GENDER_FEMALE:
+				offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,offset == 0);
+				offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/gender=female");
+				break;
+			default:
+				break;
+		}
+	}
+	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_VOICE_AGE) == TRUE) {
+		offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,offset == 0);
+		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/age=%d",synth_header->voice_param.age);
+	}
+	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_SPEECH_LANGUAGE) == TRUE) {
+		offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,offset == 0);
+		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"language/name=%s",synth_header->speech_language);
+	}
+
+	if(offset > 0) {
+		apt_log(APT_PRIO_DEBUG,"Find Voices Matching the Criteria [%s]",search_criteria);
+		if((voice = swift_port_find_first_voice(synth_channel->port,search_criteria,NULL)) == NULL) {
+			apt_log(APT_PRIO_DEBUG,"No Swift Voice Available Matching the Criteria [%s]",search_criteria);
+			voice = swift_port_find_first_voice(synth_channel->port,NULL,NULL);
+		}
+		if(SWIFT_FAILED(res = swift_port_set_voice(synth_channel->port,voice)) ) {
+			const char *error_string = swift_strerror(res);
+			apt_log(APT_PRIO_DEBUG,error_string);
+			return FALSE;
+		} 
+	}
+	return TRUE;
+}
+
+/** Set Swift port param */
+static apt_bool_t mrcp_swift_channel_param_set(mrcp_swift_channel_t *synth_channel, const char *name, swift_val *val)
+{
+	swift_result_t res;
+	if(SWIFT_FAILED(res = swift_port_set_param(synth_channel->port,name,val,synth_channel->tts_stream)) ) {
+		const char *error_string = swift_strerror(res);
+		apt_log(APT_PRIO_DEBUG,"Swift Param %s: %s",name,error_string);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/** Set Swift port params */
+static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message)
+{
+	const char *name;
+	mrcp_synth_header_t *synth_header = mrcp_resource_header_get(message);
+	mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
+
+	if(synth_header) {
+		if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_PROSODY_VOLUME) == TRUE) {
+			if(synth_header->prosody_param.volume < PROSODY_VOLUME_COUNT) {
+				int volume = swift_prosody_volume_table[synth_header->prosody_param.volume];
+				name = "audio/volume";
+				apt_log(APT_PRIO_DEBUG,"Swift Param %s=%d",name,volume);
+				mrcp_swift_channel_param_set(synth_channel,name,swift_val_int(volume));
+			}
+		}
+		if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_PROSODY_RATE) == TRUE) {
+			if(synth_header->prosody_param.rate < PROSODY_RATE_COUNT) {
+				int rate = swift_prosody_rate_table[synth_header->prosody_param.rate];
+				name = "speech/rate";
+				apt_log(APT_PRIO_DEBUG,"Swift Param %s=%d",name,rate);
+				mrcp_swift_channel_param_set(synth_channel,name,swift_val_int(rate));
+			}
+		}
+	}
+
+	if(generic_header) {
+		if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_TYPE) == TRUE) {
+			name = "tts/content-type";
+			apt_log(APT_PRIO_DEBUG,"Swift Param %s=%s",name,generic_header->content_type);
+			mrcp_swift_channel_param_set(synth_channel,name,swift_val_string(generic_header->content_type.buf));
+		}
+		if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_ENCODING) == TRUE) {
+			name = "tts/text-encoding";
+			apt_log(APT_PRIO_DEBUG,"Swift Param %s=%s",name,generic_header->content_encoding);
+			mrcp_swift_channel_param_set(synth_channel,name,swift_val_string(generic_header->content_encoding.buf));
+		}
+	}
+	
+	return TRUE;
+}
+
+/** Show Swift available voices */
+static void mrcp_swift_voices_show(swift_engine *engine) 
 {
 	swift_port *port;
 	swift_voice *voice;
@@ -445,7 +606,7 @@ static void swift_voices_show(swift_engine *engine)
 
 	/* find the first voice on the system */
 	if((voice = swift_port_find_first_voice(port, NULL, NULL)) == NULL) {
-		apt_log(APT_PRIO_WARNING,"Failed to Find Any Voices!");
+		apt_log(APT_PRIO_WARNING,"No Swift Voice Available");
 		swift_port_close(port);
 		return;
 	}
