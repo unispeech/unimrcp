@@ -497,7 +497,7 @@ static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_chann
 
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_VOICE_NAME) == TRUE) {
 		offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,(offset == 0));
-		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/name=%s",synth_header->voice_param.name);
+		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/name=%s",synth_header->voice_param.name.buf);
 	}
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_VOICE_GENDER) == TRUE) {
 		switch(synth_header->voice_param.gender) {
@@ -519,7 +519,7 @@ static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_chann
 	}
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_SPEECH_LANGUAGE) == TRUE) {
 		offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,offset == 0);
-		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"language/name=%s",synth_header->speech_language);
+		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"language/name=%s",synth_header->speech_language.buf);
 	}
 
 	if(offset > 0) {
