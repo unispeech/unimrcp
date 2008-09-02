@@ -38,6 +38,7 @@
 
     <!-- Resource plugins -->
     <plugin>
+      <engine name="Cepstral-Swift-1" class="mrcpcepstral"/>
       <engine name="Demo-Synth-1" class="demosynth"/>
       <engine name="Demo-Recog-1" class="demorecog"/>
     </plugin>
