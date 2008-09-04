@@ -13,8 +13,4 @@
 		Name="VCLinkerTool"
 		AdditionalLibraryDirectories="&quot;$(OutDir)&quot;"
 	/>
-	<UserMacro
-		Name="MRCPEngineLibs"
-		Value="mrcp.lib mpf.lib aprtoolkit.lib libaprutil-1.lib libapr-1.lib"
-	/>
 </VisualStudioPropertySheet>

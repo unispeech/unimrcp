@@ -18,7 +18,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			ConfigurationType="2"
-			InheritedPropertySheets="$(SolutionDir)build\vsprops\unidebug.vsprops;$(SolutionDir)build\vsprops\mrcpengine.vsprops;$(SolutionDir)build\vsprops\cepstral.vsprops"
+			InheritedPropertySheets="$(SolutionDir)build\vsprops\unidebug.vsprops;$(SolutionDir)build\vsprops\unimrcpplugin.vsprops;$(SolutionDir)build\vsprops\cepstral.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -51,7 +51,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(MRCPEngineLibs)"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -81,7 +80,7 @@
 		<Configuration
 			Name="Release|Win32"
 			ConfigurationType="2"
-			InheritedPropertySheets="$(SolutionDir)build\vsprops\unirelease.vsprops;$(SolutionDir)build\vsprops\mrcpengine.vsprops;$(SolutionDir)build\vsprops\cepstral.vsprops"
+			InheritedPropertySheets="$(SolutionDir)build\vsprops\unirelease.vsprops;$(SolutionDir)build\vsprops\unimrcpplugin.vsprops;$(SolutionDir)build\vsprops\cepstral.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -115,7 +114,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(MRCPEngineLibs)"
 			/>
 			<Tool
 				Name="VCALinkTool"

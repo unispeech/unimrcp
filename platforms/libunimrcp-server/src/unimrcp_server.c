@@ -25,13 +25,11 @@
 #include "apt_log.h"
 
 #define CONF_FILE_NAME           "unimrcpserver.xml"
-#ifdef WIN32
-#define DEFAULT_CONF_DIR_PATH    ""
-#define DEFAULT_PLUGIN_DIR_PATH  ""
-#define DEFAULT_PLUGIN_EXT       "dll"
-#else
 #define DEFAULT_CONF_DIR_PATH    "../conf"
 #define DEFAULT_PLUGIN_DIR_PATH  "../plugin"
+#ifdef WIN32
+#define DEFAULT_PLUGIN_EXT       "dll"
+#else
 #define DEFAULT_PLUGIN_EXT       "so"
 #endif
 

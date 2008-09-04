@@ -25,11 +25,7 @@
 #include "apt_log.h"
 
 #define CONF_FILE_NAME            "unimrcpclient.xml"
-#ifdef WIN32
-#define DEFAULT_CONF_DIR_PATH     ""
-#else
 #define DEFAULT_CONF_DIR_PATH     "../conf"
-#endif
 
 #define DEFAULT_LOCAL_IP_ADDRESS  "127.0.0.1"
 #define DEFAULT_REMOTE_IP_ADDRESS "127.0.0.1"

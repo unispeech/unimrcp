@@ -21,4 +21,8 @@
 		Name="AprUtilDir"
 		Value="$(ProjectRootDir)libs\apr-util"
 	/>
+	<UserMacro
+		Name="AprIconvDir"
+		Value="$(ProjectRootDir)libs\apr-iconv"
+	/>
 </VisualStudioPropertySheet>

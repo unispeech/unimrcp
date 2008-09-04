@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="unibase"
-	OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+	OutputDirectory="$(SolutionDir)$(ConfigurationName)\bin"
 	IntermediateDirectory="$(ConfigurationName)"
 	>
 	<Tool
