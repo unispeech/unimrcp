@@ -119,6 +119,11 @@ AC_CONFIG_FILES([
   tests/mpftest/Makefile
   tests/mrcptest/Makefile
   tests/strtablegen/Makefile
+  build/Makefile
+  build/pkgconfig/Makefile
+  build/pkgconfig/unimrcpclient.pc
+  build/pkgconfig/unimrcpserver.pc
+  build/pkgconfig/unimrcpplugin.pc
 ])
 
 AC_OUTPUT
