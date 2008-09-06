@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: unimrcpclient
 Description: UniMRCP Client Stack
 Requires: 
-Version: @VERSION@
+Version: @UNI_DOTTED_VERSION@
 Libs: -L${libdir} -lunimrcpclient
 Cflags: -I${includedir}

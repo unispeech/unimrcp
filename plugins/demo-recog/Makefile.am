@@ -13,4 +13,4 @@ INCLUDES                   = -Iinclude \
 plugin_LTLIBRARIES         = demorecog.la
 
 demorecog_la_SOURCES       = src/demo_recog_engine.c
-demorecog_la_LDFLAGS       = -module
+demorecog_la_LDFLAGS       = -module $(UNI_LT_VERSION)

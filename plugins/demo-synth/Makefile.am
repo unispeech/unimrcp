@@ -13,4 +13,4 @@ INCLUDES                   = -Iinclude \
 plugin_LTLIBRARIES         = demosynth.la
 
 demosynth_la_SOURCES       = src/demo_synth_engine.c
-demosynth_la_LDFLAGS       = -module
+demosynth_la_LDFLAGS       = -module $(UNI_LT_VERSION)

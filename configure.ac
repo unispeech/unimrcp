@@ -2,7 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.57)
-AC_INIT([unimrcp], [0.0.1])
+
+AC_INIT([unimrcp],[0.1.0])
 
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/acmacros])
@@ -25,6 +26,16 @@ m4_undefine([AC_PROG_F77])
 m4_defun([AC_PROG_F77],[])
 AC_PROG_LIBTOOL
 
+# get version information
+get_version="build/get-version.sh"
+version_hdr="build/uni_version.h"
+UNI_DOTTED_VERSION="`$get_version all $version_hdr UNI`"
+UNI_LT_VERSION="-version-info `$get_version libtool $version_hdr UNI`"
+
+AC_SUBST(UNI_DOTTED_VERSION)
+AC_SUBST(UNI_LT_VERSION)
+
+echo "UniMRCP Version: ${UNI_DOTTED_VERSION}"
 
 UNIMRCP_CHECK_APR
 UNIMRCP_CHECK_APU

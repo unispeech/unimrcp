@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: unimrcpserver
 Description: UniMRCP Server Stack
 Requires: 
-Version: @VERSION@
+Version: @UNI_DOTTED_VERSION@
 Libs: -L${libdir} -lunimrcpserver
 Cflags: -I${includedir}

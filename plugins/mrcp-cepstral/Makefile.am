@@ -13,5 +13,5 @@ INCLUDES                   = -Iinclude \
 plugin_LTLIBRARIES         = mrcpcepstral.la
 
 mrcpcepstral_la_SOURCES    = src/mrcp_swift.c
-mrcpcepstral_la_LDFLAGS    = -module $(UNIMRCP_SWIFT_LDFLAGS)
+mrcpcepstral_la_LDFLAGS    = -module $(UNI_LT_VERSION) $(UNIMRCP_SWIFT_LDFLAGS)
 mrcpcepstral_la_LIBADD     = $(UNIMRCP_SWIFT_LIBS) 

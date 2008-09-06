@@ -28,3 +28,5 @@ libunimrcpclient_la_LIBADD  = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofia
                               $(top_builddir)/libs/mpf/libmpf.la \
                               $(top_builddir)/libs/apr-toolkit/libaprtoolkit.la \
                               $(UNIMRCP_APR_LIBS) $(UNIMRCP_APU_LIBS)
+                              
+libunimrcpclient_la_LDFLAGS = $(UNI_LT_VERSION)

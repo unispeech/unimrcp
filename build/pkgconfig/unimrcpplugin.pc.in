@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: unimrcpplugin
 Description: UniMRCP Server Plugin
 Requires: 
-Version: @VERSION@
+Version: @UNI_DOTTED_VERSION@
 Libs: -L${libdir} -lunimrcpserver
 Cflags: -I${includedir}
