@@ -12,6 +12,7 @@ INCLUDES                    = -I$(top_srcdir)/platforms/libunimrcp-server/includ
                               -I$(top_srcdir)/libs/mrcp/resources/include \
                               -I$(top_srcdir)/libs/mpf/include \
                               -I$(top_srcdir)/libs/apr-toolkit/include \
+                              -I$(top_srcdir)/build \
                               $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
 
 lib_LTLIBRARIES             = libunimrcpserver.la
