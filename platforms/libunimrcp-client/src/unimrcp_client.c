@@ -16,6 +16,7 @@
 
 #include <apr_xml.h>
 #include "unimrcp_client.h"
+#include "uni_version.h"
 #include "mrcp_default_factory.h"
 #include "mpf_engine.h"
 #include "mpf_rtp_termination_factory.h"
@@ -49,7 +50,9 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
 	apr_xml_doc *doc;
 	mrcp_resource_factory_t *resource_factory;
 	mpf_codec_manager_t *codec_manager;
-	mrcp_client_t *client = mrcp_client_create();
+	mrcp_client_t *client;
+	apt_log(APT_PRIO_NOTICE,"UniMRCP Client ["UNI_VERSION_STRING"]");
+	client = mrcp_client_create();
 	if(!client) {
 		return NULL;
 	}
