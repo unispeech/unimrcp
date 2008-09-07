@@ -24,6 +24,7 @@
 
 #include "mpf_frame.h"
 #include "mpf_codec.h"
+#include "mpf_rtp_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -35,23 +36,8 @@ typedef enum {
 	JB_DISCARD_TOO_EARLY,    /**< discarded write (frame is arrived too early, buffer is full) */
 } jb_result_t;
 
-/** Jitter buffer configuration declaration */
-typedef struct mpf_jb_config_t mpf_jb_config_t;
 /** Opaque jitter buffer declaration */
 typedef struct mpf_jitter_buffer_t mpf_jitter_buffer_t;
-
-
-/** Jitter buffer configuration */
-struct mpf_jb_config_t {
-	/** Min playout delay in msec (used in case of adaptive jitter buffer) */
-	apr_size_t min_playout_delay;
-	/** Initial playout delay in msec */
-	apr_size_t initial_playout_delay;
-	/** Max playout delay in msec (used in case of adaptive jitter buffer) */
-	apr_size_t max_playout_delay;
-	/** Static - 0, adaptive - 1 jitter buffer */
-	apr_byte_t adaptive;
-};
 
 
 /** Create jitter buffer */

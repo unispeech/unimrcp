@@ -22,7 +22,7 @@
 typedef struct rtp_termination_factory_t rtp_termination_factory_t;
 struct rtp_termination_factory_t {
 	mpf_termination_factory_t base;
-	mpf_rtp_config_t          config;
+	mpf_rtp_config_t         *config;
 };
 
 static apt_bool_t mpf_rtp_termination_destroy(mpf_termination_t *termination)
@@ -36,7 +36,7 @@ static apt_bool_t mpf_rtp_termination_modify(mpf_termination_t *termination, voi
 	mpf_audio_stream_t *audio_stream = termination->audio_stream;
 	if(!audio_stream) {
 		rtp_termination_factory_t *termination_factory = (rtp_termination_factory_t*)termination->termination_factory;
-		audio_stream = mpf_rtp_stream_create(termination,&termination_factory->config,termination->pool);
+		audio_stream = mpf_rtp_stream_create(termination,termination_factory->config,termination->pool);
 		if(!audio_stream) {
 			return FALSE;
 		}
@@ -57,17 +57,28 @@ static mpf_termination_t* mpf_rtp_termination_create(mpf_termination_factory_t *
 }
 
 MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
-											const char *ip, 
-											apr_port_t port_min, 
-											apr_port_t port_max,
+											mpf_rtp_config_t *rtp_config,
 											apr_pool_t *pool)
 {
-	rtp_termination_factory_t *rtp_termination_factory = apr_palloc(pool,sizeof(rtp_termination_factory_t));
+	rtp_termination_factory_t *rtp_termination_factory;
+	if(!rtp_config) {
+		return NULL;
+	}
+	rtp_termination_factory = apr_palloc(pool,sizeof(rtp_termination_factory_t));
 	rtp_termination_factory->base.create_termination = mpf_rtp_termination_create;
+	rtp_termination_factory->config = rtp_config;
+/*	mpf_rtp_config_init(&rtp_termination_factory->config,pool);
 	apt_string_set(&rtp_termination_factory->config.ip,ip);
 	rtp_termination_factory->config.rtp_port_min = port_min;
 	rtp_termination_factory->config.rtp_port_max = port_max;
 	rtp_termination_factory->config.rtp_port_cur = port_min;
-	apt_log(APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",ip,port_min,port_max);
+	if(jb_config) {
+		rtp_termination_factory->config.jb_config = *jb_config;
+	}
+	*/	
+	apt_log(APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",
+									rtp_config->ip.buf,
+									rtp_config->rtp_port_min,
+									rtp_config->rtp_port_max);
 	return &rtp_termination_factory->base;
 }

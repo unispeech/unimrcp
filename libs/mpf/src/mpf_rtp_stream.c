@@ -261,15 +261,16 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream)
 	}
 
 	receiver->jb = mpf_jitter_buffer_create(
-						NULL,
+						&rtp_stream->config->jb_config,
 						stream->rx_codec,
 						rtp_stream->pool);
 
-	apt_log(APT_PRIO_INFO,"Open RTP Receive %s:%hu <- %s:%hu",
+	apt_log(APT_PRIO_INFO,"Open RTP Receive %s:%hu <- %s:%hu playout [%d ms]",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
-			rtp_stream->remote_media->base.port);
+			rtp_stream->remote_media->base.port,
+			rtp_stream->config->jb_config.initial_playout_delay);
 	return TRUE;
 }
 

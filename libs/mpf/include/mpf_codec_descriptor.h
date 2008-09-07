@@ -139,7 +139,7 @@ static APR_INLINE void mpf_codec_list_reset(mpf_codec_list_t *codec_list)
 /** Initialize list of codec descriptors */
 static APR_INLINE void mpf_codec_list_init(mpf_codec_list_t *codec_list, apr_size_t initial_count, apr_pool_t *pool)
 {
-	codec_list->descriptor_arr = apr_array_make(pool,(int)initial_count, (int)sizeof(mpf_codec_descriptor_t));
+	codec_list->descriptor_arr = apr_array_make(pool,(int)initial_count, sizeof(mpf_codec_descriptor_t));
 }
 
 /** Increment number of codec descriptors in the list and return the descriptor to fill */

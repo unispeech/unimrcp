@@ -25,25 +25,25 @@
 #include "apt_net.h"
 #include "apt_log.h"
 
-#define CONF_FILE_NAME           "unimrcpserver.xml"
-#define DEFAULT_CONF_DIR_PATH    "../conf"
-#define DEFAULT_PLUGIN_DIR_PATH  "../plugin"
+#define CONF_FILE_NAME            "unimrcpserver.xml"
+#define DEFAULT_CONF_DIR_PATH     "../conf"
+#define DEFAULT_PLUGIN_DIR_PATH   "../plugin"
 #ifdef WIN32
-#define DEFAULT_PLUGIN_EXT       "dll"
+#define DEFAULT_PLUGIN_EXT        "dll"
 #else
-#define DEFAULT_PLUGIN_EXT       "so"
+#define DEFAULT_PLUGIN_EXT        "so"
 #endif
 
-#define DEFAULT_IP_ADDRESS       "127.0.0.1"
-#define DEFAULT_SIP_PORT         8060
-#define DEFAULT_MRCP_PORT        1544
-#define DEFAULT_RTP_PORT_MIN     5000
-#define DEFAULT_RTP_PORT_MAX     6000
+#define DEFAULT_IP_ADDRESS        "127.0.0.1"
+#define DEFAULT_SIP_PORT          8060
+#define DEFAULT_MRCP_PORT         1544
+#define DEFAULT_RTP_PORT_MIN      5000
+#define DEFAULT_RTP_PORT_MAX      6000
 
-#define DEFAULT_SOFIASIP_UA_NAME "UniMRCP SofiaSIP"
-#define DEFAULT_SDP_ORIGIN       "UniMRCPServer"
+#define DEFAULT_SOFIASIP_UA_NAME  "UniMRCP SofiaSIP"
+#define DEFAULT_SDP_ORIGIN        "UniMRCPServer"
 
-#define XML_FILE_BUFFER_LENGTH   2000
+#define XML_FILE_BUFFER_LENGTH    2000
 
 static apr_xml_doc* unimrcp_server_config_parse(const char *path, apr_pool_t *pool);
 static apt_bool_t unimrcp_server_config_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_doc *doc, apr_pool_t *pool);
@@ -305,10 +305,11 @@ static apt_bool_t unimrcp_server_connection_agents_load(mrcp_server_t *server, c
 /** Load RTP termination factory */
 static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	char *rtp_ip = DEFAULT_IP_ADDRESS;
-	apr_port_t rtp_port_min = DEFAULT_RTP_PORT_MIN;
-	apr_port_t rtp_port_max = DEFAULT_RTP_PORT_MAX;
 	const apr_xml_elem *elem;
+	char *rtp_ip = DEFAULT_IP_ADDRESS;
+	mpf_rtp_config_t *rtp_config = mpf_rtp_config_create(pool);
+	rtp_config->rtp_port_min = DEFAULT_RTP_PORT_MIN;
+	rtp_config->rtp_port_max = DEFAULT_RTP_PORT_MAX;
 	apt_log(APT_PRIO_DEBUG,"Loading RTP Termination Factory");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
@@ -320,18 +321,28 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 					rtp_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-min") == 0) {
-					rtp_port_min = (apr_port_t)atol(attr_value->value);
+					rtp_config->rtp_port_min = (apr_port_t)atol(attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-max") == 0) {
-					rtp_port_max = (apr_port_t)atol(attr_value->value);
+					rtp_config->rtp_port_max = (apr_port_t)atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"playout-delay") == 0) {
+					rtp_config->jb_config.initial_playout_delay = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"min-playout-delay") == 0) {
+					rtp_config->jb_config.min_playout_delay = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"max-playout-delay") == 0) {
+					rtp_config->jb_config.max_playout_delay = atol(attr_value->value);
 				}
 				else {
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
 			}
 		}
-	}    
-	return mpf_rtp_termination_factory_create(rtp_ip,rtp_port_min,rtp_port_max,pool);
+	}
+	apt_string_set(&rtp_config->ip,rtp_ip);
+	return mpf_rtp_termination_factory_create(rtp_config,pool);
 }
 
 /** Load media engines */

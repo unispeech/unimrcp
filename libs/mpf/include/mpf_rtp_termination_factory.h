@@ -24,6 +24,7 @@
 
 #include <apr_network_io.h>
 #include "mpf_types.h"
+#include "mpf_rtp_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -31,9 +32,7 @@ APT_BEGIN_EXTERN_C
  * Create RTP termination factory.
  */
 MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
-										const char *ip, 
-										apr_port_t port_min, 
-										apr_port_t port_max,
+										mpf_rtp_config_t *rtp_config,
 										apr_pool_t *pool);
 
 

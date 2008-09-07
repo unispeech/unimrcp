@@ -87,6 +87,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 {
 	mpf_suite_engine_t *suite_engine;
 	mpf_codec_manager_t *codec_manager;
+	mpf_rtp_config_t *config;
 	mpf_engine_t *engine;
 
 	apt_task_t *task;
@@ -106,8 +107,11 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	}
 	suite_engine->engine_task = mpf_task_get(engine);
 
-	suite_engine->rtp_termination_factory = mpf_rtp_termination_factory_create(
-														"127.0.0.1",5000,6000,suite->pool);
+	config = mpf_rtp_config_create(suite->pool);
+	apt_string_set(&config->ip,"127.0.0.1");
+	config->rtp_port_min = 5000;
+	config->rtp_port_min = 6000;
+	suite_engine->rtp_termination_factory = mpf_rtp_termination_factory_create(config,suite->pool);
 	suite_engine->file_termination_factory = mpf_file_termination_factory_create(suite->pool);
 
 	apt_task_vtable_reset(&vtable);
