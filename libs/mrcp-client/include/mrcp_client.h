@@ -62,10 +62,16 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_resource_factory_register(mrcp_client_t *cl
 
 /**
  * Register codec manager.
- * @param server the MRCP server to set codec manager for
+ * @param client the MRCP client to set codec manager for
  * @param codec_manager the codec manager to set
  */
 MRCP_DECLARE(apt_bool_t) mrcp_client_codec_manager_register(mrcp_client_t *client, mpf_codec_manager_t *codec_manager);
+
+/**
+ * Get registered codec manager.
+ * @param client the MRCP client to get codec manager from
+ */
+MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(mrcp_client_t *client);
 
 /**
  * Register media engine.
