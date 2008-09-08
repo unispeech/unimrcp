@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "mpf_codec_manager.h"
 #include "apt_log.h"
 
