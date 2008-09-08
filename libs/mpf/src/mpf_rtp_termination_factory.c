@@ -64,18 +64,10 @@ MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
 	if(!rtp_config) {
 		return NULL;
 	}
+	rtp_config->rtp_port_cur = rtp_config->rtp_port_min;
 	rtp_termination_factory = apr_palloc(pool,sizeof(rtp_termination_factory_t));
 	rtp_termination_factory->base.create_termination = mpf_rtp_termination_create;
 	rtp_termination_factory->config = rtp_config;
-/*	mpf_rtp_config_init(&rtp_termination_factory->config,pool);
-	apt_string_set(&rtp_termination_factory->config.ip,ip);
-	rtp_termination_factory->config.rtp_port_min = port_min;
-	rtp_termination_factory->config.rtp_port_max = port_max;
-	rtp_termination_factory->config.rtp_port_cur = port_min;
-	if(jb_config) {
-		rtp_termination_factory->config.jb_config = *jb_config;
-	}
-	*/	
 	apt_log(APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",
 									rtp_config->ip.buf,
 									rtp_config->rtp_port_min,
