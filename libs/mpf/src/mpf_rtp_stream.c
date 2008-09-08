@@ -118,15 +118,22 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 	}
 
 	if(mpf_codec_list_is_empty(&local_media->codec_list) == TRUE) {
-		mpf_codec_manager_codec_list_get(
-							rtp_stream->base->termination->codec_manager,
-							&local_media->codec_list,
-							rtp_stream->base->termination->pool);
+		if(mpf_codec_list_is_empty(&rtp_stream->config->codec_list) == TRUE) {
+			mpf_codec_manager_codec_list_get(
+								rtp_stream->base->termination->codec_manager,
+								&local_media->codec_list,
+								rtp_stream->pool);
+		}
+		else {
+			mpf_codec_list_copy(&local_media->codec_list,
+								&rtp_stream->config->codec_list,
+								rtp_stream->pool);
+		}
 	}
 	rtp_stream->base->rx_codec = mpf_codec_manager_codec_get(
 							rtp_stream->base->termination->codec_manager,
 							mpf_codec_get(&local_media->codec_list,0),
-							rtp_stream->base->termination->pool);
+							rtp_stream->pool);
 	rtp_stream->local_media = local_media;
 	return status;
 }
@@ -146,12 +153,12 @@ static apt_bool_t mpf_rtp_stream_local_media_update(mpf_rtp_stream_t *rtp_stream
 		mpf_codec_manager_codec_list_get(
 							rtp_stream->base->termination->codec_manager,
 							&media->codec_list,
-							rtp_stream->base->termination->pool);
+							rtp_stream->pool);
 	}
 	rtp_stream->base->rx_codec = mpf_codec_manager_codec_get(
 							rtp_stream->base->termination->codec_manager,
 							mpf_codec_get(&media->codec_list,0),
-							rtp_stream->base->termination->pool);
+							rtp_stream->pool);
 	rtp_stream->local_media = media;
 	return status;
 }
@@ -178,7 +185,7 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 	rtp_stream->base->tx_codec = mpf_codec_manager_codec_get(
 							rtp_stream->base->termination->codec_manager,
 							mpf_codec_get(&media->codec_list,0),
-							rtp_stream->base->termination->pool);
+							rtp_stream->pool);
 	if(rtp_stream->base->tx_codec) {
 		rtp_stream->transmitter.samples_per_frame = 
 			(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_codec->descriptor);
@@ -204,7 +211,7 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 	rtp_stream->base->rx_codec = mpf_codec_manager_codec_get(
 							rtp_stream->base->termination->codec_manager,
 							mpf_codec_get(&rtp_stream->local_media->codec_list,0),
-							rtp_stream->base->termination->pool);
+							rtp_stream->pool);
 
 	rtp_stream->base->mode = rtp_stream->local_media->mode;
 	return TRUE;

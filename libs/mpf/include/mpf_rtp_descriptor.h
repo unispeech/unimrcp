@@ -92,6 +92,8 @@ struct mpf_rtp_config_t {
 	apr_port_t rtp_port_max;
 	/** RTP port range (cur) */
 	apr_port_t rtp_port_cur;
+	/** Codec list */
+	mpf_codec_list_t codec_list;
 	/** Jitter buffer config */
 	mpf_jb_config_t jb_config;
 };
@@ -137,6 +139,7 @@ static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 	rtp_config->rtp_port_cur = 0;
 	rtp_config->rtp_port_min = 0;
 	rtp_config->rtp_port_max = 0;
+	mpf_codec_list_init(&rtp_config->codec_list,0,pool);
 	mpf_jb_config_init(&rtp_config->jb_config);
 	return rtp_config;
 }

@@ -142,6 +142,12 @@ static APR_INLINE void mpf_codec_list_init(mpf_codec_list_t *codec_list, apr_siz
 	codec_list->descriptor_arr = apr_array_make(pool,(int)initial_count, sizeof(mpf_codec_descriptor_t));
 }
 
+/** Copy list of codec descriptors */
+static APR_INLINE void mpf_codec_list_copy(mpf_codec_list_t *codec_list, const mpf_codec_list_t *src_codec_list, apr_pool_t *pool)
+{
+	codec_list->descriptor_arr = apr_array_copy(pool,src_codec_list->descriptor_arr);
+}
+
 /** Increment number of codec descriptors in the list and return the descriptor to fill */
 static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_add(mpf_codec_list_t *codec_list)
 {
