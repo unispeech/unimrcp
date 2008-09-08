@@ -130,7 +130,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 	mrcp_resource_engine_t *engine;
 	apt_log_priority_set(APT_PRIO_INFO);
 	/* open swift engine */
-	apt_log(APT_PRIO_INFO,"Open Swift Engine");
+	apt_log(APT_PRIO_INFO,"Open Swift Engine [%s]",swift_version);
 	if((synth_engine = swift_engine_open(NULL)) ==  NULL) {
 		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Engine");
 		return NULL;
