@@ -86,12 +86,14 @@ struct mpf_jb_config_t {
 struct mpf_rtp_config_t {
 	/** Local IP address to bind to */
 	apt_str_t ip;
-	/** RTP port range (min) */
+	/** Min RTP port */
 	apr_port_t rtp_port_min;
-	/** RTP port range (max) */
+	/** Max RTP port */
 	apr_port_t rtp_port_max;
-	/** RTP port range (cur) */
+	/** Current RTP port */
 	apr_port_t rtp_port_cur;
+	/** Packetization time */
+	apr_uint16_t ptime;
 	/** Codec list */
 	mpf_codec_list_t codec_list;
 	/** Jitter buffer config */
@@ -139,6 +141,7 @@ static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 	rtp_config->rtp_port_cur = 0;
 	rtp_config->rtp_port_min = 0;
 	rtp_config->rtp_port_max = 0;
+	rtp_config->ptime = 0;
 	mpf_codec_list_init(&rtp_config->codec_list,0,pool);
 	mpf_jb_config_init(&rtp_config->jb_config);
 	return rtp_config;

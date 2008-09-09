@@ -326,6 +326,9 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 						mpf_codec_manager_codec_list_load(codec_manager,&rtp_config->codec_list,attr_value->value,pool);
 					}
 				}
+				else if(strcasecmp(attr_name->value,"ptime") == 0) {
+					rtp_config->ptime = (apr_uint16_t)atol(attr_value->value);
+				}
 				else {
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}

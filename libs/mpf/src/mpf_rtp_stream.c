@@ -117,6 +117,10 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 		status = FALSE;
 	}
 
+	if(rtp_stream->config->ptime) {
+		local_media->ptime = rtp_stream->config->ptime;
+	}
+
 	if(mpf_codec_list_is_empty(&local_media->codec_list) == TRUE) {
 		if(mpf_codec_list_is_empty(&rtp_stream->config->codec_list) == TRUE) {
 			mpf_codec_manager_codec_list_get(
@@ -593,7 +597,12 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 	}
 
 	if(!transmitter->ptime) {
-		transmitter->ptime = 20;
+		if(rtp_stream->config && rtp_stream->config->ptime) {
+			transmitter->ptime = rtp_stream->config->ptime;
+		}
+		else {
+			transmitter->ptime = 20;
+		}
 	}
 	transmitter->packet_frames = transmitter->ptime / CODEC_FRAME_TIME_BASE;
 	transmitter->current_frames = 0;
