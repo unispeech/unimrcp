@@ -53,6 +53,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
 	mpf_codec_manager_t *codec_manager;
 	mrcp_client_t *client;
 	apt_log(APT_PRIO_NOTICE,"UniMRCP Client ["UNI_VERSION_STRING"]");
+	apt_log(APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
 	client = mrcp_client_create();
 	if(!client) {
 		return NULL;
