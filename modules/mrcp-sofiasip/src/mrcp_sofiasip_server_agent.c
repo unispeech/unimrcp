@@ -25,6 +25,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include <sofia-sip/nua.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sdp.h>
+#include <sofia-sip/sofia_features.h>
 
 #include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_session.h"
@@ -93,7 +94,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_ser
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
-	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP Agent %s:%hu",config->local_ip,config->local_port);
+	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu",config->local_ip,config->local_port);
 	return sofia_agent->sig_agent;
 }
 
