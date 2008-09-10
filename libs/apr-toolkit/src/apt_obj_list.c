@@ -104,7 +104,7 @@ APT_DECLARE(apt_list_elem_t*) apt_list_last_elem_get(apt_obj_list_t *list)
 APT_DECLARE(apt_list_elem_t*) apt_list_next_elem_get(apt_obj_list_t *list, apt_list_elem_t *elem)
 {
 	apt_list_elem_t *next_elem = APR_RING_NEXT(elem,link);
-	if(next_elem == APR_RING_SENTINEL(list,apt_list_elem_t,link)) {
+	if(next_elem == APR_RING_SENTINEL(&list->head,apt_list_elem_t,link)) {
 		next_elem = NULL;
 	}
 	return next_elem;
@@ -113,7 +113,7 @@ APT_DECLARE(apt_list_elem_t*) apt_list_next_elem_get(apt_obj_list_t *list, apt_l
 APT_DECLARE(apt_list_elem_t*) apt_list_prev_elem_get(apt_obj_list_t *list, apt_list_elem_t *elem)
 {
 	apt_list_elem_t *prev_elem = APR_RING_PREV(elem,link);
-	if(prev_elem == APR_RING_SENTINEL(list,apt_list_elem_t,link)) {
+	if(prev_elem == APR_RING_SENTINEL(&list->head,apt_list_elem_t,link)) {
 		prev_elem = NULL;
 	}
 	return prev_elem;
@@ -131,7 +131,7 @@ APT_DECLARE(apt_list_elem_t*) apt_list_elem_remove(apt_obj_list_t *list, apt_lis
 {
 	apt_list_elem_t *next_elem = APR_RING_NEXT(elem,link);
 	APR_RING_REMOVE(elem,link);
-	if(next_elem == APR_RING_SENTINEL(list,apt_list_elem_t,link)) {
+	if(next_elem == APR_RING_SENTINEL(&list->head,apt_list_elem_t,link)) {
 		next_elem = NULL;
 	}
 	return next_elem;
