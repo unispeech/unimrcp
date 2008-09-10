@@ -49,7 +49,7 @@ static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, ch
 	}
 	else if(strcasecmp(name,"help") == 0) {
 		printf("usage:\n");
-		printf("- run [app_name] (run demo application, app_name is one of 'synth', 'recog')\n");
+		printf("- run [app_name] (run demo application, app_name is one of 'synth', 'recog', 'bypass')\n");
 		printf("- loglevel [level] (set loglevel, one of 0,1...7)\n");
 		printf("- quit, exit\n");
 	}
