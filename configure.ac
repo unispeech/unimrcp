@@ -29,11 +29,14 @@ AC_PROG_LIBTOOL
 # get version information
 get_version="build/get-version.sh"
 version_hdr="build/uni_version.h"
+plugin_version_hdr="libs/mrcp-engine/include/mrcp_resource_plugin.h"
 UNI_DOTTED_VERSION="`$get_version all $version_hdr UNI`"
 UNI_LT_VERSION="-version-info `$get_version libtool $version_hdr UNI`"
+PLUGIN_LT_VERSION="-version-info `$get_version libtool $plugin_version_hdr PLUGIN`"
 
 AC_SUBST(UNI_DOTTED_VERSION)
 AC_SUBST(UNI_LT_VERSION)
+AC_SUBST(PLUGIN_LT_VERSION)
 
 echo "UniMRCP Version: ${UNI_DOTTED_VERSION}"
 
