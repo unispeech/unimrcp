@@ -25,23 +25,9 @@
 #include "mrcp_types.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
+#include "mrcp_resource_plugin.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Plugin export defines */
-#ifdef WIN32
-#define MRCP_PLUGIN_DECLARE(type) __declspec(dllexport) type
-#else
-#define MRCP_PLUGIN_DECLARE(type) type
-#endif
-
-/** MRCP resource engine declaration */
-typedef struct mrcp_resource_engine_t mrcp_resource_engine_t;
-
-/** Symbol name of the entry point in plugin DSO */
-#define MRCP_PLUGIN_SYM_NAME "mrcp_plugin_create"
-/** Prototype of resource engine creator (entry point of plugin DSO) */
-typedef mrcp_resource_engine_t* (*mrcp_plugin_creator_f)(apr_pool_t *pool);
 
 /** MRCP resource engine vtable declaration */
 typedef struct mrcp_engine_method_vtable_t mrcp_engine_method_vtable_t;
@@ -104,6 +90,8 @@ struct mrcp_engine_method_vtable_t {
 
 /** MRCP resource engine */
 struct mrcp_resource_engine_t {
+	/** Plugin version */
+	mrcp_plugin_version_t              plugin_version;
 	/** Resource identifier */
 	mrcp_resource_id                   resource_id;
 	/** External object associated with engine */

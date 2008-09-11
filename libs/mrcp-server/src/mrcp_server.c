@@ -489,6 +489,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 		return FALSE;
 	}
 
+	if(!mrcp_plugin_version_check(&engine->plugin_version)) {
+		apt_log(APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
+			engine->plugin_version.major,
+			engine->plugin_version.minor,
+			engine->plugin_version.patch);
+		apr_dso_unload(plugin);
+		return FALSE;
+	}
+
 	mrcp_server_resource_engine_register(server,engine,name);
 	apr_hash_set(server->plugin_table,name,APR_HASH_KEY_STRING,plugin);
 	return TRUE;

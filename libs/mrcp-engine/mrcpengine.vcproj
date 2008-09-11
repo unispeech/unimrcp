@@ -133,6 +133,10 @@
 				RelativePath=".\include\mrcp_resource_engine.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\mrcp_resource_plugin.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
