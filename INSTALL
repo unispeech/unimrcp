@@ -3,7 +3,7 @@ BUILD REQUIREMENTS
 UniMRCP depends on a number of third party tools and libraries,
 which must be installed prior to UniMRCP build.
 
-1. Apache Portable Runtime [1.2.x] (http://apr.apache.org/)
+1. Apache Portable Runtime [>=1.2.x] (http://apr.apache.org/)
 Whenever you want to build any part of UniMRCP, you need the
 Apache Portable Runtime (APR) and the APR Utility (APR-util)
 libraries.
@@ -20,11 +20,18 @@ Additional requirements
 - autoconf 2.57 or newer
 - libtool 1.4 or newer
 
-Build
+Build procedure
 $ ./bootstrap
 $ ./configure
 $ make
 $ make install
+
+Installed directory layout
+bin      - binaries (unimrcpserver, unimrcpclient)
+conf     - configuration files
+include  - header files
+libs     - shared (convenient) libraries
+plugins  - run-time loadable modules
 
 There are a couple of options to "./configure".
 To specify where to look for the APR and APR-util libraries
@@ -53,7 +60,7 @@ WINDOWS BUILD
 Additional requirements
 - Microsoft Visual Studio 2005
 
-Build Preparation
+One-time pre-build preparation
 You may need to adjust the paths for 3-rd party libraries
 in appropriate property sheets to match your local installation,
 while below are the defaults (build/vsprops).
@@ -74,5 +81,15 @@ sofiasip.vsprops
 		Value="$(SolutionDir)libs\sofia-sip"
 	/>
 
-Build
-Open unimrcp.sln and build it.
+Build procedure
+* Open unimrcp.sln solution file.
+* Build prebuild.vcproj utility project (right click on tools -> prebuild in 
+  Solution Explorer and select Build from context menu). This is a one-time 
+  output directory preparation. It copies all the required APR and SofiaSIP 
+  libraries and the default configuration to the output directory. 
+* Build the solution (Build -> Build Solution).
+
+Output directory layout
+bin      - binaries (unimrcpserver, unimrcpclient) and all the required dlls
+conf     - configuration files
+plugins  - run-time loadable modules
