@@ -33,6 +33,8 @@
         <param name="rtp-ip" value="auto"/>
         <param name="rtp-port-min" value="5000"/>
         <param name="rtp-port-max" value="6000"/>
+        <!-- <param name="playout-delay" value="50"/> -->
+        <!-- <param name="max-playout-delay" value="200"/> -->
       </rtp>
     </media>
 
