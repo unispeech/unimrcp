@@ -153,6 +153,12 @@ static APR_INLINE void apt_text_eol_insert(apt_text_stream_t *stream)
 	*stream->pos++ = APT_TOKEN_LF;
 }
 
+/** Insert character */
+static APR_INLINE void apt_text_char_insert(apt_text_stream_t *stream, char ch)
+{
+	*stream->pos++ = ch;
+}
+
 /** Insert space */
 static APR_INLINE void apt_text_space_insert(apt_text_stream_t *stream)
 {
