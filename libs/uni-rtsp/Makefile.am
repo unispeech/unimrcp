@@ -1,0 +1,12 @@
+MAINTAINERCLEANFILES 	 = Makefile.in
+
+INCLUDES                 = -I$(top_srcdir)/libs/uni-rtsp/include \
+                           -I$(top_srcdir)/libs/apr-toolkit/include \
+                           $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+
+noinst_LTLIBRARIES       = libunirtsp.la
+
+include_HEADERS          = include/rtsp.h \
+                           include/rtsp_header.h
+
+libunirtsp_la_SOURCES    = src/rtsp_header.c

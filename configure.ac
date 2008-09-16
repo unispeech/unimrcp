@@ -117,6 +117,7 @@ AC_CONFIG_FILES([
   libs/mrcp-engine/Makefile
   libs/mrcp-server/Makefile
   libs/mrcp-client/Makefile
+  libs/uni-rtsp/Makefile
   modules/Makefile
   modules/mrcp-sofiasip/Makefile
   plugins/Makefile
