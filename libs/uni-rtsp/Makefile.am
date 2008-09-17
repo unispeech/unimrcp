@@ -8,7 +8,9 @@ noinst_LTLIBRARIES       = libunirtsp.la
 
 include_HEADERS          = include/rtsp.h \
                            include/rtsp_header.h \
-                           include/rtsp_start_line.h
+                           include/rtsp_start_line.h \
+                           include/rtsp_message.h
 
 libunirtsp_la_SOURCES    = src/rtsp_header.c \
-                           src/rtsp_start_line.c
+                           src/rtsp_start_line.c \
+                           src/rtsp_message.c
