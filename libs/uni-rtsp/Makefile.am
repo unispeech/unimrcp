@@ -7,6 +7,8 @@ INCLUDES                 = -I$(top_srcdir)/libs/uni-rtsp/include \
 noinst_LTLIBRARIES       = libunirtsp.la
 
 include_HEADERS          = include/rtsp.h \
-                           include/rtsp_header.h
+                           include/rtsp_header.h \
+                           include/rtsp_start_line.h
 
-libunirtsp_la_SOURCES    = src/rtsp_header.c
+libunirtsp_la_SOURCES    = src/rtsp_header.c \
+                           src/rtsp_start_line.c
