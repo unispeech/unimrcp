@@ -39,7 +39,7 @@ static const char* rtsp_resource_name_parse(const apt_str_t *rtsp_url)
 {
 	char *str = NULL;
 	if(rtsp_url->buf) {
-		char *str = strrchr(rtsp_url->buf,'/');
+		str = strrchr(rtsp_url->buf,'/');
 		if(str) {
 			str++;
 		}
@@ -121,8 +121,15 @@ static apt_bool_t rtsp_status_line_generate(rtsp_status_line_t *start_line, apt_
 /** Parse RTSP start-line */
 RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_text_stream_t *stream, apr_pool_t *pool)
 {
+	apt_text_stream_t line;
 	apt_str_t field;
-	if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+	if(apt_text_line_read(stream,&line.text) == FALSE) {
+		apt_log(APT_PRIO_WARNING,"Cannot parse RTSP start-line");
+		return FALSE;
+	}
+	line.pos = line.text.buf;
+
+	if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 		apt_log(APT_PRIO_WARNING,"Cannot read the first field in start-line");
 		return FALSE;
 	}
@@ -135,13 +142,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 
 		status_line->version = rtsp_version_parse(&field);
 
-		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 			apt_log(APT_PRIO_WARNING,"Cannot parse status-code in status-line");
 			return FALSE;
 		}
 		status_line->status_code = rtsp_status_code_parse(&field);
 
-		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 			apt_log(APT_PRIO_WARNING,"Cannot parse reason phrase in status-line");
 			return FALSE;
 		}
@@ -156,14 +163,14 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 		apt_string_copy(&request_line->method_name,&field,pool);
 		request_line->method_id = apt_string_table_id_find(rtsp_method_string_table,RTSP_METHOD_COUNT,&field);
 
-		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 			apt_log(APT_PRIO_WARNING,"Cannot parse URL in request-line");
 			return FALSE;
 		}
 		apt_string_copy(&request_line->url,&field,pool);
 		request_line->resource_name = rtsp_resource_name_parse(&request_line->url);
 
-		if(apt_text_field_read(stream,APT_TOKEN_SP,TRUE,&field) == FALSE) {
+		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 			apt_log(APT_PRIO_WARNING,"Cannot parse version in request-line");
 			return FALSE;
 		}

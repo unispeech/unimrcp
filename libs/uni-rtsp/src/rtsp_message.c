@@ -101,5 +101,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_message_generate(rtsp_message_t *message, apt_text
 		return FALSE;
 	}
 
-	return rtsp_body_generate(message,text_stream);
+	rtsp_body_generate(message,text_stream);
+	text_stream->text.length = text_stream->pos - text_stream->text.buf;
+	return TRUE;
 }

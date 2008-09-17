@@ -216,5 +216,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_header_generate(rtsp_header_t *header, apt_text_st
 			rtsp_header_property_remove(&property_set,i);
 		}
 	}
+
+	apt_text_eol_insert(text_stream);
 	return TRUE;
 }
