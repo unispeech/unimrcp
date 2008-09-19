@@ -71,7 +71,7 @@ static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_server_agent_task_terminate(apt_task_t *task);
 
 /** Create connection agent */
-APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
+MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										const char *listen_ip,
 										apr_port_t listen_port,
 										apr_size_t max_connection_count,
@@ -113,26 +113,26 @@ APT_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 }
 
 /** Destroy connection agent. */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
 	apt_log(APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
 	return apt_task_destroy(agent->task);
 }
 
 /** Start connection agent. */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_start(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_start(mrcp_connection_agent_t *agent)
 {
 	return apt_task_start(agent->task);
 }
 
 /** Terminate connection agent. */
-APT_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_agent_t *agent)
 {
 	return apt_task_terminate(agent->task,TRUE);
 }
 
 /** Set connection event handler. */
-APT_DECLARE(void) mrcp_server_connection_agent_handler_set(
+MRCP_DECLARE(void) mrcp_server_connection_agent_handler_set(
 									mrcp_connection_agent_t *agent, 
 									void *obj, 
 									const mrcp_connection_event_vtable_t *vtable)
@@ -142,7 +142,7 @@ APT_DECLARE(void) mrcp_server_connection_agent_handler_set(
 }
 
 /** Set MRCP resource factory */
-APT_DECLARE(void) mrcp_server_connection_resource_factory_set(
+MRCP_DECLARE(void) mrcp_server_connection_resource_factory_set(
 								mrcp_connection_agent_t *agent, 
 								mrcp_resource_factory_t *resource_factroy)
 {
@@ -150,19 +150,19 @@ APT_DECLARE(void) mrcp_server_connection_resource_factory_set(
 }
 
 /** Get task */
-APT_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent)
 {
 	return agent->task;
 }
 
 /** Get external object */
-APT_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent_t *agent)
 {
 	return agent->obj;
 }
 
 /** Create MRCPv2 control channel */
-APT_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_connection_agent_t *agent, void *obj, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_connection_agent_t *agent, void *obj, apr_pool_t *pool)
 {
 	mrcp_control_channel_t *channel = apr_palloc(pool,sizeof(mrcp_control_channel_t));
 	channel->agent = agent;
@@ -174,7 +174,7 @@ APT_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_con
 }
 
 /** Destroy MRCPv2 control channel */
-APT_DECLARE(apt_bool_t) mrcp_server_control_channel_destroy(mrcp_control_channel_t *channel)
+MRCP_DECLARE(apt_bool_t) mrcp_server_control_channel_destroy(mrcp_control_channel_t *channel)
 {
 	if(channel && channel->connection && channel->removed == TRUE) {
 		mrcp_connection_t *connection = channel->connection;
@@ -212,25 +212,25 @@ static apt_bool_t mrcp_server_control_message_signal(
 }
 
 /** Add MRCPv2 control channel */
-APT_DECLARE(apt_bool_t) mrcp_server_control_channel_add(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+MRCP_DECLARE(apt_bool_t) mrcp_server_control_channel_add(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	return mrcp_server_control_message_signal(CONNECTION_TASK_MSG_ADD_CHANNEL,channel->agent,channel,descriptor,NULL);
 }
 
 /** Modify MRCPv2 control channel */
-APT_DECLARE(apt_bool_t) mrcp_server_control_channel_modify(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+MRCP_DECLARE(apt_bool_t) mrcp_server_control_channel_modify(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	return mrcp_server_control_message_signal(CONNECTION_TASK_MSG_MODIFY_CHANNEL,channel->agent,channel,descriptor,NULL);
 }
 
 /** Remove MRCPv2 control channel */
-APT_DECLARE(apt_bool_t) mrcp_server_control_channel_remove(mrcp_control_channel_t *channel)
+MRCP_DECLARE(apt_bool_t) mrcp_server_control_channel_remove(mrcp_control_channel_t *channel)
 {
 	return mrcp_server_control_message_signal(CONNECTION_TASK_MSG_REMOVE_CHANNEL,channel->agent,channel,NULL,NULL);
 }
 
 /** Send MRCPv2 message */
-APT_DECLARE(apt_bool_t) mrcp_server_control_message_send(mrcp_control_channel_t *channel, mrcp_message_t *message)
+MRCP_DECLARE(apt_bool_t) mrcp_server_control_message_send(mrcp_control_channel_t *channel, mrcp_message_t *message)
 {
 	return mrcp_server_control_message_signal(CONNECTION_TASK_MSG_SEND_MESSAGE,channel->agent,channel,NULL,message);
 }
