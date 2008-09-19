@@ -144,6 +144,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\rtsp_server_connection.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\rtsp_start_line.h"
 				>
 			</File>
@@ -158,6 +162,10 @@
 			</File>
 			<File
 				RelativePath=".\src\rtsp_message.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\rtsp_server_connection.c"
 				>
 			</File>
 			<File
