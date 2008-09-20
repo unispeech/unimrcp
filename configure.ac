@@ -133,6 +133,7 @@ AC_CONFIG_FILES([
   tests/apttest/Makefile
   tests/mpftest/Makefile
   tests/mrcptest/Makefile
+  tests/rtsptest/Makefile
   tests/strtablegen/Makefile
   build/Makefile
   build/pkgconfig/Makefile
