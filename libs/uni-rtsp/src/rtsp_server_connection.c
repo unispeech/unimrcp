@@ -67,6 +67,8 @@ struct rtsp_server_connection_t {
 
 
 typedef enum {
+	CONNECTION_TASK_MSG_ADD_REFERENCE,
+	CONNECTION_TASK_MSG_REMOVE_REFERENCE,
 	CONNECTION_TASK_MSG_SEND_MESSAGE,
 	CONNECTION_TASK_MSG_TERMINATE
 } connection_task_msg_data_type_e;
@@ -187,6 +189,18 @@ static apt_bool_t rtsp_server_control_message_signal(
 		return FALSE;
 	}
 	return TRUE;
+}
+
+/** Add Reference to RTSP connection */
+RTSP_DECLARE(apt_bool_t) rtsp_server_connection_reference_add(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection)
+{
+	return rtsp_server_control_message_signal(CONNECTION_TASK_MSG_ADD_REFERENCE,agent,connection,NULL);
+}
+
+/** Remove Reference from RTSP connection */
+RTSP_DECLARE(apt_bool_t) rtsp_server_connection_reference_remove(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection)
+{
+	return rtsp_server_control_message_signal(CONNECTION_TASK_MSG_REMOVE_REFERENCE,agent,connection,NULL);
 }
 
 /** Send RTSP message */
@@ -363,7 +377,6 @@ static apt_bool_t rtsp_server_agent_connection_accept(rtsp_server_agent_t *agent
 {
 	rtsp_server_connection_t *connection;
 
-
 	connection = rtsp_connection_create();
 	if(apr_socket_accept(&connection->sock,agent->listen_sock,connection->pool) != APR_SUCCESS) {
 		rtsp_connection_destroy(connection);
@@ -389,6 +402,9 @@ static apt_bool_t rtsp_server_agent_connection_accept(rtsp_server_agent_t *agent
 	apt_log(APT_PRIO_NOTICE,"Accepted RTSP Connection %s:%d",
 			connection->remote_ip.buf,
 			connection->sockaddr->port);
+	if(agent->vtable && agent->vtable->on_connect) {
+		agent->vtable->on_connect(connection);
+	}
 	return TRUE;
 }
 
@@ -398,10 +414,37 @@ static apt_bool_t rtsp_server_agent_connection_close(rtsp_server_agent_t *agent,
 	apr_pollset_remove(agent->pollset,&connection->sock_pfd);
 	apr_socket_close(connection->sock);
 	connection->sock = NULL;
-	if(!connection->access_count) {
+	if(connection->access_count) {
+		if(agent->vtable && agent->vtable->on_disconnect) {
+			agent->vtable->on_disconnect(connection);
+		}
+	}
+	else {
 		rtsp_connection_remove(agent,connection);
 		apt_log(APT_PRIO_NOTICE,"Destroy RTSP Connection");
 		rtsp_connection_destroy(connection);
+	}
+	return TRUE;
+}
+static apt_bool_t rtsp_server_agent_connection_reference_add(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection)
+{
+	connection->access_count++;
+	return TRUE;
+}
+
+static apt_bool_t rtsp_server_agent_connection_reference_remove(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection)
+{
+	if(!connection->access_count) {
+		return FALSE;
+	}
+
+	connection->access_count--;
+	if(!connection->access_count) {
+		if(!connection->sock) {
+			rtsp_connection_remove(agent,connection);
+			apt_log(APT_PRIO_NOTICE,"Destroy RTSP Connection");
+			rtsp_connection_destroy(connection);
+		}
 	}
 	return TRUE;
 }
@@ -512,6 +555,12 @@ static apt_bool_t rtsp_server_agent_control_pocess(rtsp_server_agent_t *agent)
 	}
 
 	switch(task_msg_data.type) {
+		case CONNECTION_TASK_MSG_ADD_REFERENCE:
+			rtsp_server_agent_connection_reference_add(agent,task_msg_data.connection);
+			break;
+		case CONNECTION_TASK_MSG_REMOVE_REFERENCE:
+			rtsp_server_agent_connection_reference_remove(agent,task_msg_data.connection);
+			break;
 		case CONNECTION_TASK_MSG_SEND_MESSAGE:
 			rtsp_server_agent_messsage_send(agent,task_msg_data.connection,task_msg_data.message);
 			break;

@@ -37,6 +37,11 @@ typedef struct rtsp_server_agent_event_vtable_t rtsp_server_agent_event_vtable_t
 
 /** RTSP server event vtable */
 struct rtsp_server_agent_event_vtable_t {
+	/** On connection accept */
+	apt_bool_t (*on_connect)(rtsp_server_connection_t *connection);
+	/** On connection disconnect */
+	apt_bool_t (*on_disconnect)(rtsp_server_connection_t *connection);
+
 	/** Message receive event handler */
 	apt_bool_t (*on_receive)(rtsp_server_connection_t *connection, rtsp_message_t *message);
 };
@@ -94,6 +99,20 @@ RTSP_DECLARE(apt_task_t*) rtsp_server_connection_agent_task_get(rtsp_server_agen
  * @param agent the agent to get object from
  */
 RTSP_DECLARE(void*) rtsp_server_connection_agent_object_get(rtsp_server_agent_t *agent);
+
+/**
+ * Add Reference to RTSP connection.
+ * @param agent the server connection agent
+ * @param connection the RTSP connection
+ */
+RTSP_DECLARE(apt_bool_t) rtsp_server_connection_reference_add(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection);
+
+/**
+ * Remove Reference from RTSP connection.
+ * @param agent the server connection agent
+ * @param connection the RTSP connection
+ */
+RTSP_DECLARE(apt_bool_t) rtsp_server_connection_reference_remove(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection);
 
 /**
  * Send RTSP message.
