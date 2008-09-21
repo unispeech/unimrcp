@@ -136,6 +136,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\rtsp_client_connection.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\rtsp_header.h"
 				>
 			</File>
@@ -156,6 +160,10 @@
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\rtsp_client_connection.c"
+				>
+			</File>
 			<File
 				RelativePath=".\src\rtsp_header.c"
 				>
