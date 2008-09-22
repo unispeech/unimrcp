@@ -41,6 +41,9 @@ struct rtsp_server_config_t {
 	char      *resource_location;
 	/** SDP origin */
 	char      *origin;
+
+	/** Number of max RTSP connections */
+	apr_size_t max_connection_count;
 };
 
 /**

@@ -21,6 +21,7 @@
 #include "mpf_engine.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_server_agent.h"
+#include "mrcp_unirtsp_server_agent.h"
 #include "mrcp_server_connection.h"
 #include "apt_net.h"
 #include "apt_log.h"
@@ -36,6 +37,7 @@
 
 #define DEFAULT_IP_ADDRESS        "127.0.0.1"
 #define DEFAULT_SIP_PORT          8060
+#define DEFAULT_RTSP_PORT         1554
 #define DEFAULT_MRCP_PORT         1544
 #define DEFAULT_RTP_PORT_MIN      5000
 #define DEFAULT_RTP_PORT_MAX      6000
@@ -200,7 +202,38 @@ static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *serve
 /** Load UniRTSP signaling agent */
 static mrcp_sig_agent_t* unimrcp_server_rtsp_agent_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	return NULL;
+	const apr_xml_elem *elem;
+	rtsp_server_config_t *config = mrcp_unirtsp_server_config_alloc(pool);
+	config->local_ip = DEFAULT_IP_ADDRESS;
+	config->local_port = DEFAULT_RTSP_PORT;
+	config->origin = DEFAULT_SDP_ORIGIN;
+
+	apt_log(APT_PRIO_DEBUG,"Loading UniRTSP Agent");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			const apr_xml_attr *attr_name;
+			const apr_xml_attr *attr_value;
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				if(strcasecmp(attr_name->value,"rtsp-ip") == 0) {
+					config->local_ip = ip_addr_get(attr_value->value,pool);
+				}
+				else if(strcasecmp(attr_name->value,"rtsp-port") == 0) {
+					config->local_port = (apr_port_t)atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
+					config->origin = apr_pstrdup(pool,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
+					config->max_connection_count = atol(attr_value->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
+				}
+			}
+		}
+	}    
+	return mrcp_unirtsp_server_agent_create(config,pool);
 }
 
 /** Load signaling agents */
