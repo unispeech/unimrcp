@@ -98,7 +98,7 @@ static apt_bool_t mrcp_unirtsp_task_terminate(apt_task_t *task)
 {
 	return TRUE;
 }
-
+#if 0
 static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t *agent)
 {
 	mrcp_unirtsp_session_t *unirtsp_session;
@@ -115,7 +115,7 @@ static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t 
 	
 	return unirtsp_session;
 }
-
+#endif
 static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	return TRUE;

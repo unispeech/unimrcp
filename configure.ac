@@ -120,6 +120,7 @@ AC_CONFIG_FILES([
   libs/uni-rtsp/Makefile
   modules/Makefile
   modules/mrcp-sofiasip/Makefile
+  modules/mrcp-unirtsp/Makefile
   plugins/Makefile
   plugins/mrcp-cepstral/Makefile
   plugins/demo-synth/Makefile

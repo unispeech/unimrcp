@@ -1,3 +1,3 @@
 MAINTAINERCLEANFILES   = Makefile.in
 
-SUBDIRS                = mrcp-sofiasip
+SUBDIRS                = mrcp-sofiasip mrcp-unirtsp
