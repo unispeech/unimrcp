@@ -11,6 +11,7 @@ include_HEADERS          = include/apt.h \
                            include/apt_task.h \
                            include/apt_task_msg.h \
                            include/apt_consumer_task.h \
+                           include/apt_net_server_task.h \
                            include/apt_log.h \
                            include/apt_string.h \
                            include/apt_string_table.h \
@@ -23,6 +24,7 @@ libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
                            src/apt_task.c \
                            src/apt_task_msg.c \
                            src/apt_consumer_task.c \
+                           src/apt_net_server_task.c \
                            src/apt_log.c \
                            src/apt_string_table.c \
                            src/apt_text_stream.c \
