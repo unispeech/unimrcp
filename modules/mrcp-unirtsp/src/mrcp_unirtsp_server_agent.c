@@ -20,6 +20,7 @@
 #include "mrcp_unirtsp_server_agent.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
+#include "rtsp_server.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -28,6 +29,7 @@ typedef struct mrcp_unirtsp_session_t mrcp_unirtsp_session_t;
 
 struct mrcp_unirtsp_agent_t {
 	mrcp_sig_agent_t     *sig_agent;
+	rtsp_server_t        *rtsp_server;
 
 	rtsp_server_config_t *config;
 };
@@ -69,6 +71,11 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(rtsp_server_con
 		return NULL;
 	}
 
+	agent->rtsp_server = rtsp_server_create(config->local_ip,config->local_port,config->max_connection_count,pool);
+	if(!agent->rtsp_server) {
+		return NULL;
+	}
+
 	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
 
 	apt_task_vtable_reset(&vtable);
@@ -100,19 +107,37 @@ static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_server_
 	return TRUE;
 }
 
+static APR_INLINE mrcp_unirtsp_agent_t* server_agent_get(apt_task_t *task)
+{
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_unirtsp_agent_t *agent = apt_consumer_task_object_get(consumer_task);
+	return agent;
+}
+
 static apt_bool_t server_destroy(apt_task_t *task)
 {
-//	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
-//	mrcp_unirtsp_server_agent_t *agent = apt_consumer_task_object_get(consumer_task);
+	mrcp_unirtsp_agent_t *agent = server_agent_get(task);
+	if(agent->rtsp_server) {
+		rtsp_server_destroy(agent->rtsp_server);
+		agent->rtsp_server = NULL;
+	}
 	return TRUE;
 }
 
 static void server_on_start_complete(apt_task_t *task)
 {
+	mrcp_unirtsp_agent_t *agent = server_agent_get(task);
+	if(agent->rtsp_server) {
+		rtsp_server_start(agent->rtsp_server);
+	}
 }
 
 static void server_on_terminate_complete(apt_task_t *task)
 {
+	mrcp_unirtsp_agent_t *agent = server_agent_get(task);
+	if(agent->rtsp_server) {
+		rtsp_server_terminate(agent->rtsp_server);
+	}
 }
 
 

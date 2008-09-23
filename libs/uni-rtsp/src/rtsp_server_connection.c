@@ -366,7 +366,7 @@ static rtsp_server_connection_t* rtsp_connection_create()
 	return connection;
 }
 
-void rtsp_connection_destroy(rtsp_server_connection_t *connection)
+static void rtsp_connection_destroy(rtsp_server_connection_t *connection)
 {
 	if(connection && connection->pool) {
 		apr_pool_destroy(connection->pool);
@@ -426,6 +426,7 @@ static apt_bool_t rtsp_server_agent_connection_close(rtsp_server_agent_t *agent,
 	}
 	return TRUE;
 }
+
 static apt_bool_t rtsp_server_agent_connection_reference_add(rtsp_server_agent_t *agent, rtsp_server_connection_t *connection)
 {
 	connection->access_count++;

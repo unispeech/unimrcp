@@ -187,7 +187,7 @@ static apt_bool_t rtsp_client_control_message_signal(
 }
 
 /** Send RTSP message */
-RTSP_DECLARE(apt_bool_t) rtsp_server_connection_message_send(rtsp_client_connection_t *connection, rtsp_message_t *message)
+RTSP_DECLARE(apt_bool_t) rtsp_client_connection_message_send(rtsp_client_connection_t *connection, rtsp_message_t *message)
 {
 	return rtsp_client_control_message_signal(CONNECTION_TASK_MSG_SEND_MESSAGE,NULL,connection,message);
 }
@@ -281,7 +281,7 @@ static rtsp_client_connection_t* rtsp_connection_create()
 	return connection;
 }
 
-void rtsp_connection_destroy(rtsp_client_connection_t *connection)
+static void rtsp_connection_destroy(rtsp_client_connection_t *connection)
 {
 	if(connection && connection->pool) {
 		apr_pool_destroy(connection->pool);

@@ -51,7 +51,7 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 										apr_size_t max_connection_count,
 										void *obj,
 										apt_task_vtable_t *task_vtable,
-										apt_net_server_vtable_t *server_vtable,
+										const apt_net_server_vtable_t *server_vtable,
 										apt_task_msg_pool_t *msg_pool,
 										apr_pool_t *pool)
 {
@@ -71,6 +71,12 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 	if(!task->sockaddr) {
 		return NULL;
 	}
+
+	if(!server_vtable || !server_vtable->on_connect || 
+		!server_vtable->on_disconnect || !server_vtable->on_receive) {
+		return NULL;
+	}
+	task->server_vtable = server_vtable;
 
 	apt_task_vtable_reset(&vtable);
 	vtable.run = apt_net_server_task_task_run;
@@ -253,11 +259,11 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	if(apr_socket_addr_get(&sockaddr,APR_REMOTE,connection->sock) == APR_SUCCESS) {
 		char *client_ip = NULL;
 		if(apr_sockaddr_ip_get(&client_ip,sockaddr) == APR_SUCCESS) {
-			apt_log(APT_PRIO_NOTICE,"Accepted RTSP Connection %s:%hu",
+			apt_log(APT_PRIO_NOTICE,"Accepted TCP Connection %s:%hu",
 				client_ip, sockaddr->port);
 		}
 	}
-	task->server_vtable->on_connect(connection);
+	task->server_vtable->on_connect(task,connection);
 	return TRUE;
 }
 
@@ -301,7 +307,7 @@ static apt_bool_t apt_net_server_task_task_run(apt_task_t *base)
 			}
 	
 			apt_log(APT_PRIO_DEBUG,"Process Message");
-			task->server_vtable->on_receive(ret_pfd[i].client_data);
+			task->server_vtable->on_receive(task,ret_pfd[i].client_data);
 		}
 	}
 
@@ -334,7 +340,7 @@ APT_DECLARE(apt_bool_t) apt_net_server_connection_close(apt_net_server_task_t *t
 		apt_pollset_remove(task->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
-		task->server_vtable->on_disconnect(connection);
+		task->server_vtable->on_disconnect(task,connection);
 	}
 	return TRUE;
 }

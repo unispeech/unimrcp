@@ -48,9 +48,9 @@ struct apt_net_server_connection_t {
 
 /** Virtual table of network server events */
 struct apt_net_server_vtable_t {
-	apt_bool_t (*on_connect)(apt_net_server_connection_t *connection);
-	apt_bool_t (*on_disconnect)(apt_net_server_connection_t *connection);
-	apt_bool_t (*on_receive)(apt_net_server_connection_t *connection);
+	apt_bool_t (*on_connect)(apt_net_server_task_t *task, apt_net_server_connection_t *connection);
+	apt_bool_t (*on_disconnect)(apt_net_server_task_t *task, apt_net_server_connection_t *connection);
+	apt_bool_t (*on_receive)(apt_net_server_task_t *task, apt_net_server_connection_t *connection);
 };
 
 
@@ -67,7 +67,7 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 										apr_size_t max_connection_count,
 										void *obj,
 										apt_task_vtable_t *task_vtable,
-										apt_net_server_vtable_t *server_vtable,
+										const apt_net_server_vtable_t *server_vtable,
 										apt_task_msg_pool_t *msg_pool,
 										apr_pool_t *pool);
 
