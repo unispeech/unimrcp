@@ -22,7 +22,6 @@
  * @brief Network Server Task Base
  */ 
 
-#include <apr_network_io.h>
 #include <apr_poll.h>
 #include "apt_task.h"
 

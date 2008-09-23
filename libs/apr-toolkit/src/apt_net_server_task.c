@@ -16,6 +16,7 @@
 
 #include "apt_net_server_task.h"
 #include "apt_task.h"
+#include "apt_pollset.h"
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
 
@@ -30,16 +31,12 @@ struct apt_net_server_task_t {
 
 	apr_thread_mutex_t            *guard;
 	apt_cyclic_queue_t            *msg_queue;
-	apr_pollset_t                 *pollset;
+	apt_pollset_t                 *pollset;
 
 	/* Listening socket descriptor */
 	apr_sockaddr_t                *sockaddr;
 	apr_socket_t                  *listen_sock;
 	apr_pollfd_t                   listen_sock_pfd;
-
-	/* Pipe descriptors used for wakeup */
-	apr_file_t                    *wakeup_pipe[2];
-	apr_pollfd_t                   wakeup_pfd;
 
 	const apt_net_server_vtable_t *server_vtable;
 };
@@ -159,8 +156,7 @@ static apt_bool_t apt_net_server_task_listen_socket_create(apt_net_server_task_t
 	task->listen_sock_pfd.reqevents = APR_POLLIN;
 	task->listen_sock_pfd.desc.s = task->listen_sock;
 	task->listen_sock_pfd.client_data = task->listen_sock;
-	status = apr_pollset_add(task->pollset, &task->listen_sock_pfd);
-	if(status != APR_SUCCESS) {
+	if(apt_pollset_add(task->pollset, &task->listen_sock_pfd) != TRUE) {
 		apt_log(APT_PRIO_WARNING,"Failed to Add Listen Socket to Pollset");
 		apr_socket_close(task->listen_sock);
 		task->listen_sock = NULL;
@@ -172,7 +168,7 @@ static apt_bool_t apt_net_server_task_listen_socket_create(apt_net_server_task_t
 /** Remove from pollset and destroy listening socket */
 static void apt_net_server_task_listen_socket_destroy(apt_net_server_task_t *task)
 {
-	apr_pollset_remove(task->pollset,&task->listen_sock_pfd);
+	apt_pollset_remove(task->pollset,&task->listen_sock_pfd);
 
 	if(task->listen_sock) {
 		apr_socket_close(task->listen_sock);
@@ -180,64 +176,13 @@ static void apt_net_server_task_listen_socket_destroy(apt_net_server_task_t *tas
 	}
 }
 
-/** Create a dummy wakeup pipe for interrupting the poller and add to pollset */
-static apt_bool_t apt_net_server_task_wakeup_pipe_create(apt_net_server_task_t *task)
-{
-	apr_file_t *file_in = NULL;
-	apr_file_t *file_out = NULL;
-
-	if(apr_file_pipe_create(&file_in,&file_out,task->pool) != APR_SUCCESS) {
-		return FALSE;
-	}
-	task->wakeup_pfd.reqevents = APR_POLLIN;
-	task->wakeup_pfd.desc_type = APR_POLL_FILE;
-	task->wakeup_pfd.desc.f = file_in;
-	/* add the pipe to the pollset */
-	if(apr_pollset_add(task->pollset,&task->wakeup_pfd) != APR_SUCCESS) {
-		if(file_in) {
-			apr_file_close(file_in);
-		}
-		if(file_out) {
-			apr_file_close(file_out);
-		}
-	}
-	task->wakeup_pipe[0] = file_in;
-	task->wakeup_pipe[1] = file_out;
-	return TRUE;
-}
-
-/** Remove from pollset and destroy wakeup pipe */
-static apt_bool_t apt_net_server_task_wakeup_pipe_destroy(apt_net_server_task_t *task)
-{
-	apr_pollset_remove(task->pollset,&task->wakeup_pfd);
-	
-	/* Close both sides of the wakeup pipe */
-	if(task->wakeup_pipe[0]) {
-		apr_file_close(task->wakeup_pipe[0]);
-		task->wakeup_pipe[0] = NULL;
-	}
-	if(task->wakeup_pipe[1]) {
-		apr_file_close(task->wakeup_pipe[1]);
-		task->wakeup_pipe[1] = NULL;
-	}
-	return TRUE;
-}
-
 /** Create the pollset */
 static apt_bool_t apt_net_server_task_pollset_create(apt_net_server_task_t *task)
 {
-	apr_status_t status;
 	/* create pollset */
-	status = apr_pollset_create(&task->pollset, (apr_uint32_t)task->max_connection_count + 2, task->pool, 0);
-	if(status != APR_SUCCESS) {
+	task->pollset = apt_pollset_create((apr_uint32_t)task->max_connection_count + 2, task->pool);
+	if(!task->pollset) {
 		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
-		return FALSE;
-	}
-
-	/* create wakeup pipe */
-	if(apt_net_server_task_wakeup_pipe_create(task) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Wakeup Pipe");
-		apr_pollset_destroy(task->pollset);
 		return FALSE;
 	}
 
@@ -253,9 +198,8 @@ static apt_bool_t apt_net_server_task_pollset_create(apt_net_server_task_t *task
 static void apt_net_server_task_pollset_destroy(apt_net_server_task_t *task)
 {
 	apt_net_server_task_listen_socket_destroy(task);
-	apt_net_server_task_wakeup_pipe_destroy(task);
 	if(task->pollset) {
-		apr_pollset_destroy(task->pollset);
+		apt_pollset_destroy(task->pollset);
 		task->pollset = NULL;
 	}
 }
@@ -265,16 +209,6 @@ static apt_bool_t apt_net_server_task_pocess(apt_net_server_task_t *task)
 	apt_bool_t status = TRUE;
 	apt_task_msg_t *msg;
 
-	char rb[512];
-	apr_size_t nr = sizeof(rb);
-
-	/* simply read out from the input side of the pipe all the data. */
-	while(apr_file_read(task->wakeup_pipe[0], rb, &nr) == APR_SUCCESS) {
-		if(nr != sizeof(rb)) {
-			break;
-		}
-	}
-	
 	apr_thread_mutex_lock(task->guard);
 	do {
 		msg = apt_cyclic_queue_pop(task->msg_queue);
@@ -309,7 +243,7 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
-	if(apr_pollset_add(task->pollset,&connection->sock_pfd) != APR_SUCCESS) {
+	if(apt_pollset_add(task->pollset,&connection->sock_pfd) != TRUE) {
 		apt_log(APT_PRIO_WARNING,"Failed to Add to Pollset");
 		apr_socket_close(connection->sock);
 		apr_pool_destroy(pool);
@@ -347,7 +281,7 @@ static apt_bool_t apt_net_server_task_task_run(apt_task_t *base)
 	}
 
 	while(running) {
-		status = apr_pollset_poll(task->pollset, -1, &num, &ret_pfd);
+		status = apt_pollset_poll(task->pollset, -1, &num, &ret_pfd);
 		if(status != APR_SUCCESS) {
 			continue;
 		}
@@ -357,7 +291,7 @@ static apt_bool_t apt_net_server_task_task_run(apt_task_t *base)
 				apt_net_server_task_accept(task);
 				continue;
 			}
-			if(ret_pfd[i].desc.f == task->wakeup_pipe[0]) {
+			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
 				apt_log(APT_PRIO_DEBUG,"Process Control Message");
 				if(apt_net_server_task_pocess(task) == FALSE) {
 					running = FALSE;
@@ -384,7 +318,7 @@ static apt_bool_t apt_net_server_task_msg_signal(apt_task_t *base, apt_task_msg_
 	apr_thread_mutex_lock(task->guard);
 	status = apt_cyclic_queue_push(task->msg_queue,msg);
 	apr_thread_mutex_unlock(task->guard);
-	if(apr_file_putc(1,task->wakeup_pipe[1]) != APR_SUCCESS) {
+	if(apt_pollset_wakeup(task->pollset) != TRUE) {
 		apt_log(APT_PRIO_WARNING,"Failed to Signal Control Message");
 		status = FALSE;
 	}
@@ -397,7 +331,7 @@ APT_DECLARE(apt_bool_t) apt_net_server_connection_close(apt_net_server_task_t *t
 {
 	if(connection->sock) {
 		apt_log(APT_PRIO_NOTICE,"Close Connection");
-		apr_pollset_remove(task->pollset,&connection->sock_pfd);
+		apt_pollset_remove(task->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 		task->server_vtable->on_disconnect(connection);
