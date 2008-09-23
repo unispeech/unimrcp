@@ -158,6 +158,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_pollset.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_string.h"
 				>
 			</File>
@@ -208,6 +212,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_obj_list.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_pollset.c"
 				>
 			</File>
 			<File
