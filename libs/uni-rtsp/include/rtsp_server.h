@@ -33,7 +33,7 @@ typedef struct rtsp_server_t rtsp_server_t;
 typedef struct rtsp_server_session_t rtsp_server_session_t;
 
 /** RTSP server event vtable declaration */
-typedef apt_bool_t (*rtsp_server_event_handler_f)(rtsp_server_t *server, rtsp_message_t *message);
+typedef apt_bool_t (*rtsp_server_event_handler_f)(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
 
 /**
  * Create RTSP server.
@@ -73,9 +73,9 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_terminate(rtsp_server_t *server);
  * @param handler the event handler
  */
 RTSP_DECLARE(void) rtsp_server_event_handler_set(
-								rtsp_server_t *server, 
+								rtsp_server_t *server,
 								void *obj,
-								const rtsp_server_event_handler_f *handler);
+								rtsp_server_event_handler_f handler);
 
 /**
  * Get task.
@@ -91,10 +91,8 @@ RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server);
 
 /**
  * Send RTSP message.
- * @param connection the connection to send message through
- * @param message the message to send
  */
-RTSP_DECLARE(apt_bool_t) rtsp_server_message_send(rtsp_server_session_t *session, rtsp_message_t *message);
+RTSP_DECLARE(apt_bool_t) rtsp_server_message_send(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
 
 
 APT_END_EXTERN_C

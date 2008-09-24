@@ -53,6 +53,8 @@ static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_unirtsp_on_session_terminate
 };
 
+static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
+
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_server_config_t *config, apr_pool_t *pool);
 
 
@@ -75,6 +77,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(rtsp_server_con
 	if(!agent->rtsp_server) {
 		return NULL;
 	}
+	rtsp_server_event_handler_set(agent->rtsp_server,agent,mrcp_unirtsp_event_handler);
 
 	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
 
@@ -138,6 +141,11 @@ static void server_on_terminate_complete(apt_task_t *task)
 	if(agent->rtsp_server) {
 		rtsp_server_terminate(agent->rtsp_server);
 	}
+}
+
+static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message)
+{
+	return TRUE;
 }
 
 
