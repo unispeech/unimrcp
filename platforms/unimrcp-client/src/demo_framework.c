@@ -51,6 +51,7 @@ typedef enum {
 
 static apt_bool_t demo_framework_message_handler(const mrcp_app_message_t *app_message);
 static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framework);
+static apt_bool_t demo_framework_app_register(demo_framework_t *framework, demo_application_t *demo_application, const char *name);
 
 /** Create demo framework */
 demo_framework_t* demo_framework_create(const char *conf_dir_path)
@@ -58,19 +59,40 @@ demo_framework_t* demo_framework_create(const char *conf_dir_path)
 	demo_framework_t *framework = NULL;
 	mrcp_client_t *client = unimrcp_client_create(conf_dir_path);
 	if(client) {
+		demo_application_t *demo_application;
 		apr_pool_t *pool = mrcp_client_memory_pool_get(client);
+		/* create demo framework */
 		framework = apr_palloc(pool,sizeof(demo_framework_t));
 		framework->pool = pool;
 		framework->client = client;
 		framework->application_table = apr_hash_make(pool);
-		
+
+		/* create demo synthesizer application */
+		demo_application = demo_synth_application_create(framework->pool);
+		if(demo_application) {
+			demo_framework_app_register(framework,demo_application,"synth");
+		}
+
+		/* create demo recognizer application */
+		demo_application = demo_recog_application_create(framework->pool);
+		if(demo_application) {
+			demo_framework_app_register(framework,demo_application,"recog");
+		}
+
+		/* create demo bypass media application */
+		demo_application = demo_bypass_application_create(framework->pool);
+		if(demo_application) {
+			demo_framework_app_register(framework,demo_application,"bypass");
+		}
+
 		demo_framework_consumer_task_create(framework);
 
 		if(framework->task) {
 			apt_task_t *task = apt_consumer_task_base_get(framework->task);
 			apt_task_start(task);
 		}
-		 
+		
+		/* start client stack */
 		mrcp_client_start(client);
 	}
 
@@ -114,28 +136,20 @@ apt_bool_t demo_framework_destroy(demo_framework_t *framework)
 	return mrcp_client_destroy(framework->client);
 }
 
+static apt_bool_t demo_framework_app_register(demo_framework_t *framework, demo_application_t *demo_application, const char *name)
+{
+	apr_hash_set(framework->application_table,name,APR_HASH_KEY_STRING,demo_application);
+	demo_application->framework = framework;
+	demo_application->application = mrcp_application_create(
+										demo_framework_message_handler,
+										demo_application,
+										framework->pool);
+	return mrcp_client_application_register(framework->client,demo_application->application,name);
+}
+
 static void demo_framework_on_start_complete(apt_task_t *task)
 {
-	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
-	demo_framework_t *framework = apt_consumer_task_object_get(consumer_task);
 	apt_log(APT_PRIO_NOTICE,"Run Demo Framework");
-	if(framework) {
-		demo_application_t *demo_application;
-		demo_application = demo_synth_application_create(framework->pool);
-		if(demo_application) {
-			apr_hash_set(framework->application_table,"synth",APR_HASH_KEY_STRING,demo_application);
-		}
-
-		demo_application = demo_recog_application_create(framework->pool);
-		if(demo_application) {
-			apr_hash_set(framework->application_table,"recog",APR_HASH_KEY_STRING,demo_application);
-		}
-
-		demo_application = demo_bypass_application_create(framework->pool);
-		if(demo_application) {
-			apr_hash_set(framework->application_table,"bypass",APR_HASH_KEY_STRING,demo_application);
-		}
-	}
 }
 
 static apt_bool_t demo_framework_console_msg_process(demo_framework_t *framework, const char *app_name, const char *profile_name)
@@ -146,15 +160,6 @@ static apt_bool_t demo_framework_console_msg_process(demo_framework_t *framework
 		return FALSE;
 	}
 	
-	if(!demo_application->application) {
-		demo_application->application = mrcp_application_create(
-											demo_framework_message_handler,
-											demo_application,
-											framework->pool);
-		demo_application->framework = framework;
-		mrcp_client_application_register(framework->client,demo_application->application);
-	}
-
 	apt_log(APT_PRIO_NOTICE,"Run Demo Application Scenario [%s]",app_name);
 	return demo_application->run(demo_application,profile_name);
 }

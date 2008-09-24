@@ -42,10 +42,12 @@ struct mrcp_client_t {
 	apr_hash_t              *sig_agent_table;
 	/** Table of connection agents (mrcp_connection_agent_t*) */
 	apr_hash_t              *cnt_agent_table;
-
 	/** Table of profiles (mrcp_profile_t*) */
 	apr_hash_t              *profile_table;
-	
+
+	/** Table of applications (mrcp_application_t*) */
+	apr_hash_t              *app_table;
+
 	/** Table of sessions */
 	apr_hash_t              *session_table;
 
@@ -145,6 +147,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create()
 	client->sig_agent_table = NULL;
 	client->cnt_agent_table = NULL;
 	client->profile_table = NULL;
+	client->app_table = NULL;
 	client->session_table = NULL;
 	client->cnt_msg_pool = NULL;
 
@@ -164,8 +167,8 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create()
 	client->rtp_factory_table = apr_hash_make(client->pool);
 	client->sig_agent_table = apr_hash_make(client->pool);
 	client->cnt_agent_table = apr_hash_make(client->pool);
-
 	client->profile_table = apr_hash_make(client->pool);
+	client->app_table = apr_hash_make(client->pool);
 	
 	client->session_table = apr_hash_make(client->pool);
 	return client;
@@ -389,14 +392,15 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(mrcp_client_t *client, con
 }
 
 /** Register MRCP application */
-MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application)
+MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application, const char *name)
 {
-	if(!application) {
+	if(!application || !name) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Register Application");
+	apt_log(APT_PRIO_INFO,"Register Application [%s]",name);
 	application->client = client;
 	application->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mrcp_app_message_t*),client->pool);
+	apr_hash_set(client->app_table,name,APR_HASH_KEY_STRING,application);
 	return TRUE;
 }
 
@@ -635,7 +639,28 @@ static APR_INLINE mrcp_client_session_t* mrcp_client_session_find(mrcp_client_t 
 
 static void mrcp_client_on_start_complete(apt_task_t *task)
 {
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_client_t *client = apt_consumer_task_object_get(consumer_task);
+	void *val;
+	mrcp_application_t *application;
+	mrcp_app_message_t *app_message;
+	apr_hash_index_t *it;
 	apt_log(APT_PRIO_INFO,"On Client Task Start");
+	it = apr_hash_first(client->pool,client->app_table);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		application = val;
+		if(!application) continue;
+
+		/* raise one-time ready event */			
+		app_message = apr_palloc(client->pool,sizeof(mrcp_app_message_t));
+		app_message->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
+		app_message->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_EVENT;
+		app_message->sig_message.event_id = MRCP_SIG_EVENT_READY;
+		app_message->sig_message.status = MRCP_SIG_STATUS_CODE_SUCCESS;
+		app_message->application = application;
+		application->handler(app_message);
+	}
 }
 
 static void mrcp_client_on_terminate_complete(apt_task_t *task)

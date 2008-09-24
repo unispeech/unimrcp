@@ -840,43 +840,58 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_messag
 	switch(app_message->message_type) {
 		case MRCP_APP_MESSAGE_TYPE_SIGNALING:
 		{
-			switch(app_message->sig_message.command_id) {
-				case MRCP_SIG_COMMAND_SESSION_UPDATE:
-					if(dispatcher->on_session_update) {
-						status = dispatcher->on_session_update(
-									app_message->application,
-									app_message->session,
-									app_message->sig_message.status);
-					}
-					break;
-				case MRCP_SIG_COMMAND_SESSION_TERMINATE:
-					if(dispatcher->on_session_terminate) {
-						status = dispatcher->on_session_terminate(
-									app_message->application,
-									app_message->session,
-									app_message->sig_message.status);
-					}
-					break;
-				case MRCP_SIG_COMMAND_CHANNEL_ADD:
-					if(dispatcher->on_channel_add) {
-						status = dispatcher->on_channel_add(
-									app_message->application,
-									app_message->session,
-									app_message->channel,
-									app_message->sig_message.status);
-					}
-					break;
-				case MRCP_SIG_COMMAND_CHANNEL_REMOVE:
-					if(dispatcher->on_channel_remove) {
-						status = dispatcher->on_channel_remove(
-									app_message->application,
-									app_message->session,
-									app_message->channel,
-									app_message->sig_message.status);
-					}
-					break;
-				default:
-					break;
+			if(app_message->sig_message.message_type == MRCP_SIG_MESSAGE_TYPE_RESPONSE) {
+				switch(app_message->sig_message.command_id) {
+					case MRCP_SIG_COMMAND_SESSION_UPDATE:
+						if(dispatcher->on_session_update) {
+							status = dispatcher->on_session_update(
+										app_message->application,
+										app_message->session,
+										app_message->sig_message.status);
+						}
+						break;
+					case MRCP_SIG_COMMAND_SESSION_TERMINATE:
+						if(dispatcher->on_session_terminate) {
+							status = dispatcher->on_session_terminate(
+										app_message->application,
+										app_message->session,
+										app_message->sig_message.status);
+						}
+						break;
+					case MRCP_SIG_COMMAND_CHANNEL_ADD:
+						if(dispatcher->on_channel_add) {
+							status = dispatcher->on_channel_add(
+										app_message->application,
+										app_message->session,
+										app_message->channel,
+										app_message->sig_message.status);
+						}
+						break;
+					case MRCP_SIG_COMMAND_CHANNEL_REMOVE:
+						if(dispatcher->on_channel_remove) {
+							status = dispatcher->on_channel_remove(
+										app_message->application,
+										app_message->session,
+										app_message->channel,
+										app_message->sig_message.status);
+						}
+						break;
+					default:
+						break;
+				}
+			}
+			else if(app_message->sig_message.message_type == MRCP_SIG_MESSAGE_TYPE_EVENT) {
+				switch(app_message->sig_message.event_id) {
+					case MRCP_SIG_EVENT_READY:
+						if(dispatcher->on_ready) {
+							status = dispatcher->on_ready(
+										app_message->application,
+										app_message->sig_message.status);
+						}
+						break;
+					default:
+						break;
+				}
 			}
 			break;
 		}

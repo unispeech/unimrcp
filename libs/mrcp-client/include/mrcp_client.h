@@ -126,8 +126,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
  * Register MRCP application.
  * @param client the MRCP client to set application for
  * @param application the application to set
+ * @param name the name of the application
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application);
+MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application, const char *name);
 
 /**
  * Get memory pool.
