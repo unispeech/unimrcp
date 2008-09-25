@@ -141,6 +141,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 			<File
+				RelativePath=".\src\mrcp_unirtsp_sdp.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mrcp_unirtsp_server_agent.c"
 				>
 			</File>
