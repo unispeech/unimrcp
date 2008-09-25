@@ -54,10 +54,12 @@ struct mrcp_sofia_session_t {
 	apt_bool_t      terminate_requested;
 };
 
-
+/* Task Interface */
+static void mrcp_sofia_task_initialize(apt_task_t *task);
 static apt_bool_t mrcp_sofia_task_run(apt_task_t *task);
 static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task);
 
+/* MRCP Signaling Interface */
 static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session);
 
@@ -96,6 +98,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_cli
 	}
 
 	apt_task_vtable_reset(&vtable);
+	vtable.on_pre_run = mrcp_sofia_task_initialize;
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
@@ -142,7 +145,7 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	return TRUE;
 }
 
-static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
+static void mrcp_sofia_task_initialize(apt_task_t *task)
 {
 	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
 
@@ -167,7 +170,14 @@ static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
 					NUTAG_APPL_METHOD("OPTIONS"),
 					SIPTAG_USER_AGENT_STR(sofia_agent->config->user_agent_name),
 					TAG_END());
+	}
+}
 
+static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
+{
+	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
+
+	if(sofia_agent->nua) {
 		/* Run event loop */
 		su_root_run(sofia_agent->root);
 		
