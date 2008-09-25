@@ -35,7 +35,8 @@ struct mrcp_unirtsp_agent_t {
 };
 
 struct mrcp_unirtsp_session_t {
-	mrcp_session_t *session;
+	mrcp_session_t        *mrcp_session;
+	rtsp_server_session_t *rtsp_session;
 };
 
 
@@ -143,30 +144,37 @@ static void server_on_terminate_complete(apt_task_t *task)
 	}
 }
 
-static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message)
+static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t *agent)
 {
+	mrcp_unirtsp_session_t *session;
+	mrcp_session_t* mrcp_session = agent->sig_agent->create_server_session(agent->sig_agent);
+	if(!mrcp_session) {
+		return NULL;
+	}
+	mrcp_session->response_vtable = &session_response_vtable;
+	mrcp_session->event_vtable = NULL;
+
+	session = apr_palloc(mrcp_session->pool,sizeof(mrcp_unirtsp_session_t));
+	session->mrcp_session = mrcp_session;
+	mrcp_session->obj = session;
+	
+	return session;
+}
+
+static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *rtsp_session, rtsp_message_t *message)
+{
+	mrcp_unirtsp_session_t *session	= rtsp_server_session_object_get(rtsp_session);
+	if(!session) {
+		mrcp_unirtsp_agent_t *agent = rtsp_server_object_get(server);
+		session = mrcp_unirtsp_session_create(agent);
+		if(!session) {
+			return FALSE;
+		}
+		rtsp_server_session_object_set(rtsp_session,session);
+	}
 	return TRUE;
 }
 
-
-#if 0
-static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t *agent)
-{
-	mrcp_unirtsp_session_t *unirtsp_session;
-	mrcp_session_t* session = agent->sig_agent->create_server_session(agent->sig_agent);
-	if(!session) {
-		return NULL;
-	}
-	session->response_vtable = &session_response_vtable;
-	session->event_vtable = NULL;
-
-	unirtsp_session = apr_palloc(session->pool,sizeof(mrcp_unirtsp_session_t));
-	unirtsp_session->session = session;
-	session->obj = unirtsp_session;
-	
-	return unirtsp_session;
-}
-#endif
 static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	return TRUE;

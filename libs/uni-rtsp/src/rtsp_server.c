@@ -158,6 +158,18 @@ RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server)
 	return server->obj;
 }
 
+/** Get object associated with the session */
+RTSP_DECLARE(void*) rtsp_server_session_object_get(const rtsp_server_session_t *session)
+{
+	return session->obj;
+}
+
+/** Set object associated with the session */
+RTSP_DECLARE(void) rtsp_server_session_object_set(rtsp_server_session_t *session, void *obj)
+{
+	session->obj = obj;
+}
+
 
 static apt_bool_t rtsp_server_control_message_signal(
 								task_msg_data_type_e type,

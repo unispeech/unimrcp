@@ -94,6 +94,19 @@ RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server);
  */
 RTSP_DECLARE(apt_bool_t) rtsp_server_message_send(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
 
+/**
+ * Get object associated with the session.
+ * @param ssession the session to get object from
+ */
+RTSP_DECLARE(void*) rtsp_server_session_object_get(const rtsp_server_session_t *session);
+
+/**
+ * Set object associated with the session.
+ * @param session the session to set object for
+ * @param obj the object to set
+ */
+RTSP_DECLARE(void) rtsp_server_session_object_set(rtsp_server_session_t *session, void *obj);
+
 
 APT_END_EXTERN_C
 
