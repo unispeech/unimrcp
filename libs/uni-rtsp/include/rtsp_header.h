@@ -183,7 +183,7 @@ static APR_INLINE void rtsp_header_property_remove(rtsp_header_property_t *prope
 }
 
 /** Check property in property set */
-static APR_INLINE apt_bool_t rtsp_header_property_check(rtsp_header_property_t *property_set, apr_size_t id)
+static APR_INLINE apt_bool_t rtsp_header_property_check(const rtsp_header_property_t *property_set, apr_size_t id)
 {
 	int mask = 1 << id;
 	return ((*property_set & mask) == mask) ? TRUE : FALSE;

@@ -94,7 +94,7 @@ struct rtsp_request_line_t {
 	rtsp_method_id method_id;
 	/** RTSP URL */
 	apt_str_t      url;
-	/** Resource named parsed from RTSP URL */
+	/** Resource name parsed from RTSP URL */
 	const char    *resource_name;
 	/** Version of protocol in use */
 	rtsp_version_e version;

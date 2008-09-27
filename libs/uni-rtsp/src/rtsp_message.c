@@ -53,7 +53,7 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_request_create(apr_pool_t *pool)
 }
 
 /** Create RTSP response message */
-RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool)
+RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool)
 {
 	rtsp_status_line_t *status_line;
 	rtsp_message_t *response = rtsp_message_create(RTSP_MESSAGE_TYPE_RESPONSE,request->pool);

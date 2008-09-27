@@ -73,7 +73,7 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_request_create(apr_pool_t *pool);
  * @param status_code the status code of the response
  * @param reason the reason phrase of the response
  */
-RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool);
+RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool);
 
 /** Destroy MRCP message */
 RTSP_DECLARE(void) rtsp_message_destroy(rtsp_message_t *message);
