@@ -79,6 +79,9 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 	task->server_vtable = server_vtable;
 
 	apt_task_vtable_reset(&vtable);
+	if(task_vtable) {
+		vtable = *task_vtable;
+	}
 	vtable.run = apt_net_server_task_task_run;
 	vtable.signal_msg = apt_net_server_task_msg_signal;
 	task->base = apt_task_create(task,&vtable,msg_pool,pool);
