@@ -16,15 +16,15 @@
 
 #include <apr_general.h>
 #include <sofia-sip/sdp.h>
-#include "mrcp_session_descriptor.h"
-#include "mpf_rtp_attribs.h"
 #include "rtsp_message.h"
+#include "mrcp_unirtsp_sdp.h"
+#include "mpf_rtp_attribs.h"
 #include "apt_text_stream.h"
 #include "apt_log.h"
 
 
 /** Generate SDP media by RTP media descriptor */
-static size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_media)
+static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_media)
 {
 	apr_size_t offset = 0;
 	int i;
@@ -108,5 +108,153 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 			break;
 	}
 
+	if(sdp_media->m_connections) {
+		apt_string_assign(&rtp_media->base.ip,sdp_media->m_connections->c_address,pool);
+	}
+	else {
+		rtp_media->base.ip = *ip;
+	}
+	if(sdp_media->m_port) {
+		rtp_media->base.port = (apr_port_t)sdp_media->m_port;
+		rtp_media->base.state = MPF_MEDIA_ENABLED;
+	}
+	else {
+		rtp_media->base.state = MPF_MEDIA_DISABLED;
+	}
 	return TRUE;
+}
+
+/** Generate MRCP descriptor by SDP session */
+mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
+{
+	sdp_media_t *sdp_media;
+	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
+
+	if(sdp->sdp_connection) {
+		apt_string_assign(&descriptor->ip,sdp->sdp_connection->c_address,pool);
+	}
+
+	for(sdp_media=sdp->sdp_media; sdp_media; sdp_media=sdp_media->m_next) {
+		switch(sdp_media->m_type) {
+			case sdp_media_audio:
+			{
+				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+				mpf_rtp_media_descriptor_init(media);
+				media->base.id = mrcp_session_audio_media_add(descriptor,media);
+				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
+				break;
+			}
+			case sdp_media_video:
+			{
+				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+				mpf_rtp_media_descriptor_init(media);
+				media->base.id = mrcp_session_video_media_add(descriptor,media);
+				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
+				break;
+			}
+			default:
+				apt_log(APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
+				break;
+		}
+	}
+	return descriptor;
+}
+
+
+/** Generate MRCP descriptor by RTSP request */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(const rtsp_message_t *request, apr_pool_t *pool, su_home_t *home)
+{
+	mrcp_session_descriptor_t *descriptor = NULL;
+	const char *resource_name = request->start_line.common.request_line.resource_name;
+	if(!resource_name) {
+		return NULL;
+	}
+	
+	if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+		rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		request->body.buf) {
+		
+		sdp_parser_t *parser;
+		sdp_session_t *sdp;
+
+		parser = sdp_parse(home,request->body.buf,request->body.length,0);
+		sdp = sdp_session(parser);
+
+		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
+		if(descriptor) {
+			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+		}
+		
+		sdp_parser_free(parser);
+	}
+	return descriptor;
+}
+
+MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool)
+{
+	apr_size_t i;
+	apr_size_t count;
+	apr_size_t audio_index = 0;
+	mpf_rtp_media_descriptor_t *audio_media;
+	apr_size_t video_index = 0;
+	mpf_rtp_media_descriptor_t *video_media;
+	apr_size_t offset = 0;
+	char buffer[2048];
+	apr_size_t size = sizeof(buffer);
+	rtsp_message_t *response;
+	response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,pool);
+	if(!response) {
+		return NULL;
+	}
+
+	buffer[0] = '\0';
+	offset += snprintf(buffer+offset,size-offset,
+			"v=0\r\n"
+			"o=%s 0 0 IN IP4 %s\r\n"
+			"s=-\r\n"
+			"c=IN IP4 %s\r\n"
+			"t=0 0\r\n",
+			descriptor->origin.buf ? descriptor->origin.buf : "-",
+			descriptor->ip.buf ? descriptor->ip.buf : "0",
+			descriptor->ip.buf ? descriptor->ip.buf : "0");
+	count = mrcp_session_media_count_get(descriptor);
+	for(i=0; i<count; i++) {
+		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
+		if(audio_media && audio_media->base.id == i) {
+			/* generate audio media */
+			audio_index++;
+			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
+			continue;
+		}
+		video_media = mrcp_session_video_media_get(descriptor,video_index);
+		if(video_media && video_media->base.id == i) {
+			/* generate video media */
+			video_index++;
+			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);
+			continue;
+		}
+	}
+
+	if(descriptor->resource_name.length) {
+		/* ok */
+		response->header.transport.profile = RTSP_PROFILE_RTP_AVP;
+		response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
+		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+	}
+	else {
+		/* not found */
+		response->start_line.common.status_line.status_code = RTSP_STATUS_CODE_NOT_FOUND;
+		response->start_line.common.status_line.reason.buf = RTSP_REASON_PHRASE_NOT_FOUND;
+		response->start_line.common.status_line.reason.length = sizeof(RTSP_REASON_PHRASE_NOT_FOUND)-1;
+		offset = 0;
+	}
+
+	if(offset) {
+		apt_string_assign_n(&response->body,buffer,offset,pool);
+		response->header.content_type = RTSP_CONTENT_TYPE_SDP;
+		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+		response->header.content_length = offset;
+		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+	}
+	return response;
 }

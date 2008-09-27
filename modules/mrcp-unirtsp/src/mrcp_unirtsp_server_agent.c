@@ -15,12 +15,13 @@
  */
 
 #include <apr_general.h>
-//#include <unirtsp-sip/sdp.h>
+#include <sofia-sip/sdp.h>
 
 #include "mrcp_unirtsp_server_agent.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "rtsp_server.h"
+#include "mrcp_unirtsp_sdp.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -37,6 +38,8 @@ struct mrcp_unirtsp_agent_t {
 struct mrcp_unirtsp_session_t {
 	mrcp_session_t        *mrcp_session;
 	rtsp_server_session_t *rtsp_session;
+	su_home_t             *home;
+	rtsp_message_t        *request;
 };
 
 
@@ -144,12 +147,17 @@ static void server_on_terminate_complete(apt_task_t *task)
 	}
 }
 
-static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t *agent)
+static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t *agent, rtsp_server_session_t *rtsp_session)
 {
+	const apt_str_t *session_id;
 	mrcp_unirtsp_session_t *session;
 	mrcp_session_t* mrcp_session = agent->sig_agent->create_server_session(agent->sig_agent);
 	if(!mrcp_session) {
 		return NULL;
+	}
+	session_id = rtsp_server_session_id_get(rtsp_session);
+	if(session_id) {
+		mrcp_session->id = *session_id;
 	}
 	mrcp_session->response_vtable = &session_response_vtable;
 	mrcp_session->event_vtable = NULL;
@@ -158,30 +166,72 @@ static mrcp_unirtsp_session_t* mrcp_unirtsp_session_create(mrcp_unirtsp_agent_t 
 	session->mrcp_session = mrcp_session;
 	mrcp_session->obj = session;
 	
+	session->home = su_home_new(sizeof(*session->home));
+
+	rtsp_server_session_object_set(rtsp_session,session);
+	session->rtsp_session = rtsp_session;
 	return session;
+}
+
+static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
+{
+	if(session->home) {
+		su_home_unref(session->home);
+		session->home = NULL;
+	}
+	rtsp_server_session_object_set(session->rtsp_session,NULL);
+	mrcp_session_destroy(session->mrcp_session);
 }
 
 static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *rtsp_session, rtsp_message_t *message)
 {
+	mrcp_session_descriptor_t *descriptor;
 	mrcp_unirtsp_session_t *session	= rtsp_server_session_object_get(rtsp_session);
 	if(!session) {
 		mrcp_unirtsp_agent_t *agent = rtsp_server_object_get(server);
-		session = mrcp_unirtsp_session_create(agent);
+		session = mrcp_unirtsp_session_create(agent,rtsp_session);
 		if(!session) {
 			return FALSE;
 		}
-		rtsp_server_session_object_set(rtsp_session,session);
+	}
+
+	if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
+		session->request = message;
+		descriptor = mrcp_descriptor_generate_by_rtsp_request(message,session->mrcp_session->pool,session->home);
+		mrcp_session_offer(session->mrcp_session,descriptor);
+	}
+	else if(message->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+		session->request = message;
+		mrcp_session_terminate_request(session->mrcp_session);
 	}
 	return TRUE;
 }
 
-static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, mrcp_session_descriptor_t *descriptor)
 {
+	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+	rtsp_message_t *response;
+
+	response = rtsp_response_generate_by_mrcp_descriptor(session->request,descriptor,mrcp_session->pool);
+	if(!response) {
+		return FALSE;
+	}
+	session->request = NULL;
+	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,response);
 	return TRUE;
 }
 
-static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *session)
+static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *mrcp_session)
 {
+	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+	rtsp_message_t *response;
+
+	response = rtsp_response_create(session->request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,mrcp_session->pool);
+	
+	session->request = NULL;
+	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,response);
 	return TRUE;
 }
 

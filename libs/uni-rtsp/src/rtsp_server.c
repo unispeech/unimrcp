@@ -170,6 +170,12 @@ RTSP_DECLARE(void) rtsp_server_session_object_set(rtsp_server_session_t *session
 	session->obj = obj;
 }
 
+/** Get the session identifier */
+RTSP_DECLARE(const apt_str_t*) rtsp_server_session_id_get(const rtsp_server_session_t *session)
+{
+	return &session->id;
+}
+
 
 static apt_bool_t rtsp_server_control_message_signal(
 								task_msg_data_type_e type,
@@ -205,11 +211,13 @@ static rtsp_server_session_t* rtsp_server_session_create()
 	session->pool = pool;
 	session->obj = NULL;
 	apt_unique_id_generate(&session->id,RTSP_SESSION_ID_HEX_STRING_LENGTH,pool);
+	apt_log(APT_PRIO_NOTICE,"Create RTSP Session <%s>",session->id.buf);
 	return session;
 }
 
 static void rtsp_server_session_destroy(rtsp_server_session_t *session)
 {
+	apt_log(APT_PRIO_NOTICE,"Destroy RTSP Session <%s>",session->id.buf);
 	if(session && session->pool) {
 		apr_pool_destroy(session->pool);
 	}
@@ -234,13 +242,13 @@ static apt_bool_t rtsp_server_message_receive_process(rtsp_server_t *server, rts
 				/* create new session */
 				session = rtsp_server_session_create();
 				session->connection = rtsp_connection;
+				apt_log(APT_PRIO_INFO,"Add RTSP Session <%s>",session->id.buf);
 				apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 			}
 			else if(message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
 				/* create new session as a communication object */
 				session = rtsp_server_session_create();
 				session->connection = rtsp_connection;
-				apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 			}
 			else {
 				/* error case */
@@ -271,6 +279,8 @@ static apt_bool_t rtsp_server_message_send_process(rtsp_server_t *server, rtsp_s
 	apt_bool_t destroy_session = FALSE;
 	if(message->start_line.message_type == RTSP_MESSAGE_TYPE_RESPONSE) {
 		if(message->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+			apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+			apr_hash_set(session->connection->session_table,session->id.buf,session->id.length,NULL);
 			destroy_session = TRUE;
 		}
 		else if(message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
@@ -278,7 +288,12 @@ static apt_bool_t rtsp_server_message_send_process(rtsp_server_t *server, rtsp_s
 		}
 	}
 	
+	if(session->id.buf) {
+		message->header.session_id = session->id;
+		rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
+	}
 	rtsp_server_do_send(server,session->connection->base,message);
+
 	if(destroy_session == TRUE) {
 		rtsp_server_session_destroy(session);
 	}

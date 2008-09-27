@@ -132,6 +132,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\include\mrcp_unirtsp_sdp.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_unirtsp_server_agent.h"
 				>
 			</File>

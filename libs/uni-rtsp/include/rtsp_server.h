@@ -107,6 +107,12 @@ RTSP_DECLARE(void*) rtsp_server_session_object_get(const rtsp_server_session_t *
  */
 RTSP_DECLARE(void) rtsp_server_session_object_set(rtsp_server_session_t *session, void *obj);
 
+/**
+ * Get the session identifier.
+ * @param ssession the session to get identifier from
+ */
+RTSP_DECLARE(const apt_str_t*) rtsp_server_session_id_get(const rtsp_server_session_t *session);
+
 
 APT_END_EXTERN_C
 
