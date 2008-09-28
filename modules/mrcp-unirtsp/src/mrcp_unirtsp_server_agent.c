@@ -39,7 +39,6 @@ struct mrcp_unirtsp_session_t {
 	mrcp_session_t        *mrcp_session;
 	rtsp_server_session_t *rtsp_session;
 	su_home_t             *home;
-	rtsp_message_t        *request;
 };
 
 
@@ -196,12 +195,10 @@ static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_
 	}
 
 	if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
-		session->request = message;
 		descriptor = mrcp_descriptor_generate_by_rtsp_request(message,session->mrcp_session->pool,session->home);
 		mrcp_session_offer(session->mrcp_session,descriptor);
 	}
 	else if(message->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
-		session->request = message;
 		mrcp_session_terminate_request(session->mrcp_session);
 	}
 	return TRUE;
@@ -212,12 +209,15 @@ static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, m
 	mrcp_unirtsp_session_t *session = mrcp_session->obj;
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 	rtsp_message_t *response;
+	const rtsp_message_t *request = rtsp_server_session_request_get(session->rtsp_session);
+	if(!request) {
+		return FALSE;
+	}
 
-	response = rtsp_response_generate_by_mrcp_descriptor(session->request,descriptor,mrcp_session->pool);
+	response = rtsp_response_generate_by_mrcp_descriptor(request,descriptor,mrcp_session->pool);
 	if(!response) {
 		return FALSE;
 	}
-	session->request = NULL;
 	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,response);
 	return TRUE;
 }
@@ -227,10 +227,15 @@ static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *mrcp_session
 	mrcp_unirtsp_session_t *session = mrcp_session->obj;
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 	rtsp_message_t *response;
+	const rtsp_message_t *request = rtsp_server_session_request_get(session->rtsp_session);
+	if(!request) {
+		return FALSE;
+	}
 
-	response = rtsp_response_create(session->request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,mrcp_session->pool);
-	
-	session->request = NULL;
+	response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,mrcp_session->pool);
+	if(!response) {
+		return FALSE;
+	}
 	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,response);
 	return TRUE;
 }

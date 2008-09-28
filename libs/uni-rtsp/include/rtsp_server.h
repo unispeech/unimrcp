@@ -113,6 +113,11 @@ RTSP_DECLARE(void) rtsp_server_session_object_set(rtsp_server_session_t *session
  */
 RTSP_DECLARE(const apt_str_t*) rtsp_server_session_id_get(const rtsp_server_session_t *session);
 
+/**
+ * Get active (in-progress) session request.
+ * @param ssession the session to get from
+ */
+RTSP_DECLARE(const rtsp_message_t*) rtsp_server_session_request_get(const rtsp_server_session_t *session);
 
 APT_END_EXTERN_C
 
