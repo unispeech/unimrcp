@@ -75,10 +75,12 @@ typedef enum {
 
 static apt_bool_t mrcp_server_offer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_server_terminate_signal(mrcp_session_t *session);
+static apt_bool_t mrcp_server_control_signal(mrcp_session_t *session, mrcp_message_t *message);
 
 static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_server_offer_signal,
-	mrcp_server_terminate_signal
+	mrcp_server_terminate_signal,
+	mrcp_server_control_signal
 };
 
 
@@ -338,6 +340,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 	}
 	apt_log(APT_PRIO_INFO,"Register Signaling Agent [%s]",name);
 	signaling_agent->parent = server;
+	signaling_agent->resource_factory = server->resource_factory;
 	signaling_agent->create_server_session = mrcp_server_sig_agent_session_create;
 	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mrcp_signaling_message_t*),server->pool);
 	apr_hash_set(server->sig_agent_table,name,APR_HASH_KEY_STRING,signaling_agent);
@@ -664,6 +667,7 @@ static apt_bool_t mrcp_server_signaling_task_msg_signal(mrcp_signaling_message_t
 	signaling_message->type = type;
 	signaling_message->session = (mrcp_server_session_t*)session;
 	signaling_message->descriptor = descriptor;
+	signaling_message->channel = NULL;
 	signaling_message->message = message;
 	*slot = signaling_message;
 	
@@ -758,6 +762,11 @@ static apt_bool_t mrcp_server_offer_signal(mrcp_session_t *session, mrcp_session
 static apt_bool_t mrcp_server_terminate_signal(mrcp_session_t *session)
 {
 	return mrcp_server_signaling_task_msg_signal(SIGNALING_MESSAGE_TERMINATE,session,NULL,NULL);
+}
+
+static apt_bool_t mrcp_server_control_signal(mrcp_session_t *session, mrcp_message_t *message)
+{
+	return mrcp_server_signaling_task_msg_signal(SIGNALING_MESSAGE_CONTROL,session,NULL,message);
 }
 
 static apt_bool_t mrcp_server_channel_add_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)

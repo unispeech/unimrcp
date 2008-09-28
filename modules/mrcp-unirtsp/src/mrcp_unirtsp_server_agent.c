@@ -20,6 +20,8 @@
 #include "mrcp_unirtsp_server_agent.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
+#include "mrcp_message.h"
+#include "mrcp_resource_factory.h"
 #include "rtsp_server.h"
 #include "mrcp_unirtsp_sdp.h"
 #include "apt_consumer_task.h"
@@ -50,10 +52,12 @@ static void server_on_terminate_complete(apt_task_t *task);
 
 static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *session);
+static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *session, mrcp_message_t *message);
 
 static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_unirtsp_on_session_answer,
-	mrcp_unirtsp_on_session_terminate
+	mrcp_unirtsp_on_session_terminate,
+	mrcp_unirtsp_on_session_control
 };
 
 static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
@@ -106,6 +110,7 @@ MRCP_DECLARE(rtsp_server_config_t*) mrcp_unirtsp_server_config_alloc(apr_pool_t 
 	config->max_connection_count = 100;
 	return config;
 }
+
 
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_server_config_t *config, apr_pool_t *pool)
 {
@@ -182,8 +187,47 @@ static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
 	mrcp_session_destroy(session->mrcp_session);
 }
 
+static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrcp_unirtsp_session_t *session, rtsp_message_t *message)
+{
+	const char *resource_name = message->start_line.common.request_line.resource_name;
+	apt_bool_t status = TRUE;
+
+	apt_log(APT_PRIO_NOTICE,"RTSP Announce\n");
+
+	if(session && resource_name &&
+		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+		message->header.content_type == RTSP_CONTENT_TYPE_MRCP &&
+		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		message->header.content_length > 0) {
+
+		apt_text_stream_t text_stream;
+		mrcp_message_t *mrcp_message;
+
+		text_stream.text = message->body;
+		text_stream.pos = text_stream.text.buf;
+
+		mrcp_message = mrcp_message_create(session->mrcp_session->pool);
+		mrcp_message->channel_id.session_id = message->header.session_id;
+		apt_string_assign(&mrcp_message->channel_id.resource_name,resource_name,mrcp_message->pool);
+		if(mrcp_message_parse(agent->sig_agent->resource_factory,mrcp_message,&text_stream) == TRUE) {
+			status = mrcp_session_control_request(session->mrcp_session,mrcp_message);
+		}
+		else {
+			/* error response */
+			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
+			status = FALSE;
+		}
+	}
+	else {
+		/* error response */
+		status = FALSE;
+	}
+	return status;
+}
+
 static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_session_t *rtsp_session, rtsp_message_t *message)
 {
+	apt_bool_t status = FALSE;
 	mrcp_session_descriptor_t *descriptor;
 	mrcp_unirtsp_session_t *session	= rtsp_server_session_object_get(rtsp_session);
 	if(!session) {
@@ -194,14 +238,25 @@ static apt_bool_t mrcp_unirtsp_event_handler(rtsp_server_t *server, rtsp_server_
 		}
 	}
 
-	if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
-		descriptor = mrcp_descriptor_generate_by_rtsp_request(message,session->mrcp_session->pool,session->home);
-		mrcp_session_offer(session->mrcp_session,descriptor);
+	switch(message->start_line.common.request_line.method_id) {
+		case RTSP_METHOD_SETUP:
+			descriptor = mrcp_descriptor_generate_by_rtsp_request(message,session->mrcp_session->pool,session->home);
+			status = mrcp_session_offer(session->mrcp_session,descriptor);
+			break;
+		case RTSP_METHOD_TEARDOWN:
+			status = mrcp_session_terminate_request(session->mrcp_session);
+			break;
+		case RTSP_METHOD_ANNOUNCE:
+		{
+			mrcp_unirtsp_agent_t *agent = rtsp_server_object_get(server);
+			status = mrcp_unirtsp_session_announce(agent,session,message);
+			break;
+		}
+		default:
+			break;
 	}
-	else if(message->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
-		mrcp_session_terminate_request(session->mrcp_session);
-	}
-	return TRUE;
+
+	return status;
 }
 
 static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, mrcp_session_descriptor_t *descriptor)
@@ -237,6 +292,52 @@ static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *mrcp_session
 		return FALSE;
 	}
 	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,response);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, mrcp_message_t *mrcp_message)
+{
+	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+	char buffer[4096];
+	apt_text_stream_t text_stream;
+	rtsp_message_t *rtsp_message = NULL;
+
+	text_stream.text.buf = buffer;
+	text_stream.text.length = sizeof(buffer)-1;
+	text_stream.pos = text_stream.text.buf;
+
+	mrcp_message->start_line.version = MRCP_VERSION_1;
+	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&text_stream) != TRUE) {
+		apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message\n");
+		return FALSE;
+	}
+	*text_stream.pos = '\0';
+
+	if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
+		/* send RTSP response (OK) */
+		const rtsp_message_t *request = rtsp_server_session_request_get(session->rtsp_session);
+		if(request) {
+			rtsp_message = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,mrcp_session->pool);
+		}
+	}
+	else if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
+		/* send RTSP announce */
+		rtsp_message = rtsp_request_create(mrcp_session->pool);
+		rtsp_message->start_line.common.request_line.method_id = RTSP_METHOD_ANNOUNCE;
+	}
+
+	if(!rtsp_message) {
+		return FALSE;
+	}
+
+	apt_string_copy(&rtsp_message->body,&text_stream.text,rtsp_message->pool);
+	rtsp_message->header.content_type = RTSP_CONTENT_TYPE_MRCP;
+	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+	rtsp_message->header.content_length = text_stream.text.length;
+	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+
+	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,rtsp_message);
 	return TRUE;
 }
 

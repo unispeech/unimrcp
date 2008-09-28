@@ -64,6 +64,8 @@ struct mrcp_session_request_vtable_t {
 	apt_bool_t (*offer)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 	/** Terminate session */
 	apt_bool_t (*terminate)(mrcp_session_t *session);
+	/** Control session (MRCPv1 only) */
+	apt_bool_t (*control)(mrcp_session_t *session, mrcp_message_t *message);
 };
 
 /** MRCP session response vtable */
@@ -72,6 +74,8 @@ struct mrcp_session_response_vtable_t {
 	apt_bool_t (*on_answer)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 	/** Session terminated */
 	apt_bool_t (*on_terminate)(mrcp_session_t *session);
+	/** Control session (MRCPv1 only) */
+	apt_bool_t (*on_control)(mrcp_session_t *session, mrcp_message_t *message);
 };
 
 /** MRCP session event vtable */
@@ -106,7 +110,6 @@ static APR_INLINE apt_bool_t mrcp_session_terminate_request(mrcp_session_t *sess
 	return FALSE;
 }
 
-
 /** Answer */
 static APR_INLINE apt_bool_t mrcp_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
@@ -130,6 +133,24 @@ static APR_INLINE apt_bool_t mrcp_session_terminate_event(mrcp_session_t *sessio
 {
 	if(session->event_vtable->on_terminate) {
 		return session->event_vtable->on_terminate(session);
+	}
+	return FALSE;
+}
+
+/** Control request */
+static APR_INLINE apt_bool_t mrcp_session_control_request(mrcp_session_t *session, mrcp_message_t *message)
+{
+	if(session->request_vtable->control) {
+		return session->request_vtable->control(session,message);
+	}
+	return FALSE;
+}
+
+/** On control response/event */
+static APR_INLINE apt_bool_t mrcp_session_control_response(mrcp_session_t *session, mrcp_message_t *message)
+{
+	if(session->response_vtable->on_control) {
+		return session->response_vtable->on_control(session,message);
 	}
 	return FALSE;
 }

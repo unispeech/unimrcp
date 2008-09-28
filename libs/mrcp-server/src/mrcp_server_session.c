@@ -82,6 +82,8 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *ses
 static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session);
 static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session);
 
+static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, mrcp_resource_id resource_id);
+
 static apt_bool_t mrcp_server_mpf_request_send(
 						mrcp_server_session_t *session, 
 						mpf_command_type_e command_id, 
@@ -133,9 +135,14 @@ static apt_bool_t mrcp_server_message_dispatch(mrcp_state_machine_t *state_machi
 	}
 	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
+		/* send response message to client */
 		if(channel->control_channel) {
-			/* send response message to client */
+			/* MRCPv2 */
 			mrcp_server_control_message_send(channel->control_channel,message);
+		}
+		else {
+			/* MRCPv1 */
+			mrcp_session_control_response(channel->session,message);
 		}
 
 		session->active_request = apt_list_pop_front(session->request_queue);
@@ -144,9 +151,14 @@ static apt_bool_t mrcp_server_message_dispatch(mrcp_state_machine_t *state_machi
 		}
 	}
 	else { 
+		/* send event message to client */
 		if(channel->control_channel) {
-			/* send event message to client */
+			/* MRCPv2 */
 			mrcp_server_control_message_send(channel->control_channel,message);
+		}
+		else {
+			/* MRCPv1 */
+			mrcp_session_control_response(channel->session,message);
 		}
 	}
 	return TRUE;
@@ -465,11 +477,14 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 	return TRUE;
 }
 
-static apt_bool_t mrcp_server_on_message_receive(mrcp_channel_t *channel, mrcp_message_t *message)
+static apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	if(!channel) {
-		apt_log(APT_PRIO_WARNING,"No Such Channel");
-		return FALSE;
+		channel = mrcp_server_channel_find(session,message->channel_id.resource_id);
+		if(!channel) {
+			apt_log(APT_PRIO_WARNING,"No Such Channel");
+			return FALSE;
+		}
 	}
 	if(!channel->resource || !channel->state_machine) {
 		apt_log(APT_PRIO_WARNING,"No Resource");
@@ -488,7 +503,7 @@ static apt_bool_t mrcp_server_signaling_message_dispatch(mrcp_server_session_t *
 			mrcp_server_session_offer_process(signaling_message->session,signaling_message->descriptor);
 			break;
 		case SIGNALING_MESSAGE_CONTROL:
-			mrcp_server_on_message_receive(signaling_message->channel,signaling_message->message);
+			mrcp_server_on_message_receive(signaling_message->session,signaling_message->channel,signaling_message->message);
 			break;
 		case SIGNALING_MESSAGE_TERMINATE:
 			mrcp_server_session_terminate_process(signaling_message->session);
@@ -750,6 +765,21 @@ static mrcp_channel_t* mrcp_server_channel_termination_find(mrcp_server_session_
 		if(!channel) continue;
 
 		if(channel->engine_channel && channel->engine_channel->termination == termination) {
+			return channel;
+		}
+	}
+	return NULL;
+}
+
+static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, mrcp_resource_id resource_id)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(channel->resource->id == resource_id) {
 			return channel;
 		}
 	}

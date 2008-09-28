@@ -23,6 +23,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_vers
 	sig_agent->pool = pool;
 	sig_agent->obj = obj;
 	sig_agent->mrcp_version = mrcp_version;
+	sig_agent->resource_factory = NULL;
 	sig_agent->parent = NULL;
 	sig_agent->task = NULL;
 	sig_agent->msg_pool = NULL;

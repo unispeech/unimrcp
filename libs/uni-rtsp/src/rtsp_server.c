@@ -58,6 +58,7 @@ struct rtsp_server_session_t {
 
 	/** Session identifier */
 	apt_str_t                 id;
+	apt_str_t                 url;
 
 	/** In-progress request */
 	rtsp_message_t           *active_request;
@@ -223,6 +224,7 @@ static rtsp_server_session_t* rtsp_server_session_create()
 	session->active_request = NULL;
 	session->request_queue = apt_list_create(pool);
 
+	apt_string_reset(&session->url);
 	apt_unique_id_generate(&session->id,RTSP_SESSION_ID_HEX_STRING_LENGTH,pool);
 	apt_log(APT_PRIO_NOTICE,"Create RTSP Session <%s>",session->id.buf);
 	return session;
@@ -270,6 +272,7 @@ static apt_bool_t rtsp_server_message_receive_process(rtsp_server_t *server, rts
 				/* create new session */
 				session = rtsp_server_session_create();
 				session->connection = rtsp_connection;
+				session->url = message->start_line.common.request_line.url;
 				apt_log(APT_PRIO_INFO,"Add RTSP Session <%s>",session->id.buf);
 				apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 			}
@@ -323,6 +326,10 @@ static apt_bool_t rtsp_server_message_send_process(rtsp_server_t *server, rtsp_s
 				destroy_session = TRUE;
 			}
 		}
+	}
+	else if(message->start_line.message_type == RTSP_MESSAGE_TYPE_REQUEST) {
+		/* RTSP Announce */
+		message->start_line.common.request_line.url = session->url;
 	}
 	
 	if(session->id.buf) {

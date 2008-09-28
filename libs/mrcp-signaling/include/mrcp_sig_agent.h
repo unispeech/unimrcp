@@ -38,6 +38,8 @@ struct mrcp_sig_agent_t {
 	void                *parent;
 	/** MRCP version */
 	mrcp_version_e       mrcp_version;
+	/** MRCP resource factory */
+	mrcp_resource_factory_t *resource_factory;
 	/** Task interface */
 	apt_task_t          *task;
 	/** Task message pool used to allocate signaling agent messages */
