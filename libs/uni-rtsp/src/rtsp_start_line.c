@@ -95,6 +95,11 @@ static APR_INLINE apt_bool_t rtsp_status_code_generate(rtsp_status_code_e status
 /** Generate RTSP request-line */
 static apt_bool_t rtsp_request_line_generate(rtsp_request_line_t *start_line, apt_text_stream_t *stream)
 {
+	const apt_str_t *method_name = apt_string_table_str_get(rtsp_method_string_table,RTSP_METHOD_COUNT,start_line->method_id);
+	if(!method_name) {
+		return FALSE;
+	}
+	start_line->method_name = *method_name;
 	apt_string_value_generate(&start_line->method_name,stream);
 	apt_text_space_insert(stream);
 
