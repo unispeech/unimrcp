@@ -43,8 +43,9 @@ APT_DECLARE(apt_pollset_t*) apt_pollset_create(apr_uint32_t size, apr_pool_t *po
 	apt_pollset_t *pollset = apr_palloc(pool,sizeof(apt_pollset_t));
 	pollset->pool = pool;
 	
-	/* create pollset */
-	if(apr_pollset_create(&pollset->base,size,pool,0) != APR_SUCCESS) {
+	/* create pollset with max number of descriptors size+1, 
+	where +1 is builtin wakeup descriptor */
+	if(apr_pollset_create(&pollset->base,size+1,pool,0) != APR_SUCCESS) {
 		return NULL;
 	}
 
