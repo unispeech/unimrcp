@@ -125,7 +125,7 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 }
 
 /** Generate MRCP descriptor by SDP session */
-mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
+static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
 	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
