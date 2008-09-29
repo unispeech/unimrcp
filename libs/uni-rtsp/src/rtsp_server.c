@@ -240,21 +240,6 @@ static void rtsp_server_session_destroy(rtsp_server_session_t *session)
 	}
 }
 
-static void rtsp_server_session_teardown(rtsp_server_t *server, rtsp_server_session_t *session)
-{
-	rtsp_message_t *message = rtsp_request_create(session->pool);
-	message->start_line.common.request_line.method_id = RTSP_METHOD_TEARDOWN;
-
-	if(session->active_request) {
-		apt_log(APT_PRIO_DEBUG,"Push Teardown Request to Queue <%s>",session->id.buf);
-		apt_list_push_back(session->request_queue,message);
-	}
-	else {
-		session->active_request = message;
-		server->vtable->handle_message(server,session,message);
-	}
-}
-
 static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_server_session_t *session)
 {		
 	rtsp_server_connection_t *rtsp_connection = session->connection;
@@ -506,7 +491,8 @@ static apt_bool_t rtsp_server_on_disconnect(apt_net_server_task_t *task, apt_net
 			apr_hash_this(it,NULL,NULL,&val);
 			session = val;
 			if(session) {
-				rtsp_server_session_teardown(server,session);
+				server->vtable->terminate_session(server,session);
+				
 			}
 		}
 	}
