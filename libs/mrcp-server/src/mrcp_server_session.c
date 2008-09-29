@@ -371,6 +371,7 @@ static mrcp_session_descriptor_t* mrcp_session_answer_create(mrcp_session_descri
 	mrcp_session_descriptor_t *answer = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
 	apt_string_reset(&answer->origin);
 	apt_string_reset(&answer->ip);
+	answer->resource_name = offer->resource_name;
 	answer->control_media_arr = apr_array_make(pool,offer->control_media_arr->nelts,sizeof(void*));
 	for(i=0; i<offer->control_media_arr->nelts; i++) {
 		control_slot = apr_array_push(answer->control_media_arr);
