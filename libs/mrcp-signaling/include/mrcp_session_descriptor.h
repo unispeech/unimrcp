@@ -35,6 +35,8 @@ struct mrcp_session_descriptor_t {
 	apt_str_t           ip;
 	/** Session level resource name (MRCPv1 only) */
 	apt_str_t           resource_name;
+	/** Resource state (MRCPv1 only) */
+	apt_bool_t          resource_state;
 
 	/** MRCP control media array (mrcp_control_descriptor_t) */
 	apr_array_header_t *control_media_arr;
@@ -51,6 +53,7 @@ static APR_INLINE mrcp_session_descriptor_t* mrcp_session_descriptor_create(apr_
 	apt_string_reset(&descriptor->origin);
 	apt_string_reset(&descriptor->ip);
 	apt_string_reset(&descriptor->resource_name);
+	descriptor->resource_state = FALSE;
 	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(void*));
 	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
 	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));
