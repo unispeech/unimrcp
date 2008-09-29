@@ -32,8 +32,15 @@ typedef struct rtsp_server_t rtsp_server_t;
 /** Opaque RTSP server session declaration */
 typedef struct rtsp_server_session_t rtsp_server_session_t;
 
-/** RTSP server event vtable declaration */
-typedef apt_bool_t (*rtsp_server_event_handler_f)(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
+/** RTSP server vtable declaration */
+typedef struct rtsp_server_vtable_t rtsp_server_vtable_t;
+
+/** RTSP server vtable declaration */
+struct rtsp_server_vtable_t {
+	apt_bool_t (*create_session)(rtsp_server_t *server, rtsp_server_session_t *session);
+	apt_bool_t (*terminate_session)(rtsp_server_t *server, rtsp_server_session_t *session);
+	apt_bool_t (*handle_message)(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
+};
 
 /**
  * Create RTSP server.
@@ -46,6 +53,8 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 								const char *listen_ip, 
 								apr_port_t listen_port, 
 								apr_size_t max_connection_count,
+								void *obj,
+								const rtsp_server_vtable_t *handler,
 								apr_pool_t *pool);
 
 /**
@@ -67,17 +76,6 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_start(rtsp_server_t *server);
 RTSP_DECLARE(apt_bool_t) rtsp_server_terminate(rtsp_server_t *server);
 
 /**
- * Set event handler.
- * @param server the server to set event hadler for
- * @param obj the external object to associate with the server
- * @param handler the event handler
- */
-RTSP_DECLARE(void) rtsp_server_event_handler_set(
-								rtsp_server_t *server,
-								void *obj,
-								rtsp_server_event_handler_f handler);
-
-/**
  * Get task.
  * @param server the server to get task from
  */
@@ -93,6 +91,11 @@ RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server);
  * Send RTSP message.
  */
 RTSP_DECLARE(apt_bool_t) rtsp_server_message_send(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
+
+/**
+ * Terminate RTSP session (respond to terminate request).
+ */
+RTSP_DECLARE(apt_bool_t) rtsp_server_session_terminate(rtsp_server_t *server, rtsp_server_session_t *session);
 
 /**
  * Get object associated with the session.

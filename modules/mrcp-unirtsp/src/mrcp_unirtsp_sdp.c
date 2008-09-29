@@ -170,22 +170,32 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 		return NULL;
 	}
 	
-	if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
-		rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
-		request->body.buf) {
-		
-		sdp_parser_t *parser;
-		sdp_session_t *sdp;
+	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
+		if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+			rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+			request->body.buf) {
+			
+			sdp_parser_t *parser;
+			sdp_session_t *sdp;
 
-		parser = sdp_parse(home,request->body.buf,request->body.length,0);
-		sdp = sdp_session(parser);
+			parser = sdp_parse(home,request->body.buf,request->body.length,0);
+			sdp = sdp_session(parser);
 
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
+			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
+			if(descriptor) {
+				apt_string_assign(&descriptor->resource_name,resource_name,pool);
+				descriptor->resource_state = TRUE;
+			}
+			
+			sdp_parser_free(parser);
+		}
+	}
+	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+		descriptor = mrcp_session_descriptor_create(pool);
 		if(descriptor) {
 			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+			descriptor->resource_state = FALSE;
 		}
-		
-		sdp_parser_free(parser);
 	}
 	return descriptor;
 }
