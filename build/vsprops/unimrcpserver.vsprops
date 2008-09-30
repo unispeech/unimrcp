@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="unimrcpserver"
-	InheritedPropertySheets=".\mrcpserver.vsprops"
+	InheritedPropertySheets="$(SolutionDir)build\vsprops\mrcpserver.vsprops;.\sofiasip.vsprops"
 	>
 	<Tool
 		Name="VCCLCompilerTool"
