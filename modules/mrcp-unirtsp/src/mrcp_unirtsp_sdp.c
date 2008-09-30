@@ -200,6 +200,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 	return descriptor;
 }
 
+/** Generate RTSP response by MRCP descriptor */
 MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool)
 {
 	apr_size_t i;
@@ -212,6 +213,12 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 	char buffer[2048];
 	apr_size_t size = sizeof(buffer);
 	rtsp_message_t *response;
+
+	if(descriptor->resource_state != TRUE) {
+		response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_FOUND,RTSP_REASON_PHRASE_NOT_FOUND,pool);
+		return response;
+	}
+
 	response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,pool);
 	if(!response) {
 		return NULL;
@@ -245,19 +252,10 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		}
 	}
 
-	if(descriptor->resource_name.length) {
-		/* ok */
-		response->header.transport.profile = RTSP_PROFILE_RTP_AVP;
-		response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
-		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
-	}
-	else {
-		/* not found */
-		response->start_line.common.status_line.status_code = RTSP_STATUS_CODE_NOT_FOUND;
-		response->start_line.common.status_line.reason.buf = RTSP_REASON_PHRASE_NOT_FOUND;
-		response->start_line.common.status_line.reason.length = sizeof(RTSP_REASON_PHRASE_NOT_FOUND)-1;
-		offset = 0;
-	}
+	/* ok */
+	response->header.transport.profile = RTSP_PROFILE_RTP_AVP;
+	response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
+	rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
 
 	if(offset) {
 		apt_string_assign_n(&response->body,buffer,offset,pool);
