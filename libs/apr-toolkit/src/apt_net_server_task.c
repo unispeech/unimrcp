@@ -42,7 +42,7 @@ struct apt_net_server_task_t {
 };
 
 static apt_bool_t apt_net_server_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
-static apt_bool_t apt_net_server_task_task_run(apt_task_t *task);
+static apt_bool_t apt_net_server_task_run(apt_task_t *task);
 
 /** Create connection task */
 APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
@@ -82,7 +82,7 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 	if(task_vtable) {
 		vtable = *task_vtable;
 	}
-	vtable.run = apt_net_server_task_task_run;
+	vtable.run = apt_net_server_task_run;
 	vtable.signal_msg = apt_net_server_task_msg_signal;
 	task->base = apt_task_create(task,&vtable,msg_pool,pool);
 	if(!task->base) {
@@ -270,7 +270,7 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	return TRUE;
 }
 
-static apt_bool_t apt_net_server_task_task_run(apt_task_t *base)
+static apt_bool_t apt_net_server_task_run(apt_task_t *base)
 {
 	apt_net_server_task_t *task = apt_task_object_get(base);
 	apt_bool_t running = TRUE;
