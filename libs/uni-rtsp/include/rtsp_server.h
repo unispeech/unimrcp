@@ -90,7 +90,7 @@ RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server);
 /**
  * Send RTSP message.
  */
-RTSP_DECLARE(apt_bool_t) rtsp_server_message_send(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
+RTSP_DECLARE(apt_bool_t) rtsp_server_session_respond(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
 
 /**
  * Terminate RTSP session (respond to terminate request).

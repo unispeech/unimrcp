@@ -294,7 +294,7 @@ static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, m
 	if(!response) {
 		return FALSE;
 	}
-	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,response);
+	rtsp_server_session_respond(agent->rtsp_server,session->rtsp_session,response);
 	return TRUE;
 }
 
@@ -350,7 +350,7 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 	rtsp_message->header.content_length = text_stream.text.length;
 	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
 
-	rtsp_server_message_send(agent->rtsp_server,session->rtsp_session,rtsp_message);
+	rtsp_server_session_respond(agent->rtsp_server,session->rtsp_session,rtsp_message);
 	return TRUE;
 }
 
