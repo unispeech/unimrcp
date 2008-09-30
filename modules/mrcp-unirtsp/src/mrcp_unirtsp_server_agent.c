@@ -45,7 +45,6 @@ struct mrcp_unirtsp_session_t {
 
 
 static apt_bool_t server_destroy(apt_task_t *task);
-static apt_bool_t server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 static void server_on_start_complete(apt_task_t *task);
 static void server_on_terminate_complete(apt_task_t *task);
 
@@ -99,7 +98,6 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(rtsp_server_con
 
 	apt_task_vtable_reset(&vtable);
 	vtable.destroy = server_destroy;
-	vtable.process_msg = server_msg_process;
 	vtable.on_start_complete = server_on_start_complete;
 	vtable.on_terminate_complete = server_on_terminate_complete;
 	consumer_task = apt_consumer_task_create(agent,&vtable,msg_pool,pool);
@@ -211,8 +209,6 @@ static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrc
 	const char *resource_name = message->start_line.common.request_line.resource_name;
 	apt_bool_t status = TRUE;
 
-	apt_log(APT_PRIO_NOTICE,"RTSP Announce\n");
-
 	if(session && resource_name &&
 		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 		message->header.content_type == RTSP_CONTENT_TYPE_MRCP &&
@@ -322,7 +318,7 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 
 	mrcp_message->start_line.version = MRCP_VERSION_1;
 	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&text_stream) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message\n");
+		apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
 		return FALSE;
 	}
 	*text_stream.pos = '\0';
@@ -351,10 +347,5 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
 
 	rtsp_server_session_respond(agent->rtsp_server,session->rtsp_session,rtsp_message);
-	return TRUE;
-}
-
-static apt_bool_t server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
-{
 	return TRUE;
 }
