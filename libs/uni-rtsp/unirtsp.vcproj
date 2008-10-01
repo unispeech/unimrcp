@@ -136,7 +136,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\rtsp_client_connection.h"
+				RelativePath=".\include\rtsp_client.h"
 				>
 			</File>
 			<File
@@ -152,10 +152,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\rtsp_server_connection.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\rtsp_start_line.h"
 				>
 			</File>
@@ -165,7 +161,7 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 			<File
-				RelativePath=".\src\rtsp_client_connection.c"
+				RelativePath=".\src\rtsp_client.c"
 				>
 			</File>
 			<File
@@ -178,10 +174,6 @@
 			</File>
 			<File
 				RelativePath=".\src\rtsp_server.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\rtsp_server_connection.c"
 				>
 			</File>
 			<File
