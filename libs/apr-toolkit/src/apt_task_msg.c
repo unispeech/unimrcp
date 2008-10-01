@@ -41,6 +41,8 @@ static apt_task_msg_t* dynamic_pool_acquire_msg(apt_task_msg_pool_t *task_msg_po
 	apt_msg_pool_dynamic_t *dynamic_pool = task_msg_pool->obj;
 	apt_task_msg_t *task_msg = malloc(dynamic_pool->size);
 	task_msg->msg_pool = task_msg_pool;
+	task_msg->type = TASK_MSG_USER;
+	task_msg->sub_type = 0;
 	return task_msg;
 }
 
