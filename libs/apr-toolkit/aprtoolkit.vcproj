@@ -150,6 +150,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_net_client_task.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_net_server_task.h"
 				>
 			</File>
@@ -204,6 +208,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_net.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_net_client_task.c"
 				>
 			</File>
 			<File
