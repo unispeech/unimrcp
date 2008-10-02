@@ -1,0 +1,242 @@
+/*
+ * Copyright 2008 Arsen Chaloyan
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <apr_general.h>
+#include <sofia-sip/sdp.h>
+
+#include "mrcp_unirtsp_client_agent.h"
+#include "mrcp_session.h"
+#include "mrcp_session_descriptor.h"
+#include "mrcp_message.h"
+#include "mrcp_resource_factory.h"
+#include "rtsp_client.h"
+#include "mrcp_unirtsp_sdp.h"
+#include "apt_consumer_task.h"
+#include "apt_log.h"
+
+typedef struct mrcp_unirtsp_agent_t mrcp_unirtsp_agent_t;
+typedef struct mrcp_unirtsp_session_t mrcp_unirtsp_session_t;
+
+struct mrcp_unirtsp_agent_t {
+	mrcp_sig_agent_t     *sig_agent;
+	rtsp_client_t        *rtsp_client;
+
+	rtsp_client_config_t *config;
+};
+
+struct mrcp_unirtsp_session_t {
+	mrcp_session_t        *mrcp_session;
+	rtsp_client_session_t *rtsp_session;
+	su_home_t             *home;
+};
+
+
+static apt_bool_t client_destroy(apt_task_t *task);
+static void client_on_start_complete(apt_task_t *task);
+static void client_on_terminate_complete(apt_task_t *task);
+
+
+static apt_bool_t mrcp_unirtsp_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
+static apt_bool_t mrcp_unirtsp_session_terminate(mrcp_session_t *session);
+static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *session, mrcp_message_t *message);
+
+static const mrcp_session_request_vtable_t session_request_vtable = {
+	mrcp_unirtsp_session_offer,
+	mrcp_unirtsp_session_terminate,
+	mrcp_unirtsp_session_control
+};
+
+static apt_bool_t mrcp_unirtsp_on_session_terminate(rtsp_client_t *client, rtsp_client_session_t *session);
+static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
+static apt_bool_t mrcp_unirtsp_on_session_event(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
+
+static const rtsp_client_vtable_t session_response_vtable = {
+	mrcp_unirtsp_on_session_terminate,
+	mrcp_unirtsp_on_session_response,
+	mrcp_unirtsp_on_session_event
+};
+
+static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *session);
+static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_client_config_t *config, apr_pool_t *pool);
+
+
+/** Create UniRTSP Signaling Agent */
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_config_t *config, apr_pool_t *pool)
+{
+	apt_task_vtable_t vtable;
+	apt_task_msg_pool_t *msg_pool;
+	apt_consumer_task_t *consumer_task;
+	mrcp_unirtsp_agent_t *agent;
+	agent = apr_palloc(pool,sizeof(mrcp_unirtsp_agent_t));
+	agent->sig_agent = mrcp_signaling_agent_create(agent,MRCP_VERSION_1,pool);
+	agent->sig_agent->create_client_session = mrcp_unirtsp_session_create;
+	agent->config = config;
+
+	if(rtsp_config_validate(agent,config,pool) == FALSE) {
+		return NULL;
+	}
+
+	agent->rtsp_client = rtsp_client_create(config->max_connection_count,
+										agent,&session_response_vtable,pool);
+	if(!agent->rtsp_client) {
+		return NULL;
+	}
+
+	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
+
+	apt_task_vtable_reset(&vtable);
+	vtable.destroy = client_destroy;
+	vtable.on_start_complete = client_on_start_complete;
+	vtable.on_terminate_complete = client_on_terminate_complete;
+	consumer_task = apt_consumer_task_create(agent,&vtable,msg_pool,pool);
+	agent->sig_agent->task = apt_consumer_task_base_get(consumer_task);
+	apt_log(APT_PRIO_NOTICE,"Create UniRTSP Agent");
+	return agent->sig_agent;
+}
+
+/** Allocate UniRTSP config */
+MRCP_DECLARE(rtsp_client_config_t*) mrcp_unirtsp_client_config_alloc(apr_pool_t *pool)
+{
+	rtsp_client_config_t *config = apr_palloc(pool,sizeof(rtsp_client_config_t));
+	config->origin = NULL;
+	config->resource_location = NULL;
+	config->max_connection_count = 100;
+	return config;
+}
+
+
+static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_client_config_t *config, apr_pool_t *pool)
+{
+	agent->config = config;
+	return TRUE;
+}
+
+static APR_INLINE mrcp_unirtsp_agent_t* client_agent_get(apt_task_t *task)
+{
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_unirtsp_agent_t *agent = apt_consumer_task_object_get(consumer_task);
+	return agent;
+}
+
+static apt_bool_t client_destroy(apt_task_t *task)
+{
+	mrcp_unirtsp_agent_t *agent = client_agent_get(task);
+	if(agent->rtsp_client) {
+		rtsp_client_destroy(agent->rtsp_client);
+		agent->rtsp_client = NULL;
+	}
+	return TRUE;
+}
+
+static void client_on_start_complete(apt_task_t *task)
+{
+	mrcp_unirtsp_agent_t *agent = client_agent_get(task);
+	if(agent->rtsp_client) {
+		rtsp_client_start(agent->rtsp_client);
+	}
+}
+
+static void client_on_terminate_complete(apt_task_t *task)
+{
+	mrcp_unirtsp_agent_t *agent = client_agent_get(task);
+	if(agent->rtsp_client) {
+		rtsp_client_terminate(agent->rtsp_client);
+	}
+}
+
+static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session)
+{
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+	mrcp_unirtsp_session_t *session;
+	mrcp_session->request_vtable = &session_request_vtable;
+
+	session = apr_palloc(mrcp_session->pool,sizeof(mrcp_unirtsp_session_t));
+	session->home = su_home_new(sizeof(*session->home));
+	session->mrcp_session = mrcp_session;
+//	session->terminate_requested = FALSE;
+	mrcp_session->obj = session;
+	
+	session->rtsp_session = rtsp_client_session_create(agent->rtsp_client);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_on_session_terminate(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session)
+{
+	return TRUE;
+}
+
+static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
+{
+	if(session->home) {
+		su_home_unref(session->home);
+		session->home = NULL;
+	}
+	rtsp_client_session_object_set(session->rtsp_session,NULL);
+	mrcp_session_destroy(session->mrcp_session);
+}
+
+static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session, rtsp_message_t *request, rtsp_message_t *response)
+{
+	apt_bool_t status = FALSE;
+	mrcp_unirtsp_session_t *session	= rtsp_client_session_object_get(rtsp_session);
+	if(!session) {
+		return FALSE;
+	}
+
+	switch(request->start_line.common.request_line.method_id) {
+		case RTSP_METHOD_SETUP:
+		case RTSP_METHOD_TEARDOWN:
+		{
+			mrcp_session_descriptor_t *descriptor;
+			descriptor = mrcp_descriptor_generate_by_rtsp_response(request,response,session->mrcp_session->pool,session->home);
+			status = mrcp_session_answer(session->mrcp_session,descriptor);
+			break;
+		}
+		case RTSP_METHOD_ANNOUNCE:
+		{
+			break;
+		}
+		default:
+			break;
+	}
+
+	return status;
+}
+
+static apt_bool_t mrcp_unirtsp_on_session_event(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session, rtsp_message_t *message)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_session_offer(mrcp_session_t *mrcp_session, mrcp_session_descriptor_t *descriptor)
+{
+	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+	rtsp_message_t *request;
+	request = rtsp_request_generate_by_mrcp_descriptor(descriptor,mrcp_session->pool);
+
+	return rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,request);
+}
+
+static apt_bool_t mrcp_unirtsp_session_terminate(mrcp_session_t *session)
+{
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *session, mrcp_message_t *message)
+{
+	return TRUE;
+}

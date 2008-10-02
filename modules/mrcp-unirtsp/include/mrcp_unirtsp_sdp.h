@@ -28,7 +28,11 @@ APT_BEGIN_EXTERN_C
 
 /** Generate MRCP descriptor by RTSP request */
 MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(const rtsp_message_t *request, apr_pool_t *pool, su_home_t *home);
+/** Generate MRCP descriptor by RTSP response */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_response(const rtsp_message_t *request, const rtsp_message_t *response, apr_pool_t *pool, su_home_t *home);
 
+/** Generate RTSP request by MRCP descriptor */
+MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool);
 /** Generate RTSP response by MRCP descriptor */
 MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool);
 

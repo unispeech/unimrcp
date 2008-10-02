@@ -200,6 +200,113 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 	return descriptor;
 }
 
+/** Generate MRCP descriptor by RTSP response */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_response(const rtsp_message_t *request, const rtsp_message_t *response, apr_pool_t *pool, su_home_t *home)
+{
+	mrcp_session_descriptor_t *descriptor = NULL;
+	const char *resource_name = request->start_line.common.request_line.resource_name;
+	if(!resource_name) {
+		return NULL;
+	}
+	
+	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
+		if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+			rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+			request->body.buf) {
+			
+			sdp_parser_t *parser;
+			sdp_session_t *sdp;
+
+			parser = sdp_parse(home,response->body.buf,response->body.length,0);
+			sdp = sdp_session(parser);
+
+			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
+			if(descriptor) {
+				apt_string_assign(&descriptor->resource_name,resource_name,pool);
+				descriptor->resource_state = TRUE;
+			}
+			
+			sdp_parser_free(parser);
+		}
+	}
+	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+		descriptor = mrcp_session_descriptor_create(pool);
+		if(descriptor) {
+			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+			descriptor->resource_state = FALSE;
+		}
+	}
+	return descriptor;
+}
+
+/** Generate RTSP request by MRCP descriptor */
+MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool)
+{
+	apr_size_t i;
+	apr_size_t count;
+	apr_size_t audio_index = 0;
+	mpf_rtp_media_descriptor_t *audio_media;
+	apr_size_t video_index = 0;
+	mpf_rtp_media_descriptor_t *video_media;
+	apr_size_t offset = 0;
+	char buffer[2048];
+	apr_size_t size = sizeof(buffer);
+	rtsp_message_t *request;
+
+	if(descriptor->resource_state != TRUE) {
+		request = rtsp_request_create(pool);
+		request->start_line.common.request_line.method_id = RTSP_METHOD_TEARDOWN;
+		return request;
+	}
+
+	request = rtsp_request_create(pool);
+	if(!request) {
+		return NULL;
+	}
+	request->start_line.common.request_line.method_id = RTSP_METHOD_SETUP;
+
+	buffer[0] = '\0';
+	offset += snprintf(buffer+offset,size-offset,
+			"v=0\r\n"
+			"o=%s 0 0 IN IP4 %s\r\n"
+			"s=-\r\n"
+			"c=IN IP4 %s\r\n"
+			"t=0 0\r\n",
+			descriptor->origin.buf ? descriptor->origin.buf : "-",
+			descriptor->ip.buf ? descriptor->ip.buf : "0",
+			descriptor->ip.buf ? descriptor->ip.buf : "0");
+	count = mrcp_session_media_count_get(descriptor);
+	for(i=0; i<count; i++) {
+		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
+		if(audio_media && audio_media->base.id == i) {
+			/* generate audio media */
+			audio_index++;
+			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
+			continue;
+		}
+		video_media = mrcp_session_video_media_get(descriptor,video_index);
+		if(video_media && video_media->base.id == i) {
+			/* generate video media */
+			video_index++;
+			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);
+			continue;
+		}
+	}
+
+	request->header.transport.profile = RTSP_PROFILE_RTP_AVP;
+	request->header.transport.delivery = RTSP_DELIVERY_UNICAST;
+	rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+
+	if(offset) {
+		apt_string_assign_n(&request->body,buffer,offset,pool);
+		request->header.content_type = RTSP_CONTENT_TYPE_SDP;
+		rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+		request->header.content_length = offset;
+		rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+	}
+	return request;
+}
+
 /** Generate RTSP response by MRCP descriptor */
 MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool)
 {

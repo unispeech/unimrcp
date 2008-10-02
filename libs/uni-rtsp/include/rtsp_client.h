@@ -37,20 +37,17 @@ typedef struct rtsp_client_vtable_t rtsp_client_vtable_t;
 
 /** RTSP client vtable */
 struct rtsp_client_vtable_t {
-	apt_bool_t (*terminate_session)(rtsp_client_t *client, rtsp_client_session_t *session);
-	apt_bool_t (*handle_message)(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
+	apt_bool_t (*on_session_terminate)(rtsp_client_t *client, rtsp_client_session_t *session);
+	apt_bool_t (*on_session_response)(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
+	apt_bool_t (*on_session_event)(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 };
 
 /**
  * Create RTSP client.
- * @param listen_ip the listen IP address
- * @param listen_port the listen port
  * @param max_connection_count the number of max RTSP connections
  * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
-								const char *listen_ip, 
-								apr_port_t listen_port, 
 								apr_size_t max_connection_count,
 								void *obj,
 								const rtsp_client_vtable_t *handler,

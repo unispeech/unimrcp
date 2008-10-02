@@ -98,8 +98,6 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 
 /** Create RTSP client */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
-										const char *listen_ip,
-										apr_port_t listen_port,
 										apr_size_t max_connection_count,
 										void *obj,
 										const rtsp_client_vtable_t *handler,
@@ -109,7 +107,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_client_t *client;
 	
-	apt_log(APT_PRIO_NOTICE,"Create RTSP client %s:%hu [%d]",listen_ip,listen_port,max_connection_count);
+	apt_log(APT_PRIO_NOTICE,"Create RTSP client [%d]",max_connection_count);
 	client = apr_palloc(pool,sizeof(rtsp_client_t));
 	client->pool = pool;
 	client->obj = obj;
