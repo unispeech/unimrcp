@@ -2,6 +2,7 @@ MAINTAINERCLEANFILES 	    = Makefile.in
 
 INCLUDES                    = -I$(top_srcdir)/platforms/libunimrcp-client/include \
                               -I$(top_srcdir)/modules/mrcp-sofiasip/include \
+                              -I$(top_srcdir)/modules/mrcp-unirtsp/include \
                               -I$(top_srcdir)/libs/mrcp-client/include \
                               -I$(top_srcdir)/libs/mrcp-signaling/include \
                               -I$(top_srcdir)/libs/mrcpv2-transport/include \
@@ -21,6 +22,7 @@ include_HEADERS             = include/unimrcp_client.h
 libunimrcpclient_la_SOURCES = src/unimrcp_client.c
 
 libunimrcpclient_la_LIBADD  = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofiasip.la \
+                              $(top_builddir)/modules/mrcp-unirtsp/libmrcpunirtsp.la \
                               $(top_builddir)/libs/mrcpv2-transport/libmrcpv2transport.la \
                               $(top_builddir)/libs/mrcp-client/libmrcpclient.la \
                               $(top_builddir)/libs/mrcp-signaling/libmrcpsignaling.la \
