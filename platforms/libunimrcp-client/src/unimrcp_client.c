@@ -22,6 +22,7 @@
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_client_agent.h"
+#include "mrcp_unirtsp_client_agent.h"
 #include "mrcp_client_connection.h"
 #include "apt_net.h"
 #include "apt_log.h"
@@ -193,7 +194,30 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 /** Load UniRTSP signaling agent */
 static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	return NULL;
+	const apr_xml_elem *elem;
+	rtsp_client_config_t *config = mrcp_unirtsp_client_config_alloc(pool);
+	config->origin = DEFAULT_SDP_ORIGIN;
+
+	apt_log(APT_PRIO_DEBUG,"Loading UniRTSP Agent");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			const apr_xml_attr *attr_name;
+			const apr_xml_attr *attr_value;
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
+					config->origin = apr_pstrdup(pool,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
+					config->max_connection_count = atol(attr_value->value);
+				}
+				else {
+					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
+				}
+			}
+		}
+	}    
+	return mrcp_unirtsp_client_agent_create(config,pool);
 }
 
 /** Load signaling agents */
@@ -265,7 +289,7 @@ static apt_bool_t unimrcp_client_connection_agents_load(mrcp_client_t *client, c
 	apt_log(APT_PRIO_DEBUG,"Loading Connection Agents");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"agent") == 0) {
-			mrcp_connection_agent_t *connection_agent = NULL;
+			mrcp_connection_agent_t *connection_agent;
 			const char *name = NULL;
 			const apr_xml_attr *attr;
 			for(attr = elem->attr; attr; attr = attr->next) {
