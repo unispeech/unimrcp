@@ -116,8 +116,9 @@ APT_DECLARE(void*) apt_net_client_task_object_get(apt_net_client_task_t *task)
 }
 
 /** Create connection */
-APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_task_t *task)
+APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_task_t *task, const char *ip, apr_port_t port)
 {
+	apr_sockaddr_t *sockaddr;
 	apt_net_client_connection_t *connection;
 	apr_pool_t *pool;
 	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
@@ -129,7 +130,37 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 	connection->obj = NULL;
 	connection->sock = NULL;
 
+	if(apr_sockaddr_info_get(&sockaddr,ip,APR_INET,port,0,connection->pool) != APR_SUCCESS) {
+		apr_pool_destroy(pool);
+		return NULL;
+	}
 
+	if(apr_socket_create(&connection->sock,sockaddr->family,SOCK_STREAM,APR_PROTO_TCP,connection->pool) != APR_SUCCESS) {
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+
+	apr_socket_opt_set(connection->sock, APR_SO_NONBLOCK, 0);
+	apr_socket_timeout_set(connection->sock, -1);
+	apr_socket_opt_set(connection->sock, APR_SO_REUSEADDR, 1);
+
+	if(apr_socket_connect(connection->sock,sockaddr) != APR_SUCCESS) {
+		apr_socket_close(connection->sock);
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+
+	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
+	connection->sock_pfd.reqevents = APR_POLLIN;
+	connection->sock_pfd.desc.s = connection->sock;
+	connection->sock_pfd.client_data = connection;
+	if(apt_pollset_add(task->pollset,&connection->sock_pfd) != TRUE) {
+		apr_socket_close(connection->sock);
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+	
+	apt_log(APT_PRIO_NOTICE,"Established TCP Connection %s:%d",ip,port);
 	return connection;
 }
 

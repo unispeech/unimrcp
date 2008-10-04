@@ -111,8 +111,10 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
 MRCP_DECLARE(rtsp_client_config_t*) mrcp_unirtsp_client_config_alloc(apr_pool_t *pool)
 {
 	rtsp_client_config_t *config = apr_palloc(pool,sizeof(rtsp_client_config_t));
-	config->origin = NULL;
+	config->server_ip = NULL;
+	config->server_port = 0;
 	config->resource_location = NULL;
+	config->origin = NULL;
 	config->max_connection_count = 100;
 	return config;
 }
@@ -169,7 +171,16 @@ static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session)
 //	session->terminate_requested = FALSE;
 	mrcp_session->obj = session;
 	
-	session->rtsp_session = rtsp_client_session_create(agent->rtsp_client);
+	session->rtsp_session = rtsp_client_session_create(
+									agent->rtsp_client,
+									agent->config->server_ip,
+									agent->config->server_port,
+									agent->config->resource_location);
+	if(!session->rtsp_session) {
+		su_home_unref(session->home);
+		return FALSE;
+	}
+	rtsp_client_session_object_set(session->rtsp_session,mrcp_session);
 	return TRUE;
 }
 

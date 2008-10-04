@@ -39,6 +39,7 @@
 
 #define DEFAULT_SOFIASIP_UA_NAME  "UniMRCP SofiaSIP"
 #define DEFAULT_SDP_ORIGIN        "UniMRCPClient"
+#define DEFAULT_RESOURCE_LOCATION "media"
 
 #define XML_FILE_BUFFER_LENGTH    2000
 
@@ -197,6 +198,7 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 	const apr_xml_elem *elem;
 	rtsp_client_config_t *config = mrcp_unirtsp_client_config_alloc(pool);
 	config->origin = DEFAULT_SDP_ORIGIN;
+	config->resource_location = DEFAULT_RESOURCE_LOCATION;
 
 	apt_log(APT_PRIO_DEBUG,"Loading UniRTSP Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -205,7 +207,16 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 			const apr_xml_attr *attr_value;
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
 				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
-				if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
+				if(strcasecmp(attr_name->value,"server-ip") == 0) {
+					config->server_ip = ip_addr_get(attr_value->value,pool);
+				}
+				else if(strcasecmp(attr_name->value,"server-port") == 0) {
+					config->server_port = (apr_port_t)atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"resource-location") == 0) {
+					config->resource_location = apr_pstrdup(pool,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
 					config->origin = apr_pstrdup(pool,attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"max-connection-count") == 0) {

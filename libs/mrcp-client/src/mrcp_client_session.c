@@ -94,6 +94,7 @@ mrcp_channel_t* mrcp_client_channel_create(
 	channel->obj = obj;
 	channel->session = session;
 	channel->resource_id = resource_id;
+	channel->resource_name = NULL;
 	channel->control_channel = NULL;
 	channel->termination = termination;
 	channel->rtp_termination_slot = NULL;
@@ -439,6 +440,10 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		}
 	}
 
+	if(channel->resource_name) {
+		session->offer->resource_name = *channel->resource_name;
+		session->offer->resource_state = enable;
+	}
 	return mrcp_client_session_offer_send(session);
 }
 
@@ -448,7 +453,6 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	mrcp_control_descriptor_t *control_media;
 	mpf_rtp_termination_descriptor_t *rtp_descriptor = NULL;
 	rtp_termination_slot_t *termination_slot;
-	const apt_str_t *resource_name;
 	apr_pool_t *pool = session->base.pool;
 	mrcp_profile_t *profile = session->profile;
 	if(mrcp_client_channel_find(session,channel,NULL) == TRUE) {
@@ -529,9 +533,12 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	control_media = mrcp_control_offer_create(pool);
 	control_media->id = mrcp_session_control_media_add(session->offer,control_media);
 	control_media->cmid = session->offer->control_media_arr->nelts;
-	resource_name = mrcp_resource_name_get(profile->resource_factory,channel->resource_id,profile->signaling_agent->mrcp_version);
-	if(resource_name) {
-		control_media->resource_name = *resource_name;
+	channel->resource_name = mrcp_resource_name_get(profile->resource_factory,channel->resource_id,profile->signaling_agent->mrcp_version);
+	if(channel->resource_name) {
+		control_media->resource_name = *channel->resource_name;
+
+		session->offer->resource_name = *channel->resource_name;
+		session->offer->resource_state = TRUE;
 	}
 
 	if(!session->offer_flag_count) {

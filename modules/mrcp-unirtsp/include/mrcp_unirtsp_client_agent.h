@@ -23,6 +23,7 @@
  */ 
 
 #include <apr_network_io.h>
+#include "apt_string.h"
 #include "mrcp_sig_agent.h"
 
 APT_BEGIN_EXTERN_C
@@ -32,6 +33,10 @@ typedef struct rtsp_client_config_t rtsp_client_config_t;
 
 /** UniRTSP config */
 struct rtsp_client_config_t {
+	/** Server IP address */
+	char      *server_ip;
+	/** Server port */
+	apr_port_t server_port;
 	/** Resource location */
 	char      *resource_location;
 	/** SDP origin */

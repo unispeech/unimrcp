@@ -212,7 +212,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
-			request->body.buf) {
+			response->body.buf) {
 			
 			sdp_parser_t *parser;
 			sdp_session_t *sdp;
@@ -253,16 +253,13 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 	apr_size_t size = sizeof(buffer);
 	rtsp_message_t *request;
 
+	request = rtsp_request_create(pool);
+	request->start_line.common.request_line.resource_name = descriptor->resource_name.buf;
 	if(descriptor->resource_state != TRUE) {
-		request = rtsp_request_create(pool);
 		request->start_line.common.request_line.method_id = RTSP_METHOD_TEARDOWN;
 		return request;
 	}
 
-	request = rtsp_request_create(pool);
-	if(!request) {
-		return NULL;
-	}
 	request->start_line.common.request_line.method_id = RTSP_METHOD_SETUP;
 
 	buffer[0] = '\0';

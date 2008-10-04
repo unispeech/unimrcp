@@ -100,7 +100,7 @@ APT_DECLARE(void*) apt_net_client_task_object_get(apt_net_client_task_t *task);
 /**
  * Create connection.
  */
-APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_task_t *task);
+APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_task_t *task, const char *ip, apr_port_t port);
 
 /**
  * Close connection.

@@ -87,7 +87,11 @@ RTSP_DECLARE(void*) rtsp_client_object_get(rtsp_client_t *client);
 /**
  * Create RTSP session.
  */
-RTSP_DECLARE(rtsp_client_session_t*) rtsp_client_session_create(rtsp_client_t *client);
+RTSP_DECLARE(rtsp_client_session_t*) rtsp_client_session_create(
+											rtsp_client_t *client, 
+											const char *server_ip, 
+											apr_port_t server_port,
+											const char *resource_location);
 
 /**
  * Destroy RTSP session.
@@ -122,12 +126,6 @@ RTSP_DECLARE(void) rtsp_client_session_object_set(rtsp_client_session_t *session
  * @param ssession the session to get identifier from
  */
 RTSP_DECLARE(const apt_str_t*) rtsp_client_session_id_get(const rtsp_client_session_t *session);
-
-/**
- * Get active (in-progress) session request.
- * @param ssession the session to get from
- */
-RTSP_DECLARE(const rtsp_message_t*) rtsp_client_session_request_get(const rtsp_client_session_t *session);
 
 APT_END_EXTERN_C
 
