@@ -485,6 +485,11 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 		}
 	}
 	mrcp_server_session_remove(session);
+
+	if(!session->terminate_flag_count) {
+		mrcp_server_session_terminate_send(session);
+	}
+
 	return TRUE;
 }
 
@@ -539,7 +544,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 		}
 		/* create new MRCP channel instance */
 		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count);
-		if(!channel) {
+		if(!channel || !channel->resource) {
 			return FALSE;
 		}
 		/* add to channel array */
