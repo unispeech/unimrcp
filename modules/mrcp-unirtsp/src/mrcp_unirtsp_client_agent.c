@@ -180,7 +180,7 @@ static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session)
 		su_home_unref(session->home);
 		return FALSE;
 	}
-	rtsp_client_session_object_set(session->rtsp_session,mrcp_session);
+	rtsp_client_session_object_set(session->rtsp_session,session);
 	return TRUE;
 }
 
@@ -209,6 +209,17 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 
 	switch(request->start_line.common.request_line.method_id) {
 		case RTSP_METHOD_SETUP:
+		{
+			const apt_str_t *session_id;
+			mrcp_session_descriptor_t *descriptor;
+			descriptor = mrcp_descriptor_generate_by_rtsp_response(request,response,session->mrcp_session->pool,session->home);
+			session_id = rtsp_client_session_id_get(session->rtsp_session);
+			if(session_id) {
+				session->mrcp_session->id = *session_id;
+			}
+			status = mrcp_session_answer(session->mrcp_session,descriptor);
+			break;
+		}
 		case RTSP_METHOD_TEARDOWN:
 		{
 			mrcp_session_descriptor_t *descriptor;
