@@ -283,6 +283,19 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 /* Process session termination request */
 static apt_bool_t rtsp_client_session_terminate_process(rtsp_client_t *client, rtsp_client_session_t *session)
 {
+	rtsp_client_connection_t *rtsp_connection = session->connection;
+	if(!rtsp_connection) {
+		return FALSE;
+	}
+
+	apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+	apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
+
+	if(!rtsp_connection->it) {
+		if(apr_hash_count(rtsp_connection->session_table) == 0) {
+			apt_net_client_connection_destroy(rtsp_connection->base);
+		}
+	}
 	return TRUE;
 }
 
@@ -321,6 +334,11 @@ static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rts
 	}
 
 	rtsp_client_session_url_generate(session,message);
+
+	if(session->id.length) {
+		message->header.session_id = session->id;
+		rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
+	}
 	
 	message->header.cseq = ++session->last_cseq;
 	rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_CSEQ);

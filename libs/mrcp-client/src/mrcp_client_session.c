@@ -50,6 +50,8 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 
+static mrcp_channel_t* mrcp_client_channel_find_by_name(mrcp_client_session_t *session, const apt_str_t *resource_name);
+
 static apt_bool_t mrcp_client_mpf_request_send(
 						mpf_engine_t *engine, 
 						mpf_command_type_e command_id, 
@@ -163,6 +165,15 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 		/* process event */
 	}
 	return TRUE;
+}
+
+apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *session, mrcp_message_t *message)
+{
+	mrcp_channel_t *channel = mrcp_client_channel_find_by_name(session,&message->channel_id.resource_name);
+	if(!channel) {
+		return FALSE;
+	}
+	return mrcp_app_control_message_send(session,channel,message);
 }
 
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
@@ -398,6 +409,21 @@ static mrcp_channel_t* mrcp_client_channel_termination_find(mrcp_client_session_
 	return NULL;
 }
 
+static mrcp_channel_t* mrcp_client_channel_find_by_name(mrcp_client_session_t *session, const apt_str_t *resource_name)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(apt_string_compare(channel->resource_name,resource_name) == TRUE) {
+			return channel;
+		}
+	}
+	return NULL;
+}
+
 static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	if(!session->base.id.length) {
@@ -437,20 +463,20 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(session->offer,(apr_size_t)index);
 		if(control_media) {
 			control_media->port = (enable == TRUE) ? 9 : 0;
-		}
-		if(channel->termination && channel->termination->audio_stream) {
-			int i = mrcp_client_audio_media_find_by_mid(session->offer,control_media->cmid);
-			if(i >= 0) {
-				mpf_stream_mode_e mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
-				mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_get(session->offer,(apr_size_t)i);
-				if(audio_media) {
-					if(enable == TRUE) {
-						audio_media->mode |= mode;
+			if(channel->termination && channel->termination->audio_stream) {
+				int i = mrcp_client_audio_media_find_by_mid(session->offer,control_media->cmid);
+				if(i >= 0) {
+					mpf_stream_mode_e mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
+					mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_get(session->offer,(apr_size_t)i);
+					if(audio_media) {
+						if(enable == TRUE) {
+							audio_media->mode |= mode;
+						}
+						else {
+							audio_media->mode &= ~mode;
+						}
+						audio_media->base.state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
 					}
-					else {
-						audio_media->mode &= ~mode;
-					}
-					audio_media->base.state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
 				}
 			}
 		}

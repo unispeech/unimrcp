@@ -157,6 +157,8 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message);
 apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
 /** Process session termination response */
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session);
+/** Process session control response */
+apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *session, mrcp_message_t *message);
 /** Process session termination event */
 apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *session);
 

@@ -69,6 +69,7 @@ typedef enum {
 typedef enum {
 	SIG_AGENT_TASK_MSG_ANSWER,
 	SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE,
+	SIG_AGENT_TASK_MSG_CONTROL_RESPONSE,
 	SIG_AGENT_TASK_MSG_TERMINATE_EVENT
 } sig_agent_task_msg_type_e;
 
@@ -76,15 +77,19 @@ typedef struct sig_agent_task_msg_data_t sig_agent_task_msg_data_t;
 struct sig_agent_task_msg_data_t {
 	mrcp_client_session_t     *session;
 	mrcp_session_descriptor_t *descriptor;
+	mrcp_message_t            *message;
 };
 
 static apt_bool_t mrcp_client_answer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_client_terminate_response_signal(mrcp_session_t *session);
+static apt_bool_t mrcp_client_control_response_signal(mrcp_session_t *session, mrcp_message_t *message);
+
 static apt_bool_t mrcp_client_terminate_event_signal(mrcp_session_t *session);
 
 static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_client_answer_signal,
-	mrcp_client_terminate_response_signal
+	mrcp_client_terminate_response_signal,
+	mrcp_client_control_response_signal
 };
 
 static const mrcp_session_event_vtable_t session_event_vtable = {
@@ -303,6 +308,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *cli
 	apt_log(APT_PRIO_INFO,"Register Signaling Agent [%s]",name);
 	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sig_agent_task_msg_data_t),client->pool);
 	signaling_agent->parent = client;
+	signaling_agent->resource_factory = client->resource_factory;
 	apr_hash_set(client->sig_agent_table,name,APR_HASH_KEY_STRING,signaling_agent);
 	if(client->task) {
 		apt_task_t *task = apt_consumer_task_base_get(client->task);
@@ -688,6 +694,9 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				case SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE:
 					mrcp_client_session_terminate_response_process(sig_message->session);
 					break;
+				case SIG_AGENT_TASK_MSG_CONTROL_RESPONSE:
+					mrcp_client_session_control_response_process(sig_message->session,sig_message->message);
+					break;
 				case SIG_AGENT_TASK_MSG_TERMINATE_EVENT:
 					mrcp_client_session_terminate_event_process(sig_message->session);
 					break;
@@ -789,7 +798,7 @@ static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp
 	return apt_task_msg_signal(task,task_msg);
 }
 
-static apt_bool_t mrcp_client_signaling_task_msg_signal(sig_agent_task_msg_type_e type, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+static apt_bool_t mrcp_client_signaling_task_msg_signal(sig_agent_task_msg_type_e type, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_message_t *message)
 {
 	sig_agent_task_msg_data_t *data;
 	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
@@ -798,6 +807,7 @@ static apt_bool_t mrcp_client_signaling_task_msg_signal(sig_agent_task_msg_type_
 	data = (sig_agent_task_msg_data_t*) task_msg->data;
 	data->session = (mrcp_client_session_t*)session;
 	data->descriptor = descriptor;
+	data->message = message;
 
 	apt_log(APT_PRIO_DEBUG,"Signal Signaling Task Message");
 	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
@@ -829,17 +839,22 @@ static apt_bool_t mrcp_client_connection_task_msg_signal(
 
 static apt_bool_t mrcp_client_answer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
-	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_ANSWER,session,descriptor);
+	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_ANSWER,session,descriptor,NULL);
 }
 
 static apt_bool_t mrcp_client_terminate_response_signal(mrcp_session_t *session)
 {
-	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE,session,NULL);
+	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE,session,NULL,NULL);
+}
+
+static apt_bool_t mrcp_client_control_response_signal(mrcp_session_t *session, mrcp_message_t *message)
+{
+	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_CONTROL_RESPONSE,session,NULL,message);
 }
 
 static apt_bool_t mrcp_client_terminate_event_signal(mrcp_session_t *session)
 {
-	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_TERMINATE_EVENT,session,NULL);
+	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_TERMINATE_EVENT,session,NULL,NULL);
 }
 
 
