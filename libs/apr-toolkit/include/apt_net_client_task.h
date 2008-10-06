@@ -48,8 +48,6 @@ struct apt_net_client_connection_t {
 
 /** Virtual table of network client events */
 struct apt_net_client_vtable_t {
-	apt_bool_t (*on_connect)(apt_net_client_task_t *task, apt_net_client_connection_t *connection, apt_bool_t status);
-	apt_bool_t (*on_disconnect)(apt_net_client_task_t *task, apt_net_client_connection_t *connection, apt_bool_t status);
 	apt_bool_t (*on_receive)(apt_net_client_task_t *task, apt_net_client_connection_t *connection);
 };
 
@@ -106,11 +104,6 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
  * Close connection.
  */
 APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection);
-
-/**
- * Destroy connection.
- */
-APT_DECLARE(void) apt_net_client_connection_destroy(apt_net_client_connection_t *connection);
 
 
 APT_END_EXTERN_C

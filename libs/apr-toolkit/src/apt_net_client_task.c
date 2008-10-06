@@ -58,8 +58,7 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 	task->pollset = NULL;
 	task->max_connection_count = max_connection_count;
 
-	if(!client_vtable || !client_vtable->on_connect || 
-		!client_vtable->on_disconnect || !client_vtable->on_receive) {
+	if(!client_vtable || !client_vtable->on_receive) {
 		return NULL;
 	}
 	task->client_vtable = client_vtable;
@@ -167,16 +166,15 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 /** Close connection */
 APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection)
 {
-	return TRUE;
-}
-
-
-/** Destroy connection */
-APT_DECLARE(void) apt_net_client_connection_destroy(apt_net_client_connection_t *connection)
-{
-	if(connection->pool) {
-		apr_pool_destroy(connection->pool);
+	if(connection->sock) {
+		apt_log(APT_PRIO_NOTICE,"Close TCP Connection");
+		apt_pollset_remove(task->pollset,&connection->sock_pfd);
+		apr_socket_close(connection->sock);
+		connection->sock = NULL;
 	}
+	
+	apr_pool_destroy(connection->pool);
+	return TRUE;
 }
 
 /** Create the pollset */

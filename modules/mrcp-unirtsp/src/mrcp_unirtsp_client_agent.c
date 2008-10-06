@@ -59,12 +59,14 @@ static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_unirtsp_session_control
 };
 
-static apt_bool_t mrcp_unirtsp_on_session_terminate(rtsp_client_t *client, rtsp_client_session_t *session);
+static apt_bool_t mrcp_unirtsp_on_session_terminate_response(rtsp_client_t *client, rtsp_client_session_t *session);
+static apt_bool_t mrcp_unirtsp_on_session_terminate_event(rtsp_client_t *client, rtsp_client_session_t *session);
 static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
 static apt_bool_t mrcp_unirtsp_on_session_event(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 
 static const rtsp_client_vtable_t session_response_vtable = {
-	mrcp_unirtsp_on_session_terminate,
+	mrcp_unirtsp_on_session_terminate_response,
+	mrcp_unirtsp_on_session_terminate_event,
 	mrcp_unirtsp_on_session_response,
 	mrcp_unirtsp_on_session_event
 };
@@ -194,12 +196,19 @@ static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
 	rtsp_client_session_destroy(session->rtsp_session);
 }
 
-static apt_bool_t mrcp_unirtsp_on_session_terminate(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session)
+static apt_bool_t mrcp_unirtsp_on_session_terminate_response(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session)
 {
 	mrcp_unirtsp_session_t *session	= rtsp_client_session_object_get(rtsp_session);
 
 	mrcp_unirtsp_session_destroy(session);
 	mrcp_session_terminate_response(session->mrcp_session);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_on_session_terminate_event(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session)
+{
+	mrcp_unirtsp_session_t *session	= rtsp_client_session_object_get(rtsp_session);
+	mrcp_session_terminate_event(session->mrcp_session);
 	return TRUE;
 }
 
