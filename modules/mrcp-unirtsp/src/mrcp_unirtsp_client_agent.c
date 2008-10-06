@@ -170,7 +170,6 @@ static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session)
 	session = apr_palloc(mrcp_session->pool,sizeof(mrcp_unirtsp_session_t));
 	session->home = su_home_new(sizeof(*session->home));
 	session->mrcp_session = mrcp_session;
-//	session->terminate_requested = FALSE;
 	mrcp_session->obj = session;
 	
 	session->rtsp_session = rtsp_client_session_create(
@@ -307,8 +306,12 @@ static apt_bool_t mrcp_unirtsp_session_offer(mrcp_session_t *mrcp_session, mrcp_
 	mrcp_unirtsp_session_t *session = mrcp_session->obj;
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 	rtsp_message_t *request;
-	request = rtsp_request_generate_by_mrcp_descriptor(descriptor,mrcp_session->pool);
 
+	if(agent->config->origin) {
+		apt_string_set(&descriptor->origin,agent->config->origin);
+	}
+
+	request = rtsp_request_generate_by_mrcp_descriptor(descriptor,mrcp_session->pool);
 	return rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,request);
 }
 

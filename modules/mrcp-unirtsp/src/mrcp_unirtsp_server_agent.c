@@ -280,6 +280,10 @@ static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, m
 		return FALSE;
 	}
 
+	if(agent->config->origin) {
+		apt_string_set(&descriptor->origin,agent->config->origin);
+	}
+
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		response = rtsp_response_generate_by_mrcp_descriptor(request,descriptor,mrcp_session->pool);
 	}
