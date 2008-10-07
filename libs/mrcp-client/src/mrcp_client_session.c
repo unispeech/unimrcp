@@ -111,6 +111,7 @@ mrcp_channel_t* mrcp_client_channel_create(
 		channel->rtp_termination_slot->termination = NULL;
 		channel->rtp_termination_slot->waiting = FALSE;
 	}
+	apt_log(APT_PRIO_INFO,"Create Channel <%s>", mrcp_session_str((mrcp_client_session_t*)session));
 	return channel;
 }
 
@@ -346,7 +347,7 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 		app_message->application = session->application;
 		app_message->session = &session->base;
 		app_message->channel = channel;
-		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application <%s>",	mrcp_session_str(session));
+		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application <%s>", mrcp_session_str(session));
 		session->application->handler(app_message);
 	}
 	return TRUE;
@@ -436,8 +437,9 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 
 	message->channel_id.session_id = session->base.id;
 	message->start_line.request_id = ++session->base.last_request_id;
-	apt_log(APT_PRIO_INFO,"Send MRCP Request to Server <%s> [%d]",
-					mrcp_session_str(session),
+	apt_log(APT_PRIO_INFO,"Send MRCP Request to Server <%s@%s> [%d]",
+					channel->resource_name->buf,
+					session->base.id,
 					message->start_line.request_id);
 
 	if(channel->control_channel) {
@@ -458,7 +460,14 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_DEBUG,"Modify Control Channel [%d]",enable);
+	if(!channel->resource_name) {
+		return FALSE;
+	}
+
+	apt_log(APT_PRIO_NOTICE,"Modify Control Channel <%s@%s> [%d]",
+					mrcp_session_str(session),
+					channel->resource_name->buf,
+					enable);
 	if(mrcp_client_channel_find(session,channel,&index) == TRUE) {
 		mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(session->offer,(apr_size_t)index);
 		if(control_media) {
@@ -482,10 +491,8 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		}
 	}
 
-	if(channel->resource_name) {
-		session->offer->resource_name = *channel->resource_name;
-		session->offer->resource_state = enable;
-	}
+	session->offer->resource_name = *channel->resource_name;
+	session->offer->resource_state = enable;
 	return mrcp_client_session_offer_send(session);
 }
 
@@ -534,7 +541,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	}
 
 	/* add to channel array */
-	apt_log(APT_PRIO_DEBUG,"Add Control Channel");
+	apt_log(APT_PRIO_NOTICE,"Add Control Channel <%s@%s>",
+					mrcp_session_str(session),
+					channel->resource_name->buf);
 	channel_slot = apr_array_push(session->channels);
 	*channel_slot = channel;
 
@@ -598,7 +607,7 @@ static apt_bool_t mrcp_client_session_update(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Update Session");
+	apt_log(APT_PRIO_INFO,"Update Session <%s>", mrcp_session_str(session));
 	return mrcp_client_session_offer_send(session);
 }
 
