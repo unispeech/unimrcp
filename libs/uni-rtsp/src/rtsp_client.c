@@ -290,15 +290,59 @@ static apt_bool_t rtsp_client_connection_destroy(rtsp_client_t *client, rtsp_cli
 	return TRUE;
 }
 
+/* Raise RTSP session terminate event */
+static apt_bool_t rtsp_client_session_terminate_raise(rtsp_client_t *client, rtsp_client_session_t *session)
+{
+	if(session->terminating == TRUE) {
+		apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+		apr_hash_set(session->connection->session_table,session->id.buf,session->id.length,NULL);
+
+		client->vtable->on_session_terminate_response(client,session);
+	}
+	else {
+		rtsp_message_t *response;
+		while(session->active_request) {
+			response = rtsp_response_create(
+							session->active_request,
+							RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
+							RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,
+							session->pool);
+
+			client->vtable->on_session_response(client,session,session->active_request,response);
+
+			/* process pending requests */
+			session->active_request = apt_list_pop_front(session->request_queue);
+		}
+		client->vtable->on_session_terminate_event(client,session);
+	}
+	return TRUE;
+}
+
 /* RTSP connection disconnected */
 static apt_bool_t rtsp_client_on_connection_disconnect(rtsp_client_t *client, rtsp_client_connection_t *rtsp_connection)
 {
+	rtsp_client_session_t *session;
 	apr_size_t remaining_sessions;
+	apt_bool_t pending_sessions = FALSE;
+	apt_list_elem_t *elem;
+
 	apt_log(APT_PRIO_NOTICE,"TCP Connection Disconnected");
 	apt_net_client_connection_close(client->task,rtsp_connection->base);
+
+	/* Terminate pending new sessions */
+	elem = apt_list_first_elem_get(rtsp_connection->pending_session_queue);
+	while(elem) {
+		session = apt_list_elem_object_get(elem);
+		if(session) {
+			pending_sessions = TRUE;
+			rtsp_client_session_terminate_raise(client,session);
+		}
+		elem = apt_list_next_elem_get(rtsp_connection->pending_session_queue,elem);
+	}
+
+	/* Terminate remaining sessions */
 	remaining_sessions = apr_hash_count(rtsp_connection->session_table);
 	if(remaining_sessions) {
-		rtsp_client_session_t *session;
 		void *val;
 		apr_hash_index_t *it;
 		apt_log(APT_PRIO_NOTICE,"Terminate Remaining RTSP Sessions [%d]",remaining_sessions);
@@ -307,13 +351,17 @@ static apt_bool_t rtsp_client_on_connection_disconnect(rtsp_client_t *client, rt
 			apr_hash_this(it,NULL,NULL,&val);
 			session = val;
 			if(session) {
-				client->vtable->on_session_terminate_event(client,session);
+				rtsp_client_session_terminate_raise(client,session);
 			}
 		}
+		remaining_sessions = apr_hash_count(rtsp_connection->session_table);
+	}
+
+	if(!remaining_sessions && !pending_sessions) {
+		rtsp_client_connection_destroy(client,rtsp_connection);
 	}
 	return TRUE;
 }
-
 
 /* Process session termination request */
 static apt_bool_t rtsp_client_session_terminate_process(rtsp_client_t *client, rtsp_client_session_t *session)

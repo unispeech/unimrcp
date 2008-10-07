@@ -260,6 +260,9 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 			const apt_str_t *session_id;
 			mrcp_session_descriptor_t *descriptor;
 			descriptor = mrcp_descriptor_generate_by_rtsp_response(request,response,session->mrcp_session->pool,session->home);
+			if(!descriptor) {
+				return FALSE;
+			}
 			session_id = rtsp_client_session_id_get(session->rtsp_session);
 			if(session_id) {
 				session->mrcp_session->id = *session_id;
@@ -271,6 +274,9 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 		{
 			mrcp_session_descriptor_t *descriptor;
 			descriptor = mrcp_descriptor_generate_by_rtsp_response(request,response,session->mrcp_session->pool,session->home);
+			if(!descriptor) {
+				return FALSE;
+			}
 			status = mrcp_session_answer(session->mrcp_session,descriptor);
 			break;
 		}
