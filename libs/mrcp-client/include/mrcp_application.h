@@ -241,12 +241,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session, mrcp_channel_t *channel);
 
 /**
- * Destroy channel.
- * @param channel the control channel to destroy
- */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_destroy(mrcp_channel_t *channel);
-
-/**
  * Dispatch application message.
  * @param dispatcher the dispatcher inteface
  * @param app_message the message to dispatch

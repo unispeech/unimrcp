@@ -508,7 +508,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_NOTICE,"Destroy Session");
+	apt_log(APT_PRIO_NOTICE,"Destroy Session <%s>",session->id.buf ? session->id.buf : "new");
 	mrcp_session_destroy(session);
 	return TRUE;
 }
@@ -541,7 +541,6 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 			return FALSE;
 		}
 	}
-	apt_log(APT_PRIO_NOTICE,"Create Channel [%d]",resource_id);
 	return mrcp_client_channel_create(session,resource_id,termination,rtp_descriptor,obj);
 }
 
@@ -609,16 +608,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
 		return FALSE;
 	}
 	return mrcp_app_control_task_msg_signal(session,channel,message);
-}
-
-/** Destroy channel */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_destroy(mrcp_channel_t *channel)
-{
-	if(!channel) {
-		return FALSE;
-	}
-	apt_log(APT_PRIO_NOTICE,"Destroy Channel [%d]",channel->resource_id);
-	return TRUE;
 }
 
 
