@@ -103,6 +103,11 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 /**
  * Close connection.
  */
+APT_DECLARE(apt_bool_t) apt_net_client_connection_close(apt_net_client_task_t *task, apt_net_client_connection_t *connection);
+
+/**
+ * Close and destroy connection.
+ */
 APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection);
 
 

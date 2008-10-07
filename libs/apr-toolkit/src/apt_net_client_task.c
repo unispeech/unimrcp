@@ -164,15 +164,21 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 }
 
 /** Close connection */
-APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection)
+APT_DECLARE(apt_bool_t) apt_net_client_connection_close(apt_net_client_task_t *task, apt_net_client_connection_t *connection)
 {
 	if(connection->sock) {
-		apt_log(APT_PRIO_NOTICE,"Close TCP Connection");
 		apt_pollset_remove(task->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 	}
-	
+	return TRUE;
+}
+
+/** Close and destroy connection */
+APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection)
+{
+	apt_log(APT_PRIO_NOTICE,"Disconnect TCP Connection");
+	apt_net_client_connection_close(task,connection);
 	apr_pool_destroy(connection->pool);
 	return TRUE;
 }

@@ -293,7 +293,9 @@ static apt_bool_t rtsp_client_connection_destroy(rtsp_client_t *client, rtsp_cli
 /* RTSP connection disconnected */
 static apt_bool_t rtsp_client_on_connection_disconnect(rtsp_client_t *client, rtsp_client_connection_t *rtsp_connection)
 {
-	apr_size_t remaining_sessions = 0;
+	apr_size_t remaining_sessions;
+	apt_log(APT_PRIO_NOTICE,"TCP Connection Disconnected");
+	apt_net_client_connection_close(client->task,rtsp_connection->base);
 	remaining_sessions = apr_hash_count(rtsp_connection->session_table);
 	if(remaining_sessions) {
 		rtsp_client_session_t *session;
