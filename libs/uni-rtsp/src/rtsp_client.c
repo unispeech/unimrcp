@@ -103,7 +103,7 @@ static const apt_net_client_vtable_t client_vtable = {
 };
 
 static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client_connection_t *connection, rtsp_message_t *message);
-static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
+static apt_bool_t rtsp_client_session_message_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 
 /** Create RTSP client */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
@@ -394,8 +394,8 @@ static apt_bool_t rtsp_client_session_terminate_process(rtsp_client_t *client, r
 
 			teardown_request = rtsp_request_create(session->pool);
 			teardown_request->start_line.common.request_line.resource_name = setup_request->start_line.common.request_line.resource_name;
-			teardown_request->start_line.common.request_line.method_id = RTSP_METHOD_ANNOUNCE;
-			rtsp_client_session_request_process(client,session,teardown_request);
+			teardown_request->start_line.common.request_line.method_id = RTSP_METHOD_TEARDOWN;
+			rtsp_client_session_message_process(client,session,teardown_request);
 		}
 		session->terminating = TRUE;
 	}
