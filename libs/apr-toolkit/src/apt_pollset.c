@@ -220,17 +220,15 @@ static apr_status_t socket_pipe_create(apr_socket_t **rd, apr_socket_t **wr, apr
 			apr_socket_close(*wr);
 			return apr_get_netos_error();
 		}
+		/* Put read side of the pipe to the blocking */
+		apr_socket_opt_set(*rd, APR_SO_NONBLOCK, 0);
 		/* Verify the connection by reading the send identification.
 		 */
 		nrd = sizeof(iid);
 		apr_socket_recv(*rd, (char *)iid, &nrd);
 		if(nrd == sizeof(iid)) {
 			if(memcmp(uid, iid, sizeof(uid)) == 0) {
-				/* Wow, we recived what we send.
-				 * Put read side of the pipe to the blocking
-				 * mode and return.
-				 */
-				apr_socket_opt_set(*rd, APR_SO_NONBLOCK, 0);
+				/* Wow, we recived what we send. */
 				break;
 			}
 		}
