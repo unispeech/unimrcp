@@ -37,18 +37,15 @@ void mrcp_client_session_remove(mrcp_client_t *client, mrcp_client_session_t *se
 
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session);
 
-static apt_bool_t mrcp_client_session_terminate_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status);
-static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status);
-static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message);
+static apt_bool_t mrcp_app_session_terminate_raise(mrcp_client_session_t *session, mrcp_sig_status_code_e status);
+static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, mrcp_sig_status_code_e status, apt_bool_t process_pending_requests);
+static apt_bool_t mrcp_app_sig_event_raise(mrcp_client_session_t *session, mrcp_channel_t *channel);
+static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message);
 static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, const mrcp_app_message_t *app_message);
 
 static apt_bool_t mrcp_client_resource_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);
-
-static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session, mpf_message_t *mpf_message);
-static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *session, mpf_message_t *mpf_message);
-static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *session, mpf_message_t *mpf_message);
 
 static mrcp_channel_t* mrcp_client_channel_find_by_name(mrcp_client_session_t *session, const apt_str_t *resource_name);
 
@@ -135,8 +132,8 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 	session->answer = descriptor;
 
 	if(!session->answer_flag_count) {
-		/* send response to application */
-		mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+		/* raise app response */
+		mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
 	}
 
 	return TRUE;
@@ -151,7 +148,7 @@ apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t 
 	}
 
 	if(!session->terminate_flag_count) {
-		mrcp_client_session_terminate_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+		mrcp_app_session_terminate_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS);
 	}
 	return TRUE;
 }
@@ -159,11 +156,21 @@ apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t 
 apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *session)
 {
 	if(session->active_request) {
-		/* send response to application */
-		mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_TERMINATE);
+		/* raise app response */
+		mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_TERMINATE,FALSE);
+
+		/* cancel remaing requests (if any) */
+		do {
+			session->active_request = apt_list_pop_front(session->request_queue);
+			if(session->active_request) {
+				mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_CANCEL,FALSE);
+			}
+		}
+		while(session->active_request);
 	}
 	else {
-		/* process event */
+		/* raise app event */
+		mrcp_app_sig_event_raise(session,NULL);
 	}
 	return TRUE;
 }
@@ -174,7 +181,7 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 	if(!channel) {
 		return FALSE;
 	}
-	return mrcp_app_control_message_send(session,channel,message);
+	return mrcp_app_control_message_raise(session,channel,message);
 }
 
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
@@ -188,8 +195,8 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 	if(session->answer_flag_count) {
 		session->answer_flag_count--;
 		if(!session->answer_flag_count) {
-			/* send response to application */
-			mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+			/* raise app response */
+			mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
 		}
 	}
 	return TRUE;
@@ -206,7 +213,7 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
 		if(!session->terminate_flag_count) {
-			mrcp_client_session_terminate_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+			mrcp_app_session_terminate_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS);
 		}
 	}
 	return TRUE;
@@ -215,53 +222,29 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 apt_bool_t mrcp_client_on_message_receive(mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	return mrcp_app_control_message_send(session,channel,message);
+	return mrcp_app_control_message_raise(session,channel,message);
 }
 
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)app_message->session;
-	apt_log(APT_PRIO_INFO,"Receive Request from Application <%s> [%d]",
-		mrcp_session_str(session),
-		app_message->message_type);
+	if(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING) {
+		apt_log(APT_PRIO_INFO,"Receive App Request <%s> [%d]",
+			mrcp_session_str(session),
+			app_message->sig_message.command_id);
+	}
+	else {
+		apt_log(APT_PRIO_INFO,"Receive App MRCP Request <%s>", mrcp_session_str(session));
+	}
+
 	if(session->active_request) {
 		apt_log(APT_PRIO_DEBUG,"Push Request to Queue");
 		apt_list_push_back(session->request_queue,app_message);
+		return TRUE;
 	}
-	else {
-		session->active_request = app_message;
-		mrcp_app_request_dispatch(session,app_message);
-	}
-	return TRUE;
-}
 
-apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message)
-{
-	mrcp_client_session_t *session = NULL;
-	if(mpf_message->context) {
-		session = mpf_context_object_get(mpf_message->context);
-	}
-	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
-		switch(mpf_message->command_id) {
-			case MPF_COMMAND_ADD:
-				apt_log(APT_PRIO_DEBUG,"On Termination Add");
-				mrcp_client_on_termination_add(session,mpf_message);
-				break;
-			case MPF_COMMAND_MODIFY:
-				apt_log(APT_PRIO_DEBUG,"On Termination Modify");
-				mrcp_client_on_termination_modify(session,mpf_message);
-				break;
-			case MPF_COMMAND_SUBTRACT:
-				apt_log(APT_PRIO_DEBUG,"On Termination Subtract");
-				mrcp_client_on_termination_subtract(session,mpf_message);
-				break;
-			default:
-				break;
-		}
-	}
-	else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
-		apt_log(APT_PRIO_DEBUG,"Process MPF Event");
-	}
+	session->active_request = app_message;
+	mrcp_app_request_dispatch(session,app_message);
 	return TRUE;
 }
 
@@ -276,7 +259,7 @@ static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session)
 	return mrcp_session_offer(&session->base,descriptor);
 }
 
-static apt_bool_t mrcp_client_session_terminate_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status)
+static apt_bool_t mrcp_app_session_terminate_raise(mrcp_client_session_t *session, mrcp_sig_status_code_e status)
 {
 	int i;
 	mrcp_channel_t *channel;
@@ -291,11 +274,11 @@ static apt_bool_t mrcp_client_session_terminate_send(mrcp_client_session_t *sess
 	}
 
 	mrcp_client_session_remove(session->application->client,session);
-	/* send response to application */
-	return mrcp_app_sig_message_send(session,status);
+	/* raise app response */
+	return mrcp_app_sig_response_raise(session,status,TRUE);
 }
 
-static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp_sig_status_code_e status)
+static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, mrcp_sig_status_code_e status, apt_bool_t process_pending_requests)
 {
 	mrcp_app_message_t *response;
 	if(!session->active_request) {
@@ -305,19 +288,42 @@ static apt_bool_t mrcp_app_sig_message_send(mrcp_client_session_t *session, mrcp
 	*response = *session->active_request;
 	response->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_RESPONSE;
 	response->sig_message.status = status;
-	apt_log(APT_PRIO_INFO,"Send Response to Application <%s> [%d]", 
+	apt_log(APT_PRIO_INFO,"Raise App Response <%s> [%d]", 
 		mrcp_session_str(session),
-		response->message_type);
+		response->sig_message.command_id);
 	session->application->handler(response);
 
-	session->active_request = apt_list_pop_front(session->request_queue);
-	if(session->active_request) {
-		mrcp_app_request_dispatch(session,session->active_request);
+	if(process_pending_requests) {
+		session->active_request = apt_list_pop_front(session->request_queue);
+		if(session->active_request) {
+			mrcp_app_request_dispatch(session,session->active_request);
+		}
+	}
+	else {
+		session->active_request = NULL;
 	}
 	return TRUE;
 }
 
-static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message)
+static apt_bool_t mrcp_app_sig_event_raise(mrcp_client_session_t *session, mrcp_channel_t *channel)
+{
+	mrcp_app_message_t *app_event;
+	if(!session) {
+		return FALSE;
+	}
+	app_event = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
+	app_event->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_EVENT;
+	app_event->sig_message.event_id = MRCP_SIG_EVENT_TERMINATE;
+	app_event->application = session->application;
+	app_event->session = &session->base;
+	app_event->channel = channel;
+	apt_log(APT_PRIO_INFO,"Raise App Event <%s> [%d]", 
+		mrcp_session_str(session),
+		app_event->sig_message.event_id);
+	return session->application->handler(app_event);
+}
+
+static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session, mrcp_channel_t *channel, mrcp_message_t *mrcp_message)
 {
 	if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		mrcp_app_message_t *response;
@@ -331,7 +337,7 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 		mrcp_message->start_line.method_id = mrcp_request->start_line.method_id;
 		mrcp_message->start_line.method_name = mrcp_request->start_line.method_name;
 		response->control_message = mrcp_message;
-		apt_log(APT_PRIO_INFO,"Send MRCP Response to Application <%s>",	mrcp_session_str(session));
+		apt_log(APT_PRIO_INFO,"Raise App MRCP Response <%s>", mrcp_session_str(session));
 		session->application->handler(response);
 
 		session->active_request = apt_list_pop_front(session->request_queue);
@@ -347,12 +353,11 @@ static apt_bool_t mrcp_app_control_message_send(mrcp_client_session_t *session, 
 		app_message->application = session->application;
 		app_message->session = &session->base;
 		app_message->channel = channel;
-		apt_log(APT_PRIO_INFO,"Send MRCP Event to Application <%s>", mrcp_session_str(session));
+		apt_log(APT_PRIO_INFO,"Raise App MRCP Event <%s>", mrcp_session_str(session));
 		session->application->handler(app_message);
 	}
 	return TRUE;
 }
-
 
 static apt_bool_t mrcp_client_channel_find(mrcp_client_session_t *session, mrcp_channel_t *channel, int *index)
 {
@@ -430,14 +435,14 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	if(!session->base.id.length) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		apt_log(APT_PRIO_DEBUG,"Send Failure MRCP Response to Application");
-		mrcp_app_control_message_send(session,channel,response);
+		apt_log(APT_PRIO_DEBUG,"Raise App Failure MRCP Response");
+		mrcp_app_control_message_raise(session,channel,response);
 		return TRUE;
 	}
 
 	message->channel_id.session_id = session->base.id;
 	message->start_line.request_id = ++session->base.last_request_id;
-	apt_log(APT_PRIO_INFO,"Send MRCP Request to Server <%s@%s> [%d]",
+	apt_log(APT_PRIO_INFO,"Send MRCP Request <%s@%s> [%d]",
 					channel->resource_name->buf,
 					session->base.id,
 					message->start_line.request_id);
@@ -738,8 +743,8 @@ static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *sessi
 		if(session->answer_flag_count) {
 			session->answer_flag_count--;
 			if(!session->answer_flag_count) {
-				/* send response to application */
-				mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+				/* raise app response */
+				mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
 			}
 		}
 	}
@@ -762,7 +767,7 @@ static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *ses
 		if(session->terminate_flag_count) {
 			session->terminate_flag_count--;
 			if(!session->terminate_flag_count) {
-				mrcp_client_session_terminate_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+				mrcp_app_session_terminate_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS);
 			}
 		}
 	}
@@ -774,11 +779,41 @@ static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *ses
 			if(session->terminate_flag_count) {
 				session->terminate_flag_count--;
 				if(!session->terminate_flag_count) {
-					/* send response to application */
-					mrcp_app_sig_message_send(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+					/* raise app response */
+					mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
 				}
 			}
 		}
+	}
+	return TRUE;
+}
+
+apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message)
+{
+	mrcp_client_session_t *session = NULL;
+	if(mpf_message->context) {
+		session = mpf_context_object_get(mpf_message->context);
+	}
+	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
+		switch(mpf_message->command_id) {
+			case MPF_COMMAND_ADD:
+				apt_log(APT_PRIO_DEBUG,"On Termination Add");
+				mrcp_client_on_termination_add(session,mpf_message);
+				break;
+			case MPF_COMMAND_MODIFY:
+				apt_log(APT_PRIO_DEBUG,"On Termination Modify");
+				mrcp_client_on_termination_modify(session,mpf_message);
+				break;
+			case MPF_COMMAND_SUBTRACT:
+				apt_log(APT_PRIO_DEBUG,"On Termination Subtract");
+				mrcp_client_on_termination_subtract(session,mpf_message);
+				break;
+			default:
+				break;
+		}
+	}
+	else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
+		apt_log(APT_PRIO_DEBUG,"Process MPF Event");
 	}
 	return TRUE;
 }
@@ -956,6 +991,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_messag
 							status = dispatcher->on_ready(
 										app_message->application,
 										app_message->sig_message.status);
+						}
+						break;
+					case MRCP_SIG_EVENT_TERMINATE:
+						if(dispatcher->on_terminate_event) {
+							status = dispatcher->on_terminate_event(
+										app_message->application,
+										app_message->session,
+										app_message->channel);
 						}
 						break;
 					default:

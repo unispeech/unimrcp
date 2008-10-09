@@ -49,8 +49,9 @@ typedef enum {
 /** Enumeration of MRCP signaling status codes */
 typedef enum {
 	MRCP_SIG_STATUS_CODE_SUCCESS,   /**< indicates success */
-	MRCP_SIG_STATUS_CODE_FAILURE,   /**< indicates failure */
-	MRCP_SIG_STATUS_CODE_TERMINATE
+	MRCP_SIG_STATUS_CODE_FAILURE,   /**< request failed */
+	MRCP_SIG_STATUS_CODE_TERMINATE, /**< request failed, session/channel/connection unexpectedly terminated */
+	MRCP_SIG_STATUS_CODE_CANCEL     /**< request cancelled */
 } mrcp_sig_status_code_e;
 
 
@@ -60,13 +61,13 @@ typedef enum {
 	MRCP_SIG_COMMAND_SESSION_TERMINATE,
 	MRCP_SIG_COMMAND_CHANNEL_ADD,
 	MRCP_SIG_COMMAND_CHANNEL_REMOVE,
-	MRCP_SIG_COMMAND_MESSAGE,
+	MRCP_SIG_COMMAND_MESSAGE
 } mrcp_sig_command_e;
 
 /** Enumeration of MRCP signaling events */
 typedef enum {
 	MRCP_SIG_EVENT_READY,
-	MRCP_SIG_EVENT_TERMINATE,
+	MRCP_SIG_EVENT_TERMINATE
 } mrcp_sig_event_e;
 
 
@@ -79,52 +80,54 @@ typedef enum {
 /** MRCP signaling message definition */
 struct mrcp_sig_message_t {
 	/** Message type (request/response/event) */
-	mrcp_sig_message_type_e           message_type;
+	mrcp_sig_message_type_e message_type;
 	/** Command (request/response) identifier */
-	mrcp_sig_command_e                command_id;
+	mrcp_sig_command_e      command_id;
 	/** Event identifier */
-	mrcp_sig_event_e                  event_id;
+	mrcp_sig_event_e        event_id;
 	/** Status code used in response */
-	mrcp_sig_status_code_e            status;
+	mrcp_sig_status_code_e  status;
 };
 
 
 /** MRCP application message definition */
 struct mrcp_app_message_t {
 	/** Message type (signaling/control) */
-	mrcp_app_message_type_e           message_type;
+	mrcp_app_message_type_e message_type;
 
 	/** Application */
-	mrcp_application_t               *application;
+	mrcp_application_t     *application;
 	/** Session */
-	mrcp_session_t                   *session;
+	mrcp_session_t         *session;
 	/** Channel */
-	mrcp_channel_t                   *channel;
+	mrcp_channel_t         *channel;
 
 	/** MRCP signaling message (used if message_type == MRCP_APP_MESSAGE_SIGNALING) */
-	mrcp_sig_message_t                sig_message;
+	mrcp_sig_message_t      sig_message;
 	/** MRCP control message (used if message_type == MRCP_APP_MESSAGE_CONTROL) */
-	mrcp_message_t                   *control_message;
+	mrcp_message_t         *control_message;
 };
 
 /** MRCP application message dispatcher interface */
 struct mrcp_app_message_dispatcher_t {
-	/** Session update event handler */
+	/** Response to mrcp_application_session_update()request */
 	apt_bool_t (*on_session_update)(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
-	/** Session terminate event handler */
+	/** Response to mrcp_application_session_terminate()request */
 	apt_bool_t (*on_session_terminate)(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
 	
-	/** Channel add event handler */
+	/** Response to mrcp_application_channel_add() request */
 	apt_bool_t (*on_channel_add)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status);
-	/** Channel remove event handler */
+	/** Response to mrcp_application_channel_remove() request */
 	apt_bool_t (*on_channel_remove)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status);
 
-	/** MRCP message receive event handler */
+	/** Response (event) to mrcp_application_message_send() request */
 	apt_bool_t (*on_message_receive)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
 
-	/** Application ready event handler */
+	/** Event indicating client stack is started and ready to process requests from the application */
 	apt_bool_t (*on_ready)(mrcp_application_t *application, mrcp_sig_status_code_e status);
 
+	/** Event indicating unexpected session/channel termination */
+	apt_bool_t (*on_terminate_event)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel);
 };
 
 
