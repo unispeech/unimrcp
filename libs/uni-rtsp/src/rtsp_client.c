@@ -374,7 +374,7 @@ static apt_bool_t rtsp_client_session_terminate_process(rtsp_client_t *client, r
 		return FALSE;
 	}
 
-	if(apr_hash_count(session->resource_table) == 0) {
+	if(apr_hash_count(session->resource_table) == 0 || !rtsp_connection->base->sock) {
 		apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
 		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
 
