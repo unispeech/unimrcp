@@ -117,7 +117,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_client_t *client;
 	
-	apt_log(APT_PRIO_NOTICE,"Create RTSP client [%d]",max_connection_count);
+	apt_log(APT_PRIO_DEBUG,"Create RTSP Client [%d]",max_connection_count);
 	client = apr_palloc(pool,sizeof(rtsp_client_t));
 	client->pool = pool;
 	client->obj = obj;
@@ -140,7 +140,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 /** Destroy RTSP client */
 RTSP_DECLARE(apt_bool_t) rtsp_client_destroy(rtsp_client_t *client)
 {
-	apt_log(APT_PRIO_NOTICE,"Destroy RTSP client");
+	apt_log(APT_PRIO_DEBUG,"Destroy RTSP Client");
 	return apt_net_client_task_destroy(client->task);
 }
 

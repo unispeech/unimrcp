@@ -51,7 +51,6 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 	apt_task_vtable_t vtable;
 	apt_net_client_task_t *task;
 	
-	apt_log(APT_PRIO_NOTICE,"Create Network Client Task [%d]",max_connection_count);
 	task = apr_palloc(pool,sizeof(apt_net_client_task_t));
 	task->pool = pool;
 	task->obj = obj;
@@ -82,7 +81,6 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 /** Destroy connection task. */
 APT_DECLARE(apt_bool_t) apt_net_client_task_destroy(apt_net_client_task_t *task)
 {
-	apt_log(APT_PRIO_NOTICE,"Destroy Network client Task");
 	if(task->guard) {
 		apr_thread_mutex_destroy(task->guard);
 		task->guard = NULL;
@@ -232,7 +230,7 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 	int i;
 
 	if(!task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Network client Task");
+		apt_log(APT_PRIO_WARNING,"Failed to Start Network Client Task");
 		return FALSE;
 	}
 

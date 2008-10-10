@@ -110,7 +110,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_server_t *server;
 	
-	apt_log(APT_PRIO_NOTICE,"Create RTSP Server %s:%hu [%d]",listen_ip,listen_port,max_connection_count);
+	apt_log(APT_PRIO_DEBUG,"Create RTSP Server %s:%hu [%d]",listen_ip,listen_port,max_connection_count);
 	server = apr_palloc(pool,sizeof(rtsp_server_t));
 	server->pool = pool;
 	server->obj = obj;
@@ -135,7 +135,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 /** Destroy RTSP server */
 RTSP_DECLARE(apt_bool_t) rtsp_server_destroy(rtsp_server_t *server)
 {
-	apt_log(APT_PRIO_NOTICE,"Destroy RTSP Server");
+	apt_log(APT_PRIO_DEBUG,"Destroy RTSP Server");
 	return apt_net_server_task_destroy(server->task);
 }
 

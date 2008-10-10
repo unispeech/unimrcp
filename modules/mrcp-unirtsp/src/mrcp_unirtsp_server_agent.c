@@ -102,7 +102,10 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(rtsp_server_con
 	vtable.on_terminate_complete = server_on_terminate_complete;
 	consumer_task = apt_consumer_task_create(agent,&vtable,msg_pool,pool);
 	agent->sig_agent->task = apt_consumer_task_base_get(consumer_task);
-	apt_log(APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu",config->local_ip,config->local_port);
+	apt_log(APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu [%d]",
+		config->local_ip,
+		config->local_port,
+		config->max_connection_count);
 	return agent->sig_agent;
 }
 
