@@ -70,7 +70,7 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request
 	return response;
 }
 
-/** Destroy MRCP message */
+/** Destroy RTSP message */
 RTSP_DECLARE(void) rtsp_message_destroy(rtsp_message_t *message)
 {
 	/* nothing to do message is allocated from pool */

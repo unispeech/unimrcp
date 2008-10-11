@@ -46,6 +46,8 @@ struct rtsp_client_vtable_t {
 /**
  * Create RTSP client.
  * @param max_connection_count the number of max RTSP connections
+ * @param obj the external object to send event to
+ * @param handler the response/event handler
  * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
@@ -87,6 +89,10 @@ RTSP_DECLARE(void*) rtsp_client_object_get(rtsp_client_t *client);
 
 /**
  * Create RTSP session.
+ * @param client the client to create session for
+ * @param server_ip the IP address of RTSP server
+ * @param server_port the port of RTSP server
+ * @param resource_location the location of RTSP resource (path in RTSP URI)
  */
 RTSP_DECLARE(rtsp_client_session_t*) rtsp_client_session_create(
 											rtsp_client_t *client, 
@@ -96,16 +102,22 @@ RTSP_DECLARE(rtsp_client_session_t*) rtsp_client_session_create(
 
 /**
  * Destroy RTSP session.
+ * @param session the session to destroy
  */
 RTSP_DECLARE(void) rtsp_client_session_destroy(rtsp_client_session_t *session);
 
 /**
  * Terminate RTSP session.
+ * @param client the client to use
+ * @param session the session to terminate
  */
 RTSP_DECLARE(apt_bool_t) rtsp_client_session_terminate(rtsp_client_t *client, rtsp_client_session_t *session);
 
 /**
  * Send RTSP message.
+ * @param client the client to use
+ * @param session the session to send RTSP request for
+ * @param message the RTSP request to send
  */
 RTSP_DECLARE(apt_bool_t) rtsp_client_session_request(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 

@@ -54,7 +54,11 @@ struct apt_net_client_vtable_t {
 
 /**
  * Create network client task.
- * @param max_connection_count the number of max connections to accept
+ * @param max_connection_count the number of max connections
+ * @param obj the external object
+ * @param task_vtable the table of virtual methods of the task base
+ * @param task_vtable the table of virtual methods of the net client task
+ * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(

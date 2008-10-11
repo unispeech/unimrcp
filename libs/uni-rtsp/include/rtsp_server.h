@@ -47,6 +47,8 @@ struct rtsp_server_vtable_t {
  * @param listen_ip the listen IP address
  * @param listen_port the listen port
  * @param max_connection_count the number of max RTSP connections
+ * @param obj the external object to send events to
+ * @param handler the request handler
  * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
@@ -89,17 +91,22 @@ RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server);
 
 /**
  * Send RTSP message.
+ * @param server the server to use
+ * @param session the session to send RTSP response for
+ * @param message the RTSP response to send
  */
 RTSP_DECLARE(apt_bool_t) rtsp_server_session_respond(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
 
 /**
  * Terminate RTSP session (respond to terminate request).
+ * @param server the server to use
+ * @param session the session to terminate
  */
 RTSP_DECLARE(apt_bool_t) rtsp_server_session_terminate(rtsp_server_t *server, rtsp_server_session_t *session);
 
 /**
  * Get object associated with the session.
- * @param ssession the session to get object from
+ * @param session the session to get object from
  */
 RTSP_DECLARE(void*) rtsp_server_session_object_get(const rtsp_server_session_t *session);
 
@@ -112,13 +119,13 @@ RTSP_DECLARE(void) rtsp_server_session_object_set(rtsp_server_session_t *session
 
 /**
  * Get the session identifier.
- * @param ssession the session to get identifier from
+ * @param session the session to get identifier from
  */
 RTSP_DECLARE(const apt_str_t*) rtsp_server_session_id_get(const rtsp_server_session_t *session);
 
 /**
  * Get active (in-progress) session request.
- * @param ssession the session to get from
+ * @param session the session to get from
  */
 RTSP_DECLARE(const rtsp_message_t*) rtsp_server_session_request_get(const rtsp_server_session_t *session);
 

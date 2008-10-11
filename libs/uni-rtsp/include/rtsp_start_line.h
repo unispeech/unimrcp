@@ -35,7 +35,7 @@ typedef enum {
 	RTSP_VERSION_1 = 1, 
 } rtsp_version_e;
 
-/* RTSP message types */
+/** RTSP message types */
 typedef enum {
 	RTSP_MESSAGE_TYPE_UNKNOWN,
 	RTSP_MESSAGE_TYPE_REQUEST,
@@ -53,7 +53,7 @@ typedef enum{
 	RTSP_METHOD_UNKNOWN = RTSP_METHOD_COUNT
 } rtsp_method_id;
 
-/* Status codes */
+/** Status codes */
 typedef enum {
 	RTSP_STATUS_CODE_UNKNOWN                   = 0,
 	/* success codes (2xx) */

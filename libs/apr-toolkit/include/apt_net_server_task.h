@@ -59,6 +59,10 @@ struct apt_net_server_vtable_t {
  * @param listen_ip the listen IP address
  * @param listen_port the listen port
  * @param max_connection_count the number of max connections to accept
+ * @param obj the external object
+ * @param task_vtable the table of virtual methods of the task base
+ * @param task_vtable the table of virtual methods of the net server task
+ * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(

@@ -62,20 +62,23 @@ static APR_INLINE rtsp_message_t* rtsp_message_create(rtsp_message_type_e messag
 
 /** 
  * Create RTSP request message.
- * @param engine the engine
+ * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_message_t*) rtsp_request_create(apr_pool_t *pool);
 
 /** 
  * Create RTSP response message.
- * @param engine the engine
  * @param request the request to create response to
  * @param status_code the status code of the response
  * @param reason the reason phrase of the response
+ * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool);
 
-/** Destroy MRCP message */
+/** 
+ * Destroy RTSP message 
+ * @param message the message to destroy
+ */
 RTSP_DECLARE(void) rtsp_message_destroy(rtsp_message_t *message);
 
 /** Parse RTSP message */
