@@ -37,9 +37,13 @@ typedef struct rtsp_client_vtable_t rtsp_client_vtable_t;
 
 /** RTSP client vtable */
 struct rtsp_client_vtable_t {
+	/** Sesssion termination response handler */
 	apt_bool_t (*on_session_terminate_response)(rtsp_client_t *client, rtsp_client_session_t *session);
+	/** Sesssion termination event handler */
 	apt_bool_t (*on_session_terminate_event)(rtsp_client_t *client, rtsp_client_session_t *session);
+	/** Sesssion setup response handler */
 	apt_bool_t (*on_session_response)(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
+	/** Sesssion event handler */
 	apt_bool_t (*on_session_event)(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 };
 
@@ -123,7 +127,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_client_session_request(rtsp_client_t *client, rtsp
 
 /**
  * Get object associated with the session.
- * @param ssession the session to get object from
+ * @param session the session to get object from
  */
 RTSP_DECLARE(void*) rtsp_client_session_object_get(const rtsp_client_session_t *session);
 
@@ -136,7 +140,7 @@ RTSP_DECLARE(void) rtsp_client_session_object_set(rtsp_client_session_t *session
 
 /**
  * Get the session identifier.
- * @param ssession the session to get identifier from
+ * @param session the session to get identifier from
  */
 RTSP_DECLARE(const apt_str_t*) rtsp_client_session_id_get(const rtsp_client_session_t *session);
 

@@ -48,8 +48,11 @@ struct apt_net_server_connection_t {
 
 /** Virtual table of network server events */
 struct apt_net_server_vtable_t {
+	/** Connect event handler */
 	apt_bool_t (*on_connect)(apt_net_server_task_t *task, apt_net_server_connection_t *connection);
+	/** Disconnect event handler */
 	apt_bool_t (*on_disconnect)(apt_net_server_task_t *task, apt_net_server_connection_t *connection);
+	/** Message receive handler */
 	apt_bool_t (*on_receive)(apt_net_server_task_t *task, apt_net_server_connection_t *connection);
 };
 
@@ -61,7 +64,7 @@ struct apt_net_server_vtable_t {
  * @param max_connection_count the number of max connections to accept
  * @param obj the external object
  * @param task_vtable the table of virtual methods of the task base
- * @param task_vtable the table of virtual methods of the net server task
+ * @param server_vtable the table of virtual methods of the net server task
  * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */

@@ -37,8 +37,11 @@ typedef struct rtsp_server_vtable_t rtsp_server_vtable_t;
 
 /** RTSP server vtable declaration */
 struct rtsp_server_vtable_t {
+	/** Virtual create session */
 	apt_bool_t (*create_session)(rtsp_server_t *server, rtsp_server_session_t *session);
+	/** Virtual terminate session */
 	apt_bool_t (*terminate_session)(rtsp_server_t *server, rtsp_server_session_t *session);
+	/** Virtual message handler */
 	apt_bool_t (*handle_message)(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
 };
 

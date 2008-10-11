@@ -99,16 +99,23 @@ typedef struct rtsp_header_t rtsp_header_t;
 
 /** RTSP/RTP port range */
 struct rtsp_port_range_t {
+	/** Min (low) port */
 	apr_port_t min;
+	/** Max (high) port */
 	apr_port_t max;
 };
 
 /** RTSP transport */
 struct rtsp_transport_t {
+	/** Transport profile */
 	rtsp_transport_profile_e profile;
+	/** Lower transport */
 	rtsp_lower_transport_e   lower_transport;
+	/** Delivery method */
 	rtsp_delivery_e          delivery;
+	/** Client port range */
 	rtsp_port_range_t        client_port_range;
+	/** Server port range */
 	rtsp_port_range_t        server_port_range;
 };
 
