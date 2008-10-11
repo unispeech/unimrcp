@@ -31,7 +31,19 @@ static const apt_str_table_item_t rtsp_method_string_table[] = {
 	{{"SETUP",    5},0},
 	{{"ANNOUNCE", 8},0},
 	{{"TEARDOWN", 8},0},
-	{{"DESCRIBE", 8},0},
+	{{"DESCRIBE", 8},0}
+};
+
+/** String table of RTSP reason phrases (rtsp_reason_phrase_e) */
+static const apt_str_table_item_t rtsp_reason_string_table[] = {
+	{{"OK",                     2},0},
+	{{"Created",                7},0},
+	{{"Bad Request",           11},0},
+	{{"Unauthorized",          12},0},
+	{{"Not Found",              9},4},
+	{{"Method not Allowed",    18},0},
+	{{"Internal Server Error", 21},0},
+	{{"Not Implemented",       15},4}
 };
 
 /** Parse resource name fom RTSP URL */
@@ -205,4 +217,10 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_generate(rtsp_start_line_t *start_line,
 	}
 	
 	return status;
+}
+
+/** Get reason phrase by status code */
+RTSP_DECLARE(const apt_str_t*) rtsp_reason_phrase_get(rtsp_reason_phrase_e reason)
+{
+	return apt_string_table_str_get(rtsp_reason_string_table,RTSP_REASON_PHRASE_COUNT,reason);
 }

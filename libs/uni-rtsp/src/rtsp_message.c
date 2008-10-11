@@ -53,14 +53,18 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_request_create(apr_pool_t *pool)
 }
 
 /** Create RTSP response message */
-RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool)
+RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, rtsp_reason_phrase_e reason, apr_pool_t *pool)
 {
+	const apt_str_t *reason_str;
 	rtsp_status_line_t *status_line;
 	rtsp_message_t *response = rtsp_message_create(RTSP_MESSAGE_TYPE_RESPONSE,request->pool);
 	status_line = &response->start_line.common.status_line;
 	status_line->version = request->start_line.common.request_line.version;
 	status_line->status_code = status_code;
-	apt_string_assign(&status_line->reason,reason,pool);
+	reason_str = rtsp_reason_phrase_get(reason);
+	if(reason_str) {
+		apt_string_copy(&status_line->reason,reason_str,request->pool);
+	}
 
 	if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CSEQ) == TRUE) {
 		response->header.cseq = request->header.cseq;

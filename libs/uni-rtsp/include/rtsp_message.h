@@ -70,10 +70,10 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_request_create(apr_pool_t *pool);
  * Create RTSP response message.
  * @param request the request to create response to
  * @param status_code the status code of the response
- * @param reason the reason phrase of the response
+ * @param reason the reason phrase id of the response
  * @param pool the pool to allocate memory from
  */
-RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, const char *reason, apr_pool_t *pool);
+RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request, rtsp_status_code_e status_code, rtsp_reason_phrase_e reason, apr_pool_t *pool);
 
 /** 
  * Destroy RTSP message 

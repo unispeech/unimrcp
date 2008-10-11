@@ -284,7 +284,7 @@ static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_s
 }
 
 static apt_bool_t rtsp_server_error_respond(rtsp_server_t *server, rtsp_server_connection_t *rtsp_connection, rtsp_message_t *request, 
-											rtsp_status_code_e status_code, const char *reason)
+											rtsp_status_code_e status_code, rtsp_reason_phrase_e reason)
 {
 	/* send error response to client */
 	rtsp_message_t *response = rtsp_response_create(request,status_code,reason,request->pool);

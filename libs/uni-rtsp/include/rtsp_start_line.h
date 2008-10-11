@@ -56,10 +56,10 @@ typedef enum{
 /** Status codes */
 typedef enum {
 	RTSP_STATUS_CODE_UNKNOWN                   = 0,
-	/* success codes (2xx) */
+	/** Success codes (2xx) */
 	RTSP_STATUS_CODE_OK                        = 200,
 	RTSP_STATUS_CODE_CREATED                   = 201,
-	/* failure codec (4xx) */
+	/** Failure codec (4xx) */
 	RTSP_STATUS_CODE_BAD_REQUEST               = 400,
 	RTSP_STATUS_CODE_UNAUTHORIZED              = 401,
 	RTSP_STATUS_CODE_NOT_FOUND                 = 404,
@@ -69,15 +69,22 @@ typedef enum {
 	RTSP_STATUS_CODE_NOT_IMPLEMENTED           = 501,
 } rtsp_status_code_e;
 
-/** Reason phrases (rtsp_status_code_e) */
-#define RTSP_REASON_PHRASE_OK                    "OK"
-#define RTSP_REASON_PHRASE_CREATED               "Created"
-#define RTSP_REASON_PHRASE_BAD_REQUEST           "Bad Request"
-#define RTSP_REASON_PHRASE_UNAUTHORIZED          "Unauthorized"
-#define RTSP_REASON_PHRASE_NOT_FOUND             "Not Found"
-#define RTSP_REASON_PHRASE_METHOD_NOT_ALLOWED    "Method not Allowed"
-#define RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR "Internal Server Error"
-#define RTSP_REASON_PHRASE_NOT_IMPLEMENTED       "Not Implemented"
+/** Reason phrases */
+typedef enum {
+	RTSP_REASON_PHRASE_OK,
+	RTSP_REASON_PHRASE_CREATED,
+	RTSP_REASON_PHRASE_BAD_REQUEST,
+	RTSP_REASON_PHRASE_UNAUTHORIZED,
+	RTSP_REASON_PHRASE_NOT_FOUND,
+	RTSP_REASON_PHRASE_METHOD_NOT_ALLOWED,
+	RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,
+	RTSP_REASON_PHRASE_NOT_IMPLEMENTED,
+	RTSP_REASON_PHRASE_COUNT,
+
+	/** Unknown reason phrase */
+	RTSP_REASON_PHRASE_UNKNOWN = RTSP_REASON_PHRASE_COUNT
+} rtsp_reason_phrase_e;
+
 
 /** RTSP request-line declaration */
 typedef struct rtsp_request_line_t rtsp_request_line_t;
@@ -155,6 +162,9 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 
 /** Generate RTSP start-line */
 RTSP_DECLARE(apt_bool_t) rtsp_start_line_generate(rtsp_start_line_t *start_line, apt_text_stream_t *text_stream);
+
+/** Get reason phrase by status code */
+RTSP_DECLARE(const apt_str_t*) rtsp_reason_phrase_get(rtsp_reason_phrase_e reason);
 
 APT_END_EXTERN_C
 
