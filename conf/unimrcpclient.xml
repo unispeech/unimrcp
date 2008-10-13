@@ -16,9 +16,9 @@
       </agent>
       <!-- UniRTSP MRCPv1 signaling agent -->
       <agent name="RTSP-Agent-1" class="UniRTSP">
-        <param name="client-ip" value="auto"/>
         <param name="server-ip" value="auto"/>
         <param name="server-port" value="1554"/>
+        <param name="resource-location" value="media"/>
       </agent>
     </signaling>
 
