@@ -118,6 +118,9 @@ static const int swift_prosody_rate_table[PROSODY_RATE_COUNT] = {
 	170  /* PROSODY_RATE_DEFAULT */
 };
 
+static apr_table_t *swift_speech_language_table;
+
+static apr_table_t* mrcp_swift_language_table_create(apr_pool_t *pool);
 static void mrcp_swift_voices_show(swift_engine *engine);
 static swift_result_t mrcp_swift_write_audio(swift_event *event, swift_event_t type, void *udata);
 static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message);
@@ -135,6 +138,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Engine");
 		return NULL;
 	}
+	swift_speech_language_table = mrcp_swift_language_table_create(pool);
 	mrcp_swift_voices_show(synth_engine);
 
 	/* create resource engine base */
@@ -518,19 +522,26 @@ static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_chann
 		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"speaker/age=%d",synth_header->voice_param.age);
 	}
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_SPEECH_LANGUAGE) == TRUE) {
+		const char *swift_lang_name = NULL;
+		if(swift_speech_language_table) {
+			swift_lang_name = apr_table_get(swift_speech_language_table,synth_header->speech_language.buf);
+		}
+		if(!swift_lang_name) {
+			swift_lang_name = synth_header->speech_language.buf;
+		}
 		offset += search_criteria_delimiter_add(search_criteria+offset,sizeof(search_criteria)-offset,offset == 0);
-		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"language/name=%s",synth_header->speech_language.buf);
+		offset += apr_snprintf(search_criteria+offset,sizeof(search_criteria)-offset,"language/name=%s",swift_lang_name);
 	}
 
 	if(offset > 0) {
-		apt_log(APT_PRIO_DEBUG,"Find Voices Matching the Criteria [%s]",search_criteria);
+		apt_log(APT_PRIO_INFO,"Find Voices Matching the Criteria [%s]",search_criteria);
 		if((voice = swift_port_find_first_voice(synth_channel->port,search_criteria,NULL)) == NULL) {
-			apt_log(APT_PRIO_DEBUG,"No Swift Voice Available Matching the Criteria [%s]",search_criteria);
+			apt_log(APT_PRIO_INFO,"No Swift Voice Available Matching the Criteria [%s]",search_criteria);
 			voice = swift_port_find_first_voice(synth_channel->port,NULL,NULL);
 		}
 		if(SWIFT_FAILED(res = swift_port_set_voice(synth_channel->port,voice)) ) {
 			const char *error_string = swift_strerror(res);
-			apt_log(APT_PRIO_DEBUG,error_string);
+			apt_log(APT_PRIO_INFO,error_string);
 			return FALSE;
 		} 
 	}
@@ -629,4 +640,21 @@ static void mrcp_swift_voices_show(swift_engine *engine)
 	}
 
 	swift_port_close(port);
+}
+
+/** Create speech language lookup table */
+static apr_table_t* mrcp_swift_language_table_create(apr_pool_t *pool)
+{
+	apr_table_t *table = apr_table_make(pool,1);
+	if(!table) {
+		return NULL;
+	}
+
+	apr_table_setn(table,"en-US","US English");
+	apr_table_setn(table,"en-UK","UK English");
+	apr_table_setn(table,"fr-CA","Canadian French");
+	apr_table_setn(table,"es-MX","Americas Spanish");
+	apr_table_setn(table,"de-DE","German");
+	apr_table_setn(table,"it-IT","Italian");
+	return table;
 }
