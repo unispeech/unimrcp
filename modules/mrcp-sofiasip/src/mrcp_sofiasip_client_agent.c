@@ -102,9 +102,10 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_cli
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
-	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu -> %s:%hu",
+	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu -> %s:%hu %s",
 			config->local_ip,config->local_port,
-			config->remote_ip,config->remote_port);
+			config->remote_ip,config->remote_port,
+			config->transport ? config->transport : "");
 	return sofia_agent->sig_agent;
 }
 
@@ -121,6 +122,7 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 	
 	config->user_agent_name = NULL;
 	config->origin = NULL;
+	config->transport = NULL;
 	return config;
 }
 
@@ -132,16 +134,26 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 
 	if(config->remote_user_name && config->remote_user_name != '\0') {
 		sofia_agent->sip_to_str = apr_psprintf(pool,"sip:%s@%s:%d",
-			config->remote_user_name,
-			config->remote_ip,
-			config->remote_port);
+										config->remote_user_name,
+										config->remote_ip,
+										config->remote_port);
 	}
 	else {
 		sofia_agent->sip_to_str = apr_psprintf(pool,"sip:%s:%d",
-			config->remote_ip,
-			config->remote_port);
+										config->remote_ip,
+										config->remote_port);
 	}
-	sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d",config->local_ip,config->local_port);
+	if(config->transport) {
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d;transport=%s",
+										config->local_ip,
+										config->local_port,
+										config->transport);
+	}
+	else {
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d",
+										config->local_ip,
+										config->local_port);
+	}
 	return TRUE;
 }
 

@@ -10,6 +10,8 @@
         <param name="client-port" value="8062"/>
         <param name="server-ip" value="auto"/>
         <param name="server-port" value="8060"/>
+        <!-- <param name="sip-transport" value="tcp"/> -->
+        <param name="sip-transport" value="udp"/>
  
         <param name="ua-name" value="UniMRCP SofiaSIP"/>
         <param name="sdp-origin" value="UniMRCPClient"/>
