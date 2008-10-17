@@ -7,6 +7,7 @@
       <agent name="SIP-Agent-1" class="SofiaSIP">
         <param name="sip-ip" value="auto"/>
         <param name="sip-port" value="8060"/>
+        <param name="sip-transport" value="udp,tcp"/>
  
         <param name="ua-name" value="UniMRCP SofiaSIP"/>
         <param name="sdp-origin" value="UniMRCPServer"/>

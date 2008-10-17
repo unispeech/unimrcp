@@ -43,6 +43,8 @@ struct mrcp_sofia_server_config_t {
 	char      *user_agent_name;
 	/** SDP origin */
 	char      *origin;
+	/** SIP transport */
+	char      *transport;
 };
 
 /**

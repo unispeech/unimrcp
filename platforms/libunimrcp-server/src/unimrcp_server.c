@@ -184,6 +184,9 @@ static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *serve
 				else if(strcasecmp(attr_name->value,"sip-port") == 0) {
 					config->local_port = (apr_port_t)atol(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"sip-transport") == 0) {
+					config->transport = apr_pstrdup(pool,attr_value->value);
+				}
 				else if(strcasecmp(attr_name->value,"ua-name") == 0) {
 					config->user_agent_name = apr_pstrdup(pool,attr_value->value);
 				}

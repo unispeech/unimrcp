@@ -97,7 +97,10 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_ser
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
-	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu",config->local_ip,config->local_port);
+	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu %s",
+								config->local_ip,
+								config->local_port,
+								config->transport ? config->transport : "");
 	return sofia_agent->sig_agent;
 }
 
@@ -110,6 +113,7 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->user_name = NULL;
 	config->user_agent_name = NULL;
 	config->origin = NULL;
+	config->transport = NULL;
 	return config;
 }
 
@@ -117,7 +121,17 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 {
 	sofia_agent->config = config;
 	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d",config->local_ip,config->local_port);
-	sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d","0.0.0.0",config->local_port);
+	if(config->transport) {
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d;transport=%s",
+											config->local_ip,
+											config->local_port,
+											config->transport);
+	}
+	else {
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d",
+											config->local_ip,
+											config->local_port);
+	}
 	return TRUE;
 }
 
