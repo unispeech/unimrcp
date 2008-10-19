@@ -49,7 +49,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(UniMRCPServerLibs)"
+				AdditionalDependencies="$(UniMRCPClientLibs)"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -111,7 +111,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(UniMRCPServerLibs)"
+				AdditionalDependencies="$(UniMRCPClientLibs)"
 				LinkTimeCodeGeneration="1"
 			/>
 			<Tool
