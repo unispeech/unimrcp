@@ -183,7 +183,7 @@ int main(int argc, const char * const *argv)
 		demo_framework_destroy(framework);
 	}
 
-	/* create APR pool */
+	/* destroy APR pool */
 	apr_pool_destroy(pool);
 	
 	/* APR global termination */

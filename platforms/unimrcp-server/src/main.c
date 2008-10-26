@@ -181,7 +181,7 @@ int main(int argc, const char * const *argv)
 		unimrcp_server_shutdown(server);
 	}
 
-	/* create APR pool */
+	/* destroy APR pool */
 	apr_pool_destroy(pool);
 	
 	/* APR global termination */
