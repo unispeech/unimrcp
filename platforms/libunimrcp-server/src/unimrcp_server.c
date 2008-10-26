@@ -437,6 +437,7 @@ static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *
 	const char *plugin_class = NULL;
 	const char *plugin_ext = NULL;
 	const char *plugin_path = NULL;
+	apt_bool_t plugin_enabled = TRUE;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
 		if(strcasecmp(attr->name,"name") == 0) {
@@ -448,12 +449,15 @@ static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *
 		else if(strcasecmp(attr->name,"ext") == 0) {
 			plugin_ext = attr->value;
 		}
+		else if(strcasecmp(attr->name,"enable") == 0) {
+			plugin_enabled = atoi(attr->value);
+		}
 		else {
 			apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 		}
 	}
 
-	if(!plugin_class) {
+	if(!plugin_class || !plugin_enabled) {
 		return FALSE;
 	}
 	if(!plugin_dir_path) {
