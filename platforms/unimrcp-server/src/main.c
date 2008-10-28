@@ -73,51 +73,48 @@ static apt_bool_t cmdline_run()
 
 #ifdef WIN32
 #include <windows.h>
-static void service_cmd_process(int optch)
+static void win_service_register(const char *service_name)
 {
+	char binPath[MAX_PATH]; 
+	SC_HANDLE schService;
 	SC_HANDLE schManager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
 	if(!schManager) {
+		printf("OpenSCManager failed (%d)\n", GetLastError());
 		return;
 	}
 
-	switch(optch) {
-		case 'r':
-		{
-			SC_HANDLE schService;
-			char binPath[MAX_PATH]; 
-			if(!GetModuleFileName(NULL,binPath,MAX_PATH)) {
-				return;
-			}
-			schService = CreateService(
-							schManager,
-							"unimrcp",
-							"UniMRCP Server",
-							GENERIC_EXECUTE,
-							SERVICE_WIN32_OWN_PROCESS,
-							SERVICE_DEMAND_START,
-							SERVICE_ERROR_NORMAL,
-							binPath,0,0,0,0,0);
-			if(schService) {
-				CloseServiceHandle(schService);
-			}
-			break;
-		}
-		case 'u':
-		{
-			SC_HANDLE schService = OpenService(schManager,"unimrcp",DELETE|SERVICE_STOP);
-			if(schService) {
-				ControlService(schService,SERVICE_CONTROL_STOP,0);
-				DeleteService(schService);
-				CloseServiceHandle(schService);
-			}
-			break;
-		}
-		case 's':
-			break;
-		case 'o':
-			break;
-		default:
-			break;
+	if(!GetModuleFileName(NULL,binPath,MAX_PATH)) {
+		return;
+	}
+	schService = CreateService(
+					schManager,
+					service_name,
+					"UniMRCP Server",
+					GENERIC_EXECUTE,
+					SERVICE_WIN32_OWN_PROCESS,
+					SERVICE_DEMAND_START,
+					SERVICE_ERROR_NORMAL,
+					binPath,0,0,0,0,0);
+	if(schService) {
+		CloseServiceHandle(schService);
+	}
+	CloseServiceHandle(schManager);
+}
+
+static void win_service_unregister(const char *service_name)
+{
+	SC_HANDLE schService;
+	SC_HANDLE schManager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
+	if(!schManager) {
+		printf("OpenSCManager failed (%d)\n", GetLastError());
+		return;
+	}
+
+	schService = OpenService(schManager,service_name,DELETE|SERVICE_STOP);
+	if(schService) {
+		ControlService(schService,SERVICE_CONTROL_STOP,0);
+		DeleteService(schService);
+		CloseServiceHandle(schService);
 	}
 	CloseServiceHandle(schManager);
 }
@@ -144,16 +141,15 @@ static void usage()
 		"\n"
 		"   -u [--unregister]      : Unregister the Windows service.\n"
 		"\n"
-		"   -s [--start]           : Start the Windows service.\n"
-		"\n"
-		"   -o [--stop]            : Stop the Windows service.\n"
+		"   -s [--service]         : Start the Windows service.\n"
 		"\n"
 #endif
 		"   -h [--help]            : Show the help.\n"
 		"\n");
 }
 
-static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_dir_path, int argc, const char * const *argv, apr_pool_t *pool)
+static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_dir_path, apt_bool_t *service_mode,
+							   int argc, const char * const *argv, apr_pool_t *pool)
 {
 	apr_status_t rv;
 	apr_getopt_t *opt;
@@ -168,8 +164,7 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 #ifdef WIN32
 		{ "register",    'r', FALSE, "register service" },  /* -r or --register */
 		{ "unregister",  'u', FALSE, "unregister service" },/* -u or --unregister */
-		{ "start",       's', FALSE, "start service" },     /* -s or --start */
-		{ "stop",        'o', FALSE, "stop service" },      /* -o or --stop */
+		{ "service",     's', FALSE, "start as service" },  /* -s or --service */
 #endif
 		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
 		{ NULL, 0, 0, NULL },                               /* end */
@@ -202,11 +197,16 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 				break;
 #ifdef WIN32
 			case 'r':
-			case 'u':
-			case 's':
-			case 'o':
-				service_cmd_process(optch);
+				win_service_register("unimrcpserver");
 				return FALSE;
+			case 'u':
+				win_service_unregister("unimrcpserver");
+				return FALSE;
+			case 's':
+				if(service_mode) {
+					*service_mode = TRUE;
+				}
+				break;
 #endif
 			case 'h':
 				usage();
@@ -227,6 +227,7 @@ int main(int argc, const char * const *argv)
 	apr_pool_t *pool;
 	const char *conf_dir_path = NULL;
 	const char *plugin_dir_path = NULL;
+	apt_bool_t service_mode = FALSE;
 	mrcp_server_t *server;
 	
 	/* APR global initialization */
@@ -242,7 +243,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* load options */
-	if(options_load(&conf_dir_path,&plugin_dir_path,argc,argv,pool) != TRUE) {
+	if(options_load(&conf_dir_path,&plugin_dir_path,&service_mode,argc,argv,pool) != TRUE) {
 		apr_pool_destroy(pool);
 		apr_terminate();
 		return 0;
@@ -251,8 +252,13 @@ int main(int argc, const char * const *argv)
 	/* start server */
 	server = unimrcp_server_start(conf_dir_path, plugin_dir_path);
 	if(server) {
-		/* run command line */
-		cmdline_run();
+		if(service_mode == FALSE) {
+			/* run command line */
+			cmdline_run();
+		}
+		else {
+			/* run as windows service */
+		}
 		/* shutdown server */
 		unimrcp_server_shutdown(server);
 	}
