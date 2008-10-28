@@ -30,3 +30,9 @@ Name: "{group}\UniMRCP Server"; Filename: "{app}\bin\unimrcpserver.exe"; Paramet
 Name: "{group}\UniMRCP Client"; Filename: "{app}\bin\unimrcpclient.exe"; Parameters: "-c ""{app}\conf"""; Components: client
 Name: "{group}\Uninstall"; Filename: "{uninstallexe}"
 
+[Run]
+Filename: "{app}\bin\unimrcpserver.exe"; Description: "Register service"; Parameters: "--register"; Components: server
+
+[UninstallRun]
+Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--unregister"; Components: server
+
