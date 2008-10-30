@@ -150,6 +150,14 @@
 				RelativePath=".\src\main.c"
 				>
 			</File>
+			<File
+				RelativePath=".\src\uni_cmdline.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\uni_service.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="include"

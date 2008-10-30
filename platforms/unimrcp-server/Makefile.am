@@ -15,5 +15,5 @@ INCLUDES               = -Iinclude \
                          $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
 
 bin_PROGRAMS           = unimrcpserver
-unimrcpserver_SOURCES  = src/main.c
+unimrcpserver_SOURCES  = src/main.c src/uni_cmdline.c
 unimrcpserver_LDADD    = $(top_builddir)/platforms/libunimrcp-server/libunimrcpserver.la
