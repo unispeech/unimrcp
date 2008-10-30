@@ -15,6 +15,7 @@
  */
 
 #include <windows.h>
+#include <apr_lib.h>
 #include "unimrcp_server.h"
 #include "apt_log.h"
 
@@ -153,10 +154,16 @@ apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_pat
 		{ NULL, NULL }
 	};
 
-	conf_dir = conf_dir_path;
-	plugin_dir = plugin_dir_path;
+	const char *end;
+	char bin_path[MAX_PATH];
+	if(!GetModuleFileName(NULL,bin_path,MAX_PATH)) {
+		return FALSE;
+	}
+	end = apr_filepath_name_get(bin_path);
+	bin_path[(end-bin_path)] = '\0';
+	SetCurrentDirectory(bin_path);
 
-	apt_log(APT_PRIO_INFO,"Run as Service");
+	apt_log(APT_PRIO_INFO,"Run as Service [%s]",bin_path);
 	if(!StartServiceCtrlDispatcher(win_service_table)) {
 		apt_log(APT_PRIO_WARNING,"Failed to Connect to SCM %d",GetLastError());
 	}
