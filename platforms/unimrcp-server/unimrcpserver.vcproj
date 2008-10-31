@@ -117,6 +117,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AdditionalManifestFiles="unimrcpserver.exe.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
