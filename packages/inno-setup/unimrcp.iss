@@ -37,26 +37,38 @@ Filename: "{app}\bin\unimrcpserver.exe"; Description: "Register service"; Parame
 Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--unregister"; Components: server
 
 [Code]
-procedure ModifyPluginConf(Content: String, PluginName: String, Enable: Boolean);
 var
+  Content: String;
+  
+procedure ModifyPluginConf(PluginName: String; Enable: Boolean);
+var
+  TextFrom: String;
+  TextTo: String;
 begin
   if Enable = True then
-    StringChange (Content, 'class="mrcpcepstral" enable="0"', 'class="mrcpcepstral" enable="1"');
-  else
-    StringChange (Content, 'class="mrcpcepstral" enable="1"', 'class="mrcpcepstral" enable="0"');
+  begin
+    TextFrom := 'class="' + PluginName + '" enable="0"';
+    TextTo := 'class="' + PluginName + '" enable="1"';
   end
+  else
+  begin
+    TextFrom := 'class="' + PluginName + '" enable="1"';
+    TextTo := 'class="' + PluginName + '" enable="0"';
+  end
+  StringChange (Content, TextFrom, TextTo);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 var
-  Content: String;
   CfgFile: String;
 begin
   if CurStep = ssPostInstall then
   begin
     CfgFile := ExpandConstant('{app}\conf\unimrcpserver.xml');
     LoadStringFromFile (CfgFile, Content);
-    ModifyPluginConf (Content, 'mrcpcepstral', IsComponentSelected('server\cepstral');
+    ModifyPluginConf ('mrcpcepstral', IsComponentSelected('server\cepstral'));
+    ModifyPluginConf ('demosynth', IsComponentSelected('server\demosynth'));
+    ModifyPluginConf ('demorecog', IsComponentSelected('server\demorecog'));
     SaveStringToFile (CfgFile, Content, False);
   end
 end;
