@@ -36,3 +36,28 @@ Filename: "{app}\bin\unimrcpserver.exe"; Description: "Register service"; Parame
 [UninstallRun]
 Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--unregister"; Components: server
 
+[Code]
+procedure ModifyPluginConf(Content: String, PluginName: String, Enable: Boolean);
+var
+begin
+  if Enable = True then
+    StringChange (Content, 'class="mrcpcepstral" enable="0"', 'class="mrcpcepstral" enable="1"');
+  else
+    StringChange (Content, 'class="mrcpcepstral" enable="1"', 'class="mrcpcepstral" enable="0"');
+  end
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Content: String;
+  CfgFile: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    CfgFile := ExpandConstant('{app}\conf\unimrcpserver.xml');
+    LoadStringFromFile (CfgFile, Content);
+    ModifyPluginConf (Content, 'mrcpcepstral', IsComponentSelected('server\cepstral');
+    SaveStringToFile (CfgFile, Content, False);
+  end
+end;
+
