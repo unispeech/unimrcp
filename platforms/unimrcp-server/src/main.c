@@ -23,6 +23,8 @@ apt_bool_t uni_service_register(apr_pool_t *pool);
 apt_bool_t uni_service_unregister();
 
 apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
+#else
+apt_bool_t uni_daemon_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
 #endif
 
 apt_bool_t uni_cmdline_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
@@ -49,14 +51,17 @@ static void usage()
 		"\n"
 		"   -u [--unregister]      : Unregister the Windows service.\n"
 		"\n"
-		"   -s [--service]         : Start the Windows service.\n"
+		"   -s [--service]         : Run as the Windows service.\n"
+		"\n"
+#else
+		"   -d [--daemon]          : Run as the daemon.\n"
 		"\n"
 #endif
 		"   -h [--help]            : Show the help.\n"
 		"\n");
 }
 
-static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_dir_path, apt_bool_t *service_mode,
+static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_dir_path, apt_bool_t *foreground,
 							   int argc, const char * const *argv, apr_pool_t *pool)
 {
 	apr_status_t rv;
@@ -72,7 +77,9 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 #ifdef WIN32
 		{ "register",    'r', FALSE, "register service" },  /* -r or --register */
 		{ "unregister",  'u', FALSE, "unregister service" },/* -u or --unregister */
-		{ "service",     's', FALSE, "start as service" },  /* -s or --service */
+		{ "service",     's', FALSE, "run as service" },    /* -s or --service */
+#else
+		{ "daemon",      'd', FALSE, "start as daemon" },   /* -d or --daemon */
 #endif
 		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
 		{ NULL, 0, 0, NULL },                               /* end */
@@ -111,8 +118,14 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 				uni_service_unregister();
 				return FALSE;
 			case 's':
-				if(service_mode) {
-					*service_mode = TRUE;
+				if(foreground) {
+					*foreground = FALSE;
+				}
+				break;
+#else
+			case 'd':
+				if(foreground) {
+					*foreground = FALSE;
 				}
 				break;
 #endif
@@ -135,7 +148,7 @@ int main(int argc, const char * const *argv)
 	apr_pool_t *pool;
 	const char *conf_dir_path = NULL;
 	const char *plugin_dir_path = NULL;
-	apt_bool_t service_mode = FALSE;
+	apt_bool_t foreground = TRUE;
 
 	/* APR global initialization */
 	if(apr_initialize() != APR_SUCCESS) {
@@ -150,13 +163,13 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* load options */
-	if(options_load(&conf_dir_path,&plugin_dir_path,&service_mode,argc,argv,pool) != TRUE) {
+	if(options_load(&conf_dir_path,&plugin_dir_path,&foreground,argc,argv,pool) != TRUE) {
 		apr_pool_destroy(pool);
 		apr_terminate();
 		return 0;
 	}
 
-	if(service_mode == FALSE) {
+	if(foreground == TRUE) {
 		/* run command line */
 		uni_cmdline_run(conf_dir_path,plugin_dir_path,pool);
 	}
@@ -164,6 +177,11 @@ int main(int argc, const char * const *argv)
 	else {
 		/* run as windows service */
 		uni_service_run(conf_dir_path,plugin_dir_path,pool);
+	}
+#else
+	else {
+		/* run as daemon */
+		uni_daemon_run(conf_dir_path,plugin_dir_path,pool);
 	}
 #endif
 

@@ -156,6 +156,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\uni_daemon.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\uni_service.c"
 				>
 			</File>
