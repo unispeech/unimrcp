@@ -33,7 +33,7 @@ apt_bool_t uni_daemon_run(const char *conf_dir_path, const char *plugin_dir_path
 	daemon_running = TRUE;
 	apr_signal(SIGTERM,sigterm_handler);
 
-	apt_log(APT_PRIO_NOTICE,"Run as Daemon [%d]",getpid());
+	apt_log(APT_PRIO_NOTICE,"Run as Daemon");
 	apr_proc_detach(APR_PROC_DETACH_DAEMONIZE);
 
 	/* start server */
