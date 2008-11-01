@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include <apr_getopt.h>
 #include "apt_log.h"
 
