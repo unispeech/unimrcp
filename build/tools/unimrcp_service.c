@@ -24,6 +24,7 @@
 /** Register/install service in SCM */
 static apt_bool_t uni_service_register(const char *bin_path, apr_pool_t *pool)
 {
+	SERVICE_DESCRIPTION desc;
 	SC_HANDLE sch_service;
 	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
 	if(!sch_manager) {
@@ -35,7 +36,7 @@ static apt_bool_t uni_service_register(const char *bin_path, apr_pool_t *pool)
 					sch_manager,
 					WIN_SERVICE_NAME,
 					"UniMRCP Server",
-					GENERIC_EXECUTE,
+					GENERIC_EXECUTE | SERVICE_CHANGE_CONFIG,
 					SERVICE_WIN32_OWN_PROCESS,
 					SERVICE_DEMAND_START,
 					SERVICE_ERROR_NORMAL,
@@ -45,7 +46,12 @@ static apt_bool_t uni_service_register(const char *bin_path, apr_pool_t *pool)
 		CloseServiceHandle(sch_manager);
 		return FALSE;
 	}
-	
+
+	desc.lpDescription = "Launches UniMRCP Server";
+	if(!ChangeServiceConfig2(sch_service,SERVICE_CONFIG_DESCRIPTION,&desc)) {
+		printf("Failed to Set Service Description %d\n", GetLastError());
+	}
+
 	CloseServiceHandle(sch_service);
 	CloseServiceHandle(sch_manager);
 	return TRUE;
