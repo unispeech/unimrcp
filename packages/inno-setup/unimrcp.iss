@@ -17,6 +17,7 @@ Name: "client"; Description: "UniMRCP client (demo application)"; Types: full cl
 
 [Files]
 Source: "..\..\Release\bin\unimrcpserver.exe"; DestDir: "{app}\bin"; Components: server
+Source: "..\..\Release\bin\unimrcpservice.exe"; DestDir: "{app}\bin"; Components: server
 Source: "..\..\Release\bin\unimrcpclient.exe"; DestDir: "{app}\bin"; Components: client
 Source: "..\..\Release\bin\*.dll"; DestDir: "{app}\bin"; Components: server client
 Source: "..\..\Release\plugin\mrcpcepstral.dll"; DestDir: "{app}\plugin"; Components: server/cepstral
@@ -26,15 +27,17 @@ Source: "..\..\Release\conf\unimrcpserver.xml"; DestDir: "{app}\conf"; Component
 Source: "..\..\Release\conf\unimrcpclient.xml"; DestDir: "{app}\conf"; Components: client
 
 [Icons]
-Name: "{group}\UniMRCP Server"; Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "-c ""{app}\conf"" -p ""{app}\plugin"""; Components: server
-Name: "{group}\UniMRCP Client"; Filename: "{app}\bin\unimrcpclient.exe"; Parameters: "-c ""{app}\conf"""; Components: client
+Name: "{group}\UniMRCP Server Console"; Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "-c ""{app}\conf"" -p ""{app}\plugin"""; Components: server
+Name: "{group}\UniMRCP Client Console"; Filename: "{app}\bin\unimrcpclient.exe"; Parameters: "-c ""{app}\conf"""; Components: client
+Name: "{group}\UniMRCP Service\Start Server"; Filename: "{app}\bin\unimrcpservice.exe"; Parameters: "--start"; Components: server
+Name: "{group}\UniMRCP Service\Stop Server"; Filename: "{app}\bin\unimrcpservice.exe"; Parameters: "--stop"; Components: server
 Name: "{group}\Uninstall"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\bin\unimrcpserver.exe"; Description: "Register service"; Parameters: "--register"; Components: server
+Filename: "{app}\bin\unimrcpservice.exe"; Description: "Register service"; Parameters: "--register ""{app}\bin\unimrcpserver.exe --service"""; Components: server
 
 [UninstallRun]
-Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--unregister"; Components: server
+Filename: "{app}\bin\unimrcpservice.exe"; Parameters: "--unregister"; Components: server
 
 [Code]
 var
