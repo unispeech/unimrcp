@@ -19,9 +19,6 @@
 #include "apt_log.h"
 
 #ifdef WIN32
-apt_bool_t uni_service_register(apr_pool_t *pool);
-apt_bool_t uni_service_unregister();
-
 apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
 #else
 apt_bool_t uni_daemon_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
@@ -47,10 +44,6 @@ static void usage()
 		"   -l [--log] priority    : Set the log priority (0-emergency, ..., 7-debug).\n"
 		"\n"
 #ifdef WIN32
-		"   -r [--register]        : Register the Windows service.\n"
-		"\n"
-		"   -u [--unregister]      : Unregister the Windows service.\n"
-		"\n"
 		"   -s [--service]         : Run as the Windows service.\n"
 		"\n"
 #else
@@ -75,8 +68,6 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 		{ "plugin-dir",  'p', TRUE,  "path to plugin dir" },/* -p arg or --plugin-dir arg */
 		{ "log",         'l', TRUE,  "log priority" },      /* -l arg or --log arg */
 #ifdef WIN32
-		{ "register",    'r', FALSE, "register service" },  /* -r or --register */
-		{ "unregister",  'u', FALSE, "unregister service" },/* -u or --unregister */
 		{ "service",     's', FALSE, "run as service" },    /* -s or --service */
 #else
 		{ "daemon",      'd', FALSE, "start as daemon" },   /* -d or --daemon */
@@ -111,12 +102,6 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 				}
 				break;
 #ifdef WIN32
-			case 'r':
-				uni_service_register(pool);
-				return FALSE;
-			case 'u':
-				uni_service_unregister();
-				return FALSE;
 			case 's':
 				if(foreground) {
 					*foreground = FALSE;

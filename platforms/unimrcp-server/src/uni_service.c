@@ -88,64 +88,6 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 	} 
 }
 
-/** Register/install service in SCM */
-apt_bool_t uni_service_register(apr_pool_t *pool)
-{
-	char file_path[MAX_PATH];
-	char *bin_path;
-	SC_HANDLE sch_service;
-	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
-	if(!sch_manager) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open SCManager %d", GetLastError());
-		return FALSE;
-	}
-
-	if(!GetModuleFileName(NULL,file_path,MAX_PATH)) {
-		return FALSE;
-	}
-	bin_path = apr_psprintf(pool,"%s --service",file_path);
-	sch_service = CreateService(
-					sch_manager,
-					WIN_SERVICE_NAME,
-					"UniMRCP Server",
-					GENERIC_EXECUTE,
-					SERVICE_WIN32_OWN_PROCESS,
-					SERVICE_DEMAND_START,
-					SERVICE_ERROR_NORMAL,
-					bin_path,0,0,0,0,0);
-	if(sch_service) {
-		CloseServiceHandle(sch_service);
-	}
-	else {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Service %d", GetLastError());
-	}
-	CloseServiceHandle(sch_manager);
-	return TRUE;
-}
-
-/** Unregister/uninstall service from SCM */
-apt_bool_t uni_service_unregister()
-{
-	SC_HANDLE sch_service;
-	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
-	if(!sch_manager) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open SCManager %d", GetLastError());
-		return FALSE;
-	}
-
-	sch_service = OpenService(sch_manager,WIN_SERVICE_NAME,DELETE|SERVICE_STOP);
-	if(sch_service) {
-		ControlService(sch_service,SERVICE_CONTROL_STOP,0);
-		DeleteService(sch_service);
-		CloseServiceHandle(sch_service);
-	}
-	else {
-		apt_log(APT_PRIO_WARNING,"Failed to Open Service %d", GetLastError());
-	}
-	CloseServiceHandle(sch_manager);
-	return TRUE;
-}
-
 /** Run SCM service */
 apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool)
 {

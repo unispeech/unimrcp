@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="unimrcpserver"
-	ProjectGUID="{592CF22D-3F8F-4A77-A174-130D77B7623B}"
-	RootNamespace="unimrcpserver"
+	Name="unimrcpservice"
+	ProjectGUID="{4714EF49-BFD5-4B22-95F7-95A07F1EAC25}"
+	RootNamespace="unimrcpservice"
 	>
 	<Platforms>
 		<Platform
@@ -17,7 +17,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(SolutionDir)build\vsprops\unidebug.vsprops;$(SolutionDir)build\vsprops\unimrcpserver.vsprops"
+			InheritedPropertySheets="$(SolutionDir)build\vsprops\unidebug.vsprops;$(SolutionDir)build\vsprops\apt.vsprops"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -48,13 +48,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(UniMRCPServerLibs)"
+				AdditionalDependencies="libaprutil-1.lib libapr-1.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AdditionalManifestFiles="unimrcpservice.exe.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -78,7 +79,7 @@
 		<Configuration
 			Name="Release|Win32"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(SolutionDir)build\vsprops\unirelease.vsprops;$(SolutionDir)build\vsprops\unimrcpserver.vsprops"
+			InheritedPropertySheets="$(SolutionDir)build\vsprops\unirelease.vsprops;$(SolutionDir)build\vsprops\apt.vsprops"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -109,7 +110,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(UniMRCPServerLibs)"
+				AdditionalDependencies="libaprutil-1.lib libapr-1.lib"
 				LinkTimeCodeGeneration="1"
 			/>
 			<Tool
@@ -117,6 +118,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AdditionalManifestFiles="unimrcpservice.exe.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -147,27 +149,9 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\main.c"
+				RelativePath=".\unimrcp_service.c"
 				>
 			</File>
-			<File
-				RelativePath=".\src\uni_cmdline.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\uni_daemon.c"
-				>
-			</File>
-			<File
-				RelativePath=".\src\uni_service.c"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="include"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
 		</Filter>
 	</Files>
 	<Globals>
