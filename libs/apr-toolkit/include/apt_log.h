@@ -56,6 +56,16 @@ typedef enum {
 typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 /**
+ * Open the log file.
+ */
+APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path);
+
+/**
+ * Close the log file.
+ */
+APT_DECLARE(apt_bool_t) apt_log_file_close();
+
+/**
  * Set the logging priority (log level).
  * @param priority the priority to set
  */

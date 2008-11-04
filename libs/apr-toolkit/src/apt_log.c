@@ -15,6 +15,7 @@
  */
 
 #include <apr_time.h>
+#include <apr_file_io.h>
 #include "apt_log.h"
 
 #define MAX_LOG_ENTRY_SIZE 4096
@@ -39,12 +40,36 @@ struct apt_logger_t {
 	apt_log_priority_e priority;
 	int                header;
 	apt_log_handler_f  handler;
+	FILE              *file;
 };
 
-static apt_logger_t apt_logger = {APT_PRIO_DEBUG, APT_LOG_HEADER_DEFAULT, NULL};
+static apt_logger_t apt_logger = {
+	APT_PRIO_DEBUG, 
+	APT_LOG_HEADER_DEFAULT, 
+	NULL, 
+	NULL, 
+};
 
 static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
+
+APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path)
+{
+	apt_logger.file = fopen(file_path,"w");
+	if(!apt_logger.file) {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_log_file_close()
+{
+	if(apt_logger.file) {
+		fclose(apt_logger.file);
+		apt_logger.file = NULL;
+	}
+	return TRUE;
+}
 
 APT_DECLARE(void) apt_log_priority_set(apt_log_priority_e priority)
 {
@@ -108,7 +133,12 @@ static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va
 
 	offset += apr_vsnprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,format,arg_ptr);
 	logEntry[offset++] = '\n';
-	logEntry[offset++] = '\0';
+	logEntry[offset] = '\0';
 	printf(logEntry);
+	
+	if(apt_logger.file) {
+		fwrite(logEntry,1,offset,apt_logger.file);
+		fflush(apt_logger.file);
+	}
 	return TRUE;
 }
