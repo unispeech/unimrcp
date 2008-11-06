@@ -37,6 +37,7 @@ static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 typedef struct apt_logger_t apt_logger_t;
 
 struct apt_logger_t {
+	apt_log_output_e   mode;
 	apt_log_priority_e priority;
 	int                header;
 	apt_log_handler_f  handler;
@@ -44,6 +45,7 @@ struct apt_logger_t {
 };
 
 static apt_logger_t apt_logger = {
+	APT_LOG_OUTPUT_CONSOLE, 
 	APT_PRIO_DEBUG, 
 	APT_LOG_HEADER_DEFAULT, 
 	NULL, 
@@ -55,6 +57,9 @@ static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va
 
 APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path)
 {
+	if((apt_logger.mode & APT_LOG_OUTPUT_FILE) == 0) {
+		return FALSE;
+	}
 	apt_logger.file = fopen(file_path,"w");
 	if(!apt_logger.file) {
 		return FALSE;
@@ -69,6 +74,11 @@ APT_DECLARE(apt_bool_t) apt_log_file_close()
 		apt_logger.file = NULL;
 	}
 	return TRUE;
+}
+
+APT_DECLARE(void) apt_log_output_mode_set(apt_log_output_e mode)
+{
+	apt_logger.mode = mode;
 }
 
 APT_DECLARE(void) apt_log_priority_set(apt_log_priority_e priority)
@@ -134,7 +144,9 @@ static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va
 	offset += apr_vsnprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,format,arg_ptr);
 	logEntry[offset++] = '\n';
 	logEntry[offset] = '\0';
-	printf(logEntry);
+	if((apt_logger.mode & APT_LOG_OUTPUT_CONSOLE) == APT_LOG_OUTPUT_CONSOLE) {
+		printf(logEntry);
+	}
 	
 	if(apt_logger.file) {
 		fwrite(logEntry,1,offset,apt_logger.file);

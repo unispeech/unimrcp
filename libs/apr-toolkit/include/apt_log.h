@@ -52,6 +52,13 @@ typedef enum {
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
 } apt_log_header_e;
 
+/** Log output modes */
+typedef enum {
+	APT_LOG_OUTPUT_NONE     = 0x00, /**< disable logging */
+	APT_LOG_OUTPUT_CONSOLE  = 0x01, /**< enable console output */
+	APT_LOG_OUTPUT_FILE     = 0x02, /**< enable log file output */
+} apt_log_output_e;
+
 /** Prototype of log handler function */
 typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
@@ -64,6 +71,12 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path);
  * Close the log file.
  */
 APT_DECLARE(apt_bool_t) apt_log_file_close();
+
+/**
+ * Set the logging output.
+ * @param mode the mode to set
+ */
+APT_DECLARE(void) apt_log_output_mode_set(apt_log_output_e mode);
 
 /**
  * Set the logging priority (log level).
