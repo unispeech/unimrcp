@@ -18,6 +18,14 @@
 #include <apr_getopt.h>
 #include "apt_log.h"
 
+typedef struct {
+	const char        *conf_dir_path;
+	const char        *plugin_dir_path;
+	apt_bool_t         foreground;
+	apt_log_priority_e log_priority;
+	apt_log_output_e   log_output;
+} server_options_t;
+
 #ifdef WIN32
 apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
 #else
@@ -37,25 +45,28 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -c [--conf-dir] path   : Set the path to config directory.\n"
+		"   -c [--conf-dir] path     : Set the path to config directory.\n"
 		"\n"
-		"   -p [--plugin-dir] path : Set the path to plugin directory.\n"
+		"   -p [--plugin-dir] path   : Set the path to plugin directory.\n"
 		"\n"
-		"   -l [--log] priority    : Set the log priority (0-emergency, ..., 7-debug).\n"
+		"   -l [--log-prio] priority : Set the log priority.\n"
+		"                              (0-emergency, ..., 7-debug)\n"
+		"\n"
+		"   -o [--log-output] mode   : Set the log output mode.\n"
+		"                              (0-none, 1-console only, 2-file only, 3-both)\n"
 		"\n"
 #ifdef WIN32
-		"   -s [--service]         : Run as the Windows service.\n"
+		"   -s [--service]           : Run as the Windows service.\n"
 		"\n"
 #else
-		"   -d [--daemon]          : Run as the daemon.\n"
+		"   -d [--daemon]            : Run as the daemon.\n"
 		"\n"
 #endif
-		"   -h [--help]            : Show the help.\n"
+		"   -h [--help]              : Show the help.\n"
 		"\n");
 }
 
-static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_dir_path, apt_bool_t *foreground,
-							   int argc, const char * const *argv, apr_pool_t *pool)
+static apt_bool_t options_load(server_options_t *options, int argc, const char * const *argv, apr_pool_t *pool)
 {
 	apr_status_t rv;
 	apr_getopt_t *opt;
@@ -66,7 +77,8 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 		/* long-option, short-option, has-arg flag, description */
 		{ "conf-dir",    'c', TRUE,  "path to config dir" },/* -c arg or --conf-dir arg */
 		{ "plugin-dir",  'p', TRUE,  "path to plugin dir" },/* -p arg or --plugin-dir arg */
-		{ "log",         'l', TRUE,  "log priority" },      /* -l arg or --log arg */
+		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
+		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
 #ifdef WIN32
 		{ "service",     's', FALSE, "run as service" },    /* -s or --service */
 #else
@@ -76,9 +88,6 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 		{ NULL, 0, 0, NULL },                               /* end */
 	};
 
-	/* set the default log level */
-	apt_log_priority_set(APT_PRIO_INFO);
-
 	rv = apr_getopt_init(&opt, pool , argc, argv);
 	if(rv != APR_SUCCESS) {
 		return FALSE;
@@ -87,31 +96,28 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
 			case 'c':
-				if(conf_dir_path) {
-					*conf_dir_path = optarg;
-				}
+				options->conf_dir_path = optarg;
 				break;
 			case 'p':
-				if(plugin_dir_path) {
-					*plugin_dir_path = optarg;
-				}
+				options->plugin_dir_path = optarg;
 				break;
 			case 'l':
 				if(optarg) {
-					apt_log_priority_set(atoi(optarg));
+					options->log_priority = atoi(optarg);
+				}
+				break;
+			case 'o':
+				if(optarg) {
+					options->log_output = atoi(optarg);
 				}
 				break;
 #ifdef WIN32
 			case 's':
-				if(foreground) {
-					*foreground = FALSE;
-				}
+				options->foreground = FALSE;
 				break;
 #else
 			case 'd':
-				if(foreground) {
-					*foreground = FALSE;
-				}
+				options->foreground = FALSE;
 				break;
 #endif
 			case 'h':
@@ -131,9 +137,7 @@ static apt_bool_t options_load(const char **conf_dir_path, const char **plugin_d
 int main(int argc, const char * const *argv)
 {
 	apr_pool_t *pool;
-	const char *conf_dir_path = NULL;
-	const char *plugin_dir_path = NULL;
-	apt_bool_t foreground = TRUE;
+	server_options_t options;
 
 	/* APR global initialization */
 	if(apr_initialize() != APR_SUCCESS) {
@@ -147,28 +151,49 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
+	/* set the default options */
+	options.conf_dir_path = NULL;
+	options.plugin_dir_path = NULL;
+	options.foreground = TRUE;
+	options.log_priority = APT_PRIO_INFO;
+	options.log_output = APT_LOG_OUTPUT_CONSOLE;
+
 	/* load options */
-	if(options_load(&conf_dir_path,&plugin_dir_path,&foreground,argc,argv,pool) != TRUE) {
+	if(options_load(&options,argc,argv,pool) != TRUE) {
 		apr_pool_destroy(pool);
 		apr_terminate();
 		return 0;
 	}
 
-	if(foreground == TRUE) {
+	/* set the log level */
+	apt_log_priority_set(options.log_priority);
+	/* set the log output mode */
+	apt_log_output_mode_set(options.log_output);
+
+	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+		/* open the log file */
+		apt_log_file_open("unimrcpserver.log");
+	}
+
+	if(options.foreground == TRUE) {
 		/* run command line */
-		uni_cmdline_run(conf_dir_path,plugin_dir_path,pool);
+		uni_cmdline_run(options.conf_dir_path,options.plugin_dir_path,pool);
 	}
 #ifdef WIN32
 	else {
 		/* run as windows service */
-		uni_service_run(conf_dir_path,plugin_dir_path,pool);
+		uni_service_run(options.conf_dir_path,options.plugin_dir_path,pool);
 	}
 #else
 	else {
 		/* run as daemon */
-		uni_daemon_run(conf_dir_path,plugin_dir_path,pool);
+		uni_daemon_run(options.conf_dir_path,options.plugin_dir_path,pool);
 	}
 #endif
+
+	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+		apt_log_file_close();
+	}
 
 	/* destroy APR pool */
 	apr_pool_destroy(pool);

@@ -21,6 +21,12 @@
 #include "demo_framework.h"
 #include "apt_log.h"
 
+typedef struct {
+	const char        *conf_dir_path;
+	apt_log_priority_e log_priority;
+	apt_log_output_e   log_output;
+} client_options_t;
+
 static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, char *cmdline)
 {
 	apt_bool_t running = TRUE;
@@ -92,15 +98,19 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -c [--conf-dir] path : Set the path to config directory.\n"
+		"   -c [--conf-dir] path     : Set the path to config directory.\n"
 		"\n"
-		"   -l [--log] priority  : Set the log priority (0-emergency, ..., 7-debug).\n"
+		"   -l [--log-prio] priority : Set the log priority.\n"
+		"                              (0-emergency, ..., 7-debug)\n"
 		"\n"
-		"   -h [--help]          : Show the help.\n"
+		"   -o [--log-output] mode   : Set the log output mode.\n"
+		"                              (0-none, 1-console only, 2-file only, 3-both)\n"
+		"\n"
+		"   -h [--help]              : Show the help.\n"
 		"\n");
 }
 
-static apt_bool_t demo_framework_options_load(const char **conf_dir_path, int argc, const char * const *argv, apr_pool_t *pool)
+static apt_bool_t demo_framework_options_load(client_options_t *options, int argc, const char * const *argv, apr_pool_t *pool)
 {
 	apr_status_t rv;
 	apr_getopt_t *opt;
@@ -109,14 +119,12 @@ static apt_bool_t demo_framework_options_load(const char **conf_dir_path, int ar
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "conf-dir",     'c', TRUE,  "path to config dir" },/* -c arg or --conf-dir arg */
-		{ "log",          'l', TRUE,  "log priority" },      /* -l arg or --log arg */
-		{ "help",         'h', FALSE, "show help" },         /* -h or --help */
-		{ NULL, 0, 0, NULL },                                /* end */
+		{ "conf-dir",    'c', TRUE,  "path to config dir" },/* -c arg or --conf-dir arg */
+		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
+		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
+		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
+		{ NULL, 0, 0, NULL },                               /* end */
 	};
-
-	/* set the default log level */
-	apt_log_priority_set(APT_PRIO_INFO);
 
 	rv = apr_getopt_init(&opt, pool , argc, argv);
 	if(rv != APR_SUCCESS) {
@@ -126,13 +134,16 @@ static apt_bool_t demo_framework_options_load(const char **conf_dir_path, int ar
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
 			case 'c':
-				if(conf_dir_path) {
-					*conf_dir_path = optarg;
-				}
+				options->conf_dir_path = optarg;
 				break;
 			case 'l':
 				if(optarg) {
-					apt_log_priority_set(atoi(optarg));
+					options->log_priority = atoi(optarg);
+				}
+				break;
+			case 'o':
+				if(optarg) {
+					options->log_output = atoi(optarg);
 				}
 				break;
 			case 'h':
@@ -152,7 +163,7 @@ static apt_bool_t demo_framework_options_load(const char **conf_dir_path, int ar
 int main(int argc, const char * const *argv)
 {
 	apr_pool_t *pool;
-	const char *conf_dir_path = NULL;
+	client_options_t options;
 	demo_framework_t *framework;
 
 	/* APR global initialization */
@@ -167,15 +178,30 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
+	/* set the default options */
+	options.conf_dir_path = NULL;
+	options.log_priority = APT_PRIO_INFO;
+	options.log_output = APT_LOG_OUTPUT_CONSOLE;
+
 	/* load options */
-	if(demo_framework_options_load(&conf_dir_path,argc,argv,pool) != TRUE) {
+	if(demo_framework_options_load(&options,argc,argv,pool) != TRUE) {
 		apr_pool_destroy(pool);
 		apr_terminate();
 		return 0;
 	}
 
+	/* set the log level */
+	apt_log_priority_set(options.log_priority);
+	/* set the log output mode */
+	apt_log_output_mode_set(options.log_output);
+
+	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+		/* open the log file */
+		apt_log_file_open("unimrcpclient.log");
+	}
+
 	/* create demo framework */
-	framework = demo_framework_create(conf_dir_path);
+	framework = demo_framework_create(options.conf_dir_path);
 	if(framework) {
 		/* run command line  */
 		demo_framework_cmdline_run(framework);
@@ -183,9 +209,12 @@ int main(int argc, const char * const *argv)
 		demo_framework_destroy(framework);
 	}
 
+	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+		apt_log_file_close();
+	}
+
 	/* destroy APR pool */
 	apr_pool_destroy(pool);
-	
 	/* APR global termination */
 	apr_terminate();
 	return 0;
