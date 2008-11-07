@@ -197,7 +197,7 @@ int main(int argc, const char * const *argv)
 
 	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
-		apt_log_file_open("unimrcpclient.log");
+		apt_log_file_open("unimrcpclient.log",MAX_LOG_FILE_SIZE,pool);
 	}
 
 	/* create demo framework */

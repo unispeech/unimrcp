@@ -28,6 +28,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Default max size of the log file */
+#define MAX_LOG_FILE_SIZE 4000000 /*(~4Mb)*/
+
 /** Priority of log messages ordered from highest priority to lowest (rfc3164) */
 typedef enum {
 	APT_PRIO_EMERGENCY, /**< system is unusable */
@@ -65,7 +68,7 @@ typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char 
 /**
  * Open the log file.
  */
-APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path);
+APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path, apr_size_t max_size, apr_pool_t *pool);
 
 /**
  * Close the log file.

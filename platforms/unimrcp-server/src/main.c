@@ -172,7 +172,7 @@ int main(int argc, const char * const *argv)
 
 	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
-		apt_log_file_open("unimrcpserver.log");
+		apt_log_file_open("unimrcpserver.log",MAX_LOG_FILE_SIZE,pool);
 	}
 
 	if(options.foreground == TRUE) {
