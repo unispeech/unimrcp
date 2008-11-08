@@ -142,6 +142,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_dir_layout.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_log.h"
 				>
 			</File>
@@ -200,6 +204,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_cyclic_queue.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_dir_layout.c"
 				>
 			</File>
 			<File

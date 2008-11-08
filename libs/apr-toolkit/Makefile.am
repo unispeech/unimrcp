@@ -19,6 +19,7 @@ include_HEADERS          = include/apt.h \
                            include/apt_string_table.h \
                            include/apt_text_stream.h \
                            include/apt_net.h \
+                           include/apt_dir_layout.h \
                            include/apt_test_suite.h
 
 libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
@@ -33,5 +34,6 @@ libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
                            src/apt_string_table.c \
                            src/apt_text_stream.c \
                            src/apt_net.c \
+                           src/apt_dir_layout.c \
                            src/apt_test_suite.c
                            
