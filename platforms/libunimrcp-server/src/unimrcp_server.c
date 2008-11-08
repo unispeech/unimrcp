@@ -58,6 +58,11 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 	mrcp_resource_factory_t *resource_factory;
 	mpf_codec_manager_t *codec_manager;
 	mrcp_server_t *server;
+
+	if(!dir_layout) {
+		return NULL;
+	}
+
 	apt_log(APT_PRIO_NOTICE,"UniMRCP Server ["UNI_VERSION_STRING"]");
 	apt_log(APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
 	server = mrcp_server_create();
