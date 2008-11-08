@@ -22,8 +22,9 @@
 
 
 /** Register/install service in SCM */
-static apt_bool_t uni_service_register(const char *bin_path, apr_pool_t *pool)
+static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *pool)
 {
+	char *bin_path;
 	SERVICE_DESCRIPTION desc;
 	SC_HANDLE sch_service;
 	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
@@ -32,6 +33,9 @@ static apt_bool_t uni_service_register(const char *bin_path, apr_pool_t *pool)
 		return FALSE;
 	}
 
+	bin_path = apr_psprintf(pool,"%s\\bin\\unimrcpserver.exe --service --root-dir \"%s\" -o 2",
+					root_dir_path,
+					root_dir_path);
 	sch_service = CreateService(
 					sch_manager,
 					WIN_SERVICE_NAME,
@@ -153,7 +157,7 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -r [--register] binpath : Register the Windows service.\n"
+		"   -r [--register] rootdir : Register the Windows service.\n"
 		"\n"
 		"   -u [--unregister]       : Unregister the Windows service.\n"
 		"\n"
@@ -173,7 +177,7 @@ int main(int argc, const char * const *argv)
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "register",   'r', TRUE, "register service" },  /* -r or --register arg */
+		{ "register",   'r', TRUE,  "register service" },  /* -r or --register arg */
 		{ "unregister", 'u', FALSE, "unregister service" },/* -u or --unregister */
 		{ "start",      's', FALSE, "start service" },     /* -s or --start */
 		{ "stop",       't', FALSE, "stop service" },      /* -t or --stop */

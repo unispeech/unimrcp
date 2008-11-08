@@ -15,6 +15,10 @@ Name: "server\demosynth"; Description: "Demo synthesizer plugin"; Types: full se
 Name: "server\demorecog"; Description: "Demo recognizer plugin"; Types: full server
 Name: "client"; Description: "UniMRCP client (demo application)"; Types: full client
 
+[Dirs]
+Name: "{app}\data"
+Name: "{app}\log"
+
 [Files]
 Source: "..\..\Release\bin\unimrcpserver.exe"; DestDir: "{app}\bin"; Components: server
 Source: "..\..\Release\bin\unimrcpservice.exe"; DestDir: "{app}\bin"; Components: server
@@ -27,14 +31,14 @@ Source: "..\..\Release\conf\unimrcpserver.xml"; DestDir: "{app}\conf"; Component
 Source: "..\..\Release\conf\unimrcpclient.xml"; DestDir: "{app}\conf"; Components: client
 
 [Icons]
-Name: "{group}\UniMRCP Server Console"; Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "-c ""{app}\conf"" -p ""{app}\plugin"""; Components: server
-Name: "{group}\UniMRCP Client Console"; Filename: "{app}\bin\unimrcpclient.exe"; Parameters: "-c ""{app}\conf"""; Components: client
+Name: "{group}\UniMRCP Server Console"; Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--root-dir ""{app}"""; Components: server
+Name: "{group}\UniMRCP Client Console"; Filename: "{app}\bin\unimrcpclient.exe"; Parameters: "--root-dir ""{app}"""; Components: client
 Name: "{group}\UniMRCP Service\Start Server"; Filename: "{app}\bin\unimrcpservice.exe"; Parameters: "--start"; Components: server
 Name: "{group}\UniMRCP Service\Stop Server"; Filename: "{app}\bin\unimrcpservice.exe"; Parameters: "--stop"; Components: server
 Name: "{group}\Uninstall"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\bin\unimrcpservice.exe"; Description: "Register service"; Parameters: "--register ""{app}\bin\unimrcpserver.exe --service"""; Components: server
+Filename: "{app}\bin\unimrcpservice.exe"; Description: "Register service"; Parameters: "--register ""{app}"""; Components: server
 
 [UninstallRun]
 Filename: "{app}\bin\unimrcpservice.exe"; Parameters: "--unregister"; Components: server
