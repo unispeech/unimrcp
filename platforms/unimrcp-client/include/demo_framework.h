@@ -32,7 +32,7 @@ typedef struct demo_framework_t demo_framework_t;
 /**
  * Create demo framework.
  */
-demo_framework_t* demo_framework_create(const char *conf_dir_path);
+demo_framework_t* demo_framework_create(apt_dir_layout_t *dir_layout);
 
 /**
  * Run demo application.

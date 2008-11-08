@@ -16,23 +16,24 @@
 
 #include <stdlib.h>
 #include <apr_getopt.h>
+#include <apr_file_info.h>
+#include "apt_dir_layout.h"
 #include "apt_log.h"
 
 typedef struct {
-	const char        *conf_dir_path;
-	const char        *plugin_dir_path;
+	const char        *base_dir_path;
 	apt_bool_t         foreground;
 	apt_log_priority_e log_priority;
 	apt_log_output_e   log_output;
 } server_options_t;
 
 #ifdef WIN32
-apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
+apt_bool_t uni_service_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 #else
-apt_bool_t uni_daemon_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
+apt_bool_t uni_daemon_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 #endif
 
-apt_bool_t uni_cmdline_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool);
+apt_bool_t uni_cmdline_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 
 
 static void usage()
@@ -45,9 +46,7 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -c [--conf-dir] path     : Set the path to config directory.\n"
-		"\n"
-		"   -p [--plugin-dir] path   : Set the path to plugin directory.\n"
+		"   -d [--base-dir] path     : Set the project base directory.\n"
 		"\n"
 		"   -l [--log-prio] priority : Set the log priority.\n"
 		"                              (0-emergency, ..., 7-debug)\n"
@@ -75,8 +74,7 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "conf-dir",    'c', TRUE,  "path to config dir" },/* -c arg or --conf-dir arg */
-		{ "plugin-dir",  'p', TRUE,  "path to plugin dir" },/* -p arg or --plugin-dir arg */
+		{ "base-dir",    'd', TRUE,  "path to base dir" },  /* -d arg or --base-dir arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
 		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
 #ifdef WIN32
@@ -95,11 +93,8 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
-			case 'c':
-				options->conf_dir_path = optarg;
-				break;
-			case 'p':
-				options->plugin_dir_path = optarg;
+			case 'd':
+				options->base_dir_path = optarg;
 				break;
 			case 'l':
 				if(optarg) {
@@ -138,6 +133,7 @@ int main(int argc, const char * const *argv)
 {
 	apr_pool_t *pool;
 	server_options_t options;
+	apt_dir_layout_t *dir_layout;
 
 	/* APR global initialization */
 	if(apr_initialize() != APR_SUCCESS) {
@@ -152,8 +148,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* set the default options */
-	options.conf_dir_path = NULL;
-	options.plugin_dir_path = NULL;
+	options.base_dir_path = "../";
 	options.foreground = TRUE;
 	options.log_priority = APT_PRIO_INFO;
 	options.log_output = APT_LOG_OUTPUT_CONSOLE;
@@ -165,6 +160,9 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
+	/* create the structure of default directories layout */
+	dir_layout = apt_default_dir_layout_create(options.base_dir_path,pool);
+
 	/* set the log level */
 	apt_log_priority_set(options.log_priority);
 	/* set the log output mode */
@@ -172,22 +170,24 @@ int main(int argc, const char * const *argv)
 
 	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
-		apt_log_file_open("unimrcpserver.log",MAX_LOG_FILE_SIZE,pool);
+		char *log_file_path;
+		apr_filepath_merge(&log_file_path,dir_layout->log_dir_path,"unimrcpserver.log",0,pool);
+		apt_log_file_open(log_file_path,MAX_LOG_FILE_SIZE,pool);
 	}
 
 	if(options.foreground == TRUE) {
 		/* run command line */
-		uni_cmdline_run(options.conf_dir_path,options.plugin_dir_path,pool);
+		uni_cmdline_run(dir_layout,pool);
 	}
 #ifdef WIN32
 	else {
 		/* run as windows service */
-		uni_service_run(options.conf_dir_path,options.plugin_dir_path,pool);
+		uni_service_run(dir_layout,pool);
 	}
 #else
 	else {
 		/* run as daemon */
-		uni_daemon_run(options.conf_dir_path,options.plugin_dir_path,pool);
+		uni_daemon_run(dir_layout,pool);
 	}
 #endif
 

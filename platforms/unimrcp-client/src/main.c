@@ -17,12 +17,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <apr_getopt.h>
-#include <apr_strings.h>
+#include <apr_file_info.h>
 #include "demo_framework.h"
 #include "apt_log.h"
 
 typedef struct {
-	const char        *conf_dir_path;
+	const char        *base_dir_path;
 	apt_log_priority_e log_priority;
 	apt_log_output_e   log_output;
 } client_options_t;
@@ -98,7 +98,7 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -c [--conf-dir] path     : Set the path to config directory.\n"
+		"   -d [--base-dir] path     : Set the project base directory.\n"
 		"\n"
 		"   -l [--log-prio] priority : Set the log priority.\n"
 		"                              (0-emergency, ..., 7-debug)\n"
@@ -119,7 +119,7 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "conf-dir",    'c', TRUE,  "path to config dir" },/* -c arg or --conf-dir arg */
+		{ "base-dir",    'd', TRUE,  "path to base dir" },  /* -d arg or --base-dir arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
 		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
 		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
@@ -133,8 +133,8 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
-			case 'c':
-				options->conf_dir_path = optarg;
+			case 'd':
+				options->base_dir_path = optarg;
 				break;
 			case 'l':
 				if(optarg) {
@@ -164,6 +164,7 @@ int main(int argc, const char * const *argv)
 {
 	apr_pool_t *pool;
 	client_options_t options;
+	apt_dir_layout_t *dir_layout;
 	demo_framework_t *framework;
 
 	/* APR global initialization */
@@ -179,7 +180,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* set the default options */
-	options.conf_dir_path = NULL;
+	options.base_dir_path = "../";
 	options.log_priority = APT_PRIO_INFO;
 	options.log_output = APT_LOG_OUTPUT_CONSOLE;
 
@@ -190,6 +191,9 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
+	/* create the structure of default directories layout */
+	dir_layout = apt_default_dir_layout_create(options.base_dir_path,pool);
+
 	/* set the log level */
 	apt_log_priority_set(options.log_priority);
 	/* set the log output mode */
@@ -197,11 +201,13 @@ int main(int argc, const char * const *argv)
 
 	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
-		apt_log_file_open("unimrcpclient.log",MAX_LOG_FILE_SIZE,pool);
+		char *log_file_path;
+		apr_filepath_merge(&log_file_path,dir_layout->log_dir_path,"unimrcpclient.log",0,pool);
+		apt_log_file_open(log_file_path,MAX_LOG_FILE_SIZE,pool);
 	}
 
 	/* create demo framework */
-	framework = demo_framework_create(options.conf_dir_path);
+	framework = demo_framework_create(dir_layout);
 	if(framework) {
 		/* run command line  */
 		demo_framework_cmdline_run(framework);

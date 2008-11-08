@@ -25,8 +25,7 @@ static SERVICE_STATUS_HANDLE win_service_status_handle = NULL;
 static SERVICE_STATUS win_service_status;
 
 static mrcp_server_t *server = NULL;
-static const char *conf_dir = NULL;
-static const char *plugin_dir = NULL;
+static apt_dir_layout_t *service_dir_layout = NULL;
 
 /** SCM state change handler */
 static void WINAPI win_service_handler(DWORD control)
@@ -69,7 +68,7 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 	win_service_status.dwWaitHint = 0;
 
 	win_service_status_handle = RegisterServiceCtrlHandler(WIN_SERVICE_NAME, win_service_handler);
-	if (win_service_status_handle == (SERVICE_STATUS_HANDLE)0) {
+	if(win_service_status_handle == (SERVICE_STATUS_HANDLE)0) {
 		apt_log(APT_PRIO_WARNING,"Failed to Register Service Control Handler %d",GetLastError());
 		return;
 	} 
@@ -80,7 +79,7 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 	} 
 
 	/* start server */
-	server = unimrcp_server_start(conf_dir, plugin_dir);
+	server = unimrcp_server_start(service_dir_layout);
 
 	win_service_status.dwCurrentState =  server ? SERVICE_RUNNING : SERVICE_STOPPED;
 	if(!SetServiceStatus(win_service_status_handle, &win_service_status)) {
@@ -89,14 +88,14 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 }
 
 /** Run SCM service */
-apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool)
+apt_bool_t uni_service_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 {
 	SERVICE_TABLE_ENTRY win_service_table[] = {
 		{ WIN_SERVICE_NAME, win_service_main },
 		{ NULL, NULL }
 	};
 
-	const char *end;
+/*	const char *end;
 	char bin_path[MAX_PATH];
 	if(!GetModuleFileName(NULL,bin_path,MAX_PATH)) {
 		return FALSE;
@@ -104,8 +103,9 @@ apt_bool_t uni_service_run(const char *conf_dir_path, const char *plugin_dir_pat
 	end = apr_filepath_name_get(bin_path);
 	bin_path[(end-bin_path)] = '\0';
 	SetCurrentDirectory(bin_path);
-
-	apt_log(APT_PRIO_INFO,"Run as Service [%s]",bin_path);
+*/
+	service_dir_layout = dir_layout;
+	apt_log(APT_PRIO_INFO,"Run as Service");
 	if(!StartServiceCtrlDispatcher(win_service_table)) {
 		apt_log(APT_PRIO_WARNING,"Failed to Connect to SCM %d",GetLastError());
 	}

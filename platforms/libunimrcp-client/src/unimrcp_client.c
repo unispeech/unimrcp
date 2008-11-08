@@ -47,7 +47,7 @@ static apr_xml_doc* unimrcp_client_config_parse(const char *path, apr_pool_t *po
 static apt_bool_t unimrcp_client_config_load(mrcp_client_t *client, const apr_xml_doc *doc, apr_pool_t *pool);
 
 /** Start UniMRCP client */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
@@ -72,7 +72,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(const char *conf_dir_path)
 		mrcp_client_codec_manager_register(client,codec_manager);
 	}
 
-	doc = unimrcp_client_config_parse(conf_dir_path,pool);
+	doc = unimrcp_client_config_parse(dir_layout->conf_dir_path,pool);
 	if(doc) {
 		unimrcp_client_config_load(client,doc,pool);
 	}

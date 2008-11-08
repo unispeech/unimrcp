@@ -46,7 +46,7 @@ static apt_bool_t cmdline_process(char *cmdline)
 	return running;
 }
 
-apt_bool_t uni_cmdline_run(const char *conf_dir_path, const char *plugin_dir_path, apr_pool_t *pool)
+apt_bool_t uni_cmdline_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 {
 	apt_bool_t running = TRUE;
 	char cmdline[1024];
@@ -54,7 +54,7 @@ apt_bool_t uni_cmdline_run(const char *conf_dir_path, const char *plugin_dir_pat
 	mrcp_server_t *server;
 
 	/* start server */
-	server = unimrcp_server_start(conf_dir_path, plugin_dir_path);
+	server = unimrcp_server_start(dir_layout);
 	if(!server) {
 		return FALSE;
 	}

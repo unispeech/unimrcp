@@ -54,10 +54,10 @@ static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framewor
 static apt_bool_t demo_framework_app_register(demo_framework_t *framework, demo_application_t *demo_application, const char *name);
 
 /** Create demo framework */
-demo_framework_t* demo_framework_create(const char *conf_dir_path)
+demo_framework_t* demo_framework_create(apt_dir_layout_t *dir_layout)
 {
 	demo_framework_t *framework = NULL;
-	mrcp_client_t *client = unimrcp_client_create(conf_dir_path);
+	mrcp_client_t *client = unimrcp_client_create(dir_layout);
 	if(client) {
 		demo_application_t *demo_application;
 		apr_pool_t *pool = mrcp_client_memory_pool_get(client);

@@ -23,6 +23,7 @@
  */ 
 
 #include <apt.h>
+#include <apt_dir_layout.h>
 
 /** Library export/import defines */
 #ifdef WIN32
