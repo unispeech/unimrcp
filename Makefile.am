@@ -31,3 +31,5 @@ def-conf:
            
 install-data-local:
 	test -d $(confdir) || $(MAKE) def-conf
+	test -d $(datadir) || $(mkinstalldirs) $(datadir)
+	test -d $(logdir)  || $(mkinstalldirs) $(logdir)

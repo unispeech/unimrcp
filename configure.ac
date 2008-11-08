@@ -11,6 +11,8 @@ AC_PREFIX_DEFAULT(/usr/local/unimrcp)
 
 plugindir='${prefix}/plugin'
 confdir='${prefix}/conf'
+logdir='${prefix}/log'
+datadir='${prefix}/data'
 
 AM_INIT_AUTOMAKE(foreign)
 
@@ -52,6 +54,7 @@ AC_SUBST(ac_aux_dir)
 AC_SUBST(ac_macro_dir)
 AC_SUBST(plugindir)
 AC_SUBST(confdir)
+AC_SUBST(logdir)
 
 AC_DEFUN([AX_COMPILER_VENDOR],
 [
