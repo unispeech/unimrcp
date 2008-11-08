@@ -21,7 +21,7 @@
 #include "apt_log.h"
 
 typedef struct {
-	const char        *base_dir_path;
+	const char        *root_dir_path;
 	apt_bool_t         foreground;
 	apt_log_priority_e log_priority;
 	apt_log_output_e   log_output;
@@ -46,7 +46,7 @@ static void usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -d [--base-dir] path     : Set the project base directory.\n"
+		"   -r [--root-dir] path     : Set the project root directory path.\n"
 		"\n"
 		"   -l [--log-prio] priority : Set the log priority.\n"
 		"                              (0-emergency, ..., 7-debug)\n"
@@ -74,7 +74,7 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "base-dir",    'd', TRUE,  "path to base dir" },  /* -d arg or --base-dir arg */
+		{ "root-dir",    'r', TRUE,  "path to root dir" },  /* -r arg or --root-dir arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
 		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
 #ifdef WIN32
@@ -93,8 +93,8 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
-			case 'd':
-				options->base_dir_path = optarg;
+			case 'r':
+				options->root_dir_path = optarg;
 				break;
 			case 'l':
 				if(optarg) {
@@ -148,7 +148,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* set the default options */
-	options.base_dir_path = "../";
+	options.root_dir_path = "../";
 	options.foreground = TRUE;
 	options.log_priority = APT_PRIO_INFO;
 	options.log_output = APT_LOG_OUTPUT_CONSOLE;
@@ -161,7 +161,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* create the structure of default directories layout */
-	dir_layout = apt_default_dir_layout_create(options.base_dir_path,pool);
+	dir_layout = apt_default_dir_layout_create(options.root_dir_path,pool);
 
 	/* set the log level */
 	apt_log_priority_set(options.log_priority);

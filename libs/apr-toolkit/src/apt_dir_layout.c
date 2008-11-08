@@ -17,13 +17,13 @@
 #include <apr_file_info.h>
 #include "apt_dir_layout.h"
 
-APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *base_dir_path, apr_pool_t *pool)
+APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_dir_path, apr_pool_t *pool)
 {
 	apt_dir_layout_t *dir_layout = (apt_dir_layout_t*) apr_palloc(pool,sizeof(apt_dir_layout_t));
-	apr_filepath_merge(&dir_layout->conf_dir_path,base_dir_path,"conf",0,pool);
-	apr_filepath_merge(&dir_layout->plugin_dir_path,base_dir_path,"plugin",0,pool);
-	apr_filepath_merge(&dir_layout->log_dir_path,base_dir_path,"log",0,pool);
-	apr_filepath_merge(&dir_layout->data_dir_path,base_dir_path,"data",0,pool);
+	apr_filepath_merge(&dir_layout->conf_dir_path,root_dir_path,"conf",0,pool);
+	apr_filepath_merge(&dir_layout->plugin_dir_path,root_dir_path,"plugin",0,pool);
+	apr_filepath_merge(&dir_layout->log_dir_path,root_dir_path,"log",0,pool);
+	apr_filepath_merge(&dir_layout->data_dir_path,root_dir_path,"data",0,pool);
 	return dir_layout;
 }
 

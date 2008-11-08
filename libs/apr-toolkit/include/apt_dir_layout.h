@@ -40,7 +40,7 @@ struct apt_dir_layout_t {
 /**
  * Create (allocate) the structure of default directories layout.
  */
-APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *base_dir_path, apr_pool_t *pool);
+APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_dir_path, apr_pool_t *pool);
 
 /**
  * Create (allocate) the structure of custom directories layout.
