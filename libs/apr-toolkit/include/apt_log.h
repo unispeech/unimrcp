@@ -67,6 +67,9 @@ typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char 
 
 /**
  * Open the log file.
+ * @param file_path the path to the log file
+ * @param max_size the max size of the log file
+ * @param pool the memory pool to use
  */
 APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path, apr_size_t max_size, apr_pool_t *pool);
 
@@ -96,7 +99,7 @@ APT_DECLARE(void) apt_log_header_set(int header);
 /**
  * Set the external log handler.
  * @param handler the handler to pass log events to
- * @remark default logger is used to output the logs to stdout,
+ * @remark default logger is used to output the logs to stdout and/or log file,
  *         if external log handler isn't set
  */
 APT_DECLARE(void) apt_log_handler_set(apt_log_handler_f handler);
