@@ -41,3 +41,15 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 	dir_layout->data_dir_path = apr_pstrdup(pool,data_dir_path);
 	return dir_layout;
 }
+
+APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
+{
+	char *file_path;
+	if(!dir_layout || !file_name) {
+		return NULL;
+	}
+	if(apr_filepath_merge(&file_path,dir_layout->data_dir_path,file_name,0,pool) != APR_SUCCESS) {
+		return NULL;
+	}
+	return file_path;
+}
