@@ -28,7 +28,7 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create UniMRCP client.
- * @param conf_dir_path the path to config directory
+ * @param dir_layout the dir layout structure
  */
 MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout);
 

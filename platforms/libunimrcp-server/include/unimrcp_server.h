@@ -28,8 +28,7 @@ APT_BEGIN_EXTERN_C
 
 /** 
  * Start UniMRCP server.
- * @param conf_dir_path the path to config directory
- * @param plugin_dir_path the path to plugin directory
+ * @param dir_layout the dir layout structure
  */
 MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout);
 

@@ -26,14 +26,18 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Dir layout declaration */
+/** Directory layout declaration */
 typedef struct apt_dir_layout_t apt_dir_layout_t;
 
-/** Dir layout */
+/** Directory layout */
 struct apt_dir_layout_t {
+	/** Path to config dir */
 	char *conf_dir_path;
+	/** Path to plugin dir */
 	char *plugin_dir_path;
+	/** Path to log dir */
 	char *log_dir_path;
+	/** Path to data dir */
 	char *data_dir_path;
 };
 
