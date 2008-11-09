@@ -179,8 +179,12 @@ static apt_bool_t synth_application_on_channel_add(mrcp_application_t *applicati
 		}
 
 		if(synth_channel && session) {
+			const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 			char *file_name = apr_pstrcat(session->pool,"synth-",session->id.buf,".pcm",NULL);
-			synth_channel->audio_out = fopen(file_name,"wb");
+			char *file_path = apt_datadir_filepath_get(dir_layout,file_name,session->pool);
+			if(file_path) {
+				synth_channel->audio_out = fopen(file_path,"wb");
+			}
 		}
 	}
 	else {

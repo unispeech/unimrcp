@@ -187,14 +187,18 @@ static apt_bool_t recog_application_on_channel_add(mrcp_application_t *applicati
 			mrcp_application_message_send(session,channel,mrcp_message);
 		}
 		if(recog_channel) {
-			recog_channel->audio_in = fopen("demo.pcm","rb");
-			if(recog_channel->audio_in) {
-				apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",DEMO_SPEECH_SOURCE_FILE);
-			}
-			else {
-				apt_log(APT_PRIO_INFO,"Cannot Find [%s]",DEMO_SPEECH_SOURCE_FILE);
-				/* set some estimated time to complete */
-				recog_channel->time_to_complete = 5000; // 5 sec
+			const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
+			char *file_path = apt_datadir_filepath_get(dir_layout,DEMO_SPEECH_SOURCE_FILE,session->pool);
+			if(file_path) {
+				recog_channel->audio_in = fopen(file_path,"rb");
+				if(recog_channel->audio_in) {
+					apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",file_path);
+				}
+				else {
+					apt_log(APT_PRIO_INFO,"Cannot Find [%s]",file_path);
+					/* set some estimated time to complete */
+					recog_channel->time_to_complete = 5000; // 5 sec
+				}
 			}
 		}
 	}
