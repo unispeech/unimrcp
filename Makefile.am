@@ -28,8 +28,15 @@ def-conf:
 	    filename=`echo $$conffile | sed -e 's|^.*/||'`; \
 	    $(INSTALL) -m 644 conf/$$filename $(confdir); \
 	done
+
+def-data:
+	test -d $(datadir) || $(mkinstalldirs) $(datadir)
+	for datafile in `find data -name \*.pcm` ; do \
+	    filename=`echo $$datafile | sed -e 's|^.*/||'`; \
+	    $(INSTALL) -m 644 data/$$filename $(datadir); \
+	done
            
 install-data-local:
 	test -d $(confdir) || $(MAKE) def-conf
-	test -d $(datadir) || $(mkinstalldirs) $(datadir)
+	test -d $(datadir) || $(MAKE) def-data
 	test -d $(logdir)  || $(mkinstalldirs) $(logdir)
