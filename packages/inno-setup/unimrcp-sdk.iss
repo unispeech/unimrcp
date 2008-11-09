@@ -1,6 +1,6 @@
 [Setup]
 #include "setup.iss"
-OutputBaseFilename=unimrcp-sdk-0.2.0
+OutputBaseFilename=unimrcp-sdk-{#= uni_version}
 
 [Types]
 Name: "full"; Description: "Full installation"

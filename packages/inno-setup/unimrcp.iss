@@ -1,6 +1,6 @@
 [Setup]
 #include "setup.iss"
-OutputBaseFilename=unimrcp-0.2.0
+OutputBaseFilename=unimrcp-{#= uni_version}
 
 [Types]
 Name: "full"; Description: "Full installation"
@@ -20,15 +20,17 @@ Name: "{app}\data"
 Name: "{app}\log"
 
 [Files]
-Source: "..\..\Release\bin\unimrcpserver.exe"; DestDir: "{app}\bin"; Components: server
-Source: "..\..\Release\bin\unimrcpservice.exe"; DestDir: "{app}\bin"; Components: server
-Source: "..\..\Release\bin\unimrcpclient.exe"; DestDir: "{app}\bin"; Components: client
-Source: "..\..\Release\bin\*.dll"; DestDir: "{app}\bin"; Components: server client
-Source: "..\..\Release\plugin\mrcpcepstral.dll"; DestDir: "{app}\plugin"; Components: server/cepstral
-Source: "..\..\Release\plugin\demosynth.dll"; DestDir: "{app}\plugin"; Components: server/demosynth
-Source: "..\..\Release\plugin\demorecog.dll"; DestDir: "{app}\plugin"; Components: server/demorecog
-Source: "..\..\Release\conf\unimrcpserver.xml"; DestDir: "{app}\conf"; Components: server
-Source: "..\..\Release\conf\unimrcpclient.xml"; DestDir: "{app}\conf"; Components: client
+#define uni_root "..\..\Release"
+Source: "{#= uni_root}\bin\unimrcpserver.exe"; DestDir: "{app}\bin"; Components: server
+Source: "{#= uni_root}\bin\unimrcpservice.exe"; DestDir: "{app}\bin"; Components: server
+Source: "{#= uni_root}\bin\unimrcpclient.exe"; DestDir: "{app}\bin"; Components: client
+Source: "{#= uni_root}\bin\*.dll"; DestDir: "{app}\bin"; Components: server client
+Source: "{#= uni_root}\plugin\mrcpcepstral.dll"; DestDir: "{app}\plugin"; Components: server/cepstral
+Source: "{#= uni_root}\plugin\demosynth.dll"; DestDir: "{app}\plugin"; Components: server/demosynth
+Source: "{#= uni_root}\plugin\demorecog.dll"; DestDir: "{app}\plugin"; Components: server/demorecog
+Source: "{#= uni_root}\conf\unimrcpserver.xml"; DestDir: "{app}\conf"; Components: server
+Source: "{#= uni_root}\conf\unimrcpclient.xml"; DestDir: "{app}\conf"; Components: client
+Source: "{#= uni_root}\data\*.pcm"; DestDir: "{app}\data"; Components: server client
 
 [Icons]
 Name: "{group}\UniMRCP Server Console"; Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--root-dir ""{app}"""; Components: server

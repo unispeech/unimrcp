@@ -1,5 +1,7 @@
+#define uni_version "0.2.0"
+
 AppName=UniMRCP
-AppVerName=UniMRCP-0.2.0
+AppVerName=UniMRCP-{#= uni_version}
 AppPublisher=UniMRCP
 AppPublisherURL=http://www.unimrcp.org/
 AppSupportURL=http://groups.google.com/group/unimrcp
