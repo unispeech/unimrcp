@@ -31,7 +31,7 @@ APT_BEGIN_EXTERN_C
  * Create MRCP client instance.
  * @return the created client instance
  */
-MRCP_DECLARE(mrcp_client_t*) mrcp_client_create();
+MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout);
 
 /**
  * Start message processing loop.

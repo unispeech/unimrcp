@@ -153,6 +153,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
 MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application);
 
 /**
+ * Get dir layout structure.
+ * @param application the application to get dir layout from
+ */
+MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(mrcp_application_t *application);
+
+/**
  * Create session.
  * @param application the entire application
  * @param profile the name of the profile to use

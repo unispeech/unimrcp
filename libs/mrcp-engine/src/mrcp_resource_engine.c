@@ -30,6 +30,7 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 	engine->obj = obj;
 	engine->method_vtable =vtable;
 	engine->codec_manager = NULL;
+	engine->dir_layout = NULL;
 	engine->pool = pool;
 	return engine;
 }
@@ -48,6 +49,7 @@ mrcp_engine_channel_t* mrcp_engine_channel_create(
 	channel->event_vtable = NULL;
 	channel->event_obj = NULL;
 	channel->termination = termination;
+	channel->engine = engine;
 	channel->pool = pool;
 	return channel;
 }

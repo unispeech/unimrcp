@@ -72,6 +72,8 @@ struct mrcp_engine_channel_t {
 	void                                      *event_obj;
 	/** Media termination */
 	mpf_termination_t                         *termination;
+	/** Back pointer to resource engine */
+	mrcp_resource_engine_t                    *engine;
 	/** Pool to allocate memory from */
 	apr_pool_t                                *pool;
 };
@@ -99,7 +101,9 @@ struct mrcp_resource_engine_t {
 	/** Table of virtual methods */
 	const mrcp_engine_method_vtable_t *method_vtable;
 	/** Codec manager */
-	const mpf_codec_manager_t *codec_manager;
+	const mpf_codec_manager_t         *codec_manager;
+	/** Dir layout structure */
+	const apt_dir_layout_t            *dir_layout;
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
 };

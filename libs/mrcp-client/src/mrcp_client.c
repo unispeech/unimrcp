@@ -53,6 +53,8 @@ struct mrcp_client_t {
 
 	/** Connection task message pool */
 	apt_task_msg_pool_t     *cnt_msg_pool;
+	/** Dir layout structure */
+	apt_dir_layout_t        *dir_layout;
 	/** Memory pool */
 	apr_pool_t              *pool;
 };
@@ -132,7 +134,7 @@ static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp
 
 
 /** Create MRCP client instance */
-MRCP_DECLARE(mrcp_client_t*) mrcp_client_create()
+MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	mrcp_client_t *client;
 	apr_pool_t *pool;
@@ -146,6 +148,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create()
 	apt_log(APT_PRIO_NOTICE,"Create MRCP Client");
 	client = apr_palloc(pool,sizeof(mrcp_client_t));
 	client->pool = pool;
+	client->dir_layout = dir_layout;
 	client->resource_factory = NULL;
 	client->media_engine_table = NULL;
 	client->rtp_factory_table = NULL;
@@ -444,6 +447,13 @@ MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
 {
 	return application->obj;
 }
+
+/** Get dir layout structure */
+MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(mrcp_application_t *application)
+{
+	return application->client->dir_layout;
+}
+
 
 
 /** Create client session */

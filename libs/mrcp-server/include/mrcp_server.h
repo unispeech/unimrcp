@@ -32,7 +32,7 @@ APT_BEGIN_EXTERN_C
  * Create MRCP server instance.
  * @return the created server instance
  */
-MRCP_DECLARE(mrcp_server_t*) mrcp_server_create();
+MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout);
 
 /**
  * Start message processing loop.

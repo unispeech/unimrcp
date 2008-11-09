@@ -60,6 +60,8 @@ struct mrcp_server_t {
 	/** Resource engine task message pool */
 	apt_task_msg_pool_t     *resource_engine_msg_pool;
 
+	/** Dir layout structure */
+	apt_dir_layout_t        *dir_layout;
 	/** Memory pool */
 	apr_pool_t              *pool;
 };
@@ -146,7 +148,7 @@ static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *si
 
 
 /** Create MRCP server instance */
-MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
+MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 {
 	mrcp_server_t *server;
 	apr_pool_t *pool;
@@ -160,6 +162,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create()
 	apt_log(APT_PRIO_NOTICE,"Create MRCP Server");
 	server = apr_palloc(pool,sizeof(mrcp_server_t));
 	server->pool = pool;
+	server->dir_layout = dir_layout;
 	server->resource_factory = NULL;
 	server->resource_engine_table = NULL;
 	server->media_engine_table = NULL;
@@ -270,6 +273,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
 		server->resource_engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(resource_engine_task_msg_data_t),server->pool);
 	}
 	engine->codec_manager = server->codec_manager;
+	engine->dir_layout = server->dir_layout;
 	apt_log(APT_PRIO_INFO,"Register Resource Engine [%s]",name);
 	apr_hash_set(server->resource_engine_table,name,APR_HASH_KEY_STRING,engine);
 	return TRUE;
