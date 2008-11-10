@@ -52,7 +52,7 @@ typedef mrcp_resource_engine_t* (*mrcp_plugin_creator_f)(apr_pool_t *pool);
  * Minor API changes that do not cause binary compatibility problems.
  * Reset to 0 when upgrading PLUGIN_MAJOR_VERSION
  */
-#define PLUGIN_MINOR_VERSION   1
+#define PLUGIN_MINOR_VERSION   2
 
 /** patch level 
  * The Patch Level never includes API changes, simply bug fixes.
