@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.57)
 
-AC_INIT([unimrcp],[0.2.0])
+AC_INIT([unimrcp],[0.3.0])
 
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/acmacros])
