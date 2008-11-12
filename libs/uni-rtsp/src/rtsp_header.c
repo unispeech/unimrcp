@@ -62,6 +62,19 @@ static apt_bool_t rtsp_trasnport_parse(rtsp_transport_t *transport, const apt_st
 	return TRUE;
 }
 
+/** Parse RTSP transport */
+static apt_bool_t rtsp_session_id_parse(apt_str_t *session_id, const apt_str_t *value, apr_pool_t *pool)
+{
+	char *sep;
+	apt_string_copy(session_id,value,pool);
+	sep = strchr(session_id->buf,';');
+	if(sep) {
+		session_id->length = sep - session_id->buf;
+		*sep = '\0';
+	}
+	return TRUE;
+}
+
 /** Generate RTSP trasnport port type */
 static apt_bool_t rtsp_trasnport_port_type_generate(rtsp_transport_port_type_e type, rtsp_port_range_t *port_range, apt_text_stream_t *text_stream)
 {
@@ -121,7 +134,7 @@ static apt_bool_t rtsp_header_field_parse(rtsp_header_t *header, rtsp_header_fie
 			rtsp_trasnport_parse(&header->transport,value);
 			break;
 		case RTSP_HEADER_FIELD_SESSION_ID:
-			apt_string_copy(&header->session_id,value,pool);
+			rtsp_session_id_parse(&header->session_id,value,pool);
 			break;
 		case RTSP_HEADER_FIELD_RTP_INFO:
 			apt_string_copy(&header->rtp_info,value,pool);
