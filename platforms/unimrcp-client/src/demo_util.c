@@ -61,27 +61,45 @@ mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_
 	return mrcp_message;
 }
 
-/** Create demo MRCP message (RECOGNIZE request) */
-mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_channel_t *channel)
+/** Create demo MRCP message (DEFINE-GRAMMAR request) */
+mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	const char text[] = 
 		"<?xml version=\"1.0\"?>\r\n"
 		"<grammar xmlns=\"http://www.w3.org/2001/06/grammar\"\r\n"
-		"xml:lang=\"en-US\" version=\"1.0\" root=\"request\">\r\n"
-		"<rule id=\"yes\">\r\n"
+		"xml:lang=\"en-US\" version=\"1.0\"  mode=\"voice\" root=\"digit\">\r\n"
+		"<rule id=\"digit\">\r\n"
 		"<one-of>\r\n"
-		"<item xml:lang=\"fr-CA\">oui</item>\r\n"
-		"<item xml:lang=\"en-US\">yes</item>\r\n"
+		"<item>one</item>\r\n"
+		"<item>two</item>\r\n"
+		"<item>three</item>\r\n"
 		"</one-of>\r\n"
 		"</rule>\r\n"
-		"<rule id=\"request\">\r\n"
-		"may I speak to\r\n"
-		"<one-of xml:lang=\"fr-CA\">\r\n"
-		"<item>Michel Tremblay</item>\r\n"
-		"<item>Andre Roy</item>\r\n"
-		"</one-of>\r\n"
-		"</rule>\r\n"
-		"</grammar>\r\n";
+		"</grammar>";
+
+	/* create MRCP message */
+	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,RECOGNIZER_DEFINE_GRAMMAR);
+	if(mrcp_message) {
+		mrcp_generic_header_t *generic_header;
+		/* get/allocate generic header */
+		generic_header = mrcp_generic_header_prepare(mrcp_message);
+		if(generic_header) {
+			/* set generic header fields */
+			apt_string_assign(&generic_header->content_type,"application/grammar+xml",mrcp_message->pool);
+			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
+			apt_string_assign(&generic_header->content_id,"request1@form-level.store",mrcp_message->pool);
+			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
+		}
+		/* set message body */
+		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
+	}
+	return mrcp_message;
+}
+
+/** Create demo MRCP message (RECOGNIZE request) */
+mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_channel_t *channel)
+{
+	const char text[] = "session:request1@form-level.store";
 
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,RECOGNIZER_RECOGNIZE);
@@ -92,10 +110,8 @@ mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_chan
 		generic_header = mrcp_generic_header_prepare(mrcp_message);
 		if(generic_header) {
 			/* set generic header fields */
-			apt_string_assign(&generic_header->content_type,"application/synthesis+ssml",mrcp_message->pool);
+			apt_string_assign(&generic_header->content_type,"text/uri-list",mrcp_message->pool);
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
-			apt_string_assign(&generic_header->content_id,"request1@form-level.store",mrcp_message->pool);
-			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
 		}
 		/* get/allocate recognizer header */
 		recog_header = mrcp_resource_header_prepare(mrcp_message);

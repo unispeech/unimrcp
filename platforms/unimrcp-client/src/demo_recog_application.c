@@ -25,7 +25,7 @@
 #include "mpf_stream.h"
 #include "apt_log.h"
 
-#define DEMO_SPEECH_SOURCE_FILE "demo.pcm"
+#define DEMO_SPEECH_SOURCE_FILE "one.pcm"
 
 typedef struct recog_app_channel_t recog_app_channel_t;
 
@@ -178,28 +178,12 @@ static apt_bool_t recog_application_on_session_terminate(mrcp_application_t *app
 /** Handle the responses sent to channel add requests */
 static apt_bool_t recog_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
-	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
 		mrcp_message_t *mrcp_message;
-		/* create and send RECOGNIZE request */
-		mrcp_message = demo_recognize_message_create(session,channel);
+		/* create and send DEFINE-GRAMMAR request */
+		mrcp_message = demo_define_grammar_message_create(session,channel);
 		if(mrcp_message) {
 			mrcp_application_message_send(session,channel,mrcp_message);
-		}
-		if(recog_channel) {
-			const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
-			char *file_path = apt_datadir_filepath_get(dir_layout,DEMO_SPEECH_SOURCE_FILE,session->pool);
-			if(file_path) {
-				recog_channel->audio_in = fopen(file_path,"rb");
-				if(recog_channel->audio_in) {
-					apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",file_path);
-				}
-				else {
-					apt_log(APT_PRIO_INFO,"Cannot Find [%s]",file_path);
-					/* set some estimated time to complete */
-					recog_channel->time_to_complete = 5000; // 5 sec
-				}
-			}
 		}
 	}
 	else {
@@ -226,12 +210,50 @@ static apt_bool_t recog_application_on_channel_remove(mrcp_application_t *applic
 	return TRUE;
 }
 
+/** Handle the DEFINE-GRAMMAR responses */
+static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel)
+{
+	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
+	mrcp_message_t *mrcp_message;
+	/* create and send RECOGNIZE request */
+	mrcp_message = demo_recognize_message_create(session,channel);
+	if(mrcp_message) {
+		mrcp_application_message_send(session,channel,mrcp_message);
+	}
+	if(recog_channel) {
+		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
+		char *file_path = apt_datadir_filepath_get(dir_layout,DEMO_SPEECH_SOURCE_FILE,session->pool);
+		if(file_path) {
+			recog_channel->audio_in = fopen(file_path,"rb");
+			if(recog_channel->audio_in) {
+				apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",file_path);
+			}
+			else {
+				apt_log(APT_PRIO_INFO,"Cannot Find [%s]",file_path);
+				/* set some estimated time to complete */
+				recog_channel->time_to_complete = 5000; // 5 sec
+			}
+		}
+	}
+	return TRUE;
+}
+
 static apt_bool_t recog_application_on_message_receive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		/* received MRCP response */
-		if(message->start_line.method_id == RECOGNIZER_RECOGNIZE) {
+		if(message->start_line.method_id == RECOGNIZER_DEFINE_GRAMMAR) {
+			/* received the response to DEFINE-GRAMMAR request */
+			if(message->start_line.request_state == MRCP_REQUEST_STATE_COMPLETE) {
+				recog_application_on_define_grammar(application,session,channel);
+			}
+			else {
+				/* received unexpected response, remove channel */
+				mrcp_application_channel_remove(session,channel);
+			}
+		}
+		else if(message->start_line.method_id == RECOGNIZER_RECOGNIZE) {
 			/* received the response to RECOGNIZE request */
 			if(message->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS) {
 				/* start to stream the speech to recognize */
