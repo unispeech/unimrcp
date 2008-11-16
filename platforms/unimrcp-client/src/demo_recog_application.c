@@ -180,8 +180,9 @@ static apt_bool_t recog_application_on_channel_add(mrcp_application_t *applicati
 {
 	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
 		mrcp_message_t *mrcp_message;
+		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 		/* create and send DEFINE-GRAMMAR request */
-		mrcp_message = demo_define_grammar_message_create(session,channel);
+		mrcp_message = demo_define_grammar_message_create(session,channel,dir_layout);
 		if(mrcp_message) {
 			mrcp_application_message_send(session,channel,mrcp_message);
 		}
@@ -215,13 +216,13 @@ static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *applic
 {
 	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	mrcp_message_t *mrcp_message;
+	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 	/* create and send RECOGNIZE request */
-	mrcp_message = demo_recognize_message_create(session,channel);
+	mrcp_message = demo_recognize_message_create(session,channel,dir_layout);
 	if(mrcp_message) {
 		mrcp_application_message_send(session,channel,mrcp_message);
 	}
 	if(recog_channel) {
-		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 		char *file_path = apt_datadir_filepath_get(dir_layout,DEMO_SPEECH_SOURCE_FILE,session->pool);
 		if(file_path) {
 			recog_channel->audio_in = fopen(file_path,"rb");

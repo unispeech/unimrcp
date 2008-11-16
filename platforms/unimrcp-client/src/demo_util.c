@@ -16,6 +16,7 @@
 
 #include "demo_util.h"
 /* common includes */
+#include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 /* synthesizer includes */
@@ -25,17 +26,24 @@
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
 
-/** Create demo MRCP message (SPEAK request) */
-mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_t *channel)
+static void demo_message_body_set(mrcp_message_t *mrcp_message, const apt_dir_layout_t *dir_layout, const char *file_name)
 {
-	const char text[] = 
-		"<?xml version=\"1.0\"?>\r\n"
-		"<speak>\r\n"
-		"<paragraph>\r\n"
-		"    <sentence>Hello World.</sentence>\r\n"
-		"</paragraph>\r\n"
-		"</speak>\r\n";
+	char *file_path = apt_datadir_filepath_get(dir_layout,file_name,mrcp_message->pool);
+	if(file_path) {
+		FILE *file = fopen(file_path,"r");
+		if(file) {
+			char text[1024];
+			apr_size_t size;
+			size = fread(text,1,sizeof(text),file);
+			apt_string_assign_n(&mrcp_message->body,text,size,mrcp_message->pool);
+			fclose(file);
+		}
+	}
+}
 
+/** Create demo MRCP message (SPEAK request) */
+mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_t *channel, const apt_dir_layout_t *dir_layout)
+{
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,SYNTHESIZER_SPEAK);
 	if(mrcp_message) {
@@ -56,27 +64,14 @@ mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_
 			mrcp_resource_header_property_add(mrcp_message,SYNTHESIZER_HEADER_VOICE_AGE);
 		}
 		/* set message body */
-		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
+		demo_message_body_set(mrcp_message,dir_layout,"speak.xml");
 	}
 	return mrcp_message;
 }
 
 /** Create demo MRCP message (DEFINE-GRAMMAR request) */
-mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp_channel_t *channel)
+mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp_channel_t *channel, const apt_dir_layout_t *dir_layout)
 {
-	const char text[] = 
-		"<?xml version=\"1.0\"?>\r\n"
-		"<grammar xmlns=\"http://www.w3.org/2001/06/grammar\"\r\n"
-		"xml:lang=\"en-US\" version=\"1.0\"  mode=\"voice\" root=\"digit\">\r\n"
-		"<rule id=\"digit\">\r\n"
-		"<one-of>\r\n"
-		"<item>one</item>\r\n"
-		"<item>two</item>\r\n"
-		"<item>three</item>\r\n"
-		"</one-of>\r\n"
-		"</rule>\r\n"
-		"</grammar>";
-
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(session,channel,RECOGNIZER_DEFINE_GRAMMAR);
 	if(mrcp_message) {
@@ -91,13 +86,13 @@ mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
 		}
 		/* set message body */
-		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
+		demo_message_body_set(mrcp_message,dir_layout,"grammar.xml");
 	}
 	return mrcp_message;
 }
 
 /** Create demo MRCP message (RECOGNIZE request) */
-mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_channel_t *channel)
+mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_channel_t *channel, const apt_dir_layout_t *dir_layout)
 {
 	const char text[] = "session:request1@form-level.store";
 

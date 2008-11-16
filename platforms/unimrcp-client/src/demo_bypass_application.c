@@ -136,8 +136,9 @@ static apt_bool_t demo_application_on_channel_add(mrcp_application_t *applicatio
 	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
 		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		mrcp_message_t *mrcp_message;
+		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 		/* create and send SPEAK request */
-		mrcp_message = demo_speak_message_create(session,channel);
+		mrcp_message = demo_speak_message_create(session,channel,dir_layout);
 		if(mrcp_message) {
 			mrcp_application_message_send(session,channel,mrcp_message);
 		}

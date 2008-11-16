@@ -172,14 +172,14 @@ static apt_bool_t synth_application_on_channel_add(mrcp_application_t *applicati
 	synth_app_channel_t *synth_channel = mrcp_application_channel_object_get(channel);
 	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
 		mrcp_message_t *mrcp_message;
+		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 		/* create and send SPEAK request */
-		mrcp_message = demo_speak_message_create(session,channel);
+		mrcp_message = demo_speak_message_create(session,channel,dir_layout);
 		if(mrcp_message) {
 			mrcp_application_message_send(session,channel,mrcp_message);
 		}
 
 		if(synth_channel && session) {
-			const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
 			char *file_name = apr_pstrcat(session->pool,"synth-",session->id.buf,".pcm",NULL);
 			char *file_path = apt_datadir_filepath_get(dir_layout,file_name,session->pool);
 			if(file_path) {

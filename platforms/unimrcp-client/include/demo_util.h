@@ -27,12 +27,12 @@
 APT_BEGIN_EXTERN_C
 
 /** Create demo MRCP message (SPEAK request) */
-mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_t *channel);
+mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_t *channel, const apt_dir_layout_t *dir_layout);
 
 /** Create demo MRCP message (DEFINE-GRAMMAR request) */
-mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp_channel_t *channel);
+mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp_channel_t *channel, const apt_dir_layout_t *dir_layout);
 /** Create demo MRCP message (RECOGNIZE request) */
-mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_channel_t *channel);
+mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_channel_t *channel, const apt_dir_layout_t *dir_layout);
 
 
 /** Create demo RTP termination descriptor */
