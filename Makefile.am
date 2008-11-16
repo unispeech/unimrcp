@@ -31,7 +31,7 @@ def-conf:
 
 def-data:
 	test -d $(datadir) || $(mkinstalldirs) $(datadir)
-	for datafile in `find data -name \*.pcm` ; do \
+	for datafile in `find data -name *.pcm -o -name *.xml` ; do \
 	    filename=`echo $$datafile | sed -e 's|^.*/||'`; \
 	    $(INSTALL) -m 644 data/$$filename $(datadir); \
 	done
