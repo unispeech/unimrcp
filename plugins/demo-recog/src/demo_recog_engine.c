@@ -311,15 +311,8 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 									RECOGNIZER_START_OF_INPUT,
 									recog_channel->recog_request->pool);
 				if(message) {
-					/* get/allocate recognizer header */
-					mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
-					if(recog_header) {
-						/* set completion cause */
-						recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
-						mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
-					}
 					/* set request state */
-					message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+					message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 					/* send asynch event */
 					mrcp_engine_channel_message_send(recog_channel->channel,message);
 				}
