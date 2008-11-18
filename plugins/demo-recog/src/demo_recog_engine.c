@@ -331,6 +331,7 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 									RECOGNIZER_RECOGNITION_COMPLETE,
 									recog_channel->recog_request->pool);
 				if(message) {
+					char *file_path;
 					/* get/allocate recognizer header */
 					mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
 					if(recog_header) {
@@ -340,6 +341,28 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 					}
 					/* set request state */
 					message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+
+					file_path = apt_datadir_filepath_get(recog_channel->channel->engine->dir_layout,"result.xml",message->pool);
+					if(file_path) {
+						/* read the demo result from file */
+						FILE *file = fopen(file_path,"r");
+						if(file) {
+							mrcp_generic_header_t *generic_header;
+							char text[1024];
+							apr_size_t size;
+							size = fread(text,1,sizeof(text),file);
+							apt_string_assign_n(&message->body,text,size,message->pool);
+							fclose(file);
+
+							/* get/allocate generic header */
+							generic_header = mrcp_generic_header_prepare(message);
+							if(generic_header) {
+								/* set content types */
+								apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
+								mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
+							}
+						}
+					}
 
 					recog_channel->recog_request = NULL;
 					/* send asynch event */
