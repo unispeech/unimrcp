@@ -98,6 +98,8 @@ struct demo_recog_channel_t {
 	apt_bool_t             start_of_input;
 	/** Estimated time to complete */
 	apr_size_t             time_to_complete;
+	/** File to write utterance to */
+	FILE                  *audio_out;
 };
 
 typedef enum {
@@ -178,6 +180,7 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 	recog_channel->demo_engine = engine->obj;
 	recog_channel->recog_request = NULL;
 	recog_channel->stop_response = NULL;
+	recog_channel->audio_out = NULL;
 	/* create engine channel base */
 	recog_channel->channel = mrcp_engine_sink_channel_create(
 			engine,               /* resource engine */
@@ -192,7 +195,12 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 /** Destroy engine channel */
 static apt_bool_t demo_recog_channel_destroy(mrcp_engine_channel_t *channel)
 {
-	/* nothing to destroy */
+	demo_recog_channel_t *recog_channel = channel->method_obj;
+	if(recog_channel->audio_out) {
+		fclose(recog_channel->audio_out);
+		recog_channel->audio_out = NULL;
+	}
+
 	return TRUE;
 }
 
@@ -221,6 +229,14 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	demo_recog_channel_t *recog_channel = channel->method_obj;
 	recog_channel->start_of_input = FALSE;
 	recog_channel->time_to_complete = 5000; /* 5 msec */
+
+	if(!recog_channel->audio_out) {
+		char *file_name = apr_pstrcat(channel->pool,"utter-",request->channel_id.session_id.buf,".pcm",NULL);
+		char *file_path = apt_datadir_filepath_get(channel->engine->dir_layout,file_name,channel->pool);
+		if(file_path) {
+			recog_channel->audio_out = fopen(file_path,"wb");
+		}
+	}
 
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	/* send asynchronous response */
@@ -304,6 +320,10 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 	if(recog_channel->recog_request) {
 		if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO) {
 			/* process audio stream */
+			if(recog_channel->audio_out) {
+				fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_out);
+			}
+
 			if(recog_channel->start_of_input == FALSE) {
 				/* raise START-OF-INPUT event */
 				mrcp_message_t *message = mrcp_event_create(
