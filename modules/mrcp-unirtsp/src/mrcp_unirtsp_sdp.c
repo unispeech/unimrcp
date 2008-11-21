@@ -182,12 +182,24 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			sdp = sdp_session(parser);
 
 			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
-			if(descriptor) {
-				apt_string_assign(&descriptor->resource_name,resource_name,pool);
-				descriptor->resource_state = TRUE;
-			}
 			
 			sdp_parser_free(parser);
+		}
+		else {
+			/* create default descriptor in case no SDP is specified in RTSP SETUP */
+			descriptor = mrcp_session_descriptor_create(pool);
+			if(descriptor) {
+				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+				mpf_rtp_media_descriptor_init(media);
+				media->base.state = MPF_MEDIA_ENABLED;
+				media->mode = STREAM_MODE_SEND;
+				media->base.id = mrcp_session_audio_media_add(descriptor,media);
+			}
+		}
+
+		if(descriptor) {
+			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+			descriptor->resource_state = TRUE;
 		}
 	}
 	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
