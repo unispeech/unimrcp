@@ -464,6 +464,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 	memcpy(pos,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH);
 	pos += MRCP_CHANNEL_ID_LENGTH;
 	*pos++ = ':';
+	*pos++ = ' ';
 	
 	str = &channel_id->session_id;
 	memcpy(pos,str->buf,str->length);

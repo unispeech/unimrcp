@@ -166,6 +166,7 @@ APT_DECLARE(apt_bool_t) apt_header_generate(const apt_name_value_t *pair, apt_te
 	memcpy(pos,pair->name.buf,pair->name.length);
 	pos += pair->name.length;
 	*pos++ = ':';
+	*pos++ = ' ';
 	memcpy(pos,pair->value.buf,pair->value.length);
 	pos += pair->value.length;
 	stream->pos = pos;
@@ -179,6 +180,7 @@ APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt
 	memcpy(pos,name->buf,name->length);
 	pos += name->length;
 	*pos++ = ':';
+	*pos++ = ' ';
 	stream->pos = pos;
 	return TRUE;
 }
