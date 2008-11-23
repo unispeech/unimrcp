@@ -94,8 +94,12 @@ struct demo_recog_channel_t {
 	mrcp_message_t        *recog_request;
 	/** Pending stop response */
 	mrcp_message_t        *stop_response;
-	/** Start of recognition input */
-	apt_bool_t             start_of_input;
+	/** Indicates whether input timers are started */
+	apt_bool_t             timers_started;
+	/** Indicates whether input is started */
+	apt_bool_t             input_started;
+	/** No input timeout */
+	apr_size_t             no_input_timeout;
 	/** Estimated time to complete */
 	apr_size_t             time_to_complete;
 	/** File to write utterance to */
@@ -226,9 +230,23 @@ static apt_bool_t demo_recog_channel_request_process(mrcp_engine_channel_t *chan
 static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
 	/* process RECOGNIZE request */
+	mrcp_recog_header_t *recog_header;
 	demo_recog_channel_t *recog_channel = channel->method_obj;
-	recog_channel->start_of_input = FALSE;
+	recog_channel->input_started = FALSE;
+	recog_channel->timers_started = TRUE;
+	recog_channel->no_input_timeout = 5000; /* 5 msec */
 	recog_channel->time_to_complete = 5000; /* 5 msec */
+
+	/* get recognizer header */
+	recog_header = mrcp_resource_header_get(request);
+	if(recog_header) {
+		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_START_INPUT_TIMERS) == TRUE) {
+			recog_channel->timers_started = recog_header->start_input_timers;
+		}
+		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT) == TRUE) {
+			recog_channel->no_input_timeout = recog_header->no_input_timeout;
+		}
+	}
 
 	if(!recog_channel->audio_out) {
 		char *file_name = apr_pstrcat(channel->pool,"utter-",request->channel_id.session_id.buf,".pcm",NULL);
@@ -255,6 +273,14 @@ static apt_bool_t demo_recog_channel_stop(mrcp_engine_channel_t *channel, mrcp_m
 	return TRUE;
 }
 
+/** Process START-INPUT-TIMERS request */
+static apt_bool_t demo_recog_channel_timers_start(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	demo_recog_channel_t *recog_channel = channel->method_obj;
+	recog_channel->timers_started = TRUE;
+	return mrcp_engine_channel_message_send(channel,response);
+}
+
 /** Dispatch MRCP request */
 static apt_bool_t demo_recog_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
@@ -273,6 +299,7 @@ static apt_bool_t demo_recog_channel_request_dispatch(mrcp_engine_channel_t *cha
 		case RECOGNIZER_GET_RESULT:
 			break;
 		case RECOGNIZER_START_INPUT_TIMERS:
+			processed = demo_recog_channel_timers_start(channel,request,response);
 			break;
 		case RECOGNIZER_STOP:
 			processed = demo_recog_channel_stop(channel,request,response);
@@ -324,7 +351,7 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 				fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_out);
 			}
 
-			if(recog_channel->start_of_input == FALSE) {
+			if(recog_channel->input_started == FALSE) {
 				/* raise START-OF-INPUT event */
 				mrcp_message_t *message = mrcp_event_create(
 									recog_channel->recog_request,
@@ -336,11 +363,40 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 					/* send asynch event */
 					mrcp_engine_channel_message_send(recog_channel->channel,message);
 				}
-				recog_channel->start_of_input = TRUE;
+				recog_channel->input_started = TRUE;
+			}
+		}
+		else {
+			if(recog_channel->timers_started == TRUE && recog_channel->input_started == FALSE) {
+				if(recog_channel->no_input_timeout >= CODEC_FRAME_TIME_BASE) {
+					recog_channel->no_input_timeout -= CODEC_FRAME_TIME_BASE;
+				}
+				else {
+					/* raise no input RECOGNITION-COMPLETE event */
+					mrcp_message_t *message = mrcp_event_create(
+										recog_channel->recog_request,
+										RECOGNIZER_RECOGNITION_COMPLETE,
+										recog_channel->recog_request->pool);
+					if(message) {
+						/* get/allocate recognizer header */
+						mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
+						if(recog_header) {
+							/* set completion cause */
+							recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT;
+							mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
+						}
+						/* set request state */
+						message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+
+						recog_channel->recog_request = NULL;
+						/* send asynch event */
+						mrcp_engine_channel_message_send(recog_channel->channel,message);
+					}
+				}
 			}
 		}
 
-		if(recog_channel->start_of_input == TRUE) {
+		if(recog_channel->input_started == TRUE) {
 			if(recog_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
 				recog_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
 			}
