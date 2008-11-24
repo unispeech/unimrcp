@@ -136,7 +136,7 @@ static APR_INLINE void mpf_jb_config_init(mpf_jb_config_t *jb_config)
 /** Create/allocate RTP config */
 static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 {
-	mpf_rtp_config_t *rtp_config = apr_palloc(pool,sizeof(mpf_rtp_config_t));
+	mpf_rtp_config_t *rtp_config = (mpf_rtp_config_t*)apr_palloc(pool,sizeof(mpf_rtp_config_t));
 	apt_string_reset(&rtp_config->ip);
 	rtp_config->rtp_port_cur = 0;
 	rtp_config->rtp_port_min = 0;

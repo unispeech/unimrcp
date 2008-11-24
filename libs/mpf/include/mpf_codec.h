@@ -73,7 +73,7 @@ static APR_INLINE mpf_codec_t* mpf_codec_create(
 									const mpf_codec_descriptor_t *descriptor, 
 									apr_pool_t *pool)
 {
-	mpf_codec_t *codec = apr_palloc(pool,sizeof(mpf_codec_t));
+	mpf_codec_t *codec = (mpf_codec_t*)apr_palloc(pool,sizeof(mpf_codec_t));
 	codec->vtable = vtable;
 	codec->attribs = attribs;
 	codec->def_descriptor = descriptor;
@@ -88,7 +88,7 @@ static APR_INLINE mpf_codec_t* mpf_codec_create(
  */
 static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_t *pool)
 {
-	mpf_codec_t *codec = apr_palloc(pool,sizeof(mpf_codec_t));
+	mpf_codec_t *codec = (mpf_codec_t*)apr_palloc(pool,sizeof(mpf_codec_t));
 	codec->vtable = src_codec->vtable;
 	codec->attribs = src_codec->attribs;
 	codec->def_descriptor = src_codec->def_descriptor;

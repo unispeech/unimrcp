@@ -151,7 +151,7 @@ static APR_INLINE void mpf_codec_list_copy(mpf_codec_list_t *codec_list, const m
 /** Increment number of codec descriptors in the list and return the descriptor to fill */
 static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_add(mpf_codec_list_t *codec_list)
 {
-	return apr_array_push(codec_list->descriptor_arr);
+	return (mpf_codec_descriptor_t*)apr_array_push(codec_list->descriptor_arr);
 }
 
 /** Determine if codec list is empty */
