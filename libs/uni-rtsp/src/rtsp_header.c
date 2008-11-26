@@ -66,6 +66,9 @@ static apt_bool_t rtsp_trasnport_parse(rtsp_transport_t *transport, const apt_st
 static apt_bool_t rtsp_session_id_parse(apt_str_t *session_id, const apt_str_t *value, apr_pool_t *pool)
 {
 	char *sep;
+	if(!value->buf) {
+		return FALSE;
+	}
 	apt_string_copy(session_id,value,pool);
 	sep = strchr(session_id->buf,';');
 	if(sep) {
