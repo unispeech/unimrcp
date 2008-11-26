@@ -192,7 +192,6 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 				mpf_rtp_media_descriptor_init(media);
 				media->base.state = MPF_MEDIA_ENABLED;
-				media->mode = STREAM_MODE_SEND;
 				media->base.id = mrcp_session_audio_media_add(descriptor,media);
 			}
 		}
