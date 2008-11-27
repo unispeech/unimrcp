@@ -216,6 +216,10 @@ static mrcp_sig_agent_t* unimrcp_server_rtsp_agent_load(mrcp_server_t *server, c
 	config->local_port = DEFAULT_RTSP_PORT;
 	config->origin = DEFAULT_SDP_ORIGIN;
 
+	/* should be loaded from config file */
+	apr_table_set(config->resource_map,"speechsynth","speechsynthesizer");
+	apr_table_set(config->resource_map,"speechrecog","speechrecognizer");
+
 	apt_log(APT_PRIO_DEBUG,"Loading UniRTSP Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
