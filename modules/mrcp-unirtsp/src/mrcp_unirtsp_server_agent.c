@@ -117,6 +117,7 @@ MRCP_DECLARE(rtsp_server_config_t*) mrcp_unirtsp_server_config_alloc(apr_pool_t 
 	config->local_port = 0;
 	config->origin = NULL;
 	config->resource_location = NULL;
+	config->resource_map = apr_table_make(pool,2);
 	config->max_connection_count = 100;
 	return config;
 }
@@ -209,7 +210,9 @@ static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
 
 static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrcp_unirtsp_session_t *session, rtsp_message_t *message)
 {
-	const char *resource_name = message->start_line.common.request_line.resource_name;
+	const char *resource_name = mrcp_name_get_by_rtsp_name(
+		agent->config->resource_map,
+		message->start_line.common.request_line.resource_name);
 	apt_bool_t status = TRUE;
 
 	if(session && resource_name &&
@@ -246,6 +249,7 @@ static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrc
 static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *rtsp_server, rtsp_server_session_t *rtsp_session, rtsp_message_t *rtsp_message)
 {
 	apt_bool_t status = FALSE;
+	mrcp_unirtsp_agent_t *agent = rtsp_server_object_get(rtsp_server);
 	mrcp_unirtsp_session_t *session	= rtsp_server_session_object_get(rtsp_session);
 	if(!session) {
 		return FALSE;
@@ -256,7 +260,8 @@ static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *rtsp_server, rtsp_s
 		case RTSP_METHOD_TEARDOWN:
 		{
 			mrcp_session_descriptor_t *descriptor;
-			descriptor = mrcp_descriptor_generate_by_rtsp_request(rtsp_message,session->mrcp_session->pool,session->home);
+			descriptor = mrcp_descriptor_generate_by_rtsp_request(rtsp_message,agent->config->resource_map,
+				session->mrcp_session->pool,session->home);
 			status = mrcp_session_offer(session->mrcp_session,descriptor);
 			break;
 		}
@@ -288,7 +293,8 @@ static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, m
 	}
 
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
-		response = rtsp_response_generate_by_mrcp_descriptor(request,descriptor,mrcp_session->pool);
+		response = rtsp_response_generate_by_mrcp_descriptor(request,descriptor,
+			agent->config->resource_map,mrcp_session->pool);
 	}
 	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
 		response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,mrcp_session->pool);

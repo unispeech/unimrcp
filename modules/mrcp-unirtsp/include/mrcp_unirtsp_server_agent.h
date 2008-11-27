@@ -33,17 +33,20 @@ typedef struct rtsp_server_config_t rtsp_server_config_t;
 /** UniRTSP config */
 struct rtsp_server_config_t {
 	/** Local IP address to bind to */
-	char      *local_ip;
+	char        *local_ip;
 	/** Local port to bind to */
-	apr_port_t local_port;
+	apr_port_t   local_port;
 
 	/** Resource location */
-	char      *resource_location;
+	char        *resource_location;
 	/** SDP origin */
-	char      *origin;
+	char        *origin;
+
+	/** Map of the MRCP resource names */
+	apr_table_t *resource_map;
 
 	/** Number of max RTSP connections */
-	apr_size_t max_connection_count;
+	apr_size_t   max_connection_count;
 };
 
 /**

@@ -34,16 +34,19 @@ typedef struct rtsp_client_config_t rtsp_client_config_t;
 /** UniRTSP config */
 struct rtsp_client_config_t {
 	/** Server IP address */
-	char      *server_ip;
+	char        *server_ip;
 	/** Server port */
-	apr_port_t server_port;
+	apr_port_t   server_port;
 	/** Resource location */
-	char      *resource_location;
+	char        *resource_location;
 	/** SDP origin */
-	char      *origin;
+	char        *origin;
+
+	/** Map of the MRCP resource names */
+	apr_table_t *resource_map;
 
 	/** Number of max RTSP connections */
-	apr_size_t max_connection_count;
+	apr_size_t   max_connection_count;
 };
 
 /**

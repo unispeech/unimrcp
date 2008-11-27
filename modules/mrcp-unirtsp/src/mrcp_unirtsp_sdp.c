@@ -162,10 +162,12 @@ static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const 
 
 
 /** Generate MRCP descriptor by RTSP request */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(const rtsp_message_t *request, apr_pool_t *pool, su_home_t *home)
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(const rtsp_message_t *request, const apr_table_t *resource_map, apr_pool_t *pool, su_home_t *home)
 {
 	mrcp_session_descriptor_t *descriptor = NULL;
-	const char *resource_name = request->start_line.common.request_line.resource_name;
+	const char *resource_name = mrcp_name_get_by_rtsp_name(
+		resource_map,
+		request->start_line.common.request_line.resource_name);
 	if(!resource_name) {
 		return NULL;
 	}
@@ -212,10 +214,12 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 }
 
 /** Generate MRCP descriptor by RTSP response */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_response(const rtsp_message_t *request, const rtsp_message_t *response, apr_pool_t *pool, su_home_t *home)
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_response(const rtsp_message_t *request, const rtsp_message_t *response, const apr_table_t *resource_map, apr_pool_t *pool, su_home_t *home)
 {
 	mrcp_session_descriptor_t *descriptor = NULL;
-	const char *resource_name = request->start_line.common.request_line.resource_name;
+	const char *resource_name = mrcp_name_get_by_rtsp_name(
+		resource_map,
+		request->start_line.common.request_line.resource_name);
 	if(!resource_name) {
 		return NULL;
 	}
@@ -258,7 +262,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 }
 
 /** Generate RTSP request by MRCP descriptor */
-MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool)
+MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrcp_session_descriptor_t *descriptor, const apr_table_t *resource_map, apr_pool_t *pool)
 {
 	apr_size_t i;
 	apr_size_t count;
@@ -272,7 +276,9 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 	rtsp_message_t *request;
 
 	request = rtsp_request_create(pool);
-	request->start_line.common.request_line.resource_name = descriptor->resource_name.buf;
+	request->start_line.common.request_line.resource_name = rtsp_name_get_by_mrcp_name(
+		resource_map,
+		descriptor->resource_name.buf);
 	if(descriptor->resource_state != TRUE) {
 		request->start_line.common.request_line.method_id = RTSP_METHOD_TEARDOWN;
 		return request;
@@ -323,7 +329,7 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 }
 
 /** Generate RTSP response by MRCP descriptor */
-MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, apr_pool_t *pool)
+MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, const apr_table_t *resource_map, apr_pool_t *pool)
 {
 	apr_size_t i;
 	apr_size_t count;
@@ -387,4 +393,31 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
 	}
 	return response;
+}
+
+/** Get MRCP resource name by RTSP resource name */
+MRCP_DECLARE(const char*) mrcp_name_get_by_rtsp_name(const apr_table_t *resource_map, const char *rtsp_name)
+{
+	const apr_array_header_t *header = apr_table_elts(resource_map);
+	apr_table_entry_t *entry = (apr_table_entry_t *)header->elts;
+	int i;
+	
+	for(i=0; i<header->nelts; i++) {
+		if(entry[i].val && rtsp_name) {
+			if(apr_strnatcasecmp(entry[i].val,rtsp_name) == 0) {
+				return entry[i].key;
+			}
+		}
+	}
+	return rtsp_name;
+}
+
+/** Get RTSP resource name by MRCP resource name */
+MRCP_DECLARE(const char*) rtsp_name_get_by_mrcp_name(const apr_table_t *resource_map, const char *mrcp_name)
+{
+	const char *rtsp_name = apr_table_get(resource_map,mrcp_name);
+	if(rtsp_name) {
+		return rtsp_name;
+	}
+	return mrcp_name;
 }
