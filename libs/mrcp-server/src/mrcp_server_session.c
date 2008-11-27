@@ -190,8 +190,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 		channel->resource_name = *resource_name;
 		resource_id = mrcp_resource_id_find(
 								session->profile->resource_factory,
-								resource_name,
-								session->base.signaling_agent->mrcp_version);
+								resource_name);
 		resource = mrcp_resource_get(session->profile->resource_factory,resource_id);
 		if(resource) {
 			channel->resource = resource;

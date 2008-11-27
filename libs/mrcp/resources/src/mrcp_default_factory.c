@@ -19,14 +19,8 @@
 #include "mrcp_recog_resource.h"
 #include "apt_log.h"
 
-/** String table of MRCPv1 resources (mrcp_resource_types_e) */
-static const apt_str_table_item_t mrcp_v1_resource_string_table[] = {
-	{{"speechsynthesizer",17},6},
-	{{"speechrecognizer", 16},6}
-};
-
 /** String table of MRCPv2 resources (mrcp_resource_types_e) */
-static const apt_str_table_item_t mrcp_v2_resource_string_table[] = {
+static const apt_str_table_item_t mrcp_resource_string_table[] = {
 	{{"speechsynth",11},6},
 	{{"speechrecog",11},6}
 };
@@ -43,9 +37,8 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *p
 		return NULL;
 	}
 	
-	/* set resource string tables */
-	mrcp_resource_string_table_set(resource_factory,mrcp_v1_resource_string_table,MRCP_VERSION_1);
-	mrcp_resource_string_table_set(resource_factory,mrcp_v2_resource_string_table,MRCP_VERSION_2);
+	/* set resource string table */
+	mrcp_resource_string_table_set(resource_factory,mrcp_resource_string_table);
 
 	/* create and register resources */
 	resource = mrcp_synth_resource_create(pool);

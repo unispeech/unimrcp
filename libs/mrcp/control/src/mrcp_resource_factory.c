@@ -25,10 +25,8 @@ struct mrcp_resource_factory_t {
 	mrcp_resource_t           **resource_array;
 	/** Number of MRCP resources */
 	apr_size_t                  resource_count;
-	/** String table of MRCPv1 resources */
-	const apt_str_table_item_t *v1_string_table;
-	/** String table of MRCPv2 resources */
-	const apt_str_table_item_t *v2_string_table;
+	/** String table of MRCP resource names */
+	const apt_str_table_item_t *string_table;
 };
 
 /** Create MRCP resource factory */
@@ -46,8 +44,7 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_create(apr_size_t r
 	for(i=0; i<resource_count; i++) {
 		resource_factory->resource_array[i] = NULL;
 	}
-	resource_factory->v1_string_table = NULL;
-	resource_factory->v2_string_table = NULL;
+	resource_factory->string_table = NULL;
 	
 	return resource_factory;
 }
@@ -63,18 +60,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_factory_destroy(mrcp_resource_factory_t *
 }
 
 /** Set MRCP resource string table */
-MRCP_DECLARE(apt_bool_t) mrcp_resource_string_table_set(mrcp_resource_factory_t *resource_factory, const apt_str_table_item_t *string_table, mrcp_version_e version)
+MRCP_DECLARE(apt_bool_t) mrcp_resource_string_table_set(mrcp_resource_factory_t *resource_factory, const apt_str_table_item_t *string_table)
 {
-	apt_bool_t status = TRUE;
-	if(version == MRCP_VERSION_1) {
-		resource_factory->v1_string_table = string_table;
-	}
-	else if(version == MRCP_VERSION_2) {
-		resource_factory->v2_string_table = string_table;
-	}
-	else {
-		status = FALSE;
-	}
+	resource_factory->string_table = string_table;
 	return TRUE;
 }
 
@@ -175,7 +163,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_id(mrcp_resource_factory_t *
 	if(!resource) {
 		return FALSE;
 	}
-	name = mrcp_resource_name_get(resource_factory,resource->id,message->start_line.version);
+	name = mrcp_resource_name_get(resource_factory,resource->id);
 	if(!name) {
 		return FALSE;
 	}
@@ -192,7 +180,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_name(mrcp_resource_factory_t
 	mrcp_resource_t *resource;
 	/* associate resource_name and resource_id */
 	const apt_str_t *name = &message->channel_id.resource_name;
-	message->channel_id.resource_id = mrcp_resource_id_find(resource_factory,name,message->start_line.version);
+	message->channel_id.resource_id = mrcp_resource_id_find(resource_factory,name);
 	resource = mrcp_resource_get(resource_factory,message->channel_id.resource_id);
 	if(!resource) {
 		return FALSE;
@@ -203,21 +191,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_name(mrcp_resource_factory_t
 }
 
 /** Get resource name associated with specified resource id */
-MRCP_DECLARE(const apt_str_t*) mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id, mrcp_version_e version)
+MRCP_DECLARE(const apt_str_t*) mrcp_resource_name_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id)
 {
-	const apt_str_table_item_t *string_table = resource_factory->v2_string_table;
-	if(version == MRCP_VERSION_1) {
-		string_table = resource_factory->v1_string_table;
-	}
-	return apt_string_table_str_get(string_table,resource_factory->resource_count,resource_id);
+	return apt_string_table_str_get(resource_factory->string_table,resource_factory->resource_count,resource_id);
 }
 
 /** Find resource id associated with specified resource name */
-MRCP_DECLARE(mrcp_resource_id) mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name, mrcp_version_e version)
+MRCP_DECLARE(mrcp_resource_id) mrcp_resource_id_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *resource_name)
 {
-	const apt_str_table_item_t *string_table = resource_factory->v2_string_table;
-	if(version == MRCP_VERSION_1) {
-		string_table = resource_factory->v1_string_table;
-	}
-	return apt_string_table_id_find(string_table,resource_factory->resource_count,resource_name);
+	return apt_string_table_id_find(resource_factory->string_table,resource_factory->resource_count,resource_name);
 }

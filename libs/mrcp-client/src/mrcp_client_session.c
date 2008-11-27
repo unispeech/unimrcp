@@ -535,7 +535,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		if(!channel->resource) {
 			return FALSE;
 		}
-		channel->resource_name = mrcp_resource_name_get(profile->resource_factory,channel->resource_id,profile->signaling_agent->mrcp_version);
+		channel->resource_name = mrcp_resource_name_get(profile->resource_factory,channel->resource_id);
 		if(!channel->resource_name) {
 			return FALSE;
 		}
