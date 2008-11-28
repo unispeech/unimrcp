@@ -15,6 +15,10 @@
       <agent name="RTSP-Agent-1" class="UniRTSP">
         <param name="rtsp-ip" value="auto"/>
         <param name="rtsp-port" value="1554"/>
+        <resourcemap>
+          <param name="speechsynth" value="speechsynthesizer"/>
+          <param name="speechrecog" value="speechrecognizer"/>
+        </resourcemap>
       </agent>
     </signaling>
 

@@ -151,6 +151,24 @@ static char* ip_addr_get(const char *value, apr_pool_t *pool)
 	return apr_pstrdup(pool,value);
 }
 
+/** Load map of MRCP resource names */
+static apt_bool_t resource_map_load(apr_table_t *resource_map, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_attr *attr_name;
+	const apr_xml_attr *attr_value;
+	const apr_xml_elem *elem;
+	apt_log(APT_PRIO_DEBUG,"Loading Resource Map");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				apr_table_set(resource_map,attr_name->value,attr_value->value);
+			}
+		}
+	}    
+	return TRUE;
+}
+
 /** Load SofiaSIP signaling agent */
 static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
 {
@@ -208,10 +226,6 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 	config->origin = DEFAULT_SDP_ORIGIN;
 	config->resource_location = DEFAULT_RESOURCE_LOCATION;
 
-	/* should be loaded from config file */
-	apr_table_set(config->resource_map,"speechsynth","speechsynthesizer");
-	apr_table_set(config->resource_map,"speechrecog","speechrecognizer");
-
 	apt_log(APT_PRIO_DEBUG,"Loading UniRTSP Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
@@ -238,6 +252,9 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
 			}
+		}
+		else if(strcasecmp(elem->name,"resourcemap") == 0) {
+			resource_map_load(config->resource_map,elem,pool);
 		}
 	}    
 	return mrcp_unirtsp_client_agent_create(config,pool);

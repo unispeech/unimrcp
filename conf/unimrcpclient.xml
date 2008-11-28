@@ -21,6 +21,10 @@
         <param name="server-ip" value="auto"/>
         <param name="server-port" value="1554"/>
         <param name="resource-location" value="media"/>
+        <resourcemap>
+          <param name="speechsynth" value="speechsynthesizer"/>
+          <param name="speechrecog" value="speechrecognizer"/>
+        </resourcemap>
       </agent>
     </signaling>
 
