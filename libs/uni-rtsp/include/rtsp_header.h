@@ -27,14 +27,22 @@
 
 APT_BEGIN_EXTERN_C
 
-/** RTSP transport and profile type */
+/** RTSP transport protocol */
 typedef enum{
-	RTSP_PROFILE_RTP_AVP,
-	RTSP_PROFILE_RTP_SAVP,
+	RTSP_TRANSPORT_RTP,
+
+	RTSP_TRANSPORT_COUNT,
+	RTSP_TRANSPORT_NONE = RTSP_TRANSPORT_COUNT
+} rtsp_transport_e;
+
+/** RTSP transport profile */
+typedef enum{
+	RTSP_PROFILE_AVP,
+	RTSP_PROFILE_SAVP,
 
 	RTSP_PROFILE_COUNT,
 	RTSP_PROFILE_NONE = RTSP_PROFILE_COUNT
-} rtsp_transport_profile_e;
+} rtsp_profile_e;
 
 /** RTSP lower-transport */
 typedef enum{
@@ -45,7 +53,7 @@ typedef enum{
 	RTSP_LOWER_TRANSPORT_NONE = RTSP_LOWER_TRANSPORT_COUNT
 } rtsp_lower_transport_e;
 
-/** RTSP transport port types */
+/** RTSP transport port ranges */
 typedef enum{
 	RTSP_TRANSPORT_CLIENT_PORT,
 	RTSP_TRANSPORT_SERVER_PORT,
@@ -108,9 +116,11 @@ struct rtsp_port_range_t {
 /** RTSP transport */
 struct rtsp_transport_t {
 	/** Transport profile */
-	rtsp_transport_profile_e profile;
+	rtsp_transport_e         protocol;
+	/** Transport profile */
+	rtsp_profile_e           profile;
 	/** Lower transport */
-	rtsp_lower_transport_e   lower_transport;
+	rtsp_lower_transport_e   lower_protocol;
 	/** Delivery method */
 	rtsp_delivery_e          delivery;
 	/** Client port range */
@@ -150,8 +160,9 @@ static APR_INLINE void rtsp_port_range_init(rtsp_port_range_t *port_range)
 /** Initialize transport */
 static APR_INLINE void rtsp_transport_init(rtsp_transport_t *transport)
 {
+	transport->protocol = RTSP_TRANSPORT_RTP;
 	transport->profile = RTSP_PROFILE_NONE;
-	transport->lower_transport = RTSP_LOWER_TRANSPORT_NONE;
+	transport->lower_protocol = RTSP_LOWER_TRANSPORT_NONE;
 	rtsp_port_range_init(&transport->client_port_range);
 	rtsp_port_range_init(&transport->server_port_range);
 }

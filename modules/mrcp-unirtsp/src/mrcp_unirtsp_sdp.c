@@ -195,6 +195,9 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 				mpf_rtp_media_descriptor_init(media);
 				media->base.state = MPF_MEDIA_ENABLED;
 				media->base.id = mrcp_session_audio_media_add(descriptor,media);
+				if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
+					media->base.port = request->header.transport.client_port_range.min;
+				}
 			}
 		}
 
@@ -316,7 +319,8 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 		}
 	}
 
-	request->header.transport.profile = RTSP_PROFILE_RTP_AVP;
+	request->header.transport.protocol = RTSP_TRANSPORT_RTP;
+	request->header.transport.profile = RTSP_PROFILE_AVP;
 	request->header.transport.delivery = RTSP_DELIVERY_UNICAST;
 	rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
 
@@ -385,7 +389,8 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 	}
 
 	/* ok */
-	response->header.transport.profile = RTSP_PROFILE_RTP_AVP;
+	response->header.transport.protocol = RTSP_TRANSPORT_RTP;
+	response->header.transport.profile = RTSP_PROFILE_AVP;
 	response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
 	rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
 

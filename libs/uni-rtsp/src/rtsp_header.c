@@ -33,10 +33,15 @@ static const apt_str_table_item_t rtsp_content_type_string_table[] = {
 	{{"application/mrcp",16},12}
 };
 
-/** String table of RTSP trasnport profiles (rtsp_transport_profile_t) */
+/** String table of RTSP trasnport protocols (rtsp_transport_e) */
+static const apt_str_table_item_t rtsp_transport_string_table[] = {
+	{{"RTP", 3},0}
+};
+
+/** String table of RTSP trasnport profiles (rtsp_profile_e) */
 static const apt_str_table_item_t rtsp_profile_string_table[] = {
-	{{"RTP/AVP", 7},4},
-	{{"RTP/SAVP",8},4}
+	{{"AVP", 3},0},
+	{{"SAVP",4},0}
 };
 
 /** String table of RTSP trasnport port types (rtsp_transport_port_type_e) */
@@ -45,7 +50,7 @@ static const apt_str_table_item_t rtsp_transport_port_string_table[] = {
 	{{"server_port", 11},0}
 };
 
-/** String table of RTSP trasnport delivery param (rtsp_delivery_t) */
+/** String table of RTSP trasnport delivery param (rtsp_delivery_e) */
 static const apt_str_table_item_t rtsp_delivery_string_table[] = {
 	{{"unicast",  7},0},
 	{{"multicast",9},0}
@@ -55,8 +60,9 @@ static const apt_str_table_item_t rtsp_delivery_string_table[] = {
 static apt_bool_t rtsp_trasnport_parse(rtsp_transport_t *transport, const apt_str_t *line)
 {
 	/* to be done */
-	transport->profile = RTSP_PROFILE_RTP_AVP;
-	transport->lower_transport = RTSP_LOWER_TRANSPORT_UDP;
+	transport->protocol = RTSP_TRANSPORT_RTP;
+	transport->profile = RTSP_PROFILE_AVP;
+	transport->lower_protocol = RTSP_LOWER_TRANSPORT_UDP;
 	transport->delivery = RTSP_DELIVERY_UNICAST;
 
 	return TRUE;
@@ -97,10 +103,13 @@ static apt_bool_t rtsp_trasnport_port_type_generate(rtsp_transport_port_type_e t
 /** Generate RTSP trasnport */
 static apt_bool_t rtsp_trasnport_generate(rtsp_transport_t *transport, apt_text_stream_t *text_stream)
 {
+	const apt_str_t *protocol = apt_string_table_str_get(rtsp_transport_string_table,RTSP_TRANSPORT_COUNT,transport->protocol);
 	const apt_str_t *profile = apt_string_table_str_get(rtsp_profile_string_table,RTSP_PROFILE_COUNT,transport->profile);
-	if(!profile) {
+	if(!protocol || !profile) {
 		return FALSE;
 	}
+	apt_string_value_generate(protocol,text_stream);
+	apt_text_char_insert(text_stream,'/');
 	apt_string_value_generate(profile,text_stream);
 
 	if(transport->delivery != RTSP_DELIVERY_NONE) {
