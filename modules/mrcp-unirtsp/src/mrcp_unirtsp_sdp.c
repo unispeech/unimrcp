@@ -188,7 +188,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			sdp_parser_free(parser);
 		}
 		else {
-			/* create default descriptor in case no SDP is specified in RTSP SETUP */
+			/* create default descriptor in case RTSP SETUP constains no SDP */
 			descriptor = mrcp_session_descriptor_create(pool);
 			if(descriptor) {
 				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
@@ -197,6 +197,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 				media->base.id = mrcp_session_audio_media_add(descriptor,media);
 				if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
 					media->base.port = request->header.transport.client_port_range.min;
+					media->base.ip = request->header.transport.destination;
 				}
 			}
 		}

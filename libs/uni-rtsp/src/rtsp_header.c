@@ -53,7 +53,9 @@ static const apt_str_table_item_t rtsp_profile_string_table[] = {
 /** String table of RTSP transport attributes (rtsp_transport_attrib_e) */
 static const apt_str_table_item_t rtsp_transport_attrib_string_table[] = {
 	{{"client_port", 11},0},
-	{{"server_port", 11},0},
+	{{"server_port", 11},1},
+	{{"source",      6}, 1},
+	{{"destination", 11},0},
 	{{"unicast",     7}, 0},
 	{{"multicast",   9}, 0}
 };
@@ -94,8 +96,20 @@ static apt_bool_t rtsp_port_range_generate(rtsp_transport_attrib_e attrib, const
 	return TRUE;
 }
 
+/** Parse RTSP source/destination address */
+static apt_bool_t rtsp_address_parse(apt_str_t *address, apt_text_stream_t *stream, apr_pool_t *pool)
+{
+	apt_str_t value;
+	/* read min value */
+	if(apt_text_field_read(stream,';',TRUE,&value) == FALSE) {
+		return FALSE;
+	}
+	apt_string_copy(address,&value,pool);
+	return TRUE;
+}
+
 /** Parse RTSP transport */
-static apt_bool_t rtsp_transport_attrib_parse(rtsp_transport_t *transport, const apt_str_t *field)
+static apt_bool_t rtsp_transport_attrib_parse(rtsp_transport_t *transport, const apt_str_t *field, apr_pool_t *pool)
 {
 	rtsp_transport_attrib_e attrib;
 	apt_str_t name;
@@ -116,6 +130,12 @@ static apt_bool_t rtsp_transport_attrib_parse(rtsp_transport_t *transport, const
 			break;
 		case RTSP_TRANSPORT_ATTRIB_SERVER_PORT:
 			rtsp_port_range_parse(&transport->client_port_range,&stream);
+			break;
+		case RTSP_TRANSPORT_ATTRIB_SOURCE:
+			rtsp_address_parse(&transport->source,&stream,pool);
+			break;
+		case RTSP_TRANSPORT_ATTRIB_DESTINATION:
+			rtsp_address_parse(&transport->destination,&stream,pool);
 			break;
 		case RTSP_TRANSPORT_ATTRIB_UNICAST:
 			transport->delivery = RTSP_DELIVERY_UNICAST;
@@ -173,7 +193,7 @@ static apt_bool_t rtsp_transport_protocol_parse(rtsp_transport_t *transport, con
 }
 
 /** Parse RTSP transport */
-static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_str_t *line)
+static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_str_t *line, apr_pool_t *pool)
 {
 	apt_str_t field;
 	apt_text_stream_t stream;
@@ -192,7 +212,7 @@ static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_st
 
 	/* read transport attributes */
 	while(apt_text_field_read(&stream,';',TRUE,&field) == TRUE) {
-		rtsp_transport_attrib_parse(transport,&field);
+		rtsp_transport_attrib_parse(transport,&field,pool);
 	}
 
 	return TRUE;
@@ -264,7 +284,7 @@ static apt_bool_t rtsp_header_field_parse(rtsp_header_t *header, rtsp_header_fie
 			header->cseq = apt_size_value_parse(value);
 			break;
 		case RTSP_HEADER_FIELD_TRANSPORT:
-			status = rtsp_transport_parse(&header->transport,value);
+			status = rtsp_transport_parse(&header->transport,value,pool);
 			break;
 		case RTSP_HEADER_FIELD_SESSION_ID:
 			status = rtsp_session_id_parse(&header->session_id,value,pool);

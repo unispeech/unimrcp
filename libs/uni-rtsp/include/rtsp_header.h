@@ -57,6 +57,8 @@ typedef enum{
 typedef enum{
 	RTSP_TRANSPORT_ATTRIB_CLIENT_PORT,
 	RTSP_TRANSPORT_ATTRIB_SERVER_PORT,
+	RTSP_TRANSPORT_ATTRIB_SOURCE,
+	RTSP_TRANSPORT_ATTRIB_DESTINATION,
 	RTSP_TRANSPORT_ATTRIB_UNICAST,
 	RTSP_TRANSPORT_ATTRIB_MULTICAST,
 
@@ -129,6 +131,10 @@ struct rtsp_transport_t {
 	rtsp_port_range_t        client_port_range;
 	/** Server port range */
 	rtsp_port_range_t        server_port_range;
+	/** Source IP address */
+	apt_str_t                source;
+	/** Destination IP address */
+	apt_str_t                destination;
 };
 
 /** RTSP header */
@@ -173,6 +179,8 @@ static APR_INLINE void rtsp_transport_init(rtsp_transport_t *transport)
 	transport->lower_protocol = RTSP_LOWER_TRANSPORT_NONE;
 	rtsp_port_range_init(&transport->client_port_range);
 	rtsp_port_range_init(&transport->server_port_range);
+	apt_string_reset(&transport->source);
+	apt_string_reset(&transport->destination);
 }
 
 /** Initialize header */
