@@ -53,14 +53,16 @@ typedef enum{
 	RTSP_LOWER_TRANSPORT_NONE = RTSP_LOWER_TRANSPORT_COUNT
 } rtsp_lower_transport_e;
 
-/** RTSP transport port ranges */
+/** RTSP transport attributes */
 typedef enum{
-	RTSP_TRANSPORT_CLIENT_PORT,
-	RTSP_TRANSPORT_SERVER_PORT,
+	RTSP_TRANSPORT_ATTRIB_CLIENT_PORT,
+	RTSP_TRANSPORT_ATTRIB_SERVER_PORT,
+	RTSP_TRANSPORT_ATTRIB_UNICAST,
+	RTSP_TRANSPORT_ATTRIB_MULTICAST,
 
-	RTSP_TRANSPORT_PORT_TYPE_COUNT,
-	RTSP_TRANSPORT_PORT_TYPE_NONE = RTSP_TRANSPORT_PORT_TYPE_COUNT
-} rtsp_transport_port_type_e;
+	RTSP_TRANSPORT_ATTRIB_COUNT,
+	RTSP_TRANSPORT_ATTRIB_NONE = RTSP_TRANSPORT_ATTRIB_COUNT
+} rtsp_transport_attrib_e;
 
 /** RTSP delivery */
 typedef enum{
@@ -155,6 +157,12 @@ static APR_INLINE void rtsp_port_range_init(rtsp_port_range_t *port_range)
 {
 	port_range->min = 0;
 	port_range->max = 0;
+}
+
+/** Initialize port range */
+static APR_INLINE apt_bool_t rtsp_port_range_is_valid(const rtsp_port_range_t *port_range)
+{
+	return (port_range->min == 0 && port_range->max == 0) == FALSE;
 }
 
 /** Initialize transport */
