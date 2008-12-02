@@ -495,6 +495,10 @@ static apt_bool_t rtsp_server_message_receive(apt_net_server_task_t *task, apt_n
 	do {
 		message = rtsp_message_create(RTSP_MESSAGE_TYPE_UNKNOWN,connection->pool);
 		if(rtsp_message_parse(message,&text_stream) == TRUE) {
+			apt_str_t *destination = &message->header.transport.destination;
+			if(!destination->buf && connection->client_ip) {
+				apt_string_assign(destination,connection->client_ip,connection->pool);
+			}
 			rtsp_server_session_request_process(server,connection->obj,message);
 		}
 		else {
