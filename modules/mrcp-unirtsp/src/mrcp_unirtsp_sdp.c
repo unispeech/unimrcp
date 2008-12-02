@@ -378,6 +378,7 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
 			response->header.transport.server_port_range.min = audio_media->base.port;
 			response->header.transport.server_port_range.max = audio_media->base.port+1;
+			response->header.transport.client_port_range = request->header.transport.client_port_range;
 			continue;
 		}
 		video_media = mrcp_session_video_media_get(descriptor,video_index);
