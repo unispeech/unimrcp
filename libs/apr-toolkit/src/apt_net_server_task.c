@@ -241,6 +241,7 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	connection->pool = pool;
 	connection->obj = NULL;
 	connection->sock = NULL;
+	connection->client_ip = NULL;
 
 	if(apr_socket_accept(&connection->sock,task->listen_sock,connection->pool) != APR_SUCCESS) {
 		apr_pool_destroy(pool);
@@ -258,10 +259,9 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	}
 
 	if(apr_socket_addr_get(&sockaddr,APR_REMOTE,connection->sock) == APR_SUCCESS) {
-		char *client_ip = NULL;
-		if(apr_sockaddr_ip_get(&client_ip,sockaddr) == APR_SUCCESS) {
+		if(apr_sockaddr_ip_get(&connection->client_ip,sockaddr) == APR_SUCCESS) {
 			apt_log(APT_PRIO_NOTICE,"Accepted TCP Connection %s:%hu",
-				client_ip, sockaddr->port);
+				connection->client_ip, sockaddr->port);
 		}
 	}
 	task->server_vtable->on_connect(task,connection);

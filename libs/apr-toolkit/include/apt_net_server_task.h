@@ -40,6 +40,8 @@ struct apt_net_server_connection_t {
 	apr_pool_t   *pool;
 	/** External object */
 	void         *obj;
+	/** Client IP address */
+	char         *client_ip;
 	/** Accepted socket */
 	apr_socket_t *sock;
 	/** Socket poll descriptor */
