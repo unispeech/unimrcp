@@ -19,6 +19,7 @@
 #include "uni_version.h"
 #include "mrcp_default_factory.h"
 #include "mpf_engine.h"
+#include "mpf_codec_manager.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_unirtsp_server_agent.h"
@@ -398,6 +399,15 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 				}
 				else if(strcasecmp(attr_name->value,"max-playout-delay") == 0) {
 					rtp_config->jb_config.max_playout_delay = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"codecs") == 0) {
+					const mpf_codec_manager_t *codec_manager = mrcp_server_codec_manager_get(server);
+					if(codec_manager) {
+						mpf_codec_manager_codec_list_load(codec_manager,&rtp_config->codec_list,attr_value->value,pool);
+					}
+				}
+				else if(strcasecmp(attr_name->value,"ptime") == 0) {
+					rtp_config->ptime = (apr_uint16_t)atol(attr_value->value);
 				}
 				else {
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);

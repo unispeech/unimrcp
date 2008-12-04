@@ -295,6 +295,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_codec_manager_register(mrcp_server_t *serve
 	return TRUE;
 }
 
+/** Get registered codec manager */
+MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_server_codec_manager_get(mrcp_server_t *server)
+{
+	return server->codec_manager;
+}
+
 /** Register media engine */
 MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine, const char *name)
 {
