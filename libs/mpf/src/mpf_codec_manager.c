@@ -20,26 +20,19 @@
 
 
 struct mpf_codec_manager_t {
+	/** Memory pool */
 	apr_pool_t   *pool;
 
-	mpf_codec_t **codecs;
-	apr_size_t    codec_count;
-	apr_size_t    max_codec_count;
+	/** Dynamic array of codecs (mpf_codec_t*) */
+	apr_array_header_t *codec_arr;
 };
 
 
-MPF_DECLARE(mpf_codec_manager_t*) mpf_codec_manager_create(apr_size_t max_codec_count, apr_pool_t *pool)
+MPF_DECLARE(mpf_codec_manager_t*) mpf_codec_manager_create(apr_size_t codec_count, apr_pool_t *pool)
 {
-	size_t i;
 	mpf_codec_manager_t *codec_manager = apr_palloc(pool,sizeof(mpf_codec_manager_t));
 	codec_manager->pool = pool;
-	codec_manager->codec_count = 0;
-	codec_manager->max_codec_count = max_codec_count;
-	codec_manager->codecs = apr_palloc(pool,sizeof(mpf_codec_t*)*max_codec_count);
-	for(i=0; i<max_codec_count; i++) {
-		codec_manager->codecs[i] = NULL;
-	}
-
+	codec_manager->codec_arr = apr_array_make(pool,(int)codec_count,sizeof(mpf_codec_t*));
 	return codec_manager;
 }
 
@@ -50,10 +43,7 @@ MPF_DECLARE(void) mpf_codec_manager_destroy(mpf_codec_manager_t *codec_manager)
 
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *codec_manager, mpf_codec_t *codec)
 {
-	if(codec_manager->codec_count >= codec_manager->max_codec_count) {
-		return FALSE;
-	}
-
+	mpf_codec_t **slot;
 	if(!codec || !codec->def_descriptor || !codec->def_descriptor->name.buf) {
 		return FALSE;
 	}
@@ -64,22 +54,22 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *co
 					codec->def_descriptor->sampling_rate,
 					codec->def_descriptor->channel_count);
 
-	codec_manager->codecs[codec_manager->codec_count] = codec;
-	codec_manager->codec_count++;
+	slot = apr_array_push(codec_manager->codec_arr);
+	*slot = codec;
 	return TRUE;
 }
 
 MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t *codec_manager, mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
 {
-	size_t i;
+	int i;
 	mpf_codec_t *codec = NULL;
 	mpf_codec_t *ret_codec = NULL;
 	if(!descriptor) {
 		return NULL;
 	}
 
-	for(i=0; i<codec_manager->codec_count; i++) {
-		codec = codec_manager->codecs[i];
+	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
+		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
 		if(descriptor->payload_type < 96) {
 			if(codec->def_descriptor->payload_type == descriptor->payload_type) {
 				descriptor->name = codec->def_descriptor->name;
@@ -94,8 +84,8 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 			}
 		}
 	}
-	
-	if(i == codec_manager->codec_count) {
+
+	if(i == codec_manager->codec_arr->nelts) {
 		/* no match found */
 		return NULL;
 	}
@@ -110,11 +100,13 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager
 {
 	const mpf_codec_descriptor_t *def_descriptor;
 	mpf_codec_descriptor_t *descriptor;
-	apr_size_t i;
-	apr_size_t count = codec_manager->codec_count;
-	mpf_codec_list_init(codec_list,count,pool);
-	for(i=0; i<count; i++) {
-		def_descriptor = codec_manager->codecs[i]->def_descriptor;
+	int i;
+	mpf_codec_t *codec = NULL;
+
+	mpf_codec_list_init(codec_list,codec_manager->codec_arr->nelts,pool);
+	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
+		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
+		def_descriptor = codec->def_descriptor;
 		descriptor = mpf_codec_list_add(codec_list);
 		if(descriptor) {
 			*descriptor = *def_descriptor;
@@ -199,14 +191,12 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_load(const mpf_codec_manage
 
 MPF_DECLARE(const mpf_codec_descriptor_t*) mpf_codec_manager_codec_desc_find(const mpf_codec_manager_t *codec_manager, const apt_str_t *codec_name)
 {
+	int i;
 	mpf_codec_t *codec;
-	size_t i;
-	for(i=0; i<codec_manager->codec_count; i++) {
-		codec = codec_manager->codecs[i];
-		if(codec) {
-			if(apt_string_compare(&codec->def_descriptor->name,codec_name) == TRUE) {
-				return codec->def_descriptor;
-			}
+	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
+		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
+		if(apt_string_compare(&codec->def_descriptor->name,codec_name) == TRUE) {
+			return codec->def_descriptor;
 		}
 	}
 	return NULL;
