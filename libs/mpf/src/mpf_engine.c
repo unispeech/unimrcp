@@ -266,7 +266,7 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 
 MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *pool)
 {
-	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(20,pool);
+	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(3,pool);
 	if(codec_manager) {
 		mpf_codec_t *codec;
 		codec = mpf_codec_g711u_create(pool);

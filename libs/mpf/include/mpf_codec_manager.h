@@ -28,7 +28,7 @@
 APT_BEGIN_EXTERN_C
 
 /** Create codec manager */
-MPF_DECLARE(mpf_codec_manager_t*) mpf_codec_manager_create(apr_size_t max_codec_count, apr_pool_t *pool);
+MPF_DECLARE(mpf_codec_manager_t*) mpf_codec_manager_create(apr_size_t codec_count, apr_pool_t *pool);
 
 /** Destroy codec manager */
 MPF_DECLARE(void) mpf_codec_manager_destroy(mpf_codec_manager_t *codec_manager);
