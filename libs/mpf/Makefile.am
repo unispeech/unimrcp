@@ -44,6 +44,7 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_audio_file_stream.c \
                            src/mpf_bridge.c \
                            src/mpf_buffer.c \
+                           src/mpf_codec_descriptor.c \
                            src/mpf_codec_g711.c \
                            src/mpf_codec_linear.c \
                            src/mpf_codec_manager.c \

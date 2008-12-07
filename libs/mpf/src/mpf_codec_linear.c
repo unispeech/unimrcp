@@ -28,7 +28,8 @@ static const mpf_codec_descriptor_t l16_descriptor = {
 	{L16_CODEC_NAME, L16_CODEC_NAME_LENGTH},
 	8000 /*44100*/,
 	1,
-	NULL
+	NULL,
+	TRUE
 };
 
 static const mpf_codec_attribs_t l16_attribs = {

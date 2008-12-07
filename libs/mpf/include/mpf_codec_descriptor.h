@@ -57,12 +57,16 @@ struct mpf_codec_descriptor_t {
 	apr_byte_t   channel_count;
 	/** Codec dependent additional format */
 	const char  *format;
+	/**  Enabled/disabled state */
+	apt_bool_t   enabled;
 };
 
 /** List of codec descriptors */
 struct mpf_codec_list_t {
-	/** Dynamic array */
-	apr_array_header_t *descriptor_arr;
+	/** Dynamic array of mpf_codec_descriptor_t */
+	apr_array_header_t     *descriptor_arr;
+	/** Preffered codec descriptor */
+	mpf_codec_descriptor_t *preffered;
 };
 
 /** Codec frame */
@@ -88,6 +92,7 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 	descriptor->sampling_rate = 0;
 	descriptor->channel_count = 0;
 	descriptor->format = NULL;
+	descriptor->enabled = TRUE;
 }
 
 /** Calculate encoded frame size in bytes */
@@ -109,31 +114,11 @@ static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t 
 	return channel_count * BYTES_PER_SAMPLE * CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
 }
 
-/** Match two codec descriptors */
-static APR_INLINE apr_size_t mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
-{
-	apt_bool_t match = FALSE;
-	if(descriptor1->payload_type < 96 && descriptor2->payload_type < 96) {
-		if(descriptor1->payload_type == descriptor2->payload_type) {
-			match = TRUE;
-		}
-	}
-	else {
-		if(apt_string_compare(&descriptor1->name,&descriptor2->name) == TRUE) {
-			if(descriptor1->sampling_rate == descriptor2->sampling_rate && 
-				descriptor1->channel_count == descriptor2->channel_count) {
-				match = TRUE;
-			}
-		}
-	}
-	return match;
-}
-
-
 /** Reset list of codec descriptors */
 static APR_INLINE void mpf_codec_list_reset(mpf_codec_list_t *codec_list)
 {
 	codec_list->descriptor_arr = NULL;
+	codec_list->preffered = NULL;
 }
 
 /** Initialize list of codec descriptors */
@@ -170,6 +155,12 @@ static APR_INLINE mpf_codec_descriptor_t* mpf_codec_get(const mpf_codec_list_t *
 	descriptor = (mpf_codec_descriptor_t*)codec_list->descriptor_arr->elts;
 	return descriptor + id;
 }
+
+/** Match two codec descriptors */
+MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2);
+/** Intersect two codec lists */
+MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2);
+
 
 APT_END_EXTERN_C
 
