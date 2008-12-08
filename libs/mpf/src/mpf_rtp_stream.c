@@ -198,7 +198,12 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 	rtp_stream->local_media->ptime = rtp_stream->remote_media->ptime;
 	rtp_stream->local_media->mode = mpf_stream_mode_negotiate(rtp_stream->remote_media->mode);
 
-	mpf_codec_list_intersect(&rtp_stream->local_media->codec_list,&rtp_stream->remote_media->codec_list);
+	if(rtp_stream->config->own_preferrence == TRUE) {
+		mpf_codec_list_intersect(&rtp_stream->local_media->codec_list,&rtp_stream->remote_media->codec_list);
+	}
+	else {
+		mpf_codec_list_intersect(&rtp_stream->remote_media->codec_list,&rtp_stream->local_media->codec_list);
+	}
 
 	rtp_stream->base->mode = rtp_stream->local_media->mode;
 	return TRUE;
