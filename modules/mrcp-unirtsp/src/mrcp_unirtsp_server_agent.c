@@ -310,10 +310,11 @@ static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *mrcp_session, m
 static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *mrcp_session)
 {
 	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	rtsp_server_session_t *rtsp_session = session->rtsp_session;
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 
-	rtsp_server_session_terminate(agent->rtsp_server,session->rtsp_session);
 	mrcp_unirtsp_session_destroy(session);
+	rtsp_server_session_terminate(agent->rtsp_server,rtsp_session);
 	return TRUE;
 }
 
