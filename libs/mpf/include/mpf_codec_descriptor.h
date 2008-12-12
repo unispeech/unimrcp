@@ -35,6 +35,13 @@ APT_BEGIN_EXTERN_C
 /** Bits per sample for linear pcm */
 #define BITS_PER_SAMPLE 16
 
+/** Supported sampling rates */
+typedef enum {
+	MPF_SAMPLE_RATE_NONE  = 0x00,
+	MPF_SAMPLE_RATE_8000  = 0x01,
+	MPF_SAMPLE_RATE_16000 = 0x02
+} mpf_sample_rates_e;
+
 /** Codec descriptor declaration */
 typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
 /** Codec list declaration */
@@ -79,8 +86,12 @@ struct mpf_codec_frame_t {
 
 /** Codec attributes */
 struct mpf_codec_attribs_t {
+	/** Codec name */
+	apt_str_t  name;
 	/** Bits per sample */
-	apr_byte_t   bits_per_samples;
+	apr_byte_t bits_per_samples;
+	/** Supported sampling rates (mpf_sample_rates_e) */
+	int        sample_rates;
 };
 
 

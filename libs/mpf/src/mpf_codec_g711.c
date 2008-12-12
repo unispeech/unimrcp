@@ -139,16 +139,24 @@ static const mpf_codec_descriptor_t g711a_descriptor = {
 	TRUE
 };
 
-static const mpf_codec_attribs_t g711_attribs = {
-	8 /* bits per sample */
+static const mpf_codec_attribs_t g711u_attribs = {
+	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH}, /* codec name */
+	8,                                           /* bits per sample */
+	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 /* sampling rates */
+};
+
+static const mpf_codec_attribs_t g711a_attribs = {
+	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH}, /* codec name */
+	8,                                           /* bits per sample */
+	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 /* sampling rates */
 };
 
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool)
 {
-	return mpf_codec_create(&g711u_vtable,&g711_attribs,&g711u_descriptor,pool);
+	return mpf_codec_create(&g711u_vtable,&g711u_attribs,&g711u_descriptor,pool);
 }
 
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool)
 {
-	return mpf_codec_create(&g711a_vtable,&g711_attribs,&g711a_descriptor,pool);
+	return mpf_codec_create(&g711a_vtable,&g711a_attribs,&g711a_descriptor,pool);
 }

@@ -33,12 +33,12 @@ typedef struct mpf_codec_t mpf_codec_t;
 
 /** Codec */
 struct mpf_codec_t {
-	/** Codec manipulators (encode,decode,dissect) */
+	/** Codec manipulators (encode, decode, dissect) */
 	const mpf_codec_vtable_t     *vtable;
-	/** Codec attributes */
+	/** Codec attributes (capabilities) */
 	const mpf_codec_attribs_t    *attribs;
-	/** Default codec descriptor */
-	const mpf_codec_descriptor_t *def_descriptor;
+	/** Optional static codec descriptor (pt < 96) */
+	const mpf_codec_descriptor_t *static_descriptor;
 	
 	/** Negotiated codec descriptor */
 	mpf_codec_descriptor_t       *descriptor;
@@ -76,7 +76,7 @@ static APR_INLINE mpf_codec_t* mpf_codec_create(
 	mpf_codec_t *codec = (mpf_codec_t*)apr_palloc(pool,sizeof(mpf_codec_t));
 	codec->vtable = vtable;
 	codec->attribs = attribs;
-	codec->def_descriptor = descriptor;
+	codec->static_descriptor = descriptor;
 	codec->descriptor = NULL;
 	return codec;
 }
@@ -91,7 +91,7 @@ static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_
 	mpf_codec_t *codec = (mpf_codec_t*)apr_palloc(pool,sizeof(mpf_codec_t));
 	codec->vtable = src_codec->vtable;
 	codec->attribs = src_codec->attribs;
-	codec->def_descriptor = src_codec->def_descriptor;
+	codec->static_descriptor = src_codec->static_descriptor;
 	codec->descriptor = src_codec->descriptor;
 	return codec;
 }

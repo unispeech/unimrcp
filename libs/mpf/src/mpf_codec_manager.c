@@ -44,15 +44,11 @@ MPF_DECLARE(void) mpf_codec_manager_destroy(mpf_codec_manager_t *codec_manager)
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *codec_manager, mpf_codec_t *codec)
 {
 	mpf_codec_t **slot;
-	if(!codec || !codec->def_descriptor || !codec->def_descriptor->name.buf) {
+	if(!codec || !codec->attribs || !codec->attribs->name.buf) {
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Register Codec %d [%s/%hu/%d]",
-					codec->def_descriptor->payload_type,
-					codec->def_descriptor->name.buf,
-					codec->def_descriptor->sampling_rate,
-					codec->def_descriptor->channel_count);
+	apt_log(APT_PRIO_INFO,"Register Codec [%s]",codec->attribs->name.buf);
 
 	slot = apr_array_push(codec_manager->codec_arr);
 	*slot = codec;
@@ -71,15 +67,16 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
 		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
 		if(descriptor->payload_type < 96) {
-			if(codec->def_descriptor->payload_type == descriptor->payload_type) {
-				descriptor->name = codec->def_descriptor->name;
-				descriptor->sampling_rate = codec->def_descriptor->sampling_rate;
-				descriptor->channel_count = codec->def_descriptor->channel_count;
+			if(codec->static_descriptor && codec->static_descriptor->payload_type == descriptor->payload_type) {
+				descriptor->name = codec->static_descriptor->name;
+				descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
+				descriptor->channel_count = codec->static_descriptor->channel_count;
 				break;
 			}
 		}
 		else {
-			if(apt_string_compare(&codec->def_descriptor->name,&descriptor->name) == TRUE) {
+			if(apt_string_compare(&codec->attribs->name,&descriptor->name) == TRUE) {
+				/* sampling rate must be checked as well */
 				break;
 			}
 		}
@@ -98,18 +95,20 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, apr_pool_t *pool)
 {
-	const mpf_codec_descriptor_t *def_descriptor;
+	const mpf_codec_descriptor_t *static_descriptor;
 	mpf_codec_descriptor_t *descriptor;
 	int i;
-	mpf_codec_t *codec = NULL;
+	mpf_codec_t *codec;
 
 	mpf_codec_list_init(codec_list,codec_manager->codec_arr->nelts,pool);
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
 		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
-		def_descriptor = codec->def_descriptor;
-		descriptor = mpf_codec_list_add(codec_list);
-		if(descriptor) {
-			*descriptor = *def_descriptor;
+		static_descriptor = codec->static_descriptor;
+		if(static_descriptor) {
+			descriptor = mpf_codec_list_add(codec_list);
+			if(descriptor) {
+				*descriptor = *static_descriptor;
+			}
 		}
 	}
 	return TRUE;
@@ -117,7 +116,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager
 
 static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, char *codec_desc_str, apr_pool_t *pool)
 {
-	const mpf_codec_descriptor_t *def_descriptor;
+	const mpf_codec_t *codec;
 	mpf_codec_descriptor_t *descriptor;
 	const char *separator = "/";
 	char *state;
@@ -127,8 +126,9 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 	if(str) {
 		apt_str_t name;
 		apt_string_assign(&name,str,pool);
-		def_descriptor = mpf_codec_manager_codec_desc_find(codec_manager,&name);
-		if(!def_descriptor) {
+		/* find codec by name */
+		codec = mpf_codec_manager_codec_find(codec_manager,&name);
+		if(!codec) {
 			apt_log(APT_PRIO_WARNING,"No Such Codec [%s]",str);
 			return FALSE;
 		}
@@ -136,6 +136,18 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 		descriptor = mpf_codec_list_add(codec_list);
 		mpf_codec_descriptor_init(descriptor);
 		descriptor->name = name;
+
+		/* set defualt attributes */
+		if(codec->static_descriptor) {
+			descriptor->payload_type = codec->static_descriptor->payload_type;
+			descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
+			descriptor->channel_count = codec->static_descriptor->channel_count;
+		}
+		else {
+			descriptor->payload_type = 96;
+			descriptor->sampling_rate = 8000;
+			descriptor->channel_count = 1;
+		}
 
 		/* parse optional payload type */
 		str = apr_strtok(codec_desc_str, separator, &state);
@@ -152,22 +164,7 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 				if(str) {
 					descriptor->channel_count = (apr_byte_t)atol(str);
 				}
-				else {
-					/* no channel count specified */
-					descriptor->channel_count = def_descriptor->channel_count;
-				}
 			}
-			else {
-				/* no sampling rate specified */
-				descriptor->sampling_rate = def_descriptor->sampling_rate;
-				descriptor->channel_count = def_descriptor->channel_count;
-			}
-		}
-		else {
-			/* no payload type specified */
-			descriptor->payload_type = def_descriptor->payload_type;
-			descriptor->sampling_rate = def_descriptor->sampling_rate;
-			descriptor->channel_count = def_descriptor->channel_count;
 		}
 	}
 	return TRUE;
@@ -189,14 +186,14 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_load(const mpf_codec_manage
 	return TRUE;
 }
 
-MPF_DECLARE(const mpf_codec_descriptor_t*) mpf_codec_manager_codec_desc_find(const mpf_codec_manager_t *codec_manager, const apt_str_t *codec_name)
+MPF_DECLARE(const mpf_codec_t*) mpf_codec_manager_codec_find(const mpf_codec_manager_t *codec_manager, const apt_str_t *codec_name)
 {
 	int i;
 	mpf_codec_t *codec;
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
 		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
-		if(apt_string_compare(&codec->def_descriptor->name,codec_name) == TRUE) {
-			return codec->def_descriptor;
+		if(apt_string_compare(&codec->attribs->name,codec_name) == TRUE) {
+			return codec;
 		}
 	}
 	return NULL;

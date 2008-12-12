@@ -24,21 +24,23 @@ static const mpf_codec_vtable_t l16_vtable = {
 };
 
 static const mpf_codec_descriptor_t l16_descriptor = {
-	11,
+	96, /* not specified */
 	{L16_CODEC_NAME, L16_CODEC_NAME_LENGTH},
-	8000 /*44100*/,
+	8000,
 	1,
 	NULL,
 	TRUE
 };
 
 static const mpf_codec_attribs_t l16_attribs = {
-	16 /* bits per sample */
+	{L16_CODEC_NAME, L16_CODEC_NAME_LENGTH},     /* codec name */
+	16,                                          /* bits per sample */
+	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 /* sampling rates */
 };
 
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool)
 {
-	return mpf_codec_create(&l16_vtable,&l16_attribs,&l16_descriptor,pool);
+	return mpf_codec_create(&l16_vtable,&l16_attribs,NULL,pool);
 }
 
 const mpf_codec_descriptor_t* l16_descriptor_get()
