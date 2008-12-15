@@ -83,6 +83,10 @@ APT_DECLARE(apt_bool_t) apt_text_header_generate(const apt_pair_t *pair, apt_tex
 /** Generate only the name ("name:") of the header */
 APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt_text_stream_t *text_stream);
 
+/** Parse array of name-value pairs */
+APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_t *value, apr_pool_t *pool);
+/** Generate array of name-value pairs */
+APT_DECLARE(apt_bool_t) apt_pair_array_generate(apt_pair_arr_t *arr, apt_text_stream_t *text_stream);
 
 
 /** Parse boolean-value */

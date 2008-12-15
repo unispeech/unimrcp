@@ -177,7 +177,71 @@ APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt
 	return TRUE;
 }
 
+/** Parse name=value pair */
+static apt_bool_t apt_pair_parse(apt_pair_t *pair, const apt_str_t *field, apr_pool_t *pool)
+{
+	apt_text_stream_t stream;
+	stream.text = *field;
+	stream.pos = stream.text.buf;
 
+	/* read name */
+	if(apt_text_field_read(&stream,'=',TRUE,&pair->name) == FALSE) {
+		return FALSE;
+	}
+
+	/* read value */
+	apt_text_field_read(&stream,';',TRUE,&pair->value);
+	return TRUE;
+}
+
+/** Parse array of name-value pairs */
+APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_t *value, apr_pool_t *pool)
+{
+	apt_str_t field;
+	apt_pair_t *pair;
+	apt_text_stream_t stream;
+	if(!arr || !value) {
+		return FALSE;
+	}
+
+	stream.text = *value;
+	stream.pos = stream.text.buf;
+	/* read name-value pairs */
+	while(apt_text_field_read(&stream,';',TRUE,&field) == TRUE) {
+		pair = apr_array_push(arr);
+		apt_pair_parse(pair,&field,pool);
+	}
+	return TRUE;
+}
+
+/** Generate array of name-value pairs */
+APT_DECLARE(apt_bool_t) apt_pair_array_generate(apt_pair_arr_t *arr, apt_text_stream_t *stream)
+{
+	int i;
+	apt_pair_t *pair;
+	char *pos = stream->pos;
+	if(!arr) {
+		return FALSE;
+	}
+
+	for(i=0; i<arr->nelts; i++) {
+		pair = (apt_pair_t*)arr->elts + i;
+		if(i != 0) {
+			*pos++ = ';';
+		}
+		if(pair->name.length) {
+			memcpy(pos,pair->name.buf,pair->name.length);
+			pos += pair->name.length;
+			if(pair->value.length) {
+				*pos++ = '=';
+				memcpy(pos,pair->value.buf,pair->value.length);
+				pos += pair->value.length;
+			}
+		}
+	}
+	stream->pos = pos;
+	return TRUE;
+}
 
 /** Parse boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value)

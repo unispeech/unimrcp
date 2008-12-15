@@ -16,3 +16,56 @@
 
 #include "apt_pair.h"
 
+/** Create array of name-value pairs */
+APT_DECLARE(apt_pair_arr_t*) apt_pair_array_create(apr_size_t initial_size, apr_pool_t *pool)
+{
+	return apr_array_make(pool,(int)initial_size,sizeof(apt_pair_t));
+}
+
+/** Copy array of name-value pairs */
+APT_DECLARE(apt_pair_arr_t*) apt_pair_array_copy(const apt_pair_arr_t *src_arr, apr_pool_t *pool)
+{
+	int i;
+	const apt_pair_t *src_pair;
+	apt_pair_t *pair;
+	apt_pair_arr_t *arr;
+	if(!src_arr) {
+		return NULL;
+	}
+	arr = apr_array_copy(pool,src_arr);
+	for(i=0; i<arr->nelts; i++) {
+		pair = (apt_pair_t*)arr->elts + i;
+		src_pair = (const apt_pair_t*)src_arr->elts + i;
+		apt_pair_copy(pair,src_pair,pool);
+	}
+	return arr;
+}
+
+
+/** Append name-value pair */
+APT_DECLARE(apt_bool_t) apt_pair_array_append(apt_pair_arr_t *arr, const apt_str_t *name, const apt_str_t *value, apr_pool_t *pool)
+{
+	apt_pair_t *pair = apr_array_push(arr);
+	apt_pair_init(pair);
+	if(name) {
+		apt_string_copy(&pair->name,name,pool);
+	}
+	if(value) {
+		apt_string_copy(&pair->value,value,pool);
+	}
+	return TRUE;
+}
+
+/** Find name-value pair by name */
+APT_DECLARE(const apt_pair_t*) apt_pair_array_find(const apt_pair_arr_t *arr, const apt_str_t *name)
+{
+	int i;
+	apt_pair_t *pair;
+	for(i=0; i<arr->nelts; i++) {
+		pair = (apt_pair_t*)arr->elts + i;
+		if(apt_string_compare(&pair->name,name) == TRUE) {
+			return pair;
+		}
+	}
+	return NULL;
+}
