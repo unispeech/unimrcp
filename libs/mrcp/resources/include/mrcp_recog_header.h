@@ -40,7 +40,6 @@ typedef enum {
 	RECOGNIZER_HEADER_COMPLETION_CAUSE,
 	RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK,
 	RECOGNIZER_HEADER_START_INPUT_TIMERS,
-	RECOGNIZER_HEADER_VENDOR_SPECIFIC,
 	RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT,
 	RECOGNIZER_HEADER_SPEECH_INCOMPLETE_TIMEOUT,
 	RECOGNIZER_HEADER_DTMF_INTERDIGIT_TIMEOUT,
@@ -124,8 +123,6 @@ struct mrcp_recog_header_t {
 	/** MAY be sent as part of the RECOGNIZE request. A value of false tells
 	the recognizer to start recognition, but not to start the no-input timer yet */
 	apt_bool_t                    start_input_timers;
-	/** Vendor specific header */
-	apt_str_t                     vendor_specific;
 	/** Specifies the length of silence required following user
     speech before the speech recognizer finalizes a result */
 	apr_size_t                    speech_complete_timeout;

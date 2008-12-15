@@ -29,7 +29,6 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Completion-Cause",           16},3},
 	{{"Recognizer-Context-Block",   24},12},
 	{{"Recognizer-Start-Timers",    23},11},
-	{{"Vendor-Specific-Parameters", 26},3},
 	{{"Speech-Complete-Timeout",    23},7},
 	{{"Speech-Incomplete-Timeout",  25},8},
 	{{"Dtmf-Interdigit-Timeout",    23},5},
@@ -64,7 +63,6 @@ static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Completion-Cause",           16},3},
 	{{"Recognizer-Context-Block",   24},7},
 	{{"Start-Input-Timers",         18},2},
-	{{"Vendor-Specific-Parameters", 26},3},
 	{{"Speech-Complete-Timeout",    23},7},
 	{{"Speech-Incomplete-Timeout",  25},8},
 	{{"Dtmf-Interdigit-Timeout",    23},5},
@@ -138,7 +136,6 @@ static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 	recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_COUNT;
 	apt_string_reset(&recog_header->recognizer_context_block);
 	recog_header->start_input_timers = FALSE;
-	apt_string_reset(&recog_header->vendor_specific);
 	recog_header->speech_complete_timeout = 0;
 	recog_header->speech_incomplete_timeout = 0;
 	recog_header->dtmf_interdigit_timeout = 0;
@@ -207,9 +204,6 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size
 			break;
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
 			apt_boolean_value_parse(value,&recog_header->start_input_timers);
-			break;
-		case RECOGNIZER_HEADER_VENDOR_SPECIFIC:
-			apt_string_copy(&recog_header->vendor_specific,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT:
 			recog_header->speech_complete_timeout = apt_size_value_parse(value);
@@ -345,9 +339,6 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
 			apt_boolean_value_generate(recog_header->start_input_timers,value);
 			break;
-		case RECOGNIZER_HEADER_VENDOR_SPECIFIC:
-			apt_string_value_generate(&recog_header->vendor_specific,value);
-			break;
 		case RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT:
 			apt_size_value_generate(recog_header->speech_complete_timeout,value);
 			break;
@@ -473,9 +464,6 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			break;
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
 			recog_header->start_input_timers = src_recog_header->start_input_timers;
-			break;
-		case RECOGNIZER_HEADER_VENDOR_SPECIFIC:
-			apt_string_copy(&recog_header->vendor_specific,&src_recog_header->vendor_specific,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT:
 			recog_header->speech_complete_timeout = src_recog_header->speech_complete_timeout;
