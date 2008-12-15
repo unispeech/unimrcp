@@ -64,51 +64,6 @@ static apt_bool_t mrcp_request_id_list_generate(mrcp_request_id_list_t *request_
 	return TRUE;
 }
 
-/** Parse mrcp vendor-specific-params list */
-static apt_bool_t mrcp_vendor_specific_params_list_parse(mrcp_vendor_specific_params_list_t *vendor_params_list,
-                                                         const apt_str_t *value, apr_pool_t *pool)
-{
-	apt_str_t field;
-	apt_text_stream_t stream;
-	stream.text = *value;
-	stream.pos = stream.text.buf;
-	vendor_params_list->count = 0;
-	while(vendor_params_list->count < MAX_VENDOR_SPECIFIC_PARAMS_COUNT) {
-		if(apt_text_field_read(&stream,';',TRUE,&field) == FALSE) {
-			break;
-		}
-		apt_string_copy(&vendor_params_list->pairs[vendor_params_list->count], &field, pool);
-		vendor_params_list->count++;
-	}
-	return TRUE;
-}
- 
-/** Generate mrcp vendor-specific-params list */
-static apt_bool_t mrcp_vendor_specific_params_list_generate(mrcp_vendor_specific_params_list_t *vendor_params_list,
-                                                            apt_text_stream_t *stream)
-{
-	size_t i;
-	for(i=0; i<vendor_params_list->count; i++) {
-		apt_string_value_generate(&vendor_params_list->pairs[i],stream);
-		if(i < vendor_params_list->count-1) {
-			*stream->pos++ = ';';
-		}
-	}
-	return TRUE;
-}
- 
-/** Duplicate mrcp vendor-specific-params list */
-static void mrcp_vendor_specific_params_list_duplicate(mrcp_vendor_specific_params_list_t *vendor_params_list,
-                                                       const mrcp_vendor_specific_params_list_t *src_vendor_params_list,
-                                                       apr_pool_t *pool)
-{
-	size_t i;
-	for(i=0; i<src_vendor_params_list->count; i++)
-	{
-		 apt_string_copy(&vendor_params_list->pairs[i], &src_vendor_params_list->pairs[i], pool);
-	}
-	vendor_params_list->count = src_vendor_params_list->count;
-}
 
 /** Initialize generic-header */
 static void mrcp_generic_header_init(mrcp_generic_header_t *generic_header)
@@ -124,7 +79,7 @@ static void mrcp_generic_header_init(mrcp_generic_header_t *generic_header)
 	generic_header->content_length = 0;
 	apt_string_reset(&generic_header->cache_control);
 	apt_string_reset(&generic_header->logging_tag);
-	generic_header->vendor_specific_params_list.count = 0;
+	generic_header->vendor_specific_params = NULL;
 }
 
 
@@ -177,7 +132,10 @@ static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, si
 			apt_string_copy(&generic_header->logging_tag,value,pool);
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
-			mrcp_vendor_specific_params_list_parse(&generic_header->vendor_specific_params_list,value, pool);
+			if(!generic_header->vendor_specific_params) {
+				generic_header->vendor_specific_params = apt_pair_array_create(1,pool);
+			}
+			apt_pair_array_parse(generic_header->vendor_specific_params,value,pool);
 			break;
 		default:
 			status = FALSE;
@@ -224,7 +182,7 @@ static apt_bool_t mrcp_generic_header_generate(mrcp_header_accessor_t *accessor,
 			apt_string_value_generate(&generic_header->logging_tag,value);
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
-			mrcp_vendor_specific_params_list_generate(&generic_header->vendor_specific_params_list,value);
+			apt_pair_array_generate(generic_header->vendor_specific_params,value);
 			break;
 		default:
 			break;
@@ -277,8 +235,7 @@ static apt_bool_t mrcp_generic_header_duplicate(mrcp_header_accessor_t *accessor
 			apt_string_copy(&generic_header->logging_tag,&src_generic_header->logging_tag,pool);
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
-			mrcp_vendor_specific_params_list_duplicate(&generic_header->vendor_specific_params_list,
-                                                       &src_generic_header->vendor_specific_params_list,pool);
+			generic_header->vendor_specific_params = apt_pair_array_copy(src_generic_header->vendor_specific_params,pool);
 			break;
 		default:
 			status = FALSE;
@@ -321,32 +278,6 @@ MRCP_DECLARE(apt_bool_t) active_request_id_list_find(mrcp_generic_header_t *gene
 	mrcp_request_id_list_t *request_id_list = &generic_header->active_request_id_list;
 	for(i=0; i<request_id_list->count; i++) {
 		if(request_id_list->ids[i] == request_id) {
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-/** Append vendor specific parameter pair list */
-MRCP_DECLARE(apt_bool_t) vendor_specific_params_list_append(mrcp_generic_header_t *generic_header,
-                                                            const apt_str_t *param_pair, apr_pool_t *pool)
-{
-	mrcp_vendor_specific_params_list_t *params_list = &generic_header->vendor_specific_params_list;
-	if(params_list->count >= MAX_VENDOR_SPECIFIC_PARAMS_COUNT) {
-		return FALSE;
-	}
-	apt_string_copy(&params_list->pairs[params_list->count++], param_pair, pool);
-	return TRUE;
-}
-
-/** Find vendor specific parameter pair in list */
-MRCP_DECLARE(apt_bool_t) vendor_specific_params_list_find(mrcp_generic_header_t *generic_header,
-                                                          const apt_str_t *param_pair)
-{
-	size_t i;
-	mrcp_vendor_specific_params_list_t *params_list = &generic_header->vendor_specific_params_list;
-	for(i=0; i<params_list->count; i++) {
-		if(apt_string_compare(&params_list->pairs[i], param_pair) == TRUE) {
 			return TRUE;
 		}
 	}
