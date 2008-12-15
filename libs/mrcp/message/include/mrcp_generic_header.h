@@ -27,7 +27,7 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Enumaration of MRCP generic headers */
+/** Enumeration of MRCP generic headers */
 typedef enum {
 	GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST,
 	GENERIC_HEADER_PROXY_SYNC_ID,

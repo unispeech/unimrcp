@@ -26,7 +26,7 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Enumaration of stream modes */
+/** Enumeration of stream modes */
 typedef enum {
 	STREAM_MODE_NONE    = 0x0, /**< none */
 	STREAM_MODE_SEND    = 0x1, /**< send */
