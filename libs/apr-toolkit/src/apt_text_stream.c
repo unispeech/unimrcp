@@ -17,6 +17,12 @@
 #include <apr_uuid.h>
 #include "apt_text_stream.h"
 
+#define TOKEN_TRUE  "true"
+#define TOKEN_FALSE "false"
+#define TOKEN_TRUE_LENGTH  (sizeof(TOKEN_TRUE)-1)
+#define TOKEN_FALSE_LENGTH (sizeof(TOKEN_FALSE)-1)
+
+
 /** Navigate through the lines of the text stream (message) */
 APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t *line)
 {
@@ -49,7 +55,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 }
 
 /** Navigate through the headers (name:value pairs) of the text stream (message) */
-APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name_value_t *pair)
+APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair_t *pair)
 {
 	char *pos = stream->pos;
 	const char *end = stream->text.buf + stream->text.length;
@@ -172,10 +178,6 @@ APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt
 }
 
 
-#define TOKEN_TRUE  "true"
-#define TOKEN_FALSE "false"
-#define TOKEN_TRUE_LENGTH  (sizeof(TOKEN_TRUE)-1)
-#define TOKEN_FALSE_LENGTH (sizeof(TOKEN_FALSE)-1)
 
 /** Parse boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value)

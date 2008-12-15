@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "apt_string.h"
+#include "apt_pair.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -39,8 +40,6 @@ APT_BEGIN_EXTERN_C
 
 /** Text stream declaration */
 typedef struct apt_text_stream_t apt_text_stream_t;
-/** Name-value declaration */
-typedef struct apt_name_value_t apt_name_value_t;
 
 /** Text stream is used for message parsing and generation */
 struct apt_text_stream_t {
@@ -48,14 +47,6 @@ struct apt_text_stream_t {
 	apt_str_t text;
 	/** Current position in the buffer */
 	char     *pos;
-};
-
-/** Generic name-value pair definition ("name:value") */
-struct apt_name_value_t {
-	/** The name */
-	apt_str_t name;
-	/** The value */
-	apt_str_t value;
 };
 
 /**
@@ -72,7 +63,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
  * @param pair the read pair to return
  * @return TRUE if the length of the read name > 0, otherwise FALSE
  */
-APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_name_value_t *pair);
+APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair_t *pair);
 
 /**
  * Navigate through the fields of the line.
@@ -87,7 +78,7 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 
 
 /** Generate header */
-APT_DECLARE(apt_bool_t) apt_text_header_generate(const apt_name_value_t *pair, apt_text_stream_t *text_stream);
+APT_DECLARE(apt_bool_t) apt_text_header_generate(const apt_pair_t *pair, apt_text_stream_t *text_stream);
 
 /** Generate only the name ("name:") of the header */
 APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt_text_stream_t *text_stream);

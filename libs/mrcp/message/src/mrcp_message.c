@@ -440,7 +440,7 @@ MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)
 MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
 	apt_bool_t match = FALSE;
-	apt_name_value_t pair;
+	apt_pair_t pair;
 	do {
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
 			if(strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
@@ -483,7 +483,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 /** Parse MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
-	apt_name_value_t pair;
+	apt_pair_t pair;
 
 	mrcp_header_allocate(&message_header->generic_header_accessor,pool);
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);

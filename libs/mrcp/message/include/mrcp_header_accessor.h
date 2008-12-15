@@ -126,7 +126,7 @@ static APR_INLINE void mrcp_header_destroy(mrcp_header_accessor_t *accessor)
 
 
 /** Parse header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_name_value_t *pair, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_pair_t *pair, apr_pool_t *pool);
 
 /** Generate header */
 MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, apt_text_stream_t *text_stream);

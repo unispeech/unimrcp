@@ -16,7 +16,7 @@
 
 #include "mrcp_header_accessor.h"
 
-MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_name_value_t *pair, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_pair_t *pair, apr_pool_t *pool)
 {
 	size_t id;
 	if(!accessor->vtable) {

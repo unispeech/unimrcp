@@ -340,7 +340,7 @@ static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t i
 /** Parse RTSP header */
 RTSP_DECLARE(apt_bool_t) rtsp_header_parse(rtsp_header_t *header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
-	apt_name_value_t pair;
+	apt_pair_t pair;
 
 	do {
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
