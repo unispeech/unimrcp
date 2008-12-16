@@ -65,9 +65,8 @@ struct mpf_named_event_frame_t {
 
 /** Media frame */
 struct mpf_frame_t {
-	/** frame type (audio/video/named-event)*/
-	mpf_frame_type_e        type;
-
+	/** frame type (audio/video/named-event) mpf_frame_type_e */
+	int                     type;
 	/** codec frame */
 	mpf_codec_frame_t       codec_frame;
 	/** named-event frame */
