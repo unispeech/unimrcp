@@ -109,20 +109,18 @@ mrcp_server_session_t* mrcp_server_session_create()
 	return session;
 }
 
-static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_resource_id resource_id)
+static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name)
 {
-	mrcp_resource_engine_t *resource_engine;
-	void *val;
-	apr_hash_index_t *it = apr_hash_first(session->base.pool,session->profile->resource_engine_table);
-	/* walk through the list of engines */
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine && resource_engine->resource_id == resource_id) {
-			return resource_engine->method_vtable->create_channel(resource_engine,session->base.pool);
-		}
+	mrcp_resource_engine_t *resource_engine = apr_hash_get(
+												session->profile->engine_table,
+												resource_name->buf,
+												resource_name->length);
+	if(!resource_engine) {
+		apt_log(APT_PRIO_WARNING,"Failed to Find Resource Engine [%s]",resource_name->buf);
+		return NULL;
 	}
-	return NULL;
+
+	return resource_engine->method_vtable->create_channel(resource_engine,session->base.pool);
 }
 
 static apt_bool_t mrcp_server_message_dispatch(mrcp_state_machine_t *state_machine, mrcp_message_t *message)
@@ -206,7 +204,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 								session->base.signaling_agent->mrcp_version,
 								pool);
 
-			engine_channel = mrcp_server_engine_channel_create(session,resource_id);
+			engine_channel = mrcp_server_engine_channel_create(session,resource_name);
 			if(engine_channel) {
 				engine_channel->event_obj = channel;
 				engine_channel->event_vtable = &engine_channel_vtable;

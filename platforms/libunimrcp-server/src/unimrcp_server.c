@@ -185,6 +185,24 @@ static apt_bool_t resource_map_load(apr_table_t *resource_map, const apr_xml_ele
 	return TRUE;
 }
 
+/** Load map of plugins */
+static apt_bool_t plugin_map_load(apr_table_t *plugin_map, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_attr *attr_name;
+	const apr_xml_attr *attr_value;
+	const apr_xml_elem *elem;
+	apt_log(APT_PRIO_DEBUG,"Loading Plugin Map");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				apr_table_set(plugin_map,attr_name->value,attr_value->value);
+			}
+		}
+	}    
+	return TRUE;
+}
+
 /** Load SofiaSIP signaling agent */
 static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
@@ -263,7 +281,7 @@ static mrcp_sig_agent_t* unimrcp_server_rtsp_agent_load(mrcp_server_t *server, c
 		else if(strcasecmp(elem->name,"resourcemap") == 0) {
 			resource_map_load(config->resource_map,elem,pool);
 		}
-	}    
+	}
 	return mrcp_unirtsp_server_agent_create(config,pool);
 }
 
@@ -568,6 +586,7 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 	mrcp_connection_agent_t *cnt_agent = NULL;
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
+	apr_table_t *plugin_map = NULL;
 	const apr_xml_elem *elem;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
@@ -606,11 +625,15 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 				}
 			}
 		}
+		else if(strcasecmp(elem->name,"pluginmap") == 0) {
+			plugin_map = apr_table_make(pool,2);
+			plugin_map_load(plugin_map,elem,pool);
+		}
 	}
 
 	apt_log(APT_PRIO_NOTICE,"Create Profile [%s]",name);
 	profile = mrcp_server_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,pool);
-	return mrcp_server_profile_register(server,profile,name);
+	return mrcp_server_profile_register(server,profile,plugin_map,name);
 }
 
 /** Load profiles */

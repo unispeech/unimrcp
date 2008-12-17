@@ -403,7 +403,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
 	profile->resource_factory = resource_factory;
-	profile->resource_engine_table = NULL;
+	profile->engine_table = NULL;
 	profile->media_engine = media_engine;
 	profile->rtp_termination_factory = rtp_factory;
 	profile->signaling_agent = signaling_agent;
@@ -411,8 +411,65 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 	return profile;
 }
 
+static mrcp_resource_engine_t* mrcp_server_engine_get_by_resource_id(mrcp_server_t *server, mrcp_resource_id resource_id)
+{
+	mrcp_resource_engine_t *resource_engine;
+	void *val;
+	apr_hash_index_t *it = apr_hash_first(server->pool,server->resource_engine_table);
+	/* walk through the list of engines */
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		resource_engine = val;
+		if(resource_engine && resource_engine->resource_id == resource_id) {
+			return resource_engine;
+		}
+	}
+	return NULL;
+}
+
+static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_profile_t *profile, apr_table_t *plugin_map)
+{
+	int i;
+	const apt_str_t *resource_name;
+	const char *plugin_name;
+	mrcp_resource_engine_t *resource_engine;
+
+	profile->engine_table = apr_hash_make(server->pool);
+	for(i=0; i<MRCP_RESOURCE_TYPE_COUNT; i++) {
+		resource_name = mrcp_resource_name_get(server->resource_factory,i);
+		if(!resource_name) continue;
+		
+		resource_engine = NULL;
+		/* first, try to find engine by name specified in plugin map (if available) */
+		if(plugin_map) {
+			plugin_name = apr_table_get(plugin_map,resource_name->buf);
+			if(plugin_name) {
+				resource_engine = mrcp_server_resource_engine_get(server,plugin_name);
+			}
+		}
+
+		/* next, if no engine found, try to find the first available engine */
+		if(!resource_engine) {
+			resource_engine = mrcp_server_engine_get_by_resource_id(server,i);
+		}
+		
+		if(resource_engine) {
+			apr_hash_set(profile->engine_table,resource_name->buf,resource_name->length,resource_engine);
+		}
+		else {
+			apt_log(APT_PRIO_WARNING,"No Resource Engine Available [%s]",resource_name->buf);
+		}
+	}
+
+	return TRUE;
+}
+
 /** Register MRCP profile */
-MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(mrcp_server_t *server, mrcp_profile_t *profile, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
+									mrcp_server_t *server,
+									mrcp_profile_t *profile,
+									apr_table_t *plugin_map,
+									const char *name)
 {
 	if(!profile || !name) {
 		apt_log(APT_PRIO_WARNING,"Failed to Register Profile: no name");
@@ -421,9 +478,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(mrcp_server_t *server, mrc
 	if(!profile->resource_factory) {
 		profile->resource_factory = server->resource_factory;
 	}
-	if(!profile->resource_engine_table) {
-		profile->resource_engine_table = server->resource_engine_table;
-	}
+	mrcp_server_engine_table_make(server,profile,plugin_map);
+	
 	if(!profile->signaling_agent) {
 		apt_log(APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",name);
 		return FALSE;
