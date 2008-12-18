@@ -411,27 +411,11 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 	return profile;
 }
 
-static mrcp_resource_engine_t* mrcp_server_engine_get_by_resource_id(mrcp_server_t *server, mrcp_resource_id resource_id)
-{
-	mrcp_resource_engine_t *resource_engine;
-	void *val;
-	apr_hash_index_t *it = apr_hash_first(server->pool,server->resource_engine_table);
-	/* walk through the list of engines */
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine && resource_engine->resource_id == resource_id) {
-			return resource_engine;
-		}
-	}
-	return NULL;
-}
-
 static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_profile_t *profile, apr_table_t *plugin_map)
 {
 	int i;
 	const apt_str_t *resource_name;
-	const char *plugin_name;
+	const char *plugin_name = NULL;
 	mrcp_resource_engine_t *resource_engine;
 
 	profile->engine_table = apr_hash_make(server->pool);
@@ -450,10 +434,24 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_prof
 
 		/* next, if no engine found, try to find the first available engine */
 		if(!resource_engine) {
-			resource_engine = mrcp_server_engine_get_by_resource_id(server,i);
+			mrcp_resource_engine_t *cur_engine;
+			void *val;
+			apr_hash_index_t *it = apr_hash_first(server->pool,server->resource_engine_table);
+			/* walk through the list of engines */
+			for(; it; it = apr_hash_next(it)) {
+				apr_hash_this(it,(void*)&plugin_name,NULL,&val);
+				cur_engine = val;
+				if(cur_engine && cur_engine->resource_id == (mrcp_resource_id)i) {
+					resource_engine = cur_engine;
+					break;
+				}
+			}
 		}
 		
 		if(resource_engine) {
+			if(plugin_name) {
+				apt_log(APT_PRIO_INFO,"Assign Resource Engine [%s] [%s]",resource_name->buf,plugin_name);
+			}
 			apr_hash_set(profile->engine_table,resource_name->buf,resource_name->length,resource_engine);
 		}
 		else {
