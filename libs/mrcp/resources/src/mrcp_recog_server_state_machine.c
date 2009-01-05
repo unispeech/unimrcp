@@ -197,7 +197,7 @@ static apt_bool_t recog_request_recognition_start_timers(mrcp_recog_state_machin
 	mrcp_message_t *response_message;
 	if(state_machine->state == RECOGNIZER_STATE_RECOGNIZING) {
 		/* found in-progress request */
-		apt_log(APT_PRIO_INFO,"Process START-INPUT--TIMERS Request [%d]",message->start_line.request_id);
+		apt_log(APT_PRIO_INFO,"Process START-INPUT-TIMERS Request [%d]",message->start_line.request_id);
 		return recog_request_dispatch(state_machine,message);
 	}
 
