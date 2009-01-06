@@ -410,6 +410,10 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 				apt_log(APT_PRIO_INFO,"Add Control Channel <%s> [%d]",
 						channel->identifier.buf,
 						apr_hash_count(connection->channel_table));
+				if(descriptor->connection_type == MRCP_CONNECTION_TYPE_NEW) {
+					/* set connection type to existing for the next offers / if any */
+					descriptor->connection_type = MRCP_CONNECTION_TYPE_EXISTING;
+				}
 			}
 			else {
 				descriptor->port = 0;
