@@ -25,6 +25,7 @@
 #include "apt_log.h"
 
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_descriptor);
+static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mrcp_control_descriptor_t *control_media, apt_bool_t offer);
 
 static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
@@ -70,42 +71,8 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 		control_media = mrcp_session_control_media_get(descriptor,control_index);
 		if(control_media && control_media->id == i) {
 			/** generate mrcp control media */
-			const apt_str_t *proto;
-			const apt_str_t *setup_type;
-			const apt_str_t *connection_type;
-			proto = mrcp_proto_get(control_media->proto);
-			setup_type = mrcp_setup_type_get(control_media->setup_type);
-			connection_type = mrcp_connection_type_get(control_media->connection_type);
 			control_index++;
-			if(offer == TRUE) { /* offer */
-				offset += snprintf(buffer+offset,size-offset,
-					"m=application %d %s 1\r\n"
-					"a=setup:%s\r\n"
-					"a=connection:%s\r\n"
-					"a=resource:%s\r\n"
-					"a=cmid:%d\r\n",
-					control_media->port,
-					proto ? proto->buf : "",
-					setup_type ? setup_type->buf : "",
-					connection_type ? connection_type->buf : "",
-					control_media->resource_name.buf,
-					control_media->cmid);
-			}
-			else { /* answer */
-				offset += sprintf(buffer+offset,
-					"m=application %d %s 1\r\n"
-					"a=setup:%s\r\n"
-					"a=connection:%s\r\n"
-					"a=channel:%s@%s\r\n"
-					"a=cmid:%d\r\n",
-					control_media->port,
-					proto ? proto->buf : "",
-					setup_type ? setup_type->buf : "",
-					connection_type ? connection_type->buf : "",
-					control_media->session_id.buf,
-					control_media->resource_name.buf,
-					control_media->cmid);
-			}
+			offset += sdp_control_media_generate(buffer+offset,size-offset,descriptor,control_media,offer);
 			continue;
 		}
 	}
@@ -199,6 +166,74 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		}
 	}
 	offset += snprintf(buffer+offset,size-offset,"a=mid:%d\r\n",audio_media->mid);
+	return offset;
+}
+
+/** Generate SDP media by MRCP control media descriptor */
+static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mrcp_control_descriptor_t *control_media, apt_bool_t offer)
+{
+	apr_size_t offset = 0;
+	const apt_str_t *proto;
+	const apt_str_t *setup_type;
+	const apt_str_t *connection_type;
+	proto = mrcp_proto_get(control_media->proto);
+	setup_type = mrcp_setup_type_get(control_media->setup_type);
+	connection_type = mrcp_connection_type_get(control_media->connection_type);
+	if(offer == TRUE) { /* offer */
+		if(control_media->port) {
+			offset += snprintf(buffer+offset,size-offset,
+				"m=application %d %s 1\r\n"
+				"a=setup:%s\r\n"
+				"a=connection:%s\r\n"
+				"a=resource:%s\r\n"
+				"a=cmid:%d\r\n",
+				control_media->port,
+				proto ? proto->buf : "",
+				setup_type ? setup_type->buf : "",
+				connection_type ? connection_type->buf : "",
+				control_media->resource_name.buf,
+				control_media->cmid);
+		}
+		else {
+			offset += snprintf(buffer+offset,size-offset,
+				"m=application %d %s 1\r\n"
+				"a=resource:%s\r\n"
+				"a=cmid:%d\r\n",
+				control_media->port,
+				proto ? proto->buf : "",
+				control_media->resource_name.buf,
+				control_media->cmid);
+		}
+	}
+	else { /* answer */
+		if(control_media->port) {
+			offset += sprintf(buffer+offset,
+				"m=application %d %s 1\r\n"
+				"a=setup:%s\r\n"
+				"a=connection:%s\r\n"
+				"a=channel:%s@%s\r\n"
+				"a=cmid:%d\r\n",
+				control_media->port,
+				proto ? proto->buf : "",
+				setup_type ? setup_type->buf : "",
+				connection_type ? connection_type->buf : "",
+				control_media->session_id.buf,
+				control_media->resource_name.buf,
+				control_media->cmid);
+		}
+		else {
+			offset += sprintf(buffer+offset,
+				"m=application %d %s 1\r\n"
+				"a=channel:%s@%s\r\n"
+				"a=cmid:%d\r\n",
+				control_media->port,
+				proto ? proto->buf : "",
+				control_media->session_id.buf,
+				control_media->resource_name.buf,
+				control_media->cmid);
+		}
+	}
+
 	return offset;
 }
 
