@@ -376,6 +376,9 @@ static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_client_agent_channel_add(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
+	if(apt_list_is_empty(agent->connection_list) == TRUE) {
+		descriptor->connection_type = MRCP_CONNECTION_TYPE_NEW;
+	}
 	/* send response */
 	return mrcp_control_channel_add_respond(agent->vtable,channel,descriptor);
 }

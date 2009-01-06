@@ -190,6 +190,24 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 	return mrcp_app_control_message_raise(session,channel,message);
 }
 
+apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+{
+	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
+	apt_log(APT_PRIO_DEBUG,"On Control Channel Add");
+	if(!channel->waiting_for_channel) {
+		return FALSE;
+	}
+	channel->waiting_for_channel = FALSE;
+	if(session->offer_flag_count) {
+		session->offer_flag_count--;
+		if(!session->offer_flag_count) {
+			/* send offer to server */
+			mrcp_client_session_offer_send(session);
+		}
+	}
+	return TRUE;
+}
+
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
@@ -552,6 +570,10 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		control_media->id = mrcp_session_control_media_add(session->offer,control_media);
 		control_media->cmid = session->offer->control_media_arr->nelts;
 		control_media->resource_name = *channel->resource_name;
+		if(mrcp_client_control_channel_add(channel->control_channel,control_media) == TRUE) {
+			channel->waiting_for_channel = TRUE;
+			session->offer_flag_count++;
+		}
 	}
 
 	/* add to channel array */

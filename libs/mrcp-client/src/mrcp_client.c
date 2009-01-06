@@ -710,7 +710,7 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			apt_log(APT_PRIO_DEBUG,"Receive Connection Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_ADD_CHANNEL:
-					mrcp_client_on_channel_modify(data->channel,data->descriptor);
+					mrcp_client_on_channel_add(data->channel,data->descriptor);
 					break;
 				case CONNECTION_AGENT_TASK_MSG_MODIFY_CHANNEL:
 					mrcp_client_on_channel_modify(data->channel,data->descriptor);

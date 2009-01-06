@@ -162,6 +162,8 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 /** Process session termination event */
 apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *session);
 
+/** Process channel add event */
+apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor);
 /** Process channel modify event */
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor);
 /** Process channel remove event */
