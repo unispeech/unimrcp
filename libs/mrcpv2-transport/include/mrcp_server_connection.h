@@ -32,12 +32,14 @@ APT_BEGIN_EXTERN_C
  * @param listen_ip the listen IP address
  * @param listen_port the listen port
  * @param max_connection_count the number of max MRCPv2 connections
+ * @param force_new_connection the connection establishment policy in o/a
  * @param pool the pool to allocate memory from
  */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										const char *listen_ip, 
 										apr_port_t listen_port, 
 										apr_size_t max_connection_count,
+										apt_bool_t force_new_connection,
 										apr_pool_t *pool);
 
 /**

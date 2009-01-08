@@ -30,6 +30,8 @@ struct mrcp_connection_agent_t {
 	apt_task_t              *task;
 	mrcp_resource_factory_t *resource_factory;
 
+	apt_bool_t               force_new_connection;
+
 	apr_size_t               max_connection_count;
 	apr_pollset_t           *pollset;
 
@@ -75,6 +77,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										const char *listen_ip,
 										apr_port_t listen_port,
 										apr_size_t max_connection_count,
+										apt_bool_t force_new_connection,
 										apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
@@ -89,6 +92,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->control_sock = NULL;
 	agent->pollset = NULL;
 	agent->max_connection_count = max_connection_count;
+	agent->force_new_connection = force_new_connection;
 
 	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,agent->pool);
 	if(!agent->sockaddr) {
@@ -490,18 +494,24 @@ static apt_bool_t mrcp_server_agent_connection_close(mrcp_connection_agent_t *ag
 
 static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *offer)
 {
-	mrcp_connection_t *connection = NULL;
 	mrcp_control_descriptor_t *answer = mrcp_control_answer_create(offer,channel->pool);
 	apt_id_resource_generate(&offer->session_id,&offer->resource_name,'@',&channel->identifier,channel->pool);
 	if(offer->port) {
 		answer->port = agent->sockaddr->port;
 	}
 	if(offer->connection_type == MRCP_CONNECTION_TYPE_EXISTING) {
-		/* try to find any existing connection */
-		connection = mrcp_connection_find(agent,&offer->ip);
-		if(!connection) {
-			/* no existing conection found, request the new one */
+		if(agent->force_new_connection == TRUE) {
+			/* force client to establish new connection */
 			answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
+		}
+		else {
+			mrcp_connection_t *connection = NULL;
+			/* try to find any existing connection */
+			connection = mrcp_connection_find(agent,&offer->ip);
+			if(!connection) {
+				/* no existing conection found, force the new one */
+				answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
+			}
 		}
 	}
 
