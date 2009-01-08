@@ -32,6 +32,7 @@
     <connection>
       <agent name="MRCPv2-Agent-1">
         <param name="max-connection-count" value="100"/>
+        <!-- <param name="offer-new-connection" value="1"/> -->
       </agent>
     </connection>
 

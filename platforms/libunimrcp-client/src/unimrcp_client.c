@@ -302,6 +302,7 @@ static mrcp_connection_agent_t* unimrcp_client_connection_agent_load(mrcp_client
 {
 	const apr_xml_elem *elem;
 	apr_size_t max_connection_count = 100;
+	apt_bool_t offer_new_connection = FALSE;
 
 	apt_log(APT_PRIO_DEBUG,"Loading MRCPv2 Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -313,13 +314,16 @@ static mrcp_connection_agent_t* unimrcp_client_connection_agent_load(mrcp_client
 				if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
 					max_connection_count = atol(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"offer-new-connection") == 0) {
+					offer_new_connection = atoi(attr_value->value);
+				}
 				else {
 					apt_log(APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
 			}
 		}
 	}    
-	return mrcp_client_connection_agent_create(max_connection_count,pool);
+	return mrcp_client_connection_agent_create(max_connection_count,offer_new_connection,pool);
 }
 
 /** Load MRCPv2 conection agents */

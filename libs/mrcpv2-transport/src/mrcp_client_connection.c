@@ -32,6 +32,8 @@ struct mrcp_connection_agent_t {
 
 	mrcp_resource_factory_t *resource_factory;
 
+	apt_bool_t               offer_new_connection;
+
 	apr_size_t               max_connection_count;
 	apr_pollset_t           *pollset;
 
@@ -68,7 +70,10 @@ static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task);
 
 /** Create connection agent. */
-MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_size_t max_connection_count, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
+											apr_size_t max_connection_count, 
+											apt_bool_t offer_new_connection,
+											apr_pool_t *pool)
 {
 	apt_task_vtable_t vtable;
 	mrcp_connection_agent_t *agent;
@@ -80,6 +85,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(apr_s
 	agent->control_sock = NULL;
 	agent->pollset = NULL;
 	agent->max_connection_count = max_connection_count;
+	agent->offer_new_connection = offer_new_connection;
 
 	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,7856,0,agent->pool);
 	if(!agent->control_sockaddr) {
@@ -376,8 +382,15 @@ static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_client_agent_channel_add(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
-	if(apt_list_is_empty(agent->connection_list) == TRUE) {
+	if(agent->offer_new_connection == TRUE) {
 		descriptor->connection_type = MRCP_CONNECTION_TYPE_NEW;
+	}
+	else {
+		descriptor->connection_type = MRCP_CONNECTION_TYPE_EXISTING;
+		if(apt_list_is_empty(agent->connection_list) == TRUE) {
+			/* offer new connection if there is no established connection yet */
+			descriptor->connection_type = MRCP_CONNECTION_TYPE_NEW;
+		}
 	}
 	/* send response */
 	return mrcp_control_channel_add_respond(agent->vtable,channel,descriptor);
