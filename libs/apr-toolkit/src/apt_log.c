@@ -37,21 +37,23 @@ static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 typedef struct apt_logger_t apt_logger_t;
 
 struct apt_logger_t {
-	apt_log_output_e    mode;
-	apt_log_priority_e  priority;
-	int                 header;
-	apt_log_handler_f   handler;
-	FILE               *file;
-	apr_size_t          cur_size;
-	apr_size_t          max_size;
-	apr_thread_mutex_t *mutex;
+	apt_log_output_e      mode;
+	apt_log_priority_e    priority;
+	int                   header;
+	apt_log_handler_f     handler;
+	apt_log_ext_handler_f ext_handler;
+	FILE                 *file;
+	apr_size_t            cur_size;
+	apr_size_t            max_size;
+	apr_thread_mutex_t   *mutex;
 };
 
 static apt_logger_t apt_logger = {
 	APT_LOG_OUTPUT_CONSOLE, 
 	APT_PRIO_DEBUG, 
 	APT_LOG_HEADER_DEFAULT, 
-	NULL, 
+	NULL,
+	NULL,
 	NULL,
 	0,
 	MAX_LOG_FILE_SIZE,
@@ -117,6 +119,11 @@ APT_DECLARE(void) apt_log_handler_set(apt_log_handler_f handler)
 	apt_logger.handler = handler;
 }
 
+APT_DECLARE(void) apt_log_ext_handler_set(apt_log_ext_handler_f handler)
+{
+	apt_logger.ext_handler = handler;
+}
+
 APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format, ...)
 {
 	apt_bool_t status = TRUE;
@@ -125,6 +132,9 @@ APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format,
 		va_start(arg_ptr, format);
 		if(apt_logger.handler) {
 			status = apt_logger.handler(priority,format,arg_ptr);
+		}
+		else if(apt_logger.ext_handler) {
+			status = apt_logger.ext_handler(NULL,0,NULL,priority,format,arg_ptr);
 		}
 		else {
 			status = apt_do_log(priority,format,arg_ptr);
@@ -136,35 +146,35 @@ APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format,
 
 static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va_list arg_ptr)
 {
-	char logEntry[MAX_LOG_ENTRY_SIZE];
+	char log_entry[MAX_LOG_ENTRY_SIZE];
 	apr_size_t offset = 0;
 	apr_time_exp_t result;
 	apr_time_t now = apr_time_now();
 	apr_time_exp_lt(&result,now);
 
 	if(apt_logger.header & APT_LOG_HEADER_DATE) {
-		offset += apr_snprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,"%4d-%02d-%02d ",
+		offset += apr_snprintf(log_entry+offset,MAX_LOG_ENTRY_SIZE-offset,"%4d-%02d-%02d ",
 							result.tm_year+1900,
 							result.tm_mon+1,
 							result.tm_mday);
 	}
 	if(apt_logger.header & APT_LOG_HEADER_TIME) {
-		offset += apr_snprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,"%02d:%02d:%02d:%06d ",
+		offset += apr_snprintf(log_entry+offset,MAX_LOG_ENTRY_SIZE-offset,"%02d:%02d:%02d:%06d ",
 							result.tm_hour,
 							result.tm_min,
 							result.tm_sec,
 							result.tm_usec);
 	}
 	if(apt_logger.header & APT_LOG_HEADER_PRIORITY) {
-		memcpy(logEntry+offset,priority_snames[priority],MAX_PRIORITY_NAME_LENGTH);
+		memcpy(log_entry+offset,priority_snames[priority],MAX_PRIORITY_NAME_LENGTH);
 		offset += MAX_PRIORITY_NAME_LENGTH;
 	}
 
-	offset += apr_vsnprintf(logEntry+offset,MAX_LOG_ENTRY_SIZE-offset,format,arg_ptr);
-	logEntry[offset++] = '\n';
-	logEntry[offset] = '\0';
+	offset += apr_vsnprintf(log_entry+offset,MAX_LOG_ENTRY_SIZE-offset,format,arg_ptr);
+	log_entry[offset++] = '\n';
+	log_entry[offset] = '\0';
 	if((apt_logger.mode & APT_LOG_OUTPUT_CONSOLE) == APT_LOG_OUTPUT_CONSOLE) {
-		printf(logEntry);
+		printf(log_entry);
 	}
 	
 	if((apt_logger.mode & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE && apt_logger.file) {
@@ -177,7 +187,7 @@ static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va
 			apt_logger.cur_size = offset;
 		}
 		/* write to log file */
-		fwrite(logEntry,1,offset,apt_logger.file);
+		fwrite(log_entry,1,offset,apt_logger.file);
 		fflush(apt_logger.file);
 
 		apr_thread_mutex_unlock(apt_logger.mutex);
