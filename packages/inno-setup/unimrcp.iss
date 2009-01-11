@@ -16,8 +16,8 @@ Name: "server\demorecog"; Description: "Demo recognizer plugin"; Types: full ser
 Name: "client"; Description: "UniMRCP client (demo application)"; Types: full client
 
 [Dirs]
-Name: "{app}\data"
-Name: "{app}\log"
+Name: "{app}\data"; Permissions: everyone-full;
+Name: "{app}\log"; Permissions: everyone-full;
 
 [Files]
 #define uni_root "..\..\Release"
@@ -31,6 +31,7 @@ Source: "{#= uni_root}\plugin\demorecog.dll"; DestDir: "{app}\plugin"; Component
 Source: "{#= uni_root}\conf\unimrcpserver.xml"; DestDir: "{app}\conf"; Components: server
 Source: "{#= uni_root}\conf\unimrcpclient.xml"; DestDir: "{app}\conf"; Components: client
 Source: "{#= uni_root}\data\*.pcm"; DestDir: "{app}\data"; Components: server client
+Source: "{#= uni_root}\data\*.xml"; DestDir: "{app}\data"; Components: server client
 
 [Icons]
 Name: "{group}\UniMRCP Server Console"; Filename: "{app}\bin\unimrcpserver.exe"; Parameters: "--root-dir ""{app}"""; Components: server
