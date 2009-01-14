@@ -401,7 +401,7 @@ static void mrcp_sofia_event_callback(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	apt_log(APT_PRIO_INFO,"Recieve SIP Event [%s] Status %d %s",nua_event_name(nua_event),status,phrase);
+	apt_log(APT_PRIO_INFO,"Receive SIP Event [%s] Status %d %s",nua_event_name(nua_event),status,phrase);
 
 	switch(nua_event) {
 		case nua_i_state:
