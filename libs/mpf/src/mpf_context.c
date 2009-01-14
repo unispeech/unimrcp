@@ -72,7 +72,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
 	apr_size_t count = context->max_termination_count;
 	for(i=0; i<count; i++) {
 		if(!context->table[i][i]) {
-			apt_log(APT_PRIO_DEBUG,"Add Termination");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Termination");
 			context->table[i][i] = termination;
 			termination->slot = i;
 			context->termination_count++;
@@ -92,7 +92,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context,
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_DEBUG,"Subtract Termination");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Termination");
 	context->table[i][i] = NULL;
 	termination->slot = (apr_size_t)-1;
 	context->termination_count--;

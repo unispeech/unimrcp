@@ -289,7 +289,7 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream)
 						stream->rx_codec,
 						rtp_stream->pool);
 
-	apt_log(APT_PRIO_INFO,"Open RTP Receive %s:%hu <- %s:%hu playout [%d ms]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Receive %s:%hu <- %s:%hu playout [%d ms]",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
@@ -312,7 +312,7 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 	}
 
 	mpf_jitter_buffer_destroy(receiver->jb);
-	apt_log(APT_PRIO_INFO,"Close RTP Receive %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receive %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu]",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
@@ -628,7 +628,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 							transmitter->packet_frames * frame_size);
 	
 	transmitter->inactivity = 1;
-	apt_log(APT_PRIO_INFO,"Open RTP Transmit %s:%hu -> %s:%hu",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Transmit %s:%hu -> %s:%hu",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
@@ -639,7 +639,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	apt_log(APT_PRIO_INFO,"Close RTP Transmit %s:%hu -> %s:%hu [s:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmit %s:%hu -> %s:%hu [s:%lu]",
 			rtp_stream->local_media->base.ip.buf,
 			rtp_stream->local_media->base.port,
 			rtp_stream->remote_media->base.ip.buf,
@@ -735,13 +735,13 @@ static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_
 		0,
 		stream->pool);
 	if(!stream->local_sockaddr) {
-		apt_log(APT_PRIO_INFO,"Failed to Get Sockaddr %s:%hu",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Get Sockaddr %s:%hu",
 				local_media->base.ip.buf,
 				local_media->base.port);
 		return FALSE;
 	}
 	if(apr_socket_create(&stream->socket,stream->local_sockaddr->family,SOCK_DGRAM,0,stream->pool) != APR_SUCCESS) {
-		apt_log(APT_PRIO_INFO,"Failed to Create Socket %s:%hu",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Create Socket %s:%hu",
 				local_media->base.ip.buf,
 				local_media->base.port);
 		return FALSE;
@@ -752,7 +752,7 @@ static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_
 	apr_socket_opt_set(stream->socket,APR_SO_REUSEADDR,1);
 
 	if(apr_socket_bind(stream->socket,stream->local_sockaddr) != APR_SUCCESS) {
-		apt_log(APT_PRIO_INFO,"Failed to Bind Socket to %s:%hu",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Bind Socket to %s:%hu",
 				local_media->base.ip.buf,
 				local_media->base.port);
 		apr_socket_close(stream->socket);

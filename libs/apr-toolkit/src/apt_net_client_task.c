@@ -157,7 +157,7 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 		return NULL;
 	}
 	
-	apt_log(APT_PRIO_NOTICE,"Established TCP Connection %s:%d",ip,port);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP Connection %s:%d",ip,port);
 	return connection;
 }
 
@@ -175,7 +175,7 @@ APT_DECLARE(apt_bool_t) apt_net_client_connection_close(apt_net_client_task_t *t
 /** Close and destroy connection */
 APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection)
 {
-	apt_log(APT_PRIO_NOTICE,"Disconnect TCP Connection");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Disconnect TCP Connection");
 	apt_net_client_connection_close(task,connection);
 	apr_pool_destroy(connection->pool);
 	return TRUE;
@@ -187,7 +187,7 @@ static apt_bool_t apt_net_client_task_pollset_create(apt_net_client_task_t *task
 	/* create pollset */
 	task->pollset = apt_pollset_create((apr_uint32_t)task->max_connection_count, task->pool);
 	if(!task->pollset) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
 	}
 
@@ -230,12 +230,12 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 	int i;
 
 	if(!task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Network Client Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Network Client Task");
 		return FALSE;
 	}
 
 	if(apt_net_client_task_pollset_create(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
 	}
 
@@ -246,7 +246,7 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 		}
 		for(i = 0; i < num; i++) {
 			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
-				apt_log(APT_PRIO_DEBUG,"Process Control Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Control Message");
 				if(apt_net_client_task_pocess(task) == FALSE) {
 					running = FALSE;
 					break;
@@ -254,7 +254,7 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 				continue;
 			}
 	
-			apt_log(APT_PRIO_DEBUG,"Process Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message");
 			task->client_vtable->on_receive(task,ret_pfd[i].client_data);
 		}
 	}
@@ -273,7 +273,7 @@ static apt_bool_t apt_net_client_task_msg_signal(apt_task_t *base, apt_task_msg_
 	status = apt_cyclic_queue_push(task->msg_queue,msg);
 	apr_thread_mutex_unlock(task->guard);
 	if(apt_pollset_wakeup(task->pollset) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Signal Control Message");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Signal Control Message");
 		status = FALSE;
 	}
 	return status;

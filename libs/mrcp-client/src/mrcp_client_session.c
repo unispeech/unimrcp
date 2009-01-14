@@ -108,7 +108,7 @@ mrcp_channel_t* mrcp_client_channel_create(
 		channel->rtp_termination_slot->termination = NULL;
 		channel->rtp_termination_slot->waiting = FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Create Channel <%s>", mrcp_session_str((mrcp_client_session_t*)session));
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Channel <%s>", mrcp_session_str((mrcp_client_session_t*)session));
 	return channel;
 }
 
@@ -118,7 +118,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Receive Answer <%s> [c:%d a:%d v:%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Answer <%s> [c:%d a:%d v:%d]",
 		mrcp_session_str(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
@@ -147,7 +147,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session)
 {
-	apt_log(APT_PRIO_INFO,"Receive Terminate Response <%s>", mrcp_session_str(session));
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Terminate Response <%s>", mrcp_session_str(session));
 
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
@@ -193,7 +193,7 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	apt_log(APT_PRIO_DEBUG,"On Control Channel Add");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Add");
 	if(!channel->waiting_for_channel) {
 		return FALSE;
 	}
@@ -211,7 +211,7 @@ apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_desc
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	apt_log(APT_PRIO_DEBUG,"On Control Channel Modify");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Modify");
 	if(!channel->waiting_for_channel) {
 		return FALSE;
 	}
@@ -229,7 +229,7 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	apt_log(APT_PRIO_DEBUG,"On Control Channel Remove");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Remove");
 	if(!channel->waiting_for_channel) {
 		return FALSE;
 	}
@@ -253,16 +253,16 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)app_message->session;
 	if(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING) {
-		apt_log(APT_PRIO_INFO,"Receive App Request <%s> [%d]",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive App Request <%s> [%d]",
 			mrcp_session_str(session),
 			app_message->sig_message.command_id);
 	}
 	else {
-		apt_log(APT_PRIO_INFO,"Receive App MRCP Request <%s>", mrcp_session_str(session));
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive App MRCP Request <%s>", mrcp_session_str(session));
 	}
 
 	if(session->active_request) {
-		apt_log(APT_PRIO_DEBUG,"Push Request to Queue");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push Request to Queue");
 		apt_list_push_back(session->request_queue,app_message);
 		return TRUE;
 	}
@@ -275,7 +275,7 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session)
 {
 	mrcp_session_descriptor_t *descriptor = session->offer;
-	apt_log(APT_PRIO_INFO,"Send Offer <%s> [c:%d a:%d v:%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Offer <%s> [c:%d a:%d v:%d]",
 		mrcp_session_str(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
@@ -312,7 +312,7 @@ static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, mr
 	*response = *session->active_request;
 	response->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_RESPONSE;
 	response->sig_message.status = status;
-	apt_log(APT_PRIO_INFO,"Raise App Response <%s> [%d] %s [%d]", 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Response <%s> [%d] %s [%d]", 
 		mrcp_session_str(session),
 		response->sig_message.command_id,
 		status == MRCP_SIG_STATUS_CODE_SUCCESS ? "SUCCESS" : "FAILURE",
@@ -344,7 +344,7 @@ static apt_bool_t mrcp_app_sig_event_raise(mrcp_client_session_t *session, mrcp_
 	app_event->application = session->application;
 	app_event->session = &session->base;
 	app_event->channel = channel;
-	apt_log(APT_PRIO_INFO,"Raise App Event <%s> [%d]", 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Event <%s> [%d]", 
 		mrcp_session_str(session),
 		app_event->sig_message.event_id);
 	return session->application->handler(app_event);
@@ -364,7 +364,7 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 		mrcp_message->start_line.method_id = mrcp_request->start_line.method_id;
 		mrcp_message->start_line.method_name = mrcp_request->start_line.method_name;
 		response->control_message = mrcp_message;
-		apt_log(APT_PRIO_INFO,"Raise App MRCP Response <%s>", mrcp_session_str(session));
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App MRCP Response <%s>", mrcp_session_str(session));
 		session->application->handler(response);
 
 		session->active_request = apt_list_pop_front(session->request_queue);
@@ -380,7 +380,7 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 		app_message->application = session->application;
 		app_message->session = &session->base;
 		app_message->channel = channel;
-		apt_log(APT_PRIO_INFO,"Raise App MRCP Event <%s>", mrcp_session_str(session));
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App MRCP Event <%s>", mrcp_session_str(session));
 		session->application->handler(app_message);
 	}
 	return TRUE;
@@ -462,14 +462,14 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	if(!session->base.id.length) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		apt_log(APT_PRIO_DEBUG,"Raise App Failure MRCP Response");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Raise App Failure MRCP Response");
 		mrcp_app_control_message_raise(session,channel,response);
 		return TRUE;
 	}
 
 	message->channel_id.session_id = session->base.id;
 	message->start_line.request_id = ++session->base.last_request_id;
-	apt_log(APT_PRIO_INFO,"Send MRCP Request <%s@%s> [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCP Request <%s@%s> [%d]",
 					channel->resource_name->buf,
 					session->base.id,
 					message->start_line.request_id);
@@ -496,7 +496,7 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_NOTICE,"Modify Control Channel <%s@%s> [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Modify Control Channel <%s@%s> [%d]",
 					mrcp_session_str(session),
 					channel->resource_name->buf,
 					enable);
@@ -577,7 +577,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	}
 
 	/* add to channel array */
-	apt_log(APT_PRIO_NOTICE,"Add Control Channel <%s@%s>",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Control Channel <%s@%s>",
 					mrcp_session_str(session),
 					channel->resource_name->buf);
 	channel_slot = apr_array_push(session->channels);
@@ -594,7 +594,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		rtp_descriptor = channel->rtp_termination_slot->descriptor;
 	}	
 	/* add to rtp termination array */
-	apt_log(APT_PRIO_DEBUG,"Add RTP Termination");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add RTP Termination");
 	termination_slot = apr_array_push(session->terminations);
 	termination_slot->waiting = FALSE;
 	termination_slot->termination = NULL;
@@ -643,7 +643,7 @@ static apt_bool_t mrcp_client_session_update(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Update Session <%s>", mrcp_session_str(session));
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Update Session <%s>", mrcp_session_str(session));
 	return mrcp_client_session_offer_send(session);
 }
 
@@ -656,7 +656,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Terminate Session <%s>", mrcp_session_str(session));
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Session <%s>", mrcp_session_str(session));
 	profile = session->profile;
 	/* remove existing control channels */
 	for(i=0; i<session->channels->nelts; i++) {
@@ -666,7 +666,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 		if(channel->control_channel) {
 			/* remove channel */
-			apt_log(APT_PRIO_DEBUG,"Remove Control Channel");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Control Channel");
 			if(mrcp_client_control_channel_remove(channel->control_channel) == TRUE) {
 				channel->waiting_for_channel = TRUE;
 				session->terminate_flag_count++;
@@ -676,7 +676,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 		if(channel->termination) {		
 			/* send subtract termination request */
 			if(channel->termination) {
-				apt_log(APT_PRIO_DEBUG,"Subtract Channel Termination");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Channel Termination");
 				if(mrcp_client_mpf_request_send(profile->media_engine,MPF_COMMAND_SUBTRACT,session->context,channel->termination,NULL) == TRUE) {
 					channel->waiting_for_termination = TRUE;
 					session->terminate_flag_count++;
@@ -692,7 +692,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 		if(!slot || !slot->termination) continue;
 
 		/* send subtract termination request */
-		apt_log(APT_PRIO_DEBUG,"Subtract Termination");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Termination");
 		if(mrcp_client_mpf_request_send(profile->media_engine,MPF_COMMAND_SUBTRACT,session->context,slot->termination,NULL) == TRUE) {
 			slot->waiting = TRUE;
 			session->terminate_flag_count++;
@@ -828,15 +828,15 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message)
 	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 		switch(mpf_message->command_id) {
 			case MPF_COMMAND_ADD:
-				apt_log(APT_PRIO_DEBUG,"On Termination Add");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add");
 				mrcp_client_on_termination_add(session,mpf_message);
 				break;
 			case MPF_COMMAND_MODIFY:
-				apt_log(APT_PRIO_DEBUG,"On Termination Modify");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify");
 				mrcp_client_on_termination_modify(session,mpf_message);
 				break;
 			case MPF_COMMAND_SUBTRACT:
-				apt_log(APT_PRIO_DEBUG,"On Termination Subtract");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract");
 				mrcp_client_on_termination_subtract(session,mpf_message);
 				break;
 			default:
@@ -844,7 +844,7 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message)
 		}
 	}
 	else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
-		apt_log(APT_PRIO_DEBUG,"Process MPF Event");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
 	}
 	return TRUE;
 }
@@ -871,7 +871,7 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 	int i;
 	int count = session->channels->nelts;
 	if(count != descriptor->control_media_arr->nelts) {
-		apt_log(APT_PRIO_WARNING,"Number of control channels [%d] != Number of control media in answer [%d]",
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Number of control channels [%d] != Number of control media in answer [%d]",
 			count,descriptor->control_media_arr->nelts);
 		count = descriptor->control_media_arr->nelts;
 	}
@@ -894,7 +894,7 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 		/* get control descriptor */
 		control_descriptor = mrcp_session_control_media_get(descriptor,i);
 		/* modify channel */
-		apt_log(APT_PRIO_DEBUG,"Modify Control Channel");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify Control Channel");
 		if(mrcp_client_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
 			channel->waiting_for_channel = TRUE;
 			session->answer_flag_count++;
@@ -909,7 +909,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 	int i;
 	int count = session->terminations->nelts;
 	if(count != descriptor->audio_media_arr->nelts) {
-		apt_log(APT_PRIO_WARNING,"Number of terminations [%d] != Number of audio media in answer [%d]",
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Number of terminations [%d] != Number of audio media in answer [%d]",
 			count,descriptor->audio_media_arr->nelts);
 		count = descriptor->audio_media_arr->nelts;
 	}
@@ -934,7 +934,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 			rtp_descriptor->audio.remote = remote_media;
 
 			/* send modify termination request */
-			apt_log(APT_PRIO_DEBUG,"Modify Termination");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify Termination");
 			if(mrcp_client_mpf_request_send(session->profile->media_engine,MPF_COMMAND_MODIFY,session->context,slot->termination,rtp_descriptor) == TRUE) {
 				slot->waiting = TRUE;
 				session->answer_flag_count++;
@@ -949,7 +949,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 	switch(app_message->message_type) {
 		case MRCP_APP_MESSAGE_TYPE_SIGNALING:
 		{
-			apt_log(APT_PRIO_DEBUG,"Dispatch Application Request [%d]",app_message->sig_message.command_id);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Dispatch Application Request [%d]",app_message->sig_message.command_id);
 			switch(app_message->sig_message.command_id) {
 				case MRCP_SIG_COMMAND_SESSION_UPDATE:
 					mrcp_client_session_update(session);

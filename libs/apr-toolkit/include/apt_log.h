@@ -31,6 +31,9 @@ APT_BEGIN_EXTERN_C
 /** Default max size of the log file */
 #define MAX_LOG_FILE_SIZE 4000000 /*(~4Mb)*/
 
+/** File:line mark */
+#define APT_LOG_MARK	__FILE__,__LINE__
+
 /** Priority of log messages ordered from highest priority to lowest (rfc3164) */
 typedef enum {
 	APT_PRIO_EMERGENCY, /**< system is unusable */
@@ -51,6 +54,7 @@ typedef enum {
 	APT_LOG_HEADER_DATE     = 0x01, /**< enable date output */
 	APT_LOG_HEADER_TIME     = 0x02, /**< enable time output */
 	APT_LOG_HEADER_PRIORITY = 0x04, /**< enable priority name output */
+	APT_LOG_HEADER_MARK     = 0x08, /**< enable file:line mark output */
 
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
 } apt_log_header_e;
@@ -65,7 +69,7 @@ typedef enum {
 /** Prototype of log handler function */
 typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 /** Prototype of extended log handler function */
-typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, const int line, const char *id, 
+typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const char *id, 
 											apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 /**
@@ -120,7 +124,7 @@ APT_DECLARE(void) apt_log_ext_handler_set(apt_log_ext_handler_f handler);
  * @param priority the priority of the entire log entry
  * @param format the format of the entire log entry
  */
-APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format, ...);
+APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e priority, const char *format, ...);
 
 APT_END_EXTERN_C
 

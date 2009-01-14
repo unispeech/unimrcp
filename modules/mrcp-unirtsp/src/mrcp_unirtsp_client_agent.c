@@ -105,7 +105,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
 	vtable.on_terminate_complete = client_on_terminate_complete;
 	consumer_task = apt_consumer_task_create(agent,&vtable,msg_pool,pool);
 	agent->sig_agent->task = apt_consumer_task_base_get(consumer_task);
-	apt_log(APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu [%d]",
 								config->server_ip,
 								config->server_port,
 								config->max_connection_count);
@@ -239,7 +239,7 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		}
 		else {
 			/* error response */
-			apt_log(APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
 			status = FALSE;
 		}
 	}
@@ -355,7 +355,7 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 
 	mrcp_message->start_line.version = MRCP_VERSION_1;
 	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&text_stream) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
 		return FALSE;
 	}
 	*text_stream.pos = '\0';

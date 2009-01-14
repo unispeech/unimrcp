@@ -155,7 +155,7 @@ static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const 
 				break;
 			}
 			default:
-				apt_log(APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
 				break;
 		}
 	}

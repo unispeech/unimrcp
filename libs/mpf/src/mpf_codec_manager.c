@@ -48,7 +48,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *co
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Register Codec [%s]",codec->attribs->name.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Codec [%s]",codec->attribs->name.buf);
 
 	slot = apr_array_push(codec_manager->codec_arr);
 	*slot = codec;
@@ -129,7 +129,7 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 		/* find codec by name */
 		codec = mpf_codec_manager_codec_find(codec_manager,&name);
 		if(!codec) {
-			apt_log(APT_PRIO_WARNING,"No Such Codec [%s]",str);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Codec [%s]",str);
 			return FALSE;
 		}
 

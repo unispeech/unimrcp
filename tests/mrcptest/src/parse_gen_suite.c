@@ -52,7 +52,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 			stream_in.text.buf = stream_in.pos;
 		}
 	}
-	apt_log(APT_PRIO_INFO,"Open File [%s] [%d bytes]\n%s",file_path,stream_in.text.length,stream_in.text.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s] [%d bytes]\n%s",file_path,stream_in.text.length,stream_in.text.buf);
 
 	do {
 		const char *pos = stream_in.pos;
@@ -63,7 +63,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 		if(mrcp_message_parse(factory,message,&stream_in) == TRUE) {
 			char buf_out[1500];
 			apt_text_stream_t stream_out;
-			apt_log(APT_PRIO_INFO,"Parsed Stream [%d bytes]",stream_in.pos - pos);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Stream [%d bytes]",stream_in.pos - pos);
 
 			stream_out.text.length = sizeof(buf_out)-1;
 			stream_out.text.buf = buf_out;
@@ -71,14 +71,14 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 			message->start_line.length = 0;
 			if(mrcp_message_generate(factory,message,&stream_out) == TRUE) {
 				*stream_out.pos = '\0';
-				apt_log(APT_PRIO_INFO,"Generated Stream [%d bytes]\n%s",stream_out.text.length,stream_out.text.buf);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Stream [%d bytes]\n%s",stream_out.text.length,stream_out.text.buf);
 			}
 			else {
-				apt_log(APT_PRIO_WARNING,"Failed to Generate Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate Message");
 			}
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"Failed to Parse Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse Message");
 		}
 		getchar();
 	}
@@ -98,7 +98,7 @@ static apt_bool_t test_dir_process(apt_test_suite_t *suite, mrcp_resource_factor
 		dir_name = "v1";
 	}
 	if(apr_dir_open(&dir,dir_name,suite->pool) != APR_SUCCESS) {
-		apt_log(APT_PRIO_WARNING,"Cannot Open Directory [%s]",dir_name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open Directory [%s]",dir_name);
 		return FALSE;
 	}
 
@@ -123,7 +123,7 @@ static apt_bool_t parse_gen_test_run(apt_test_suite_t *suite, int argc, const ch
 {
 	mrcp_resource_factory_t *factory = mrcp_default_factory_create(suite->pool);
 	if(!factory) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Resource Factory");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Factory");
 		return FALSE;
 	}
 

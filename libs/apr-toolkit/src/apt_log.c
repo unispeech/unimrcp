@@ -60,7 +60,7 @@ static apt_logger_t apt_logger = {
 	NULL
 };
 
-static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va_list arg_ptr);
+static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 
 APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path, apr_size_t max_size, apr_pool_t *pool)
@@ -124,7 +124,7 @@ APT_DECLARE(void) apt_log_ext_handler_set(apt_log_ext_handler_f handler)
 	apt_logger.ext_handler = handler;
 }
 
-APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format, ...)
+APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e priority, const char *format, ...)
 {
 	apt_bool_t status = TRUE;
 	if(priority <= apt_logger.priority) {
@@ -134,17 +134,17 @@ APT_DECLARE(apt_bool_t) apt_log(apt_log_priority_e priority, const char *format,
 			status = apt_logger.handler(priority,format,arg_ptr);
 		}
 		else if(apt_logger.ext_handler) {
-			status = apt_logger.ext_handler(NULL,0,NULL,priority,format,arg_ptr);
+			status = apt_logger.ext_handler(file,line,NULL,priority,format,arg_ptr);
 		}
 		else {
-			status = apt_do_log(priority,format,arg_ptr);
+			status = apt_do_log(file,line,priority,format,arg_ptr);
 		}
 		va_end(arg_ptr); 
 	}
 	return status;
 }
 
-static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va_list arg_ptr)
+static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr)
 {
 	char log_entry[MAX_LOG_ENTRY_SIZE];
 	apr_size_t offset = 0;
@@ -164,6 +164,9 @@ static apt_bool_t apt_do_log(apt_log_priority_e priority, const char *format, va
 							result.tm_min,
 							result.tm_sec,
 							result.tm_usec);
+	}
+	if(apt_logger.header & APT_LOG_HEADER_MARK) {
+		offset += apr_snprintf(log_entry+offset,MAX_LOG_ENTRY_SIZE-offset,"%s:%03d ",file,line);
 	}
 	if(apt_logger.header & APT_LOG_HEADER_PRIORITY) {
 		memcpy(log_entry+offset,priority_snames[priority],MAX_PRIORITY_NAME_LENGTH);

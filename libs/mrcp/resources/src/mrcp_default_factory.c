@@ -31,7 +31,7 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *p
 	mrcp_resource_t *resource;
 	mrcp_resource_factory_t *resource_factory;
 	/* create resource factory instance */
-	apt_log(APT_PRIO_NOTICE,"Create MRCP Resource Factory [%d]",MRCP_RESOURCE_TYPE_COUNT);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Resource Factory [%d]",MRCP_RESOURCE_TYPE_COUNT);
 	resource_factory = mrcp_resource_factory_create(MRCP_RESOURCE_TYPE_COUNT,pool);
 	if(!resource_factory) {
 		return NULL;
@@ -43,13 +43,13 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *p
 	/* create and register resources */
 	resource = mrcp_synth_resource_create(pool);
 	if(resource) {
-		apt_log(APT_PRIO_NOTICE,"Register Synthesizer Resource");
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Register Synthesizer Resource");
 		mrcp_resource_register(resource_factory,resource,MRCP_SYNTHESIZER_RESOURCE);
 	}
 	
 	resource = mrcp_recog_resource_create(pool);
 	if(resource) {
-		apt_log(APT_PRIO_NOTICE,"Register Recognizer Resource");
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Register Recognizer Resource");
 		mrcp_resource_register(resource_factory,resource,MRCP_RECOGNIZER_RESOURCE);
 	}
 

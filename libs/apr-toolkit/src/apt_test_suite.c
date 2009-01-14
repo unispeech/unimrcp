@@ -42,19 +42,19 @@ APT_DECLARE(apt_test_framework_t*) apt_test_framework_create()
 	framework = apr_palloc(pool,sizeof(apt_test_framework_t));
 	framework->pool = pool;
 	framework->suites = apt_list_create(pool);
-	apt_log(APT_PRIO_NOTICE,"Create Test Framework");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Test Framework");
 	return framework;
 }
 
 APT_DECLARE(void) apt_test_framework_destroy(apt_test_framework_t *framework)
 {
-	apt_log(APT_PRIO_NOTICE,"Destroy Test Framework");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Test Framework");
 	apr_pool_destroy(framework->pool);
 }
 
 APT_DECLARE(apt_bool_t) apt_test_framework_suite_add(apt_test_framework_t *framework, apt_test_suite_t *suite)
 {
-	apt_log(APT_PRIO_INFO,"Add Test Suite [%s]",suite->name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Test Suite [%s]",suite->name);
 	return (apt_list_push_back(framework->suites,suite) ? TRUE : FALSE);
 }
 
@@ -67,11 +67,11 @@ static apt_bool_t apt_test_framework_suite_run(apt_test_framework_t *framework, 
 											   int argc, const char * const *argv)
 {
 	apt_bool_t status = FALSE;
-	apt_log(APT_PRIO_NOTICE,"----- Run Test Suite [%s] -----",suite->name);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"----- Run Test Suite [%s] -----",suite->name);
 	if(suite->tester) {
 		status = suite->tester(suite,argc,argv);
 	}
-	apt_log(APT_PRIO_NOTICE,"---- Status [%s] ----\n",(status == TRUE) ? "OK" : "Failure");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"---- Status [%s] ----\n",(status == TRUE) ? "OK" : "Failure");
 	return status;
 }
 
@@ -80,7 +80,7 @@ APT_DECLARE(apt_bool_t) apt_test_framework_run(apt_test_framework_t *framework, 
 	apt_test_suite_t *suite = NULL;
 	apt_list_elem_t *elem = apt_list_first_elem_get(framework->suites);
 	if(argc == 1) {
-		apt_log(APT_PRIO_INFO,"Run All Test Suites");
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run All Test Suites");
 		/* walk through the list of test suites and run all of them */
 		while(elem) {
 			suite = apt_list_elem_object_get(elem);
@@ -109,7 +109,7 @@ APT_DECLARE(apt_bool_t) apt_test_framework_run(apt_test_framework_t *framework, 
 			apt_test_framework_suite_run(framework,suite,argc-2,&argv[2]);
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"No Such Test Suite [%s] to Run", argv[1]);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Test Suite [%s] to Run", argv[1]);
 		}
 	}
 	return TRUE;

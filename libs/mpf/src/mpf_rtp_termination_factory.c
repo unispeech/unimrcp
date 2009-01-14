@@ -68,7 +68,7 @@ MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
 	rtp_termination_factory = apr_palloc(pool,sizeof(rtp_termination_factory_t));
 	rtp_termination_factory->base.create_termination = mpf_rtp_termination_create;
 	rtp_termination_factory->config = rtp_config;
-	apt_log(APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",
 									rtp_config->ip.buf,
 									rtp_config->rtp_port_min,
 									rtp_config->rtp_port_max);

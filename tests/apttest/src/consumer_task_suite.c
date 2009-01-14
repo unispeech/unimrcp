@@ -26,18 +26,18 @@ typedef struct {
 
 static void task_on_start_complete(apt_task_t *task)
 {
-	apt_log(APT_PRIO_INFO,"On Task Start");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Task Start");
 }
 
 static void task_on_terminate_complete(apt_task_t *task)
 {
-	apt_log(APT_PRIO_INFO,"On Task Terminate");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Task Terminate");
 }
 
 static apt_bool_t task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	sample_msg_data_t *data = (sample_msg_data_t*)msg->data;
-	apt_log(APT_PRIO_DEBUG,"Process Message [%d]",data->number);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%d]",data->number);
 	return TRUE;
 }
 
@@ -59,17 +59,17 @@ static apt_bool_t consumer_task_test_run(apt_test_suite_t *suite, int argc, cons
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sample_msg_data_t),suite->pool);
 
-	apt_log(APT_PRIO_NOTICE,"Create Consumer Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Consumer Task");
 	consumer_task = apt_consumer_task_create(NULL,&vtable,msg_pool,suite->pool);
 	if(!consumer_task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Consumer Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Consumer Task");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(consumer_task);
 
-	apt_log(APT_PRIO_INFO,"Start Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task");
 	if(apt_task_start(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Task");
 		apt_task_destroy(task);
 		return FALSE;
 	}
@@ -81,13 +81,13 @@ static apt_bool_t consumer_task_test_run(apt_test_suite_t *suite, int argc, cons
 
 		data->number = i;
 		data->timestamp = apr_time_now();
-		apt_log(APT_PRIO_DEBUG,"Signal Message [%d]",data->number);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message [%d]",data->number);
 		apt_task_msg_signal(task,msg);
 	}
 
-	apt_log(APT_PRIO_INFO,"Terminate Task [wait till complete]");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Task [wait till complete]");
 	apt_task_terminate(task,TRUE);
-	apt_log(APT_PRIO_NOTICE,"Destroy Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Task");
 	apt_task_destroy(task);
 	return TRUE;
 }

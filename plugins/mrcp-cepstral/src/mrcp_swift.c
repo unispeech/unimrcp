@@ -133,9 +133,9 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 	mrcp_resource_engine_t *engine;
 	apt_log_priority_set(APT_PRIO_INFO);
 	/* open swift engine */
-	apt_log(APT_PRIO_INFO,"Open Swift Engine [%s]",swift_version);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Swift Engine [%s]",swift_version);
 	if((synth_engine = swift_engine_open(NULL)) ==  NULL) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Engine");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Swift Engine");
 		return NULL;
 	}
 	swift_speech_language_table = mrcp_swift_language_table_create(pool);
@@ -148,7 +148,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 					&engine_vtable,            /* virtual methods table of resource engine */
 					pool);                     /* pool to allocate memory from */
 	if(!engine) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Resource Engine");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine");
 		swift_engine_close(synth_engine);
 	}
 	return engine;
@@ -159,7 +159,7 @@ static apt_bool_t mrcp_swift_engine_destroy(mrcp_resource_engine_t *engine)
 {
 	swift_engine *synth_engine = engine->obj;
 	/* close swift engine */
-	apt_log(APT_PRIO_INFO,"Close Swift Engine");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Swift Engine");
 	if(synth_engine) {
 		swift_engine_close(synth_engine);
 		engine->obj = NULL;
@@ -200,9 +200,9 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 	swift_params_set_string(params, "audio/encoding", "pcm16");
 	swift_params_set_int(params, "audio/sampling-rate", codec_descriptor->sampling_rate);
 	/* open swift port */ 
-	apt_log(APT_PRIO_INFO,"Open Swift Port");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Swift Port");
 	if((port = swift_port_open(synth_engine,params)) == NULL) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Port");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Swift Port");
 		return NULL;
 	}
 
@@ -241,7 +241,7 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 static apt_bool_t mrcp_swift_channel_destroy(mrcp_engine_channel_t *channel)
 {
 	mrcp_swift_channel_t *synth_channel = channel->method_obj;
-	apt_log(APT_PRIO_INFO,"Close Swift Port");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Swift Port");
 	if(synth_channel->port) {
 		/* close swift port */ 
 		swift_port_close(synth_channel->port);
@@ -454,7 +454,7 @@ static swift_result_t mrcp_swift_write_audio(swift_event *event, swift_event_t t
 	swift_event_t rv = SWIFT_SUCCESS;
 
 	if(type & SWIFT_EVENT_END) {
-		apt_log(APT_PRIO_DEBUG,"Swift Engine: Write End-of-Speech Event");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Engine: Write End-of-Speech Event");
 		mpf_buffer_event_write(synth_channel->audio_buffer,MEDIA_FRAME_TYPE_EVENT);
 		return rv;
 	}
@@ -465,7 +465,7 @@ static swift_result_t mrcp_swift_write_audio(swift_event *event, swift_event_t t
 		/* Get the event times */
 		float time_start, time_len; 
 		swift_event_get_times(event, &time_start, &time_len);
-		apt_log(APT_PRIO_DEBUG,"Swift Engine: Write Audio [%d | %0.4f | %0.4f]",len, time_start, time_len);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Engine: Write Audio [%d | %0.4f | %0.4f]",len, time_start, time_len);
 #endif
 		mpf_buffer_audio_write(synth_channel->audio_buffer,buf,len);
 	}
@@ -534,14 +534,14 @@ static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_chann
 	}
 
 	if(offset > 0) {
-		apt_log(APT_PRIO_INFO,"Find Voices Matching the Criteria [%s]",search_criteria);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Find Voices Matching the Criteria [%s]",search_criteria);
 		if((voice = swift_port_find_first_voice(synth_channel->port,search_criteria,NULL)) == NULL) {
-			apt_log(APT_PRIO_INFO,"No Swift Voice Available Matching the Criteria [%s]",search_criteria);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"No Swift Voice Available Matching the Criteria [%s]",search_criteria);
 			voice = swift_port_find_first_voice(synth_channel->port,NULL,NULL);
 		}
 		if(SWIFT_FAILED(res = swift_port_set_voice(synth_channel->port,voice)) ) {
 			const char *error_string = swift_strerror(res);
-			apt_log(APT_PRIO_INFO,error_string);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,error_string);
 			return FALSE;
 		} 
 	}
@@ -554,7 +554,7 @@ static apt_bool_t mrcp_swift_channel_param_set(mrcp_swift_channel_t *synth_chann
 	swift_result_t res;
 	if(SWIFT_FAILED(res = swift_port_set_param(synth_channel->port,name,val,synth_channel->tts_stream)) ) {
 		const char *error_string = swift_strerror(res);
-		apt_log(APT_PRIO_DEBUG,"Swift Param %s: %s",name,error_string);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s: %s",name,error_string);
 		return FALSE;
 	}
 	return TRUE;
@@ -572,7 +572,7 @@ static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_chan
 			if(synth_header->prosody_param.volume < PROSODY_VOLUME_COUNT) {
 				int volume = swift_prosody_volume_table[synth_header->prosody_param.volume];
 				name = "audio/volume";
-				apt_log(APT_PRIO_DEBUG,"Swift Param %s=%d",name,volume);
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s=%d",name,volume);
 				mrcp_swift_channel_param_set(synth_channel,name,swift_val_int(volume));
 			}
 		}
@@ -580,7 +580,7 @@ static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_chan
 			if(synth_header->prosody_param.rate < PROSODY_RATE_COUNT) {
 				int rate = swift_prosody_rate_table[synth_header->prosody_param.rate];
 				name = "speech/rate";
-				apt_log(APT_PRIO_DEBUG,"Swift Param %s=%d",name,rate);
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s=%d",name,rate);
 				mrcp_swift_channel_param_set(synth_channel,name,swift_val_int(rate));
 			}
 		}
@@ -589,12 +589,12 @@ static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_chan
 	if(generic_header) {
 		if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_TYPE) == TRUE) {
 			name = "tts/content-type";
-			apt_log(APT_PRIO_DEBUG,"Swift Param %s=%s",name,generic_header->content_type);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s=%s",name,generic_header->content_type);
 			mrcp_swift_channel_param_set(synth_channel,name,swift_val_string(generic_header->content_type.buf));
 		}
 		if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_ENCODING) == TRUE) {
 			name = "tts/text-encoding";
-			apt_log(APT_PRIO_DEBUG,"Swift Param %s=%s",name,generic_header->content_encoding);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s=%s",name,generic_header->content_encoding);
 			mrcp_swift_channel_param_set(synth_channel,name,swift_val_string(generic_header->content_encoding.buf));
 		}
 	}
@@ -611,18 +611,18 @@ static void mrcp_swift_voices_show(swift_engine *engine)
 
 	/* open swift port*/
 	if((port = swift_port_open(engine, NULL)) == NULL) {
-		apt_log(APT_PRIO_WARNING,"Failed to Open Swift Port");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Swift Port");
 		return;    
 	}
 
 	/* find the first voice on the system */
 	if((voice = swift_port_find_first_voice(port, NULL, NULL)) == NULL) {
-		apt_log(APT_PRIO_WARNING,"No Swift Voice Available");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Swift Voice Available");
 		swift_port_close(port);
 		return;
 	}
 	/* go through all of the voices on the system and print some info about each */
-	apt_log(APT_PRIO_INFO,"Swift Available Voices:");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Swift Available Voices:");
 	for(; voice; voice = swift_port_find_next_voice(port)) {
 		if(swift_voice_get_attribute(voice, "license/key")) {
 			license_status = "licensed";
@@ -630,7 +630,7 @@ static void mrcp_swift_voices_show(swift_engine *engine)
 		else {
 			license_status = "unlicensed";
 		}
-		apt_log(APT_PRIO_INFO,"%s: %s, age %s, %s, %sHz, %s",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"%s: %s, age %s, %s, %sHz, %s",
 			swift_voice_get_attribute(voice, "name"),
 			swift_voice_get_attribute(voice, "speaker/gender"),
 			swift_voice_get_attribute(voice, "speaker/age"),

@@ -36,7 +36,7 @@ static apt_bool_t mpf_bridge_process(mpf_object_t *object)
 static apt_bool_t mpf_bridge_destroy(mpf_object_t *object)
 {
 	mpf_object_t *bridge = object;
-	apt_log(APT_PRIO_DEBUG,"Destroy Audio Bridge");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Audio Bridge");
 	mpf_audio_stream_rx_close(bridge->source);
 	mpf_audio_stream_tx_close(bridge->sink);
 	return TRUE;
@@ -51,7 +51,7 @@ MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_aud
 		return NULL;
 	}
 
-	apt_log(APT_PRIO_DEBUG,"Create Audio Bridge");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Audio Bridge");
 	bridge = apr_palloc(pool,sizeof(mpf_object_t));
 	bridge->source = source;
 	bridge->sink = sink;

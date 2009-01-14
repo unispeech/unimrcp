@@ -159,7 +159,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 
-	apt_log(APT_PRIO_NOTICE,"Create MRCP Server");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Server");
 	server = apr_palloc(pool,sizeof(mrcp_server_t));
 	server->pool = pool;
 	server->dir_layout = dir_layout;
@@ -184,7 +184,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 
 	server->task = apt_consumer_task_create(server, &vtable, msg_pool, pool);
 	if(!server->task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Server Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Server Task");
 		return NULL;
 	}
 
@@ -206,13 +206,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server)
 {
 	apt_task_t *task;
 	if(!server || !server->task) {
-		apt_log(APT_PRIO_WARNING,"Invalid Server");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(server->task);
-	apt_log(APT_PRIO_INFO,"Start Server Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Server Task");
 	if(apt_task_start(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Server Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Server Task");
 		return FALSE;
 	}
 	return TRUE;
@@ -223,13 +223,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 {
 	apt_task_t *task;
 	if(!server || !server->task) {
-		apt_log(APT_PRIO_WARNING,"Invalid Server");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(server->task);
-	apt_log(APT_PRIO_INFO,"Shutdown Server Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Shutdown Server Task");
 	if(apt_task_terminate(task,TRUE) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Shutdown Server Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Shutdown Server Task");
 		return FALSE;
 	}
 	server->session_table = NULL;
@@ -241,11 +241,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 {
 	apt_task_t *task;
 	if(!server || !server->task) {
-		apt_log(APT_PRIO_WARNING,"Invalid Server");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(server->task);
-	apt_log(APT_PRIO_INFO,"Destroy Server Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy Server Task");
 	apt_task_destroy(task);
 
 	apr_pool_destroy(server->pool);
@@ -258,7 +258,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
 	if(!resource_factory) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Register Resource Factory");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Resource Factory");
 	server->resource_factory = resource_factory;
 	return TRUE;
 }
@@ -274,7 +274,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
 	}
 	engine->codec_manager = server->codec_manager;
 	engine->dir_layout = server->dir_layout;
-	apt_log(APT_PRIO_INFO,"Register Resource Engine [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Resource Engine [%s]",name);
 	apr_hash_set(server->resource_engine_table,name,APR_HASH_KEY_STRING,engine);
 	return TRUE;
 }
@@ -307,7 +307,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server
 	if(!media_engine || !name) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Register Media Engine [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Media Engine [%s]",name);
 	mpf_engine_codec_manager_register(media_engine,server->codec_manager);
 	apr_hash_set(server->media_engine_table,name,APR_HASH_KEY_STRING,media_engine);
 	mpf_engine_task_msg_type_set(media_engine,MRCP_SERVER_MEDIA_TASK_MSG);
@@ -331,7 +331,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_factory_register(mrcp_server_t *server,
 	if(!rtp_termination_factory || !name) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Register RTP Termination Factory [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register RTP Termination Factory [%s]",name);
 	apr_hash_set(server->rtp_factory_table,name,APR_HASH_KEY_STRING,rtp_termination_factory);
 	return TRUE;
 }
@@ -348,7 +348,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *ser
 	if(!signaling_agent || !name) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Register Signaling Agent [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Signaling Agent [%s]",name);
 	signaling_agent->parent = server;
 	signaling_agent->resource_factory = server->resource_factory;
 	signaling_agent->create_server_session = mrcp_server_sig_agent_session_create;
@@ -373,7 +373,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *se
 	if(!connection_agent || !name) {
 		return FALSE;
 	}
-	apt_log(APT_PRIO_INFO,"Register Connection Agent [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Connection Agent [%s]",name);
 	mrcp_server_connection_resource_factory_set(connection_agent,server->resource_factory);
 	mrcp_server_connection_agent_handler_set(connection_agent,server,&connection_method_vtable);
 	server->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_task_msg_data_t),server->pool);
@@ -450,12 +450,12 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_prof
 		
 		if(resource_engine) {
 			if(plugin_name) {
-				apt_log(APT_PRIO_INFO,"Assign Resource Engine [%s] [%s]",resource_name->buf,plugin_name);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign Resource Engine [%s] [%s]",resource_name->buf,plugin_name);
 			}
 			apr_hash_set(profile->engine_table,resource_name->buf,resource_name->length,resource_engine);
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"No Resource Engine Available [%s]",resource_name->buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Resource Engine Available [%s]",resource_name->buf);
 		}
 	}
 
@@ -470,7 +470,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 									const char *name)
 {
 	if(!profile || !name) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Profile: no name");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no name");
 		return FALSE;
 	}
 	if(!profile->resource_factory) {
@@ -479,24 +479,24 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 	mrcp_server_engine_table_make(server,profile,plugin_map);
 	
 	if(!profile->signaling_agent) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",name);
 		return FALSE;
 	}
 	if(profile->signaling_agent->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
 		return FALSE;
 	}
 	if(!profile->media_engine) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing media engine",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing media engine",name);
 		return FALSE;
 	}
 	if(!profile->rtp_termination_factory) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing RTP factory",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing RTP factory",name);
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Register Profile [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Profile [%s]",name);
 	apr_hash_set(server->profile_table,name,APR_HASH_KEY_STRING,profile);
 	return TRUE;
 }
@@ -516,11 +516,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 	mrcp_plugin_creator_f plugin_creator = NULL;
 	mrcp_resource_engine_t *engine;
 	if(!path || !name) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Plugin: no name");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Plugin: no name");
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,name);
 	if(apr_dso_load(&plugin,path,server->pool) == APR_SUCCESS) {
 		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_SYM_NAME) == APR_SUCCESS) {
 			if(func_handle) {
@@ -538,26 +538,26 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 	if(dso_err == TRUE) {
 		char derr[512] = "";
 		apr_dso_error(plugin,derr,sizeof(derr));
-		apt_log(APT_PRIO_WARNING,"Failed to Load DSO Symbol: %s", derr);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO Symbol: %s", derr);
 		apr_dso_unload(plugin);
 		return FALSE;
 	}
 
 	if(!plugin_creator) {
-		apt_log(APT_PRIO_WARNING,"No Entry Point Found for Plugin");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Entry Point Found for Plugin");
 		apr_dso_unload(plugin);
 		return FALSE;
 	}
 
 	engine = plugin_creator(server->pool);
 	if(!engine) {
-		apt_log(APT_PRIO_WARNING,"Null Resource Engine");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null Resource Engine");
 		apr_dso_unload(plugin);
 		return FALSE;
 	}
 
 	if(!mrcp_plugin_version_check(&engine->plugin_version)) {
-		apt_log(APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
 			engine->plugin_version.major,
 			engine->plugin_version.minor,
 			engine->plugin_version.patch);
@@ -578,7 +578,7 @@ MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server)
 void mrcp_server_session_add(mrcp_server_session_t *session)
 {
 	if(session->base.id.buf) {
-		apt_log(APT_PRIO_NOTICE,"Add Session <%s>",session->base.id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Session <%s>",session->base.id.buf);
 		apr_hash_set(session->server->session_table,session->base.id.buf,session->base.id.length,session);
 	}
 }
@@ -586,7 +586,7 @@ void mrcp_server_session_add(mrcp_server_session_t *session)
 void mrcp_server_session_remove(mrcp_server_session_t *session)
 {
 	if(session->base.id.buf) {
-		apt_log(APT_PRIO_NOTICE,"Remove Session <%s>",session->base.id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Remove Session <%s>",session->base.id.buf);
 		apr_hash_set(session->server->session_table,session->base.id.buf,session->base.id.length,NULL);
 	}
 }
@@ -603,7 +603,7 @@ static void mrcp_server_on_start_complete(apt_task_t *task)
 	mrcp_resource_engine_t *resource_engine;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_PRIO_INFO,"Open Resource Engines");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Resource Engines");
 	it = apr_hash_first(server->pool,server->resource_engine_table);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
@@ -612,7 +612,7 @@ static void mrcp_server_on_start_complete(apt_task_t *task)
 			mrcp_resource_engine_open(resource_engine);
 		}
 	}
-	apt_log(APT_PRIO_INFO,"On Server Task Start");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Server Task Start");
 }
 
 static void mrcp_server_on_terminate_complete(apt_task_t *task)
@@ -623,7 +623,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 	apr_dso_handle_t *plugin;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_PRIO_INFO,"Close Resource Engines");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Resource Engines");
 	it=apr_hash_first(server->pool,server->resource_engine_table);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
@@ -632,7 +632,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 			mrcp_resource_engine_close(resource_engine);
 		}
 	}
-	apt_log(APT_PRIO_INFO,"Unload Plugins");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unload Plugins");
 	it=apr_hash_first(server->pool,server->plugin_table);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
@@ -641,7 +641,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 			apr_dso_unload(plugin);
 		}
 	}
-	apt_log(APT_PRIO_INFO,"On Server Task Terminate");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Server Task Terminate");
 }
 
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
@@ -650,14 +650,14 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_SIGNALING_TASK_MSG:
 		{
 			mrcp_signaling_message_t **signaling_message = (mrcp_signaling_message_t**) msg->data;
-			apt_log(APT_PRIO_DEBUG,"Receive Signaling Task Message [%d]", (*signaling_message)->type);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Signaling Task Message [%d]", (*signaling_message)->type);
 			mrcp_server_signaling_message_process(*signaling_message);
 			break;
 		}
 		case MRCP_SERVER_CONNECTION_TASK_MSG:
 		{
 			const connection_agent_task_msg_data_t *connection_message = (const connection_agent_task_msg_data_t*)msg->data;
-			apt_log(APT_PRIO_DEBUG,"Receive Connection Task Message [%d]", msg->sub_type);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Connection Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_ADD_CHANNEL:
 				{
@@ -687,7 +687,7 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_RESOURCE_ENGINE_TASK_MSG:
 		{
 			resource_engine_task_msg_data_t *data = (resource_engine_task_msg_data_t*)msg->data;
-			apt_log(APT_PRIO_DEBUG,"Receive Resource Engine Task Message [%d]", msg->sub_type);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Resource Engine Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case RESOURCE_ENGINE_TASK_MSG_OPEN_CHANNEL:
 					mrcp_server_on_engine_channel_open(data->channel,data->status);
@@ -706,13 +706,13 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_MEDIA_TASK_MSG:
 		{
 			mpf_message_t *mpf_message = (mpf_message_t*) msg->data;
-			apt_log(APT_PRIO_DEBUG,"Receive Media Task Message [%d]", mpf_message->command_id);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Media Task Message [%d]", mpf_message->command_id);
 			mrcp_server_mpf_message_process(mpf_message);
 			break;
 		}
 		default:
 		{
-			apt_log(APT_PRIO_WARNING,"Receive Unknown Task Message [%d]", msg->type);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Receive Unknown Task Message [%d]", msg->type);
 			break;
 		}
 	}
@@ -735,7 +735,7 @@ static apt_bool_t mrcp_server_signaling_task_msg_signal(mrcp_signaling_message_t
 	signaling_message->message = message;
 	*slot = signaling_message;
 	
-	apt_log(APT_PRIO_DEBUG,"Signal Signaling Task Message");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Signaling Task Message");
 	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
@@ -757,7 +757,7 @@ static apt_bool_t mrcp_server_connection_task_msg_signal(
 	data->descriptor = descriptor;
 	data->message = message;
 
-	apt_log(APT_PRIO_DEBUG,"Signal Connection Task Message");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Connection Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 
@@ -780,7 +780,7 @@ static apt_bool_t mrcp_server_engine_task_msg_signal(
 	data->status = status;
 	data->mrcp_message = message;
 
-	apt_log(APT_PRIO_DEBUG,"Signal Resource Engine Task Message");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Resource Engine Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 
@@ -795,11 +795,11 @@ static mrcp_profile_t* mrcp_server_profile_get_by_agent(mrcp_server_t *server, m
 		apr_hash_this(it,(void*)&name,NULL,&val);
 		profile = val;
 		if(profile && profile->signaling_agent == signaling_agent) {
-			apt_log(APT_PRIO_INFO,"Found Profile [%s]",name);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Found Profile [%s]",name);
 			return profile;
 		}
 	}
-	apt_log(APT_PRIO_WARNING,"Cannot Find Profile by Agent <%s>",session->base.id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Find Profile by Agent <%s>",session->base.id.buf);
 	return NULL;
 }
 

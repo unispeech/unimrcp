@@ -30,7 +30,7 @@ static apt_dir_layout_t *service_dir_layout = NULL;
 /** SCM state change handler */
 static void WINAPI win_service_handler(DWORD control)
 {
-	apt_log(APT_PRIO_INFO,"Service Handler %d",control);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Service Handler %d",control);
 	switch (control)
 	{
 		case SERVICE_CONTROL_INTERROGATE:
@@ -40,7 +40,7 @@ static void WINAPI win_service_handler(DWORD control)
 			if(server) {
 				win_service_status.dwCurrentState = SERVICE_STOP_PENDING; 
 				if(!SetServiceStatus(win_service_status_handle, &win_service_status)) { 
-					apt_log(APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
 				}
 
 				/* shutdown server */
@@ -53,13 +53,13 @@ static void WINAPI win_service_handler(DWORD control)
 	}
 
 	if(!SetServiceStatus(win_service_status_handle, &win_service_status)) {
-		apt_log(APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
 	}
 }
 
 static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 {
-	apt_log(APT_PRIO_INFO,"Service Main");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Service Main");
 	win_service_status.dwServiceType = SERVICE_WIN32;
 	win_service_status.dwControlsAccepted = SERVICE_ACCEPT_STOP;
 	win_service_status.dwWin32ExitCode = 0;
@@ -69,13 +69,13 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 
 	win_service_status_handle = RegisterServiceCtrlHandler(WIN_SERVICE_NAME, win_service_handler);
 	if(win_service_status_handle == (SERVICE_STATUS_HANDLE)0) {
-		apt_log(APT_PRIO_WARNING,"Failed to Register Service Control Handler %d",GetLastError());
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Service Control Handler %d",GetLastError());
 		return;
 	} 
 
 	win_service_status.dwCurrentState = SERVICE_START_PENDING;
 	if(!SetServiceStatus(win_service_status_handle, &win_service_status)) {
-		apt_log(APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
 	} 
 
 	/* start server */
@@ -83,7 +83,7 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 
 	win_service_status.dwCurrentState =  server ? SERVICE_RUNNING : SERVICE_STOPPED;
 	if(!SetServiceStatus(win_service_status_handle, &win_service_status)) {
-		apt_log(APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Set Service Status %d",GetLastError());
 	} 
 }
 
@@ -95,19 +95,10 @@ apt_bool_t uni_service_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 		{ NULL, NULL }
 	};
 
-/*	const char *end;
-	char bin_path[MAX_PATH];
-	if(!GetModuleFileName(NULL,bin_path,MAX_PATH)) {
-		return FALSE;
-	}
-	end = apr_filepath_name_get(bin_path);
-	bin_path[(end-bin_path)] = '\0';
-	SetCurrentDirectory(bin_path);
-*/
 	service_dir_layout = dir_layout;
-	apt_log(APT_PRIO_INFO,"Run as Service");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run as Service");
 	if(!StartServiceCtrlDispatcher(win_service_table)) {
-		apt_log(APT_PRIO_WARNING,"Failed to Connect to SCM %d",GetLastError());
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Connect to SCM %d",GetLastError());
 	}
 	return TRUE;
 }

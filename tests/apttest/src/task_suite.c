@@ -20,7 +20,7 @@
 
 static apt_bool_t task_main(apt_task_t *task)
 {
-	apt_log(APT_PRIO_DEBUG,"Do the Job");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Do the Job");
 	apt_task_delay(3000);
 	return TRUE;
 }
@@ -32,23 +32,23 @@ static apt_bool_t task_test_run(apt_test_suite_t *suite, int argc, const char * 
 	apt_task_vtable_reset(&vtable);
 	vtable.run = task_main;
 
-	apt_log(APT_PRIO_NOTICE,"Create Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Task");
 	task = apt_task_create(NULL,&vtable,NULL,suite->pool);
 	if(!task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Task");
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Start Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task");
 	if(apt_task_start(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Task");
 		apt_task_destroy(task);
 		return FALSE;
 	}
 
-	apt_log(APT_PRIO_INFO,"Wait for Task to Complete");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Wait for Task to Complete");
 	apt_task_wait_till_complete(task);
-	apt_log(APT_PRIO_NOTICE,"Destroy Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Task");
 	apt_task_destroy(task);
 	return TRUE;
 }

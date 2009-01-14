@@ -97,7 +97,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_ser
 	vtable.run = mrcp_sofia_task_run;
 	vtable.terminate = mrcp_sofia_task_terminate;
 	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
-	apt_log(APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu %s",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu %s",
 								config->local_ip,
 								config->local_port,
 								config->transport ? config->transport : "");
@@ -187,7 +187,7 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 {
 	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
 	if(sofia_agent->nua) {
-		apt_log(APT_PRIO_DEBUG,"Send Shutdown Signal to NUA");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Send Shutdown Signal to NUA");
 		nua_shutdown(sofia_agent->nua);
 	}
 	return TRUE;
@@ -230,7 +230,7 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,FALSE) > 0) {
 		local_sdp_str = sdp_str;
-		apt_log(APT_PRIO_INFO,"Local SDP\n%s", local_sdp_str);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP\n%s", local_sdp_str);
 	}
 
 	nua_respond(sofia_session->nh, SIP_200_OK, 
@@ -247,7 +247,7 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 	mrcp_sofia_session_t *sofia_session = session->obj;
 	if(sofia_session) {
 		if(sofia_session->session) {
-			apt_log(APT_PRIO_NOTICE,"Destroy Session");
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session");
 			mrcp_session_destroy(sofia_session->session);
 			sofia_session->session = NULL;
 		}
@@ -293,7 +293,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 	if(remote_sdp_str) {
 		sdp_parser_t *parser = NULL;
 		sdp_session_t *sdp = NULL;
-		apt_log(APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 		sdp = sdp_session(parser);		
@@ -326,7 +326,7 @@ static void mrcp_sofia_on_state_change(mrcp_sofia_agent_t   *sofia_agent,
 			NUTAG_CALLSTATE_REF(ss_state),
 			TAG_END()); 
 	
-	apt_log(APT_PRIO_NOTICE,"SIP Call State [%s]", nua_callstate_name(ss_state));
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State [%s]", nua_callstate_name(ss_state));
 
 	switch(ss_state) {
 		case nua_callstate_received:
@@ -357,7 +357,7 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 									   sip_t const          *sip,
 									   tagi_t                tags[])
 {
-	apt_log(APT_PRIO_INFO,"Receive SIP Event [%s] Status %d %s",nua_event_name(nua_event),status,phrase);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive SIP Event [%s] Status %d %s",nua_event_name(nua_event),status,phrase);
 
 	switch(nua_event) {
 		case nua_i_state:

@@ -149,18 +149,18 @@ static apt_bool_t demo_framework_app_register(demo_framework_t *framework, demo_
 
 static void demo_framework_on_start_complete(apt_task_t *task)
 {
-	apt_log(APT_PRIO_NOTICE,"Run Demo Framework");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Run Demo Framework");
 }
 
 static apt_bool_t demo_framework_console_msg_process(demo_framework_t *framework, const char *app_name, const char *profile_name)
 {
 	demo_application_t *demo_application = apr_hash_get(framework->application_table,app_name,APR_HASH_KEY_STRING);
 	if(!demo_application) {
-		apt_log(APT_PRIO_WARNING,"No Such Demo Application [%s]",app_name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Demo Application [%s]",app_name);
 		return FALSE;
 	}
 	
-	apt_log(APT_PRIO_NOTICE,"Run Demo Application Scenario [%s]",app_name);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Run Demo Application Scenario [%s]",app_name);
 	return demo_application->run(demo_application,profile_name);
 }
 

@@ -227,10 +227,10 @@ static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *applic
 		if(file_path) {
 			recog_channel->audio_in = fopen(file_path,"rb");
 			if(recog_channel->audio_in) {
-				apt_log(APT_PRIO_INFO,"Set [%s] as Speech Source",file_path);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set [%s] as Speech Source",file_path);
 			}
 			else {
-				apt_log(APT_PRIO_INFO,"Cannot Find [%s]",file_path);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Cannot Find [%s]",file_path);
 				/* set some estimated time to complete */
 				recog_channel->time_to_complete = 5000; // 5 sec
 			}

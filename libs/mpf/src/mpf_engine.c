@@ -65,7 +65,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
-	apt_log(APT_PRIO_NOTICE,"Create Media Processing Engine");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Media Processing Engine");
 	engine->task = apt_task_create(engine,&vtable,msg_pool,pool);
 	engine->task_msg_type = TASK_MSG_USER;
 	return engine;
@@ -90,7 +90,7 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 
 	engine->contexts = apt_list_create(engine->pool);
 
-	apt_log(APT_PRIO_INFO,"Start Media Processing Engine");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Media Processing Engine");
 	engine->timer = mpf_timer_start(CODEC_FRAME_TIME_BASE,mpf_engine_main,engine,engine->pool);
 	apt_task_child_start(task);
 	return TRUE;
@@ -100,7 +100,7 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	apt_log(APT_PRIO_INFO,"Terminate Media Processing Engine");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Media Processing Engine");
 	mpf_timer_stop(engine->timer);
 	mpf_engine_contexts_destroy(engine);
 
@@ -154,7 +154,7 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 	
 	apr_thread_mutex_lock(engine->request_queue_guard);
 	if(apt_cyclic_queue_push(engine->request_queue,msg) == FALSE) {
-		apt_log(APT_PRIO_ERROR,"MPF Request Queue is Full");
+		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"MPF Request Queue is Full");
 	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 	return TRUE;
@@ -167,9 +167,9 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 	mpf_context_t *context;
 	mpf_termination_t *termination;
 	const mpf_message_t *request = (const mpf_message_t*) msg->data;
-	apt_log(APT_PRIO_DEBUG,"Process MPF Message");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Message");
 	if(request->message_type != MPF_MESSAGE_TYPE_REQUEST) {
-		apt_log(APT_PRIO_WARNING,"Invalid MPF Message Type [%d]",request->message_type);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid MPF Message Type [%d]",request->message_type);
 		return FALSE;
 	}
 
@@ -197,7 +197,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 			}
 			mpf_context_topology_apply(context,termination);
 			if(context->termination_count == 1) {
-				apt_log(APT_PRIO_DEBUG,"Add Context");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Context");
 				request->context->elem = apt_list_push_back(engine->contexts,context);
 			}
 			break;
@@ -210,7 +210,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 				break;
 			}
 			if(context->termination_count == 0) {
-				apt_log(APT_PRIO_DEBUG,"Remove Context");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Context");
 				apt_list_elem_remove(engine->contexts,context->elem);
 				context->elem = NULL;
 			}

@@ -164,7 +164,7 @@ static apt_bool_t apt_net_server_task_listen_socket_create(apt_net_server_task_t
 	task->listen_sock_pfd.desc.s = task->listen_sock;
 	task->listen_sock_pfd.client_data = task->listen_sock;
 	if(apt_pollset_add(task->pollset, &task->listen_sock_pfd) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Add Listen Socket to Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listen Socket to Pollset");
 		apr_socket_close(task->listen_sock);
 		task->listen_sock = NULL;
 	}
@@ -189,13 +189,13 @@ static apt_bool_t apt_net_server_task_pollset_create(apt_net_server_task_t *task
 	/* create pollset */
 	task->pollset = apt_pollset_create((apr_uint32_t)task->max_connection_count + 1, task->pool);
 	if(!task->pollset) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
 	}
 
 	/* create listening socket */
 	if(apt_net_server_task_listen_socket_create(task) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Listen Socket");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Listen Socket");
 	}
 
 	return TRUE;
@@ -252,7 +252,7 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
 	if(apt_pollset_add(task->pollset,&connection->sock_pfd) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Add to Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset");
 		apr_socket_close(connection->sock);
 		apr_pool_destroy(pool);
 		return FALSE;
@@ -260,7 +260,7 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 
 	if(apr_socket_addr_get(&sockaddr,APR_REMOTE,connection->sock) == APR_SUCCESS) {
 		if(apr_sockaddr_ip_get(&connection->client_ip,sockaddr) == APR_SUCCESS) {
-			apt_log(APT_PRIO_NOTICE,"Accepted TCP Connection %s:%hu",
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Accepted TCP Connection %s:%hu",
 				connection->client_ip, sockaddr->port);
 		}
 	}
@@ -278,12 +278,12 @@ static apt_bool_t apt_net_server_task_run(apt_task_t *base)
 	int i;
 
 	if(!task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Network Server Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Network Server Task");
 		return FALSE;
 	}
 
 	if(apt_net_server_task_pollset_create(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
 	}
 
@@ -294,12 +294,12 @@ static apt_bool_t apt_net_server_task_run(apt_task_t *base)
 		}
 		for(i = 0; i < num; i++) {
 			if(ret_pfd[i].desc.s == task->listen_sock) {
-				apt_log(APT_PRIO_DEBUG,"Accept Connection");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Accept Connection");
 				apt_net_server_task_accept(task);
 				continue;
 			}
 			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
-				apt_log(APT_PRIO_DEBUG,"Process Control Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Control Message");
 				if(apt_net_server_task_pocess(task) == FALSE) {
 					running = FALSE;
 					break;
@@ -307,7 +307,7 @@ static apt_bool_t apt_net_server_task_run(apt_task_t *base)
 				continue;
 			}
 	
-			apt_log(APT_PRIO_DEBUG,"Process Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message");
 			task->server_vtable->on_receive(task,ret_pfd[i].client_data);
 		}
 	}
@@ -326,7 +326,7 @@ static apt_bool_t apt_net_server_task_msg_signal(apt_task_t *base, apt_task_msg_
 	status = apt_cyclic_queue_push(task->msg_queue,msg);
 	apr_thread_mutex_unlock(task->guard);
 	if(apt_pollset_wakeup(task->pollset) != TRUE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Signal Control Message");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Signal Control Message");
 		status = FALSE;
 	}
 	return status;
@@ -341,7 +341,7 @@ APT_DECLARE(apt_bool_t) apt_net_server_connection_close(apt_net_server_task_t *t
 		if(apr_socket_addr_get(&sockaddr,APR_REMOTE,connection->sock) == APR_SUCCESS) {
 			char *client_ip = NULL;
 			if(apr_sockaddr_ip_get(&client_ip,sockaddr) == APR_SUCCESS) {
-				apt_log(APT_PRIO_NOTICE,"Close TCP Connection %s:%hu",client_ip, sockaddr->port);
+				apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Close TCP Connection %s:%hu",client_ip, sockaddr->port);
 			}
 		}
 

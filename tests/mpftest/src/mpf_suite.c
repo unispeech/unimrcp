@@ -98,7 +98,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 
 	engine = mpf_engine_create(suite->pool);
 	if(!engine) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create MPF Engine");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create MPF Engine");
 		return FALSE;
 	}
 	codec_manager = mpf_engine_codec_manager_create(suite->pool);
@@ -121,10 +121,10 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),suite->pool);
 
-	apt_log(APT_PRIO_NOTICE,"Create Consumer Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Consumer Task");
 	suite_engine->consumer_task = apt_consumer_task_create(suite_engine,&vtable,msg_pool,suite->pool);
 	if(!suite_engine->consumer_task) {
-		apt_log(APT_PRIO_WARNING,"Failed to Create Consumer Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Consumer Task");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(suite_engine->consumer_task);
@@ -134,9 +134,9 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	apr_thread_mutex_create(&suite_engine->wait_object_mutex,APR_THREAD_MUTEX_UNNESTED,suite->pool);
 	apr_thread_cond_create(&suite_engine->wait_object,suite->pool);
 
-	apt_log(APT_PRIO_INFO,"Start Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task");
 	if(apt_task_start(task) == FALSE) {
-		apt_log(APT_PRIO_WARNING,"Failed to Start Task");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Task");
 		apt_task_destroy(task);
 		return FALSE;
 	}
@@ -145,9 +145,9 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	apr_thread_cond_wait(suite_engine->wait_object,suite_engine->wait_object_mutex);
 	apr_thread_mutex_unlock(suite_engine->wait_object_mutex);
 	
-	apt_log(APT_PRIO_INFO,"Terminate Task [wait till complete]");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Task [wait till complete]");
 	apt_task_terminate(task,TRUE);
-	apt_log(APT_PRIO_NOTICE,"Destroy Task");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Task");
 	apt_task_destroy(task);
 
 	apr_thread_cond_destroy(suite_engine->wait_object);
@@ -168,7 +168,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	consumer_task = apt_task_object_get(task);
 	suite_engine = apt_task_object_get(consumer_task);
 
-	apt_log(APT_PRIO_INFO,"On MPF Suite Start");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On MPF Suite Start");
 	apr_pool_create(&pool,NULL);
 	session = apr_palloc(pool,sizeof(mpf_suite_session_t));
 	session->pool = pool;
@@ -177,13 +177,13 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	session->termination2 = NULL;
 	session->rtp_mode = TRUE;
 
-	apt_log(APT_PRIO_INFO,"Create MPF Context");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create MPF Context");
 	session->context = mpf_context_create(session,2,pool);
 
-	apt_log(APT_PRIO_INFO,"Create Termination [1]");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Termination [1]");
 	session->termination1 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
 
-	apt_log(APT_PRIO_INFO,"Add Termination [1]");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Termination [1]");
 	msg = apt_task_msg_get(task);
 	msg->type = TASK_MSG_USER;
 	mpf_message = (mpf_message_t*) msg->data;
@@ -195,7 +195,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	mpf_message->descriptor = mpf_file_reader_descriptor_create(session);
 	apt_task_msg_signal(suite_engine->engine_task,msg);
 
-	apt_log(APT_PRIO_INFO,"Create Termination [2]");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Termination [2]");
 	if(session->rtp_mode == TRUE) {
 		session->termination2 = mpf_termination_create(suite_engine->rtp_termination_factory,session,session->pool);
 	}
@@ -203,7 +203,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 		session->termination2 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
 	}
 
-	apt_log(APT_PRIO_INFO,"Add Termination [2]");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Termination [2]");
 	msg = apt_task_msg_get(task);
 	msg->type = TASK_MSG_USER;
 	mpf_message = (mpf_message_t*) msg->data;
@@ -224,7 +224,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 /** Execution of MPF test suite scenario is terminated  */
 static void mpf_suite_on_terminate_complete(apt_task_t *task)
 {
-	apt_log(APT_PRIO_INFO,"On MPF Suite Terminate");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On MPF Suite Terminate");
 }
 
 /** Process task messages  */
@@ -232,9 +232,9 @@ static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	const mpf_message_t *mpf_message = (const mpf_message_t*) msg->data;
 	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
-		apt_log(APT_PRIO_DEBUG,"Process MPF Response");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Response");
 		if(mpf_message->command_id == MPF_COMMAND_ADD) {
-			apt_log(APT_PRIO_DEBUG,"On Add Termination");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Add Termination");
 			if(mpf_message->termination) {
 				mpf_suite_session_t *session;
 				session = mpf_termination_object_get(mpf_message->termination);
@@ -261,7 +261,7 @@ static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			}
 		}
 		else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
-			apt_log(APT_PRIO_DEBUG,"On Subtract Termination");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Subtract Termination");
 			if(mpf_message->termination) {
 				mpf_suite_session_t *session;
 				session = mpf_termination_object_get(mpf_message->termination);
@@ -297,11 +297,11 @@ static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		apt_task_msg_t *msg;
 		mpf_message_t *request;
 		mpf_suite_session_t *session;
-		apt_log(APT_PRIO_DEBUG,"Process MPF Event");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
 		if(mpf_message->termination) {
 			session = mpf_termination_object_get(mpf_message->termination);
 			if(session->termination1) {
-				apt_log(APT_PRIO_INFO,"Subtract Termination [1]");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [1]");
 				msg = apt_task_msg_get(task);
 				msg->type = TASK_MSG_USER;
 				request = (mpf_message_t*) msg->data;
@@ -316,7 +316,7 @@ static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				apt_task_msg_signal(suite_engine->engine_task,msg);
 			}
 			if(session->termination2) {
-				apt_log(APT_PRIO_INFO,"Subtract Termination [2]");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [2]");
 				msg = apt_task_msg_get(task);
 				msg->type = TASK_MSG_USER;
 				request = (mpf_message_t*) msg->data;

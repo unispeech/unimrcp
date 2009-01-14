@@ -117,7 +117,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_client_t *client;
 	
-	apt_log(APT_PRIO_DEBUG,"Create RTSP Client [%d]",max_connection_count);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Client [%d]",max_connection_count);
 	client = apr_palloc(pool,sizeof(rtsp_client_t));
 	client->pool = pool;
 	client->obj = obj;
@@ -140,7 +140,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 /** Destroy RTSP client */
 RTSP_DECLARE(apt_bool_t) rtsp_client_destroy(rtsp_client_t *client)
 {
-	apt_log(APT_PRIO_DEBUG,"Destroy RTSP Client");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy RTSP Client");
 	return apt_net_client_task_destroy(client->task);
 }
 
@@ -232,14 +232,14 @@ RTSP_DECLARE(rtsp_client_session_t*) rtsp_client_session_create(
 	apt_string_assign(&session->resource_location,resource_location,pool);
 
 	apt_string_reset(&session->id);
-	apt_log(APT_PRIO_NOTICE,"Create RTSP Session <new>");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Session <new>");
 	return session;
 }
 
 /** Destroy RTSP session */
 RTSP_DECLARE(void) rtsp_client_session_destroy(rtsp_client_session_t *session)
 {
-	apt_log(APT_PRIO_NOTICE,"Destroy RTSP Session <%s>",session->id.buf ? session->id.buf : "new");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Session <%s>",session->id.buf ? session->id.buf : "new");
 	if(session && session->pool) {
 		apr_pool_destroy(session->pool);
 	}
@@ -263,7 +263,7 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 	rtsp_client_connection_t *rtsp_connection;
 	apt_net_client_connection_t *connection = apt_net_client_connect(client->task,session->server_ip.buf,session->server_port);
 	if(!connection) {
-		apt_log(APT_PRIO_WARNING,"Failed to Connect to RTSP Server %s:%d",session->server_ip.buf,session->server_port);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Connect to RTSP Server %s:%d",session->server_ip.buf,session->server_port);
 		return FALSE;
 	}
 	rtsp_connection = apr_palloc(connection->pool,sizeof(rtsp_client_connection_t));
@@ -296,7 +296,7 @@ static apt_bool_t rtsp_client_connection_destroy(rtsp_client_t *client, rtsp_cli
 static apt_bool_t rtsp_client_session_terminate_raise(rtsp_client_t *client, rtsp_client_session_t *session)
 {
 	if(session->terminating == TRUE) {
-		apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
 		apr_hash_set(session->connection->session_table,session->id.buf,session->id.length,NULL);
 
 		client->vtable->on_session_terminate_response(client,session);
@@ -328,7 +328,7 @@ static apt_bool_t rtsp_client_on_connection_disconnect(rtsp_client_t *client, rt
 	apt_bool_t pending_sessions = FALSE;
 	apt_list_elem_t *elem;
 
-	apt_log(APT_PRIO_NOTICE,"TCP Connection Disconnected");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP Connection Disconnected");
 	apt_net_client_connection_close(client->task,rtsp_connection->base);
 
 	/* Terminate pending new sessions */
@@ -347,7 +347,7 @@ static apt_bool_t rtsp_client_on_connection_disconnect(rtsp_client_t *client, rt
 	if(remaining_sessions) {
 		void *val;
 		apr_hash_index_t *it;
-		apt_log(APT_PRIO_NOTICE,"Terminate Remaining RTSP Sessions [%d]",remaining_sessions);
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Terminate Remaining RTSP Sessions [%d]",remaining_sessions);
 		it = apr_hash_first(rtsp_connection->base->pool,rtsp_connection->session_table);
 		for(; it; it = apr_hash_next(it)) {
 			apr_hash_this(it,NULL,NULL,&val);
@@ -375,7 +375,7 @@ static apt_bool_t rtsp_client_session_terminate_process(rtsp_client_t *client, r
 	}
 
 	if(apr_hash_count(session->resource_table) == 0 || !rtsp_connection->base->sock) {
-		apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
 		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
 
 		client->vtable->on_session_terminate_response(client,session);
@@ -444,7 +444,7 @@ static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rts
 				return TRUE;
 			}
 			/* add session to session table */
-			apt_log(APT_PRIO_INFO,"Add RTSP Session <new>");
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session <new>");
 			apt_list_push_back(session->connection->pending_session_queue,session);
 		}
 	}
@@ -478,7 +478,7 @@ static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rts
 static apt_bool_t rtsp_client_session_message_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message)
 {
 	if(session->active_request) {
-		apt_log(APT_PRIO_DEBUG,"Push RTSP Request to Queue <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push RTSP Request to Queue <%s>",session->id.buf);
 		apt_list_push_back(session->request_queue,message);
 		return TRUE;
 	}
@@ -563,7 +563,7 @@ static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rt
 			if(elem) {
 				session = apt_list_elem_object_get(elem);
 				session->id = message->header.session_id;
-				apt_log(APT_PRIO_INFO,"Move RTSP Session <%s>",session->id.buf);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Move RTSP Session <%s>",session->id.buf);
 				apt_list_elem_remove(rtsp_connection->pending_session_queue,elem);
 				apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 			}
@@ -588,7 +588,7 @@ static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rt
 
 				if(session->terminating == TRUE) {
 					if(apr_hash_count(session->resource_table) == 0) {
-						apt_log(APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+						apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
 						apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
 
 						client->vtable->on_session_terminate_response(client,session);
@@ -618,7 +618,7 @@ static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rt
 		apt_list_elem_t *elem = rtsp_client_new_session_find(rtsp_connection,message);
 		if(elem) {
 			session = apt_list_elem_object_get(elem);
-			apt_log(APT_PRIO_INFO,"Remove RTSP Session <new>");
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session <new>");
 			apt_list_elem_remove(rtsp_connection->pending_session_queue,elem);
 			apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 		
@@ -644,21 +644,21 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 
 		if(rtsp_message_generate(message,&text_stream) == TRUE) {
 			*text_stream.pos = '\0';
-			apt_log(APT_PRIO_INFO,"Send RTSP Message size=%lu\n%s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Message size=%lu\n%s",
 				text_stream.text.length,text_stream.text.buf);
 			if(apr_socket_send(connection->sock,text_stream.text.buf,&text_stream.text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
 			else {
-				apt_log(APT_PRIO_WARNING,"Failed to Send RTSP Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Message");
 			}
 		}
 		else {
-			apt_log(APT_PRIO_WARNING,"Failed to Generate RTSP Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Message");
 		}
 	}
 	else {
-		apt_log(APT_PRIO_WARNING,"No RTSP Connection");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No RTSP Connection");
 	}
 
 	return status;
@@ -687,7 +687,7 @@ static apt_bool_t rtsp_client_message_receive(apt_net_client_task_t *task, apt_n
 	text_stream.text.buf[text_stream.text.length] = '\0';
 	text_stream.pos = text_stream.text.buf;
 
-	apt_log(APT_PRIO_INFO,"Receive RTSP Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
 	do {
 		message = rtsp_message_create(RTSP_MESSAGE_TYPE_UNKNOWN,connection->pool);
 		if(rtsp_message_parse(message,&text_stream) == TRUE) {
@@ -700,7 +700,7 @@ static apt_bool_t rtsp_client_message_receive(apt_net_client_task_t *task, apt_n
 			more_messages_on_buffer = TRUE;
 			text_stream.text.length -= text_stream.pos - text_stream.text.buf;
 			text_stream.text.buf = text_stream.pos;
-			apt_log(APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message");
 		}
 	}
 	while(more_messages_on_buffer);
