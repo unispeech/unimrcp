@@ -28,7 +28,7 @@ APT_BEGIN_EXTERN_C
 
 /** Plugin export defines */
 #ifdef WIN32
-#define MRCP_PLUGIN_DECLARE(type) __declspec(dllexport) type
+#define MRCP_PLUGIN_DECLARE(type) EXTERN_C __declspec(dllexport) type
 #else
 #define MRCP_PLUGIN_DECLARE(type) type
 #endif
