@@ -167,6 +167,13 @@ static APR_INLINE void apt_text_spaces_skip(apt_text_stream_t *stream)
 	while(stream->pos < end && *stream->pos == APT_TOKEN_SP) stream->pos++;
 }
 
+/** Check whether end of stream is reached */
+static APR_INLINE apt_bool_t apt_text_is_eos(const apt_text_stream_t *stream)
+{
+	const char *end = stream->text.buf + stream->text.length;
+	return (stream->pos >= end) ? TRUE : FALSE;
+}
+
 /** Parse id at resource string */
 APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separator, apt_str_t *id, apt_str_t *resource, apr_pool_t *pool);
 
