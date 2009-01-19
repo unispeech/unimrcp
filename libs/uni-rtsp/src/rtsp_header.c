@@ -341,6 +341,7 @@ static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t i
 RTSP_DECLARE(apt_bool_t) rtsp_header_parse(rtsp_header_t *header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
 	apt_pair_t pair;
+	apt_bool_t result = FALSE;
 
 	do {
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
@@ -352,12 +353,19 @@ RTSP_DECLARE(apt_bool_t) rtsp_header_parse(rtsp_header_t *header, apt_text_strea
 				}
 			}
 		}
-		/* length == 0 && !buf -> empty header, exit */
-		/* length == 0 && buf -> malformed header, skip to the next one */
+		else {
+			if(pair.name.length == 0 && !pair.name.buf) {
+				/* empty header -> exit */
+				result = TRUE;
+				break;
+			}
+			
+			/* length == 0 && buf -> malformed header, skip to the next one */
+		}
 	}
-	while(pair.name.length || pair.name.buf);
+	while(apt_text_is_eos(text_stream) == FALSE);
 
-	return TRUE;
+	return result;
 }
 
 /** Generate RTSP header */
