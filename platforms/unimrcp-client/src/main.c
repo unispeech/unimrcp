@@ -54,10 +54,17 @@ static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, ch
 		running = FALSE;
 	}
 	else if(strcasecmp(name,"help") == 0) {
-		printf("usage:\n");
-		printf("- run [app_name] (run demo application, app_name is one of 'synth', 'recog', 'bypass')\n");
-		printf("- loglevel [level] (set loglevel, one of 0,1...7)\n");
-		printf("- quit, exit\n");
+		printf("usage:\n"
+		       "\n- run [app_name] [profile_name] (run demo application)\n"
+			   "       app_name is one of 'synth', 'recog', 'bypass'\n"
+			   "       profile_name is one of 'MRCPv2-Default', 'MRCPv1-Default, ...\n"
+			   "\n       examples: \n"
+			   "           run synth\n"
+			   "           run recog\n"
+			   "           run synth MRCPv1-Default\n"
+			   "           run recog MRCPv1-Default\n"
+		       "\n- loglevel [level] (set loglevel, one of 0,1...7)\n"
+		       "\n- quit, exit\n");
 	}
 	else {
 		printf("unknown command: %s (input help for usage)\n",name);
