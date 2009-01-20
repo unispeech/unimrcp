@@ -20,21 +20,35 @@
 #include "apt_log.h"
 #include "rtsp_message.h"
 
-static apt_bool_t test_stream_generate(apt_test_suite_t *suite, rtsp_message_t *message)
+static apt_bool_t test_stream_generate(apt_test_suite_t *suite, rtsp_generator_t *generator, rtsp_message_t *message)
 {
-	char buffer[1500];
+	char buffer[500];
 	apt_text_stream_t stream;
+	rtsp_stream_result_e result;
+	apt_bool_t continuation;
 
-	stream.text.length = sizeof(buffer)-1;
-	stream.text.buf = buffer;
-	stream.pos = stream.text.buf;
-	if(rtsp_message_generate(message,&stream) == TRUE) {
-		*stream.pos = '\0';
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+	rtsp_generator_message_set(generator,message);
+	do {
+		stream.text.length = sizeof(buffer)-1;
+		stream.text.buf = buffer;
+		stream.pos = stream.text.buf;
+		continuation = FALSE;
+		result = rtsp_generator_run(generator,&stream);
+		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+			stream.text.length = stream.pos - stream.text.buf;
+			*stream.pos = '\0';
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+		}
+		else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+			*stream.pos = '\0';
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Partially Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+			continuation = TRUE;
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate Message");
+		}
 	}
-	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate Message");
-	}
+	while(continuation == TRUE);
 	return TRUE;
 }
 
@@ -44,6 +58,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 	char buffer[500];
 	apt_text_stream_t stream;
 	rtsp_parser_t *parser;
+	rtsp_generator_t *generator;
 	apr_size_t read_length;
 	apr_size_t read_offset;
 
@@ -54,6 +69,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 	}
 
 	parser = rtsp_parser_create(suite->pool);
+	generator = rtsp_generator_create(suite->pool);
 
 	stream.text.buf = buffer;
 	read_offset = 0;
@@ -77,7 +93,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Message Parsed [%d bytes]",stream.pos - pos);
 				message = rtsp_parser_message_get(parser);
 				if(message) {
-					test_stream_generate(suite,message);
+					test_stream_generate(suite,generator,message);
 				}
 			}
 			else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
