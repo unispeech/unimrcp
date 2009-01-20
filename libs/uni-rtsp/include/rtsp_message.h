@@ -27,6 +27,15 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Result of RTSP stream processing (parse/generate) */
+typedef enum {
+	RTSP_STREAM_MESSAGE_COMPLETE,
+	RTSP_STREAM_MESSAGE_TRUNCATED,
+	RTSP_STREAM_MESSAGE_INVALID
+} rtsp_stream_result_e;
+
+/** Opaque RTSP parser declaration */
+typedef struct rtsp_parser_t rtsp_parser_t;
 /** RTSP message declaration */
 typedef struct rtsp_message_t rtsp_message_t;
 
@@ -82,10 +91,19 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request
 RTSP_DECLARE(void) rtsp_message_destroy(rtsp_message_t *message);
 
 /** Parse RTSP message */
-RTSP_DECLARE(apt_bool_t) rtsp_message_parse(rtsp_message_t *message, apt_text_stream_t *text_stream);
+RTSP_DECLARE(apt_bool_t) rtsp_message_parse(rtsp_message_t *message, apt_text_stream_t *stream);
 
 /** Generate RTSP message */
-RTSP_DECLARE(apt_bool_t) rtsp_message_generate(rtsp_message_t *message, apt_text_stream_t *text_stream);
+RTSP_DECLARE(apt_bool_t) rtsp_message_generate(rtsp_message_t *message, apt_text_stream_t *stream);
+
+/** Create RTSP parser */
+RTSP_DECLARE(rtsp_parser_t*) rtsp_parser_create(apr_pool_t *pool);
+
+/** Parse RTSP stream */
+RTSP_DECLARE(rtsp_stream_result_e) rtsp_parser_run(rtsp_parser_t *parser, apt_text_stream_t *stream);
+
+/** Get parsed RTSP message */
+RTSP_DECLARE(rtsp_message_t*) rtsp_parser_message_get(const rtsp_parser_t *parser);
 
 APT_END_EXTERN_C
 
