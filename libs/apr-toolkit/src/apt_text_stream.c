@@ -131,6 +131,18 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 	return field->length ? TRUE : FALSE;
 }
 
+/** Scroll text stream */
+APT_DECLARE(apt_bool_t) apt_text_stream_scroll(apt_text_stream_t *stream)
+{
+	apr_size_t scroll_length = stream->pos - stream->text.buf;
+	if(!scroll_length || scroll_length == stream->text.length) {
+		return FALSE;
+	}
+	memmove(stream->text.buf,stream->pos,scroll_length);
+	stream->pos = stream->text.buf + stream->text.length - scroll_length;
+	return TRUE;
+}
+
 /** Parse id@resource string */
 APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separator, apt_str_t *id, apt_str_t *resource, apr_pool_t *pool)
 {
