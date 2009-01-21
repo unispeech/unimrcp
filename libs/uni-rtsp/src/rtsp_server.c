@@ -22,7 +22,7 @@
 #include "apt_log.h"
 
 #define RTSP_SESSION_ID_HEX_STRING_LENGTH 16
-#define RTSP_MESSAGE_MAX_SIZE 2048
+#define RTSP_STREAM_BUFFER_SIZE 1024
 
 typedef struct rtsp_server_connection_t rtsp_server_connection_t;
 
@@ -48,6 +48,14 @@ struct rtsp_server_connection_t {
 
 	/** Session table (rtsp_server_session_t*) */
 	apr_hash_t                  *session_table;
+
+	char                         rx_buffer[RTSP_STREAM_BUFFER_SIZE];
+	apt_text_stream_t            rx_stream;
+	rtsp_parser_t               *parser;
+
+	char                         tx_buffer[RTSP_STREAM_BUFFER_SIZE];
+	apt_text_stream_t            tx_stream;
+	rtsp_generator_t            *generator;
 };
 
 /** RTSP session */
@@ -438,19 +446,29 @@ static apt_bool_t rtsp_server_session_response_process(rtsp_server_t *server, rt
 static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server_connection_t *connection, rtsp_message_t *message)
 {
 	apt_bool_t status = FALSE;
-	if(connection && connection->sock) {
-		char buffer[RTSP_MESSAGE_MAX_SIZE];
-		apt_text_stream_t text_stream;
-		
-		text_stream.text.buf = buffer;
-		text_stream.text.length = sizeof(buffer)-1;
-		text_stream.pos = text_stream.text.buf;
+	rtsp_server_connection_t *rtsp_connection;
+	apt_text_stream_t *stream;
+	rtsp_stream_result_e result;
 
-		if(rtsp_message_generate(message,&text_stream) == TRUE) {
-			*text_stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Message size=%lu\n%s",
-				text_stream.text.length,text_stream.text.buf);
-			if(apr_socket_send(connection->sock,text_stream.text.buf,&text_stream.text.length) == APR_SUCCESS) {
+	if(!connection || !connection->sock) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No RTSP Connection");
+		return FALSE;
+	}
+	rtsp_connection = connection->obj;
+	stream = &rtsp_connection->tx_stream;
+		
+	rtsp_generator_message_set(rtsp_connection->generator,message);
+	do {
+		stream->text.length = sizeof(rtsp_connection->tx_buffer)-1;
+		stream->pos = stream->text.buf;
+		result = rtsp_generator_run(rtsp_connection->generator,stream);
+		if(result == RTSP_STREAM_MESSAGE_COMPLETE || result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+			stream->text.length = stream->pos - stream->text.buf;
+			*stream->pos = '\0';
+
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream size=%lu\n%s",
+				stream->text.length,stream->text.buf);
+			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
 			else {
@@ -461,9 +479,7 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Message");
 		}
 	}
-	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No RTSP Connection");
-	}
+	while(result == RTSP_STREAM_MESSAGE_TRUNCATED);
 
 	return status;
 }
@@ -472,55 +488,83 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 static apt_bool_t rtsp_server_message_receive(apt_net_server_task_t *task, apt_net_server_connection_t *connection)
 {
 	rtsp_server_t *server = apt_net_server_task_object_get(task);
-	char buffer[RTSP_MESSAGE_MAX_SIZE];
-	apt_bool_t more_messages_on_buffer = FALSE;
+	rtsp_server_connection_t *rtsp_connection;
 	apr_status_t status;
-	apt_text_stream_t text_stream;
-	rtsp_message_t *message;
+	apr_size_t offset;
+	apr_size_t length;
+	apt_text_stream_t *stream;
+	rtsp_stream_result_e result;
 
 	if(!connection || !connection->sock) {
 		return FALSE;
 	}
-	
-	text_stream.text.buf = buffer;
-	text_stream.text.length = sizeof(buffer)-1;
-	status = apr_socket_recv(connection->sock, text_stream.text.buf, &text_stream.text.length);
-	if(status == APR_EOF || text_stream.text.length == 0) {
+	rtsp_connection = connection->obj;
+	stream = &rtsp_connection->rx_stream;
+
+	/* init length of the stream */
+	stream->text.length = sizeof(rtsp_connection->rx_buffer)-1;
+	/* calculate offset remaining from the previous receive / if any */
+	offset = stream->pos - stream->text.buf;
+	/* calculate available length */
+	length = stream->text.length - offset;
+	status = apr_socket_recv(connection->sock,stream->pos,&length);
+	if(status == APR_EOF || length == 0) {
 		return apt_net_server_connection_close(task,connection);
 	}
-	text_stream.text.buf[text_stream.text.length] = '\0';
-	text_stream.pos = text_stream.text.buf;
+	/* calculate actual length of the stream */
+	stream->text.length = offset + length;
+	stream->pos[length] = '\0';
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream size=%lu\n%s",length,stream->pos);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
+	/* reset pos */
+	stream->pos = stream->text.buf;
 	do {
-		message = rtsp_message_create(RTSP_MESSAGE_TYPE_UNKNOWN,connection->pool);
-		if(rtsp_message_parse(message,&text_stream) == TRUE) {
-			apt_str_t *destination = &message->header.transport.destination;
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parse RTSP Message [%lu,%lu]",stream->pos - stream->text.buf, stream->text.length);
+		result = rtsp_parser_run(rtsp_connection->parser,stream);
+		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+			/* message is completely parsed */
+			apt_str_t *destination;
+			rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
+			destination = &message->header.transport.destination;
 			if(!destination->buf && connection->client_ip) {
 				apt_string_assign(destination,connection->client_ip,connection->pool);
 			}
-			rtsp_server_session_request_process(server,connection->obj,message);
+			rtsp_server_session_request_process(server,rtsp_connection,message);
+		}
+		else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+			/* message is partially parsed, to be continued with the next receive */
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Partially Parsed");
+			break;
 		}
 		else {
+			/* error case */
 			rtsp_message_t *response;
+			rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Message");
-			response = rtsp_response_create(message,RTSP_STATUS_CODE_BAD_REQUEST,
-									RTSP_REASON_PHRASE_BAD_REQUEST,message->pool);
-			if(rtsp_server_message_send(server,connection,response) == FALSE) {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Response");
+			message = rtsp_parser_message_get(rtsp_connection->parser);
+			if(message) {
+				response = rtsp_response_create(message,RTSP_STATUS_CODE_BAD_REQUEST,
+										RTSP_REASON_PHRASE_BAD_REQUEST,message->pool);
+				if(rtsp_server_message_send(server,connection,response) == FALSE) {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Response");
+				}
 			}
 		}
+	}
+	while(apt_text_is_eos(stream) == FALSE);
 
-		more_messages_on_buffer = FALSE;
-		if(text_stream.text.length > (apr_size_t)(text_stream.pos - text_stream.text.buf)) {
-			/* there are more RTSP messages to signal */
-			more_messages_on_buffer = TRUE;
-			text_stream.text.length -= text_stream.pos - text_stream.text.buf;
-			text_stream.text.buf = text_stream.pos;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message");
+	/* prepare stream for the next receive */
+	if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+		if(apt_text_stream_scroll(stream) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Scroll Stream [%d]",stream->pos - stream->text.buf);
+		}
+		else {
+			stream->pos = stream->text.buf;
 		}
 	}
-	while(more_messages_on_buffer);
+	else {
+		stream->pos = stream->text.buf;
+	}
 
 	return TRUE;
 }
@@ -531,6 +575,10 @@ static apt_bool_t rtsp_server_on_connect(apt_net_server_task_t *task, apt_net_se
 	rtsp_server_t *server = apt_net_server_task_object_get(task);
 	rtsp_server_connection_t *rtsp_connection = apr_palloc(connection->pool,sizeof(rtsp_server_connection_t));
 	rtsp_connection->session_table = apr_hash_make(connection->pool);
+	apt_text_stream_init(&rtsp_connection->rx_stream,rtsp_connection->rx_buffer,sizeof(rtsp_connection->rx_buffer)-1);
+	apt_text_stream_init(&rtsp_connection->tx_stream,rtsp_connection->tx_buffer,sizeof(rtsp_connection->tx_buffer)-1);
+	rtsp_connection->parser = rtsp_parser_create(connection->pool);
+	rtsp_connection->generator = rtsp_generator_create(connection->pool);
 	rtsp_connection->base = connection;
 	connection->obj = rtsp_connection;
 	if(!server->connection_list) {
