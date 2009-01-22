@@ -54,22 +54,12 @@ struct rtsp_message_t {
 	apr_pool_t       *pool;
 };
 
-/** Initialize RTSP message */
-static APR_INLINE void rtsp_message_init(rtsp_message_t *message, rtsp_message_type_e message_type, apr_pool_t *pool)
-{
-	message->pool = pool;
-	rtsp_start_line_init(&message->start_line,message_type);
-	rtsp_header_init(&message->header);
-	apt_string_reset(&message->body);
-}
-
-/** Create RTSP message */
-static APR_INLINE rtsp_message_t* rtsp_message_create(rtsp_message_type_e message_type, apr_pool_t *pool)
-{
-	rtsp_message_t *message = apr_palloc(pool,sizeof(rtsp_message_t));
-	rtsp_message_init(message,message_type,pool);
-	return message;
-}
+/** 
+ * Create RTSP message.
+ * @param message_type the message type
+ * @param pool the pool to allocate memory from
+ */
+RTSP_DECLARE(rtsp_message_t*) rtsp_message_create(rtsp_message_type_e message_type, apr_pool_t *pool);
 
 /** 
  * Create RTSP request message.
@@ -91,12 +81,6 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request
  * @param message the message to destroy
  */
 RTSP_DECLARE(void) rtsp_message_destroy(rtsp_message_t *message);
-
-/** Parse RTSP message */
-RTSP_DECLARE(apt_bool_t) rtsp_message_parse(rtsp_message_t *message, apt_text_stream_t *stream);
-
-/** Generate RTSP message */
-RTSP_DECLARE(apt_bool_t) rtsp_message_generate(rtsp_message_t *message, apt_text_stream_t *stream);
 
 
 /** Create RTSP stream parser */
