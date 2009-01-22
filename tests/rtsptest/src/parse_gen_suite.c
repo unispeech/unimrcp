@@ -20,57 +20,101 @@
 #include "apt_log.h"
 #include "rtsp_message.h"
 
+static apt_bool_t test_stream_generate(apt_test_suite_t *suite, rtsp_generator_t *generator, rtsp_message_t *message)
+{
+	char buffer[500];
+	apt_text_stream_t stream;
+	rtsp_stream_result_e result;
+	apt_bool_t continuation;
+
+	rtsp_generator_message_set(generator,message);
+	do {
+		stream.text.length = sizeof(buffer)-1;
+		stream.text.buf = buffer;
+		stream.pos = stream.text.buf;
+		continuation = FALSE;
+		result = rtsp_generator_run(generator,&stream);
+		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+			stream.text.length = stream.pos - stream.text.buf;
+			*stream.pos = '\0';
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+		}
+		else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+			*stream.pos = '\0';
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Partially Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+			continuation = TRUE;
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate Message");
+		}
+	}
+	while(continuation == TRUE);
+	return TRUE;
+}
 
 static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_path)
 {
 	apr_file_t *file;
-	char buf_in[1500];
-	apt_text_stream_t stream_in;
-	rtsp_message_t *message;
-	apt_str_t resource_name;
+	char buffer[500];
+	apt_text_stream_t stream;
+	rtsp_parser_t *parser;
+	rtsp_generator_t *generator;
+	apr_size_t read_length;
+	apr_size_t read_offset;
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s]",file_path);
 	if(apr_file_open(&file,file_path,APR_FOPEN_READ | APR_FOPEN_BINARY,APR_OS_DEFAULT,suite->pool) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File");
 		return FALSE;
 	}
 
-	stream_in.text.length = sizeof(buf_in)-1;
-	stream_in.text.buf = buf_in;
-	stream_in.pos = stream_in.text.buf;
-	if(apr_file_read(file,stream_in.text.buf,&stream_in.text.length) != APR_SUCCESS) {
-		return FALSE;
-	}
-	stream_in.text.buf[stream_in.text.length]='\0';
+	parser = rtsp_parser_create(suite->pool);
+	generator = rtsp_generator_create(suite->pool);
 
-	apt_string_reset(&resource_name);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s] [%d bytes]\n%s",file_path,stream_in.text.length,stream_in.text.buf);
-
+	stream.text.buf = buffer;
+	read_offset = 0;
 	do {
-		const char *pos = stream_in.pos;
-		message = rtsp_message_create(RTSP_MESSAGE_TYPE_UNKNOWN,suite->pool);
-		if(rtsp_message_parse(message,&stream_in) == TRUE) {
-			char buf_out[1500];
-			apt_text_stream_t stream_out;
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Stream [%d bytes]",stream_in.pos - pos);
+		stream.pos = stream.text.buf;
+		stream.text.length = sizeof(buffer)-1;
+		read_length = stream.text.length - read_offset;
+		if(apr_file_read(file,stream.pos,&read_length) != APR_SUCCESS) {
+			break;
+		}
+		read_offset = 0;
+		stream.text.length = read_offset + read_length;
+		stream.text.buf[stream.text.length]='\0';
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Stream to Parse [%d bytes]\n%s",stream.text.length,stream.text.buf);
 
-			stream_out.text.length = sizeof(buf_out)-1;
-			stream_out.text.buf = buf_out;
-			stream_out.pos = stream_out.text.buf;
-			if(rtsp_message_generate(message,&stream_out) == TRUE) {
-				*stream_out.pos = '\0';
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Stream [%d bytes]\n%s",stream_out.text.length,stream_out.text.buf);
+		do {
+			const char *pos = stream.pos;
+			rtsp_stream_result_e result = rtsp_parser_run(parser,&stream);
+			if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+				rtsp_message_t *message;
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Message Parsed [%d bytes]",stream.pos - pos);
+				message = rtsp_parser_message_get(parser);
+				if(message) {
+					test_stream_generate(suite,generator,message);
+				}
+			}
+			else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+				apr_size_t scroll_length = stream.pos - stream.text.buf;
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Message Truncated [%d bytes]",stream.pos - pos);
+				if(scroll_length && scroll_length != stream.text.length) {
+					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Scroll Stream [%d bytes]",scroll_length);
+					memmove(stream.text.buf,stream.pos,scroll_length);
+					read_offset = stream.text.length - scroll_length;
+				}
+				break;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Message [%d bytes]",stream.pos - pos);
 			}
 		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse Message");
-		}
-		getchar();
+		while(stream.pos < stream.text.buf + stream.text.length);
 	}
-	while(stream_in.pos < stream_in.text.buf + stream_in.text.length);
-	apr_file_close(file);
+	while(apr_file_eof(file) != APR_EOF);
 
+	apr_file_close(file);
 	return TRUE;
 }
 
@@ -93,6 +137,8 @@ static apt_bool_t test_dir_process(apt_test_suite_t *suite)
 				char *file_path;
 				apr_filepath_merge(&file_path,dir_name,finfo.name,0,suite->pool);
 				test_file_process(suite,file_path);
+				printf("\nPress ENTER to continue\n");
+				getchar();
 			}
 		}
 	} 

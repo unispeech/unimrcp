@@ -2,7 +2,7 @@ SETUP rtsp://media.server.com/media/synthesizer RTSP/1.0
 CSeq:2
 Transport:RTP/AVP;unicast;client_port=46456-46457
 Content-Type:application/sdp
-Content-Length:190
+Content-Length:188
 
 v=0
 o=- 123 456 IN IP4 10.0.0.1

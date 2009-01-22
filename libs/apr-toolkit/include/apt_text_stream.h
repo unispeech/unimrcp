@@ -140,6 +140,13 @@ static APR_INLINE apt_bool_t apt_string_value_generate(const apt_str_t *str, apt
 	return TRUE;
 }
 
+/** Initialize text stream */
+static APR_INLINE void apt_text_stream_init(apt_text_stream_t *stream, char *buffer, apr_size_t size)
+{
+	stream->text.buf = buffer;
+	stream->text.length = size;
+	stream->pos = stream->text.buf;
+}
 
 /** Insert end of the line symbol(s) */
 static APR_INLINE void apt_text_eol_insert(apt_text_stream_t *stream)
@@ -166,6 +173,16 @@ static APR_INLINE void apt_text_spaces_skip(apt_text_stream_t *stream)
 	const char *end = stream->text.buf + stream->text.length;
 	while(stream->pos < end && *stream->pos == APT_TOKEN_SP) stream->pos++;
 }
+
+/** Check whether end of stream is reached */
+static APR_INLINE apt_bool_t apt_text_is_eos(const apt_text_stream_t *stream)
+{
+	const char *end = stream->text.buf + stream->text.length;
+	return (stream->pos >= end) ? TRUE : FALSE;
+}
+
+/** Scroll text stream */
+APT_DECLARE(apt_bool_t) apt_text_stream_scroll(apt_text_stream_t *stream);
 
 /** Parse id at resource string */
 APT_DECLARE(apt_bool_t) apt_id_resource_parse(const apt_str_t *str, char separator, apt_str_t *id, apt_str_t *resource, apr_pool_t *pool);
