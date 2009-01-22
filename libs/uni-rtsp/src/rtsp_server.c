@@ -466,17 +466,17 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream size=%lu\n%s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream [%lu bytes]\n%s",
 				stream->text.length,stream->text.buf);
 			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Stream");
 			}
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Stream");
 		}
 	}
 	while(result == RTSP_STREAM_MESSAGE_TRUNCATED);
@@ -514,12 +514,12 @@ static apt_bool_t rtsp_server_message_receive(apt_net_server_task_t *task, apt_n
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream size=%lu\n%s",length,stream->pos);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream [%lu bytes]\n%s",length,stream->pos);
 
 	/* reset pos */
 	stream->pos = stream->text.buf;
 	do {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parse RTSP Message [%lu,%lu]",stream->pos - stream->text.buf, stream->text.length);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parse RTSP Stream [%lu,%lu]",stream->pos - stream->text.buf, stream->text.length);
 		result = rtsp_parser_run(rtsp_connection->parser,stream);
 		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
 			/* message is completely parsed */
@@ -540,7 +540,7 @@ static apt_bool_t rtsp_server_message_receive(apt_net_server_task_t *task, apt_n
 			/* error case */
 			rtsp_message_t *response;
 			rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Stream");
 			message = rtsp_parser_message_get(rtsp_connection->parser);
 			if(message) {
 				response = rtsp_response_create(message,RTSP_STATUS_CODE_BAD_REQUEST,
