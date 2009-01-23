@@ -17,6 +17,7 @@ include_HEADERS          = include/mrcp.h \
                            control/include/mrcp_state_machine.h \
                            control/include/mrcp_resource.h \
                            control/include/mrcp_resource_factory.h \
+                           control/include/mrcp_stream.h \
                            resources/include/mrcp_synth_header.h \
                            resources/include/mrcp_synth_resource.h \
                            resources/include/mrcp_synth_state_machine.h \
@@ -29,6 +30,7 @@ libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            message/src/mrcp_generic_header.c \
                            message/src/mrcp_message.c \
                            control/src/mrcp_resource_factory.c \
+                           control/src/mrcp_stream.c \
                            resources/src/mrcp_synth_header.c \
                            resources/src/mrcp_synth_resource.c \
                            resources/src/mrcp_synth_server_state_machine.c \
