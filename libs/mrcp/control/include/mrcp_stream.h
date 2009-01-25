@@ -42,6 +42,9 @@ typedef struct mrcp_generator_t mrcp_generator_t;
 /** Create MRCP stream parser */
 MRCP_DECLARE(mrcp_parser_t*) mrcp_parser_create(mrcp_resource_factory_t *resource_factory, apr_pool_t *pool);
 
+/** Set resource name to be used while parsing (MRCPv1 only) */
+MRCP_DECLARE(void) mrcp_parser_resource_name_set(mrcp_parser_t *parser, const apt_str_t *resource_name);
+
 /** Parse MRCP stream */
 MRCP_DECLARE(mrcp_stream_result_e) mrcp_parser_run(mrcp_parser_t *parser, apt_text_stream_t *stream);
 
