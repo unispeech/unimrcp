@@ -40,9 +40,9 @@ struct mrcp_generator_t {
 
 
 /** Read MRCP message-body */
-static apt_bool_t mrcp_message_body_read(mrcp_message_t *message, apt_text_stream_t *stream)
+static mrcp_stream_result_e mrcp_message_body_read(mrcp_message_t *message, apt_text_stream_t *stream)
 {
-	apt_bool_t result = TRUE;
+	mrcp_stream_result_e result = MRCP_STREAM_MESSAGE_COMPLETE;
 	if(message->body.buf) {
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
 		/* stream length available to read */
@@ -52,7 +52,7 @@ static apt_bool_t mrcp_message_body_read(mrcp_message_t *message, apt_text_strea
 		if(required_length > stream_length) {
 			required_length = stream_length;
 			/* not complete */
-			result = FALSE;
+			result = MRCP_STREAM_MESSAGE_TRUNCATED;
 		}
 		memcpy(message->body.buf+message->body.length,stream->pos,required_length);
 		message->body.length += required_length;
@@ -63,7 +63,7 @@ static apt_bool_t mrcp_message_body_read(mrcp_message_t *message, apt_text_strea
 }
 
 /** Parse MRCP message-body */
-static apt_bool_t mrcp_message_body_parse(mrcp_message_t *message, apt_text_stream_t *stream, apr_pool_t *pool)
+static mrcp_stream_result_e mrcp_message_body_parse(mrcp_message_t *message, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
@@ -74,23 +74,23 @@ static apt_bool_t mrcp_message_body_parse(mrcp_message_t *message, apt_text_stre
 			return mrcp_message_body_read(message,stream);
 		}
 	}
-	return TRUE;
+	return MRCP_STREAM_MESSAGE_COMPLETE;
 }
 
 /** Write MRCP message-body */
-static apt_bool_t mrcp_message_body_write(mrcp_message_t *message, apt_text_stream_t *stream)
+static mrcp_stream_result_e mrcp_message_body_write(mrcp_message_t *message, apt_text_stream_t *stream)
 {
-	apt_bool_t result = TRUE;
+	mrcp_stream_result_e result = MRCP_STREAM_MESSAGE_COMPLETE;
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
 	if(generic_header && message->body.length < generic_header->content_length) {
-		/* stream length available to read */
+		/* stream length available to write */
 		apr_size_t stream_length = stream->text.length - (stream->pos - stream->text.buf);
-		/* required/remaining length to read */
+		/* required/remaining length to write */
 		apr_size_t required_length = generic_header->content_length - message->body.length;
 		if(required_length > stream_length) {
 			required_length = stream_length;
 			/* not complete */
-			result = FALSE;
+			result = MRCP_STREAM_MESSAGE_TRUNCATED;
 		}
 
 		memcpy(stream->pos,message->body.buf+message->body.length,required_length);
@@ -102,7 +102,7 @@ static apt_bool_t mrcp_message_body_write(mrcp_message_t *message, apt_text_stre
 }
 
 /** Generate MRCP message-body */
-static apt_bool_t mrcp_message_body_generate(mrcp_message_t *message, apt_text_stream_t *stream)
+static mrcp_stream_result_e mrcp_message_body_generate(mrcp_message_t *message, apt_text_stream_t *stream)
 {
 	if(mrcp_generic_header_property_check(message,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
@@ -112,7 +112,7 @@ static apt_bool_t mrcp_message_body_generate(mrcp_message_t *message, apt_text_s
 			return mrcp_message_body_write(message,stream);
 		}
 	}
-	return TRUE;
+	return MRCP_STREAM_MESSAGE_COMPLETE;
 }
 
 /** Create MRCP stream parser */
@@ -158,10 +158,7 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_parser_run(mrcp_parser_t *parser, apt_te
 	mrcp_message_t *message = parser->message;
 	if(message && parser->result == MRCP_STREAM_MESSAGE_TRUNCATED) {
 		/* process continuation data */
-		parser->result = MRCP_STREAM_MESSAGE_COMPLETE;
-		if(mrcp_message_body_read(message,stream) == FALSE) {
-			parser->result = MRCP_STREAM_MESSAGE_TRUNCATED;
-		}
+		parser->result = mrcp_message_body_read(message,stream);
 		return parser->result;
 	}
 	
@@ -190,10 +187,7 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_parser_run(mrcp_parser_t *parser, apt_te
 	}
 
 	/* parse body */
-	parser->result = MRCP_STREAM_MESSAGE_COMPLETE;
-	if(mrcp_message_body_parse(message,stream,message->pool) == FALSE) {
-		parser->result = MRCP_STREAM_MESSAGE_TRUNCATED;
-	}
+	parser->result = mrcp_message_body_parse(message,stream,message->pool);
 	return parser->result;
 }
 
@@ -251,10 +245,7 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 
 	if(message && generator->result == MRCP_STREAM_MESSAGE_TRUNCATED) {
 		/* process continuation data */
-		generator->result = MRCP_STREAM_MESSAGE_COMPLETE;
-		if(mrcp_message_body_write(message,stream) == FALSE) {
-			generator->result = MRCP_STREAM_MESSAGE_TRUNCATED;
-		}
+		generator->result = mrcp_message_body_write(message,stream);
 		return generator->result;
 	}
 
@@ -263,7 +254,7 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 		return MRCP_STREAM_MESSAGE_INVALID;
 	}
 
-	/* validate */
+	/* validate message */
 	if(mrcp_message_validate(message) == FALSE) {
 		return MRCP_STREAM_MESSAGE_INVALID;
 	}
@@ -286,11 +277,6 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 	mrcp_start_line_finalize(&message->start_line,message->body.length,stream);
 
 	/* generate body */
-	generator->result = MRCP_STREAM_MESSAGE_COMPLETE;
-	if(mrcp_message_body_generate(message,stream) == FALSE) {
-		generator->result = MRCP_STREAM_MESSAGE_TRUNCATED;
-	}
-	
-	stream->text.length = stream->pos - stream->text.buf;
+	generator->result = mrcp_message_body_generate(message,stream);
 	return generator->result;
 }
