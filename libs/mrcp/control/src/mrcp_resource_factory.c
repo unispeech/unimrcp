@@ -140,11 +140,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource
 	if(mrcp_message_header_generate(&message->header,text_stream) == FALSE) {
 		return FALSE;
 	}
+	mrcp_start_line_finalize(&message->start_line,message->body.length,text_stream);
 
 	mrcp_body_generate(message,text_stream);
 	
 	text_stream->text.length = text_stream->pos - text_stream->text.buf;
-	mrcp_start_line_finalize(&message->start_line,text_stream);
 	return TRUE;
 }
 

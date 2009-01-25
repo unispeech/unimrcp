@@ -282,6 +282,9 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 		return mrcp_generator_break(generator,stream);
 	}
 
+	/* finalize start-line generation */
+	mrcp_start_line_finalize(&message->start_line,message->body.length,stream);
+
 	/* generate body */
 	generator->result = MRCP_STREAM_MESSAGE_COMPLETE;
 	if(mrcp_message_body_generate(message,stream) == FALSE) {
@@ -289,6 +292,5 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 	}
 	
 	stream->text.length = stream->pos - stream->text.buf;
-	mrcp_start_line_finalize(&message->start_line,stream);
 	return generator->result;
 }
