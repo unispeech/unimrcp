@@ -16,6 +16,7 @@
 
 #include <apr_hash.h>
 #include "rtsp_server.h"
+#include "rtsp_stream.h"
 #include "apt_net_server_task.h"
 #include "apt_text_stream.h"
 #include "apt_obj_list.h"

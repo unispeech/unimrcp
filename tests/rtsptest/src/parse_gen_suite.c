@@ -18,7 +18,7 @@
 #include <apr_file_io.h>
 #include "apt_test_suite.h"
 #include "apt_log.h"
-#include "rtsp_message.h"
+#include "rtsp_stream.h"
 
 static apt_bool_t test_stream_generate(apt_test_suite_t *suite, rtsp_generator_t *generator, rtsp_message_t *message)
 {

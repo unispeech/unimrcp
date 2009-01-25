@@ -155,6 +155,10 @@
 				RelativePath=".\include\rtsp_start_line.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\rtsp_stream.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
@@ -178,6 +182,10 @@
 			</File>
 			<File
 				RelativePath=".\src\rtsp_start_line.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\rtsp_stream.c"
 				>
 			</File>
 		</Filter>
