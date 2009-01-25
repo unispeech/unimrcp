@@ -1,4 +1,4 @@
-//speechsynthesizer
+//speechsynth
 SPEAK 543257 MRCP/1.0
 Kill-On-Barge-In:false
 Voice-gender:neutral

@@ -1,4 +1,4 @@
-//speechrecognizer
+//speechrecog
 DEFINE-GRAMMAR 543257 MRCP/1.0
 Content-Type:application/grammar+xml
 Content-Id:request1@form-level.store
