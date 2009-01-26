@@ -20,7 +20,7 @@
 #include "apt_log.h"
 #include "rtsp_stream.h"
 
-static apt_bool_t test_stream_generate(apt_test_suite_t *suite, rtsp_generator_t *generator, rtsp_message_t *message)
+static apt_bool_t test_stream_generate(rtsp_generator_t *generator, rtsp_message_t *message)
 {
 	char buffer[500];
 	apt_text_stream_t stream;
@@ -37,18 +37,28 @@ static apt_bool_t test_stream_generate(apt_test_suite_t *suite, rtsp_generator_t
 		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated RTSP Stream [%lu bytes]\n%s",stream.text.length,stream.text.buf);
 		}
 		else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
 			*stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Partially Generated Stream [%d bytes]\n%s",stream.text.length,stream.text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated RTSP Stream [%lu bytes] continuation awaiting\n%s",stream.text.length,stream.text.buf);
 			continuation = TRUE;
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Stream");
 		}
 	}
 	while(continuation == TRUE);
+	return TRUE;
+}
+
+static apt_bool_t rtsp_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_result_e result)
+{
+	if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+		/* message is completely parsed */
+		rtsp_generator_t *generator = obj;
+		test_stream_generate(generator,message);
+	}
 	return TRUE;
 }
 
@@ -59,8 +69,8 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 	apt_text_stream_t stream;
 	rtsp_parser_t *parser;
 	rtsp_generator_t *generator;
-	apr_size_t read_length;
-	apr_size_t read_offset;
+	apr_size_t length;
+	apr_size_t offset;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s]",file_path);
 	if(apr_file_open(&file,file_path,APR_FOPEN_READ | APR_FOPEN_BINARY,APR_OS_DEFAULT,suite->pool) != APR_SUCCESS) {
@@ -71,46 +81,27 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 	parser = rtsp_parser_create(suite->pool);
 	generator = rtsp_generator_create(suite->pool);
 
-	stream.text.buf = buffer;
-	read_offset = 0;
+	apt_text_stream_init(&stream,buffer,sizeof(buffer)-1);
+
 	do {
-		stream.pos = stream.text.buf;
+		/* init length of the stream */
 		stream.text.length = sizeof(buffer)-1;
-		read_length = stream.text.length - read_offset;
-		if(apr_file_read(file,stream.pos,&read_length) != APR_SUCCESS) {
+		/* calculate offset remaining from the previous receive / if any */
+		offset = stream.pos - stream.text.buf;
+		/* calculate available length */
+		length = stream.text.length - offset;
+
+		if(apr_file_read(file,stream.pos,&length) != APR_SUCCESS) {
 			break;
 		}
-		read_offset = 0;
-		stream.text.length = read_offset + read_length;
-		stream.text.buf[stream.text.length]='\0';
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Stream to Parse [%d bytes]\n%s",stream.text.length,stream.text.buf);
-
-		do {
-			const char *pos = stream.pos;
-			rtsp_stream_result_e result = rtsp_parser_run(parser,&stream);
-			if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
-				rtsp_message_t *message;
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Message Parsed [%d bytes]",stream.pos - pos);
-				message = rtsp_parser_message_get(parser);
-				if(message) {
-					test_stream_generate(suite,generator,message);
-				}
-			}
-			else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
-				apr_size_t scroll_length = stream.pos - stream.text.buf;
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Message Truncated [%d bytes]",stream.pos - pos);
-				if(scroll_length && scroll_length != stream.text.length) {
-					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Scroll Stream [%d bytes]",scroll_length);
-					memmove(stream.text.buf,stream.pos,scroll_length);
-					read_offset = stream.text.length - scroll_length;
-				}
-				break;
-			}
-			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Message [%d bytes]",stream.pos - pos);
-			}
-		}
-		while(stream.pos < stream.text.buf + stream.text.length);
+		/* calculate actual length of the stream */
+		stream.text.length = offset + length;
+		stream.pos[length] = '\0';
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse RTSP Stream [%lu bytes]\n%s",length,stream.pos);
+		
+		/* reset pos */
+		stream.pos = stream.text.buf;
+		rtsp_stream_walk(parser,&stream,rtsp_message_handler,generator);
 	}
 	while(apr_file_eof(file) != APR_EOF);
 

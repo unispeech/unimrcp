@@ -15,6 +15,7 @@
  */
 
 #include "rtsp_stream.h"
+#include "apt_log.h"
 
 /** RTSP parser */
 struct rtsp_parser_t {
@@ -241,4 +242,46 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_generator_run(rtsp_generator_t *generato
 		generator->result = RTSP_STREAM_MESSAGE_TRUNCATED;
 	}
 	return generator->result;
+}
+
+
+/** Walk through RTSP stream and invoke message handler for each parsed message */
+RTSP_DECLARE(apt_bool_t) rtsp_stream_walk(rtsp_parser_t *parser, apt_text_stream_t *stream, rtsp_message_handler_f handler, void *obj)
+{
+	rtsp_stream_result_e result;
+	do {
+		result = rtsp_parser_run(parser,stream);
+		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+			/* message is partially parsed, to be continued */
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parsed RTSP Message [%lu]", stream->pos - stream->text.buf);
+		}
+		else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+			/* message is partially parsed, to be continued */
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Truncated RTSP Message [%lu]", stream->pos - stream->text.buf);
+		}
+		else if(result == RTSP_STREAM_MESSAGE_INVALID){
+			/* error case */
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Message");
+		}
+
+		/* invoke message handler */
+		if(handler(obj,parser->message,result) == FALSE) {
+			return FALSE;
+		}
+	}
+	while(apt_text_is_eos(stream) == FALSE  &&  result != RTSP_STREAM_MESSAGE_TRUNCATED);
+
+	/* prepare stream for further processing */
+	if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+		if(apt_text_stream_scroll(stream) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Scroll RTSP Stream [%d]",stream->pos - stream->text.buf);
+		}
+		else {
+			stream->pos = stream->text.buf;
+		}
+	}
+	else {
+		stream->pos = stream->text.buf;
+	}
+	return TRUE;
 }
