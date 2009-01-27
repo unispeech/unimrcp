@@ -29,9 +29,7 @@ static apt_bool_t test_stream_generate(rtsp_generator_t *generator, rtsp_message
 
 	rtsp_generator_message_set(generator,message);
 	do {
-		stream.text.length = sizeof(buffer)-1;
-		stream.text.buf = buffer;
-		stream.pos = stream.text.buf;
+		apt_text_stream_init(&stream,buffer,sizeof(buffer)-1);
 		continuation = FALSE;
 		result = rtsp_generator_run(generator,&stream);
 		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
