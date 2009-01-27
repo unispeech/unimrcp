@@ -34,9 +34,9 @@ struct rtsp_generator_t {
 };
 
 /** Read RTSP message-body */
-static apt_bool_t rtsp_message_body_read(rtsp_message_t *message, apt_text_stream_t *stream)
+static rtsp_stream_result_e rtsp_message_body_read(rtsp_message_t *message, apt_text_stream_t *stream)
 {
-	apt_bool_t result = TRUE;
+	rtsp_stream_result_e result = RTSP_STREAM_MESSAGE_COMPLETE;
 	if(message->body.buf) {
 		/* stream length available to read */
 		apr_size_t stream_length = stream->text.length - (stream->pos - stream->text.buf);
@@ -45,7 +45,7 @@ static apt_bool_t rtsp_message_body_read(rtsp_message_t *message, apt_text_strea
 		if(required_length > stream_length) {
 			required_length = stream_length;
 			/* not complete */
-			result = FALSE;
+			result = RTSP_STREAM_MESSAGE_TRUNCATED;
 		}
 		memcpy(message->body.buf+message->body.length,stream->pos,required_length);
 		message->body.length += required_length;
@@ -56,7 +56,7 @@ static apt_bool_t rtsp_message_body_read(rtsp_message_t *message, apt_text_strea
 }
 
 /** Parse RTSP message-body */
-static apt_bool_t rtsp_message_body_parse(rtsp_message_t *message, apt_text_stream_t *stream, apr_pool_t *pool)
+static rtsp_stream_result_e rtsp_message_body_parse(rtsp_message_t *message, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	if(rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE) {
 		if(message->header.content_length) {
@@ -66,13 +66,13 @@ static apt_bool_t rtsp_message_body_parse(rtsp_message_t *message, apt_text_stre
 			return rtsp_message_body_read(message,stream);
 		}
 	}
-	return TRUE;
+	return RTSP_STREAM_MESSAGE_COMPLETE;
 }
 
 /** Write RTSP message-body */
-static apt_bool_t rtsp_message_body_write(rtsp_message_t *message, apt_text_stream_t *stream)
+static rtsp_stream_result_e rtsp_message_body_write(rtsp_message_t *message, apt_text_stream_t *stream)
 {
-	apt_bool_t result = TRUE;
+	rtsp_stream_result_e result = RTSP_STREAM_MESSAGE_COMPLETE;
 	if(message->body.length < message->header.content_length) {
 		/* stream length available to write */
 		apr_size_t stream_length = stream->text.length - (stream->pos - stream->text.buf);
@@ -81,7 +81,7 @@ static apt_bool_t rtsp_message_body_write(rtsp_message_t *message, apt_text_stre
 		if(required_length > stream_length) {
 			required_length = stream_length;
 			/* not complete */
-			result = FALSE;
+			result = RTSP_STREAM_MESSAGE_TRUNCATED;
 		}
 
 		memcpy(stream->pos,message->body.buf+message->body.length,required_length);
@@ -93,7 +93,7 @@ static apt_bool_t rtsp_message_body_write(rtsp_message_t *message, apt_text_stre
 }
 
 /** Generate RTSP message-body */
-static apt_bool_t rtsp_message_body_generate(rtsp_message_t *message, apt_text_stream_t *stream, apr_pool_t *pool)
+static rtsp_stream_result_e rtsp_message_body_generate(rtsp_message_t *message, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	if(rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE) {
 		if(message->header.content_length) {
@@ -102,7 +102,7 @@ static apt_bool_t rtsp_message_body_generate(rtsp_message_t *message, apt_text_s
 			return rtsp_message_body_write(message,stream);
 		}
 	}
-	return TRUE;
+	return RTSP_STREAM_MESSAGE_COMPLETE;
 }
 
 /** Create RTSP parser */
@@ -138,10 +138,7 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_parser_run(rtsp_parser_t *parser, apt_te
 	rtsp_message_t *message = parser->message;
 	if(message && parser->result == RTSP_STREAM_MESSAGE_TRUNCATED) {
 		/* process continuation data */
-		parser->result = RTSP_STREAM_MESSAGE_COMPLETE;
-		if(rtsp_message_body_read(message,stream) == FALSE) {
-			parser->result = RTSP_STREAM_MESSAGE_TRUNCATED;
-		}
+		parser->result = rtsp_message_body_read(message,stream);
 		return parser->result;
 	}
 
@@ -159,10 +156,7 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_parser_run(rtsp_parser_t *parser, apt_te
 		return rtsp_parser_break(parser,stream);
 	}
 	/* parse body */
-	parser->result = RTSP_STREAM_MESSAGE_COMPLETE;
-	if(rtsp_message_body_parse(message,stream,message->pool) == FALSE) {
-		parser->result = RTSP_STREAM_MESSAGE_TRUNCATED;
-	}
+	parser->result = rtsp_message_body_parse(message,stream,message->pool);
 	return parser->result;
 }
 
@@ -219,10 +213,7 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_generator_run(rtsp_generator_t *generato
 
 	if(message && generator->result == RTSP_STREAM_MESSAGE_TRUNCATED) {
 		/* process continuation data */
-		generator->result = RTSP_STREAM_MESSAGE_COMPLETE;
-		if(rtsp_message_body_write(message,stream) == FALSE) {
-			generator->result = RTSP_STREAM_MESSAGE_TRUNCATED;
-		}
+		generator->result = rtsp_message_body_write(message,stream);
 		return generator->result;
 	}
 
@@ -237,10 +228,7 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_generator_run(rtsp_generator_t *generato
 	}
 
 	/* generate body */
-	generator->result = RTSP_STREAM_MESSAGE_COMPLETE;
-	if(rtsp_message_body_generate(message,stream,message->pool) == FALSE) {
-		generator->result = RTSP_STREAM_MESSAGE_TRUNCATED;
-	}
+	generator->result = rtsp_message_body_generate(message,stream,message->pool);
 	return generator->result;
 }
 
