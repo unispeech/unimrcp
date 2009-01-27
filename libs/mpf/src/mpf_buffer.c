@@ -33,8 +33,8 @@ struct mpf_buffer_t {
 	apr_size_t                                   remaining_chunk_size;
 	apr_thread_mutex_t                          *guard;
 	apr_pool_t                                  *pool;
+	apr_size_t                                   size; /* total size */
 };
-
 
 mpf_buffer_t* mpf_buffer_create(apr_pool_t *pool)
 {
@@ -42,6 +42,7 @@ mpf_buffer_t* mpf_buffer_create(apr_pool_t *pool)
 	buffer->pool = pool;
 	buffer->cur_chunk = NULL;
 	buffer->remaining_chunk_size = 0;
+	buffer->size = 0;
 	APR_RING_INIT(&buffer->head, mpf_chunk_t, link);
 	apr_thread_mutex_create(&buffer->guard,APR_THREAD_MUTEX_UNNESTED,pool);
 	return buffer;
@@ -92,6 +93,7 @@ apt_bool_t mpf_buffer_audio_write(mpf_buffer_t *buffer, void *data, apr_size_t s
 	chunk->frame.type = MEDIA_FRAME_TYPE_AUDIO;
 	status = mpf_buffer_chunk_write(buffer,chunk);
 	
+	buffer->size += size;
 	apr_thread_mutex_unlock(buffer->guard);
 	return status;
 }
@@ -138,6 +140,7 @@ apt_bool_t mpf_buffer_frame_read(mpf_buffer_t *buffer, mpf_frame_t *media_frame)
 				(char*)src->buffer + src->size - buffer->remaining_chunk_size,
 				remaining_frame_size);
 			buffer->remaining_chunk_size -= remaining_frame_size;
+			buffer->size -= remaining_frame_size;
 			remaining_frame_size = 0;
 		}
 		else {
@@ -147,6 +150,7 @@ apt_bool_t mpf_buffer_frame_read(mpf_buffer_t *buffer, mpf_frame_t *media_frame)
 				(char*)src->buffer + src->size - buffer->remaining_chunk_size,
 				buffer->remaining_chunk_size);
 			remaining_frame_size -= buffer->remaining_chunk_size;
+			buffer->size -= buffer->remaining_chunk_size;
 			buffer->remaining_chunk_size = 0;
 			buffer->cur_chunk = NULL;
 		}
@@ -159,4 +163,9 @@ apt_bool_t mpf_buffer_frame_read(mpf_buffer_t *buffer, mpf_frame_t *media_frame)
 	}
 	apr_thread_mutex_unlock(buffer->guard);
 	return TRUE;
+}
+
+apr_size_t mpf_buffer_get_size(mpf_buffer_t *buffer)
+{
+	return buffer->size;
 }
