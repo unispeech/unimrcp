@@ -18,6 +18,7 @@
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_resource_factory.h"
+#include "apt_log.h"
 
 /** MRCP parser */
 struct mrcp_parser_t {
@@ -279,4 +280,46 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 	/* generate body */
 	generator->result = mrcp_message_body_generate(message,stream);
 	return generator->result;
+}
+
+
+/** Walk through MRCP stream and invoke message handler for each parsed message */
+MRCP_DECLARE(apt_bool_t) mrcp_stream_walk(mrcp_parser_t *parser, apt_text_stream_t *stream, mrcp_message_handler_f handler, void *obj)
+{
+	mrcp_stream_result_e result;
+	do {
+		result = mrcp_parser_run(parser,stream);
+		if(result == MRCP_STREAM_MESSAGE_COMPLETE) {
+			/* message is partially parsed, to be continued */
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parsed MRCP Message [%lu]", stream->pos - stream->text.buf);
+		}
+		else if(result == MRCP_STREAM_MESSAGE_TRUNCATED) {
+			/* message is partially parsed, to be continued */
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Truncated MRCP Message [%lu]", stream->pos - stream->text.buf);
+		}
+		else if(result == MRCP_STREAM_MESSAGE_INVALID){
+			/* error case */
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCP Message");
+		}
+
+		/* invoke message handler */
+		if(handler(obj,parser->message,result) == FALSE) {
+			return FALSE;
+		}
+	}
+	while(apt_text_is_eos(stream) == FALSE  &&  result != MRCP_STREAM_MESSAGE_TRUNCATED);
+
+	/* prepare stream for further processing */
+	if(result == MRCP_STREAM_MESSAGE_TRUNCATED) {
+		if(apt_text_stream_scroll(stream) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Scroll MRCP Stream [%d]",stream->pos - stream->text.buf);
+		}
+		else {
+			stream->pos = stream->text.buf;
+		}
+	}
+	else {
+		stream->pos = stream->text.buf;
+	}
+	return TRUE;
 }

@@ -39,6 +39,9 @@ typedef struct mrcp_parser_t mrcp_parser_t;
 /** Opaque MRCP generator declaration */
 typedef struct mrcp_generator_t mrcp_generator_t;
 
+/** MRCP message handler */
+typedef apt_bool_t (*mrcp_message_handler_f)(void *obj, mrcp_message_t *message, mrcp_stream_result_e result);
+
 /** Create MRCP stream parser */
 MRCP_DECLARE(mrcp_parser_t*) mrcp_parser_create(mrcp_resource_factory_t *resource_factory, apr_pool_t *pool);
 
@@ -61,6 +64,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_generator_message_set(mrcp_generator_t *generator,
 /** Generate MRCP stream */
 MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generator, apt_text_stream_t *stream);
 
+/** Walk through MRCP stream and call message handler for each parsed message */
+MRCP_DECLARE(apt_bool_t) mrcp_stream_walk(mrcp_parser_t *parser, apt_text_stream_t *stream, mrcp_message_handler_f handler, void *obj);
 
 APT_END_EXTERN_C
 
