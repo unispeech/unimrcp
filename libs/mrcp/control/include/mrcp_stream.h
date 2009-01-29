@@ -42,6 +42,13 @@ typedef struct mrcp_generator_t mrcp_generator_t;
 /** MRCP message handler */
 typedef apt_bool_t (*mrcp_message_handler_f)(void *obj, mrcp_message_t *message, mrcp_stream_result_e result);
 
+/** Parse MRCP message (excluding message body) */
+MRCP_DECLARE(apt_bool_t) mrcp_message_parse(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *stream);
+
+/** Generate MRCP message (excluding message body) */
+MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *stream);
+
+
 /** Create MRCP stream parser */
 MRCP_DECLARE(mrcp_parser_t*) mrcp_parser_create(mrcp_resource_factory_t *resource_factory, apr_pool_t *pool);
 

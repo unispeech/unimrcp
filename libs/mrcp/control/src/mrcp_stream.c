@@ -116,6 +116,63 @@ static mrcp_stream_result_e mrcp_message_body_generate(mrcp_message_t *message, 
 	return MRCP_STREAM_MESSAGE_COMPLETE;
 }
 
+/** Parse MRCP message (excluding message body) */
+MRCP_DECLARE(apt_bool_t) mrcp_message_parse(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *stream)
+{
+	/* parse start-line */
+	if(mrcp_start_line_parse(&message->start_line,stream,message->pool) == FALSE) {
+		return FALSE;
+	}
+
+	if(message->start_line.version == MRCP_VERSION_2) {
+		mrcp_channel_id_parse(&message->channel_id,stream,message->pool);
+	}
+
+	if(mrcp_message_resourcify_by_name(resource_factory,message) == FALSE) {
+		return FALSE;
+	}
+
+	/* parse header */
+	if(mrcp_message_header_parse(&message->header,stream,message->pool) == FALSE) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+/** Generate MRCP message (excluding message body) */
+MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *stream)
+{
+	/* initialize resource specific data */
+	if(mrcp_message_resourcify_by_id(resource_factory,message) == FALSE) {
+		return FALSE;
+	}
+
+	/* validate message */
+	if(mrcp_message_validate(message) == FALSE) {
+		return FALSE;
+	}
+	
+	/* generate start-line */
+	if(mrcp_start_line_generate(&message->start_line,stream) == FALSE) {
+		return FALSE;
+	}
+
+	if(message->start_line.version == MRCP_VERSION_2) {
+		mrcp_channel_id_generate(&message->channel_id,stream);
+	}
+
+	/* generate header */
+	if(mrcp_message_header_generate(&message->header,stream) == FALSE) {
+		return FALSE;
+	}
+
+	/* finalize start-line generation */
+	mrcp_start_line_finalize(&message->start_line,message->body.length,stream);
+	return TRUE;
+}
+
+
 /** Create MRCP stream parser */
 MRCP_DECLARE(mrcp_parser_t*) mrcp_parser_create(mrcp_resource_factory_t *resource_factory, apr_pool_t *pool)
 {
@@ -169,21 +226,9 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_parser_run(mrcp_parser_t *parser, apt_te
 	parser->message = message;
 	/* store current position to be able to rewind/restore stream if needed */
 	parser->pos = stream->pos;
-	/* parse start-line */
-	if(mrcp_start_line_parse(&message->start_line,stream,message->pool) == FALSE) {
-		return mrcp_parser_break(parser,stream);
-	}
 
-	if(message->start_line.version == MRCP_VERSION_2) {
-		mrcp_channel_id_parse(&message->channel_id,stream,message->pool);
-	}
-
-	if(mrcp_message_resourcify_by_name(parser->resource_factory,message) == FALSE) {
-		return MRCP_STREAM_MESSAGE_INVALID;
-	}
-
-	/* parse header */
-	if(mrcp_message_header_parse(&message->header,stream,message->pool) == FALSE) {
+	/* parse start-line and header */
+	if(mrcp_message_parse(parser->resource_factory,message,stream) == FALSE) {
 		return mrcp_parser_break(parser,stream);
 	}
 
@@ -250,32 +295,10 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 		return generator->result;
 	}
 
-	/* initialize resource specific data */
-	if(mrcp_message_resourcify_by_id(generator->resource_factory,message) == FALSE) {
-		return MRCP_STREAM_MESSAGE_INVALID;
-	}
-
-	/* validate message */
-	if(mrcp_message_validate(message) == FALSE) {
-		return MRCP_STREAM_MESSAGE_INVALID;
-	}
-	
-	/* generate start-line */
-	if(mrcp_start_line_generate(&message->start_line,stream) == FALSE) {
+	/* generate start-line and header */
+	if(mrcp_message_generate(generator->resource_factory,message,stream) == FALSE) {
 		return mrcp_generator_break(generator,stream);
 	}
-
-	if(message->start_line.version == MRCP_VERSION_2) {
-		mrcp_channel_id_generate(&message->channel_id,stream);
-	}
-
-	/* generate header */
-	if(mrcp_message_header_generate(&message->header,stream) == FALSE) {
-		return mrcp_generator_break(generator,stream);
-	}
-
-	/* finalize start-line generation */
-	mrcp_start_line_finalize(&message->start_line,message->body.length,stream);
 
 	/* generate body */
 	generator->result = mrcp_message_body_generate(message,stream);

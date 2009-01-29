@@ -21,6 +21,7 @@
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_message.h"
+#include "mrcp_stream.h"
 #include "mrcp_resource_factory.h"
 #include "rtsp_client.h"
 #include "mrcp_unirtsp_sdp.h"
@@ -226,15 +227,18 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		message->header.content_length > 0) {
 
 		apt_text_stream_t text_stream;
-		mrcp_message_t *mrcp_message;
+		mrcp_parser_t *parser;
+		apt_str_t resource_name_str;
 
 		text_stream.text = message->body;
 		text_stream.pos = text_stream.text.buf;
+		apt_string_set(&resource_name_str,resource_name);
 
-		mrcp_message = mrcp_message_create(session->mrcp_session->pool);
-		mrcp_message->channel_id.session_id = message->header.session_id;
-		apt_string_assign(&mrcp_message->channel_id.resource_name,resource_name,mrcp_message->pool);
-		if(mrcp_message_parse(agent->sig_agent->resource_factory,mrcp_message,&text_stream) == TRUE) {
+		parser = mrcp_parser_create(agent->sig_agent->resource_factory,session->mrcp_session->pool);
+		mrcp_parser_resource_name_set(parser,&resource_name_str);
+		if(mrcp_parser_run(parser,&text_stream) == MRCP_STREAM_MESSAGE_COMPLETE) {
+			mrcp_message_t *mrcp_message = mrcp_parser_message_get(parser);
+			mrcp_message->channel_id.session_id = message->header.session_id;
 			status = mrcp_session_control_response(session->mrcp_session,mrcp_message);
 		}
 		else {
@@ -345,20 +349,19 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 	mrcp_unirtsp_session_t *session = mrcp_session->obj;
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 
-	char buffer[4096];
-	apt_text_stream_t text_stream;
+	char buffer[500];
+	apt_text_stream_t stream;
 	rtsp_message_t *rtsp_message = NULL;
+	apt_str_t *body;
 
-	text_stream.text.buf = buffer;
-	text_stream.text.length = sizeof(buffer)-1;
-	text_stream.pos = text_stream.text.buf;
+	apt_text_stream_init(&stream,buffer,sizeof(buffer));
 
 	mrcp_message->start_line.version = MRCP_VERSION_1;
-	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&text_stream) != TRUE) {
+	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&stream) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
 		return FALSE;
 	}
-	*text_stream.pos = '\0';
+	stream.text.length = stream.pos - stream.text.buf;
 
 	rtsp_message = rtsp_request_create(mrcp_session->pool);
 	rtsp_message->start_line.common.request_line.resource_name = rtsp_name_get_by_mrcp_name(
@@ -366,10 +369,18 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 									mrcp_message->channel_id.resource_name.buf);
 	rtsp_message->start_line.common.request_line.method_id = RTSP_METHOD_ANNOUNCE;
 
-	apt_string_copy(&rtsp_message->body,&text_stream.text,rtsp_message->pool);
+	body = &rtsp_message->body;
+	body->length = mrcp_message->start_line.length;
+	body->buf = apr_palloc(rtsp_message->pool,body->length+1);
+	memcpy(body->buf,stream.text.buf,stream.text.length);
+	if(mrcp_message->body.length) {
+		memcpy(body->buf+stream.text.length,mrcp_message->body.buf,mrcp_message->body.length);
+	}
+	body->buf[body->length] = '\0';
+
 	rtsp_message->header.content_type = RTSP_CONTENT_TYPE_MRCP;
 	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
-	rtsp_message->header.content_length = text_stream.text.length;
+	rtsp_message->header.content_length = body->length;
 	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
 
 	rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,rtsp_message);
