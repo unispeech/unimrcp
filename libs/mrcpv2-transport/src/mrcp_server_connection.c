@@ -23,8 +23,6 @@
 #include "apt_task.h"
 #include "apt_log.h"
 
-#define MRCP_MESSAGE_MAX_SIZE 2048
-
 struct mrcp_connection_agent_t {
 	apr_pool_t              *pool;
 	apt_task_t              *task;
