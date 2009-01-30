@@ -486,6 +486,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
 	apt_pair_t pair;
+	apt_bool_t result = FALSE;
 
 	mrcp_header_allocate(&message_header->generic_header_accessor,pool);
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);
@@ -499,11 +500,19 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *messag
 				}
 			}
 		}
-		/* length == 0 && !buf -> empty header, exit */
-		/* length == 0 && buf -> malformed header, skip to the next one */
+		else {
+			if(pair.name.length == 0 && !pair.name.buf) {
+				/* empty header -> exit */
+				result = TRUE;
+				break;
+			}
+			
+			/* length == 0 && buf -> malformed header, skip to the next one */
+		}
 	}
-	while(pair.name.length || pair.name.buf);
-	return TRUE;
+	while(apt_text_is_eos(text_stream) == FALSE);
+
+	return result;
 }
 
 /** Generate MRCP message-header */
