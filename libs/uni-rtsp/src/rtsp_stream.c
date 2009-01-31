@@ -50,6 +50,7 @@ static rtsp_stream_result_e rtsp_message_body_read(rtsp_message_t *message, apt_
 		memcpy(message->body.buf+message->body.length,stream->pos,required_length);
 		message->body.length += required_length;
 		stream->pos += required_length;
+		message->body.buf[message->body.length] = '\0';
 	}
 
 	return result;
