@@ -84,7 +84,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	agent->max_connection_count = max_connection_count;
 	agent->offer_new_connection = offer_new_connection;
 
-	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,7856,0,agent->pool);
+	apr_sockaddr_info_get(&agent->control_sockaddr,"127.0.0.1",APR_INET,0,0,agent->pool);
 	if(!agent->control_sockaddr) {
 		return NULL;
 	}
@@ -242,6 +242,10 @@ static apt_bool_t mrcp_client_agent_control_socket_create(mrcp_connection_agent_
 		apr_socket_close(agent->control_sock);
 		agent->control_sock = NULL;
 		return FALSE;
+	}
+
+	if(agent->control_sockaddr->port == 0) {
+		apr_socket_addr_get(&agent->control_sockaddr,APR_LOCAL,agent->control_sock);
 	}
 
 	return TRUE;
