@@ -95,58 +95,6 @@ MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_get(mrcp_resource_factory_t *resour
 	return resource_factory->resource_array[resource_id];
 }
 
-/** Parse MRCP message */
-MRCP_DECLARE(apt_bool_t) mrcp_message_parse(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *text_stream)
-{
-	if(mrcp_start_line_parse(&message->start_line,text_stream,message->pool) == FALSE) {
-		return FALSE;
-	}
-
-	if(message->start_line.version == MRCP_VERSION_2) {
-		mrcp_channel_id_parse(&message->channel_id,text_stream,message->pool);
-	}
-
-	if(mrcp_message_resourcify_by_name(resource_factory,message) == FALSE) {
-		return FALSE;
-	}
-
-	if(mrcp_message_header_parse(&message->header,text_stream,message->pool) == FALSE) {
-		return FALSE;
-	}
-
-	mrcp_body_parse(message,text_stream,message->pool);
-	return TRUE;
-}
-
-/** Generate MRCP message */
-MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *text_stream)
-{
-	if(mrcp_message_resourcify_by_id(resource_factory,message) == FALSE) {
-		return FALSE;
-	}
-
-	if(mrcp_message_validate(message) == FALSE) {
-		return FALSE;
-	}
-	
-	if(mrcp_start_line_generate(&message->start_line,text_stream) == FALSE) {
-		return FALSE;
-	}
-
-	if(message->start_line.version == MRCP_VERSION_2) {
-		mrcp_channel_id_generate(&message->channel_id,text_stream);
-	}
-
-	if(mrcp_message_header_generate(&message->header,text_stream) == FALSE) {
-		return FALSE;
-	}
-
-	mrcp_body_generate(message,text_stream);
-	
-	text_stream->text.length = text_stream->pos - text_stream->text.buf;
-	mrcp_start_line_finalize(&message->start_line,text_stream);
-	return TRUE;
-}
 
 /** Set header accessor interface */
 static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message)

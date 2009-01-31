@@ -197,6 +197,10 @@
 					RelativePath=".\control\include\mrcp_state_machine.h"
 					>
 				</File>
+				<File
+					RelativePath=".\control\include\mrcp_stream.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="src"
@@ -204,6 +208,10 @@
 				>
 				<File
 					RelativePath=".\control\src\mrcp_resource_factory.c"
+					>
+				</File>
+				<File
+					RelativePath=".\control\src\mrcp_stream.c"
 					>
 				</File>
 			</Filter>

@@ -1,4 +1,4 @@
-//speechrecognizer
+//speechrecog
 RECOGNIZE 543257 MRCP/1.0
 Confidence-Threshold:90
 Content-Type:application/grammar+xml

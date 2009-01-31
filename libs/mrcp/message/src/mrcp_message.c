@@ -404,16 +404,17 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_generate(mrcp_start_line_t *start_line,
 }
 
 /** Finalize MRCP start-line generation */
-MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line, apt_text_stream_t *text_stream)
+MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line, apr_size_t content_length, apt_text_stream_t *text_stream)
 {
+	apr_size_t length = text_stream->pos - text_stream->text.buf + content_length;
 	if(start_line->version == MRCP_VERSION_2) {
 		/* message-length includes the number of bytes that specify the message-length in the header */
 		/* too comlex to generate!!! see the discussion */
 		/* http://www1.ietf.org/mail-archive/web/speechsc/current/msg01734.html */
 		apt_str_t field;
 		field.buf = text_stream->text.buf + start_line->length; /* length is temrorary used to store offset */
-		text_stream->text.length -= MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT;
-		apt_var_length_value_generate(&text_stream->text.length,MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT,&field);
+		length -= MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT;
+		apt_var_length_value_generate(&length,MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT,&field);
 		field.buf[field.length] = APT_TOKEN_SP;
 		start_line->length += field.length;
 
@@ -421,10 +422,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line,
 		if(field.length) {
 			memmove(text_stream->text.buf+field.length,text_stream->text.buf,start_line->length);
 			text_stream->text.buf += field.length;
+			text_stream->text.length -= field.length;
 		}
 	}
 
-	start_line->length = text_stream->text.length;
+	start_line->length = length;
 	return TRUE;
 }
 
@@ -484,6 +486,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
 	apt_pair_t pair;
+	apt_bool_t result = FALSE;
 
 	mrcp_header_allocate(&message_header->generic_header_accessor,pool);
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);
@@ -497,11 +500,19 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *messag
 				}
 			}
 		}
-		/* length == 0 && !buf -> empty header, exit */
-		/* length == 0 && buf -> malformed header, skip to the next one */
+		else {
+			if(pair.name.length == 0 && !pair.name.buf) {
+				/* empty header -> exit */
+				result = TRUE;
+				break;
+			}
+			
+			/* length == 0 && buf -> malformed header, skip to the next one */
+		}
 	}
-	while(pair.name.length || pair.name.buf);
-	return TRUE;
+	while(apt_text_is_eos(text_stream) == FALSE);
+
+	return result;
 }
 
 /** Generate MRCP message-header */

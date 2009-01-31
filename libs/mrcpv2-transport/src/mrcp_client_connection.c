@@ -23,9 +23,6 @@
 #include "apt_task.h"
 #include "apt_log.h"
 
-#define MRCP_MESSAGE_MAX_SIZE 2048
-
-
 struct mrcp_connection_agent_t {
 	apr_pool_t              *pool;
 	apt_task_t              *task;
@@ -339,7 +336,10 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP/MRCPv2 Connection %s:%d",
 			connection->remote_ip.buf,
 			connection->sockaddr->port);
+	connection->agent = agent;
 	connection->it = apt_list_push_back(agent->connection_list,connection);
+	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
+	connection->generator = mrcp_generator_create(agent->resource_factory,connection->pool);
 	return connection;
 }
 
@@ -461,32 +461,38 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 {
 	apt_bool_t status = FALSE;
 	mrcp_connection_t *connection = channel->connection;
-	if(connection && connection->sock) {
-		char buffer[MRCP_MESSAGE_MAX_SIZE];
-		apt_text_stream_t text_stream;
-		
-		text_stream.text.buf = buffer;
-		text_stream.text.length = sizeof(buffer)-1;
-		text_stream.pos = text_stream.text.buf;
+	apt_text_stream_t *stream;
+	mrcp_stream_result_e result;
 
-		if(mrcp_message_generate(agent->resource_factory,message,&text_stream) == TRUE) {
-			*text_stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Message size=%lu\n%s",
-				text_stream.text.length,text_stream.text.buf);
-			if(apr_socket_send(connection->sock,text_stream.text.buf,&text_stream.text.length) == APR_SUCCESS) {
+	if(!connection || !connection->sock) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCPv2 Connection");
+		return FALSE;
+	}
+	stream = &connection->tx_stream;
+
+	mrcp_generator_message_set(connection->generator,message);
+	do {
+		stream->text.length = sizeof(connection->tx_buffer)-1;
+		stream->pos = stream->text.buf;
+		result = mrcp_generator_run(connection->generator,stream);
+		if(result == MRCP_STREAM_MESSAGE_COMPLETE || result == MRCP_STREAM_MESSAGE_TRUNCATED) {
+			stream->text.length = stream->pos - stream->text.buf;
+			*stream->pos = '\0';
+
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream [%lu bytes]\n%s",
+				stream->text.length,stream->text.buf);
+			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Stream");
 			}
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Stream");
 		}
 	}
-	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCPv2 Connection");
-	}
+	while(result == MRCP_STREAM_MESSAGE_TRUNCATED);
 
 	if(status == FALSE) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
@@ -498,22 +504,48 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 	return TRUE;
 }
 
+static apt_bool_t mrcp_client_message_handler(void *obj, mrcp_message_t *message, mrcp_stream_result_e result)
+{
+	if(result == MRCP_STREAM_MESSAGE_COMPLETE) {
+		/* message is completely parsed */
+		mrcp_connection_t *connection = obj;
+		mrcp_control_channel_t *channel;
+		apt_str_t identifier;
+		apt_id_resource_generate(&message->channel_id.session_id,&message->channel_id.resource_name,'@',&identifier,message->pool);
+		channel = mrcp_connection_channel_find(connection,&identifier);
+		if(channel) {
+			mrcp_connection_agent_t *agent = connection->agent;
+			mrcp_connection_message_receive(agent->vtable,channel,message);
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s>",
+				message->channel_id.session_id.buf,
+				message->channel_id.resource_name.buf);
+		}
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
-	char buffer[MRCP_MESSAGE_MAX_SIZE];
-	apt_bool_t more_messages_on_buffer = FALSE;
 	apr_status_t status;
-	apt_text_stream_t text_stream;
-	mrcp_message_t *message;
+	apr_size_t offset;
+	apr_size_t length;
+	apt_text_stream_t *stream;
 
 	if(!connection || !connection->sock) {
 		return FALSE;
 	}
+	stream = &connection->rx_stream;
 
-	text_stream.text.buf = buffer;
-	text_stream.text.length = sizeof(buffer)-1;
-	status = apr_socket_recv(connection->sock, text_stream.text.buf, &text_stream.text.length);
-	if(status == APR_EOF || text_stream.text.length == 0) {
+	/* init length of the stream */
+	stream->text.length = sizeof(connection->rx_buffer)-1;
+	/* calculate offset remaining from the previous receive / if any */
+	offset = stream->pos - stream->text.buf;
+	/* calculate available length */
+	length = stream->text.length - offset;
+	status = apr_socket_recv(connection->sock,stream->pos,&length);
+	if(status == APR_EOF || length == 0) {
 		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP/MRCPv2 Connection Disconnected");
 		apr_pollset_remove(agent->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
@@ -522,56 +554,15 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 //		agent->vtable->on_disconnect(agent,connection);
 		return TRUE;
 	}
-	text_stream.text.buf[text_stream.text.length] = '\0';
-	text_stream.pos = text_stream.text.buf;
+	/* calculate actual length of the stream */
+	stream->text.length = offset + length;
+	stream->pos[length] = '\0';
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream [%lu bytes]\n%s",length,stream->pos);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Message size=%lu\n%s",text_stream.text.length,text_stream.text.buf);
-	if(!connection->access_count) {
-		return FALSE;
-	}
-
-	do {
-		message = mrcp_message_create(connection->pool);
-		if(mrcp_message_parse(agent->resource_factory,message,&text_stream) == TRUE) {
-			mrcp_control_channel_t *channel;
-			apt_str_t identifier;
-			apt_id_resource_generate(&message->channel_id.session_id,&message->channel_id.resource_name,'@',&identifier,connection->pool);
-			channel = mrcp_connection_channel_find(connection,&identifier);
-			if(channel) {
-				mrcp_connection_message_receive(agent->vtable,channel,message);
-			}
-			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s>",
-					message->channel_id.session_id.buf,
-					message->channel_id.resource_name.buf);
-			}
-		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv2 Message");
-			if(message->start_line.version == MRCP_VERSION_2) {
-				/* assume that at least message length field is valid */
-				if(message->start_line.length <= text_stream.text.length) {
-					/* skip to the end of the message */
-					text_stream.pos = text_stream.text.buf + message->start_line.length;
-				}
-				else {
-					/* skip to the end of the buffer (support incomplete) */
-					text_stream.pos = text_stream.text.buf + text_stream.text.length;
-				}
-			}
-		}
-
-		more_messages_on_buffer = FALSE;
-		if(text_stream.text.length > (apr_size_t)(text_stream.pos - text_stream.text.buf)) {
-			/* there are more MRCPv2 messages to signal */
-			more_messages_on_buffer = TRUE;
-			text_stream.text.length -= text_stream.pos - text_stream.text.buf;
-			text_stream.text.buf = text_stream.pos;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Saving Remaining Buffer for Next Message");
-		}
-	}
-	while(more_messages_on_buffer);
-	return TRUE;
+	/* reset pos */
+	stream->pos = stream->text.buf;
+	/* walk through the stream parsing RTSP messages */
+	return mrcp_stream_walk(connection->parser,stream,mrcp_client_message_handler,connection);
 }
 
 static apt_bool_t mrcp_client_agent_control_pocess(mrcp_connection_agent_t *agent)

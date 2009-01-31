@@ -1,4 +1,4 @@
-//speechrecognizer
+//speechrecog
 RECOGNITION-COMPLETE 543257 COMPLETE MRCP/1.0
 Completion-Cause:000 success
 Waveform-URL:http://web.media.com/session123/audio.wav

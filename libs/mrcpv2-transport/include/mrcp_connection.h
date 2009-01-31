@@ -26,30 +26,44 @@
 #include <apr_hash.h>
 #include "apt_obj_list.h"
 #include "mrcp_connection_types.h"
+#include "mrcp_stream.h"
 
 APT_BEGIN_EXTERN_C
+
+#define MRCP_STREAM_BUFFER_SIZE 1024
 
 /** MRCPv2 connection */
 struct mrcp_connection_t {
 	/** Memory pool */
-	apr_pool_t      *pool;
+	apr_pool_t       *pool;
 
 	/** Accepted/Connected socket */
-	apr_socket_t    *sock;
+	apr_socket_t     *sock;
 	/** Socket poll descriptor */
-	apr_pollfd_t     sock_pfd;
+	apr_pollfd_t      sock_pfd;
 	/** Remote sockaddr */
-	apr_sockaddr_t  *sockaddr;
+	apr_sockaddr_t   *sockaddr;
 	/** Remote IP */
-	apt_str_t        remote_ip;
+	apt_str_t         remote_ip;
 
 	/** Reference count */
-	apr_size_t       access_count;
+	apr_size_t        access_count;
 	/** Agent list element */
-	apt_list_elem_t *it;
+	apt_list_elem_t  *it;
+	/** Opaque agent */
+	void             *agent;
 
 	/** Table of control channels */
-	apr_hash_t      *channel_table;
+	apr_hash_t       *channel_table;
+
+	char              rx_buffer[MRCP_STREAM_BUFFER_SIZE];
+	apt_text_stream_t rx_stream;
+	mrcp_parser_t    *parser;
+
+	char              tx_buffer[MRCP_STREAM_BUFFER_SIZE];
+	apt_text_stream_t tx_stream;
+	mrcp_generator_t *generator;
+
 };
 
 /** Create MRCP connection. */

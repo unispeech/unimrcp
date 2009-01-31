@@ -106,7 +106,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, ap
 /** Generate MRCP start-line */
 MRCP_DECLARE(apt_bool_t) mrcp_start_line_generate(mrcp_start_line_t *start_line, apt_text_stream_t *text_stream);
 /** Finalize MRCP start-line generation */
-MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line, apt_text_stream_t *text_stream);
+MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line, apr_size_t content_length, apt_text_stream_t *text_stream);
 
 
 /** MRCP channel-identifier */

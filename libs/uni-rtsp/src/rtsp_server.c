@@ -16,6 +16,7 @@
 
 #include <apr_hash.h>
 #include "rtsp_server.h"
+#include "rtsp_stream.h"
 #include "apt_net_server_task.h"
 #include "apt_text_stream.h"
 #include "apt_obj_list.h"
@@ -43,6 +44,8 @@ struct rtsp_server_connection_t {
 	/** Connection base */
 	apt_net_server_connection_t *base;
 
+	/** RTSP server, connection belongs to */
+	rtsp_server_t               *server;
 	/** Element of the connection list in agent */
 	apt_list_elem_t             *it;
 
@@ -484,16 +487,42 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 	return status;
 }
 
+static apt_bool_t rtsp_server_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_result_e result)
+{
+	rtsp_server_connection_t *rtsp_connection = obj;
+	if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+		/* message is completely parsed */
+		apt_str_t *destination;
+		rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
+		destination = &message->header.transport.destination;
+		if(!destination->buf && rtsp_connection->base->client_ip) {
+			apt_string_assign(destination,rtsp_connection->base->client_ip,rtsp_connection->base->pool);
+		}
+		rtsp_server_session_request_process(rtsp_connection->server,rtsp_connection,message);
+	}
+	else if(result == RTSP_STREAM_MESSAGE_INVALID) {
+		/* error case */
+		rtsp_message_t *response;
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Stream");
+		if(message) {
+			response = rtsp_response_create(message,RTSP_STATUS_CODE_BAD_REQUEST,
+									RTSP_REASON_PHRASE_BAD_REQUEST,message->pool);
+			if(rtsp_server_message_send(rtsp_connection->server,rtsp_connection->base,response) == FALSE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Response");
+			}
+		}
+	}
+	return TRUE;
+}
+
 /* Receive RTSP message through RTSP connection */
 static apt_bool_t rtsp_server_message_receive(apt_net_server_task_t *task, apt_net_server_connection_t *connection)
 {
-	rtsp_server_t *server = apt_net_server_task_object_get(task);
 	rtsp_server_connection_t *rtsp_connection;
 	apr_status_t status;
 	apr_size_t offset;
 	apr_size_t length;
 	apt_text_stream_t *stream;
-	rtsp_stream_result_e result;
 
 	if(!connection || !connection->sock) {
 		return FALSE;
@@ -518,55 +547,8 @@ static apt_bool_t rtsp_server_message_receive(apt_net_server_task_t *task, apt_n
 
 	/* reset pos */
 	stream->pos = stream->text.buf;
-	do {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parse RTSP Stream [%lu,%lu]",stream->pos - stream->text.buf, stream->text.length);
-		result = rtsp_parser_run(rtsp_connection->parser,stream);
-		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
-			/* message is completely parsed */
-			apt_str_t *destination;
-			rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
-			destination = &message->header.transport.destination;
-			if(!destination->buf && connection->client_ip) {
-				apt_string_assign(destination,connection->client_ip,connection->pool);
-			}
-			rtsp_server_session_request_process(server,rtsp_connection,message);
-		}
-		else if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
-			/* message is partially parsed, to be continued with the next receive */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Partially Parsed");
-			break;
-		}
-		else {
-			/* error case */
-			rtsp_message_t *response;
-			rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Stream");
-			message = rtsp_parser_message_get(rtsp_connection->parser);
-			if(message) {
-				response = rtsp_response_create(message,RTSP_STATUS_CODE_BAD_REQUEST,
-										RTSP_REASON_PHRASE_BAD_REQUEST,message->pool);
-				if(rtsp_server_message_send(server,connection,response) == FALSE) {
-					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Response");
-				}
-			}
-		}
-	}
-	while(apt_text_is_eos(stream) == FALSE);
-
-	/* prepare stream for the next receive */
-	if(result == RTSP_STREAM_MESSAGE_TRUNCATED) {
-		if(apt_text_stream_scroll(stream) == TRUE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Scroll Stream [%d]",stream->pos - stream->text.buf);
-		}
-		else {
-			stream->pos = stream->text.buf;
-		}
-	}
-	else {
-		stream->pos = stream->text.buf;
-	}
-
-	return TRUE;
+	/* walk through the stream parsing RTSP messages */
+	return rtsp_stream_walk(rtsp_connection->parser,stream,rtsp_server_message_handler,rtsp_connection);
 }
 
 /* New RTSP connection accepted */
@@ -584,6 +566,7 @@ static apt_bool_t rtsp_server_on_connect(apt_net_server_task_t *task, apt_net_se
 	if(!server->connection_list) {
 		server->connection_list = apt_list_create(server->sub_pool);
 	}
+	rtsp_connection->server = server;
 	rtsp_connection->it = apt_list_push_back(server->connection_list,rtsp_connection);
 	return TRUE;
 }
