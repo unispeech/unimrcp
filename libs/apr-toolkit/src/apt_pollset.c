@@ -16,6 +16,7 @@
 
 #include <apr_poll.h>
 #include "apt_pollset.h"
+#include "apt_log.h"
 
 struct apt_pollset_t {
 	/** APR pollset */
@@ -171,6 +172,7 @@ static apr_status_t socket_pipe_create(apr_socket_t **rd, apr_socket_t **wr, apr
 	if(apr_socket_create(&ls, AF_INET, SOCK_STREAM, APR_PROTO_TCP, pool) != APR_SUCCESS) {
 		return apr_get_netos_error();
 	}
+	apr_socket_opt_set(ls, APR_SO_REUSEADDR, 1);
 
 	if(apr_sockaddr_info_get(&pa,"127.0.0.1",APR_INET,0,0,pool) != APR_SUCCESS) {
 		apr_socket_close(ls);
@@ -196,6 +198,8 @@ static apr_status_t socket_pipe_create(apr_socket_t **rd, apr_socket_t **wr, apr
 		apr_socket_close(ls);
 		return apr_get_netos_error();
 	}
+	apr_socket_opt_set(*wr, APR_SO_REUSEADDR, 1);
+
 	if(apr_socket_connect(*wr, ca) != APR_SUCCESS) {
 		apr_socket_close(ls);
 		apr_socket_close(*wr);
@@ -208,34 +212,34 @@ static apr_status_t socket_pipe_create(apr_socket_t **rd, apr_socket_t **wr, apr
 		return apr_get_netos_error();
 	}
 	
-	apr_socket_opt_set(ls, APR_SO_NONBLOCK, 1);
+	apr_socket_opt_set(ls, APR_SO_NONBLOCK, 0);
+	/* Listening socket is blocking by now. The accept should 
+	 * return immediatelly because we connected already.
+	 */
+	if(apr_socket_accept(rd, ls, pool) != APR_SUCCESS) {
+		apr_socket_close(ls);
+		apr_socket_close(*wr);
+		return apr_get_netos_error();
+	}
+
+	/* Put read side of the pipe to the blocking mode */
+	apr_socket_opt_set(*rd, APR_SO_NONBLOCK, 0);
 
 	for (;;) {
-		/* Listening socket is nonblocking by now.
-		 * The accept must create the socket
-		 * immediatelly because we connected already.
-		 */
-		if(apr_socket_accept(rd, ls, pool) != APR_SUCCESS) {
+		/* Verify the connection by reading the sent identification */
+		nrd = sizeof(iid);
+		if(apr_socket_recv(*rd, (char *)iid, &nrd) != APR_SUCCESS) {
 			apr_socket_close(ls);
 			apr_socket_close(*wr);
+			apr_socket_close(*rd);
 			return apr_get_netos_error();
 		}
-		/* Put read side of the pipe to the blocking */
-		apr_socket_opt_set(*rd, APR_SO_NONBLOCK, 0);
-		/* Verify the connection by reading the send identification.
-		 */
-		nrd = sizeof(iid);
-		apr_socket_recv(*rd, (char *)iid, &nrd);
 		if(nrd == sizeof(iid)) {
 			if(memcmp(uid, iid, sizeof(uid)) == 0) {
-				/* Wow, we recived what we send. */
+				/* Wow, we recived what we sent */
 				break;
 			}
 		}
-		apr_socket_close(ls);
-		apr_socket_close(*wr);
-		apr_socket_close(*rd);
-		return apr_get_netos_error();
 	}
 
 	/* We don't need the listening socket any more */
@@ -248,7 +252,12 @@ static apt_bool_t apt_wakeup_pipe_create(apt_pollset_t *pollset)
 {
 	apr_socket_t *rd;
 	apr_socket_t *wr;
-	if(socket_pipe_create(&rd,&wr,pollset->pool) != APR_SUCCESS) {
+	apr_status_t rv;
+	rv = socket_pipe_create(&rd,&wr,pollset->pool);
+	if(rv != APR_SUCCESS) {
+		char err_str[256];
+		apr_strerror(rv,err_str,sizeof(err_str));
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Wakeup Pipe: %s",err_str);
 		return FALSE;
 	}
 	pollset->wakeup_pfd.reqevents = APR_POLLIN;
