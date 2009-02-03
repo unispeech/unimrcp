@@ -38,6 +38,7 @@ typedef enum {
 	RECOGNIZER_HEADER_WAVEFORM_URI,
 	RECOGNIZER_HEADER_INPUT_WAVEFORM_URI,
 	RECOGNIZER_HEADER_COMPLETION_CAUSE,
+	RECOGNIZER_HEADER_COMPLETION_REASON,
 	RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK,
 	RECOGNIZER_HEADER_START_INPUT_TIMERS,
 	RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT,
@@ -118,7 +119,10 @@ struct mrcp_recog_header_t {
 	/** MUST be part of a RECOGNITION-COMPLETE, event coming from
     the recognizer resource to the client */
 	mrcp_recog_completion_cause_e completion_cause;
-	/** MAY be sent as part of the "SET-PARAMS" or "GET-PARAMS" request */
+	/** MAY be specified in a RECOGNITION-COMPLETE event coming from
+    the recognizer resource to the client */
+	apt_str_t                     completion_reason;
+	/** MAY be sent as part of the SET-PARAMS or GET-PARAMS request */
 	apt_str_t                     recognizer_context_block;
 	/** MAY be sent as part of the RECOGNIZE request. A value of false tells
 	the recognizer to start recognition, but not to start the no-input timer yet */

@@ -26,7 +26,8 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Recognition-Timeout",        19},16},
 	{{"Waveform-Url",               12},0},
 	{{"Input-Waveform-Url",         18},0},
-	{{"Completion-Cause",           16},3},
+	{{"Completion-Cause",           16},16},
+	{{"Completion-Reason",          17},11},
 	{{"Recognizer-Context-Block",   24},12},
 	{{"Recognizer-Start-Timers",    23},11},
 	{{"Speech-Complete-Timeout",    23},7},
@@ -40,7 +41,7 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Save-Waveform",              13},5},
 	{{"New-Audio-Channel",          17},2},
 	{{"Speech-Language",            15},8},
-	{{"Ver-Buffer-Utterance",       20},4},
+	{{"Ver-Buffer-Utterance",       20},0},
 	{{"Recognition-Mode",           16},12},
 	{{"Cancel-If-Queue",            15},5},
 	{{"Hotword-Max-Duration",       20},9},
@@ -134,6 +135,7 @@ static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 	apt_string_reset(&recog_header->waveform_uri);
 	apt_string_reset(&recog_header->input_waveform_uri);
 	recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_COUNT;
+	apt_string_reset(&recog_header->completion_reason);
 	apt_string_reset(&recog_header->recognizer_context_block);
 	recog_header->start_input_timers = FALSE;
 	recog_header->speech_complete_timeout = 0;
@@ -198,6 +200,9 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
 			recog_header->completion_cause = apt_size_value_parse(value);
+			break;
+		case RECOGNIZER_HEADER_COMPLETION_REASON:
+			apt_string_copy(&recog_header->completion_reason,value,pool);
 			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
 			apt_string_copy(&recog_header->recognizer_context_block,value,pool);
@@ -333,6 +338,9 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
 			mrcp_completion_cause_generate(recog_header->completion_cause,value);
 			break;
+		case RECOGNIZER_HEADER_COMPLETION_REASON:
+			apt_string_value_generate(&recog_header->completion_reason,value);
+			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
 			apt_string_value_generate(&recog_header->recognizer_context_block,value);
 			break;
@@ -458,6 +466,9 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
 			recog_header->completion_cause = src_recog_header->completion_cause;
+			break;
+		case RECOGNIZER_HEADER_COMPLETION_REASON:
+			apt_string_copy(&recog_header->completion_reason,&src_recog_header->completion_reason,pool);
 			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
 			apt_string_copy(&recog_header->recognizer_context_block,&src_recog_header->recognizer_context_block,pool);
