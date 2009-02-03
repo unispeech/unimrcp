@@ -20,7 +20,7 @@
 static const apt_str_table_item_t synth_header_string_table[] = {
 	{{"Jump-Size",            9},0},
 	{{"Kill-On-Barge-In",    16},0},
-	{{"Speaker=Profile",     15},6},
+	{{"Speaker-Profile",     15},6},
 	{{"Completion-Cause",    16},16},
 	{{"Completion-Reason",   17},11},
 	{{"Voice-Gender",        12},6},
