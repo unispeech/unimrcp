@@ -212,14 +212,17 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 			}
 			else {
 				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine Channel [%s]",resource_name->buf);
+				session->answer->status = MRCP_SESSION_STATUS_FAILED;
 			}
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Resource [%s]",resource_name->buf);
+			session->answer->status = MRCP_SESSION_STATUS_NO_SUCH_RESOURCE;
 		}
 	}
 	else {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Resource Identifier");
+		session->answer->status = MRCP_SESSION_STATUS_NO_SUCH_RESOURCE;
 	}
 
 	return channel;
@@ -374,6 +377,7 @@ static mrcp_session_descriptor_t* mrcp_session_answer_create(mrcp_session_descri
 	apt_string_reset(&answer->ip);
 	answer->resource_name = offer->resource_name;
 	answer->resource_state = offer->resource_state;
+	answer->status = offer->status;
 	answer->control_media_arr = apr_array_make(pool,offer->control_media_arr->nelts,sizeof(void*));
 	for(i=0; i<offer->control_media_arr->nelts; i++) {
 		control_slot = apr_array_push(answer->control_media_arr);

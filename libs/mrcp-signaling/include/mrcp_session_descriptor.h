@@ -27,23 +27,33 @@
 
 APT_BEGIN_EXTERN_C
 
+/** MRCP session status */
+typedef enum {
+	MRCP_SESSION_STATUS_SUCCESS,			/**< OK */
+	MRCP_SESSION_STATUS_NO_SUCH_RESOURCE,   /**< no such resource found */
+	MRCP_SESSION_STATUS_REJECTED,           /**< rejected due to internal limitation */
+	MRCP_SESSION_STATUS_FAILED              /**< internal error occuried */
+} mrcp_session_status_e;
+
 /** MRCP session descriptor */
 struct mrcp_session_descriptor_t {
 	/** SDP origin */
-	apt_str_t           origin;
+	apt_str_t             origin;
 	/** Session level IP address */
-	apt_str_t           ip;
+	apt_str_t             ip;
 	/** Session level resource name (MRCPv1 only) */
-	apt_str_t           resource_name;
+	apt_str_t             resource_name;
 	/** Resource state (MRCPv1 only) */
-	apt_bool_t          resource_state;
+	apt_bool_t            resource_state;
+	/** Session status */
+	mrcp_session_status_e status;
 
 	/** MRCP control media array (mrcp_control_descriptor_t) */
-	apr_array_header_t *control_media_arr;
+	apr_array_header_t   *control_media_arr;
 	/** Audio media array (mpf_rtp_media_descriptor_t) */
-	apr_array_header_t *audio_media_arr;
+	apr_array_header_t   *audio_media_arr;
 	/** Video media array (mpf_rtp_media_descriptor_t) */
-	apr_array_header_t *video_media_arr;
+	apr_array_header_t   *video_media_arr;
 };
 
 /** Initialize session descriptor  */
@@ -54,6 +64,7 @@ static APR_INLINE mrcp_session_descriptor_t* mrcp_session_descriptor_create(apr_
 	apt_string_reset(&descriptor->ip);
 	apt_string_reset(&descriptor->resource_name);
 	descriptor->resource_state = FALSE;
+	descriptor->status = MRCP_SESSION_STATUS_SUCCESS;
 	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(void*));
 	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
 	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));
