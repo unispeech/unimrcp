@@ -212,7 +212,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 			}
 			else {
 				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine Channel [%s]",resource_name->buf);
-				session->answer->status = MRCP_SESSION_STATUS_FAILED;
+				session->answer->status = MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE;
 			}
 		}
 		else {
@@ -303,7 +303,10 @@ apt_bool_t mrcp_server_on_channel_message(mrcp_channel_t *channel, mrcp_message_
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status)
 {
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Engine Channel Open");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Engine Channel Open [%s]", status == TRUE ? "OK" : "Failed");
+	if(status == FALSE) {
+		session->answer->status = MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE;
+	}
 	if(session->answer_flag_count) {
 		session->answer_flag_count--;
 		if(!session->answer_flag_count) {
@@ -743,11 +746,12 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session
 {
 	apt_bool_t status;
 	mrcp_session_descriptor_t *descriptor = session->answer;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Answer <%s> [c:%d a:%d v:%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Answer <%s> [c:%d a:%d v:%d] Status %s",
 		session->base.id.buf,
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
-		descriptor->video_media_arr->nelts);
+		descriptor->video_media_arr->nelts,
+		mrcp_session_status_phrase_get(descriptor->status));
 	status = mrcp_session_answer(&session->base,descriptor);
 	session->offer = NULL;
 	session->answer = NULL;

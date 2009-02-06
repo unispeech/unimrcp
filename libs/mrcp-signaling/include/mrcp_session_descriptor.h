@@ -29,10 +29,11 @@ APT_BEGIN_EXTERN_C
 
 /** MRCP session status */
 typedef enum {
-	MRCP_SESSION_STATUS_SUCCESS,			/**< OK */
-	MRCP_SESSION_STATUS_NO_SUCH_RESOURCE,   /**< no such resource found */
-	MRCP_SESSION_STATUS_REJECTED,           /**< rejected due to internal limitation */
-	MRCP_SESSION_STATUS_FAILED              /**< internal error occuried */
+	MRCP_SESSION_STATUS_SUCCESS,			   /**< OK */
+	MRCP_SESSION_STATUS_NO_SUCH_RESOURCE,      /**< no such resource found */
+	MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE, /**< resource exists, but no implementation (plugin) found */
+	MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE,  /**< resource exists, but is temporary unavailable */
+	MRCP_SESSION_STATUS_FAILED                 /**< internal error occuried */
 } mrcp_session_status_e;
 
 /** MRCP session descriptor */
@@ -56,20 +57,8 @@ struct mrcp_session_descriptor_t {
 	apr_array_header_t   *video_media_arr;
 };
 
-/** Initialize session descriptor  */
-static APR_INLINE mrcp_session_descriptor_t* mrcp_session_descriptor_create(apr_pool_t *pool)
-{
-	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
-	apt_string_reset(&descriptor->origin);
-	apt_string_reset(&descriptor->ip);
-	apt_string_reset(&descriptor->resource_name);
-	descriptor->resource_state = FALSE;
-	descriptor->status = MRCP_SESSION_STATUS_SUCCESS;
-	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(void*));
-	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
-	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));
-	return descriptor;
-}
+/** Create session descriptor  */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool_t *pool);
 
 static APR_INLINE apr_size_t mrcp_session_media_count_get(const mrcp_session_descriptor_t *descriptor)
 {
@@ -149,6 +138,9 @@ static APR_INLINE apt_bool_t mrcp_session_video_media_set(mrcp_session_descripto
 	((mpf_rtp_media_descriptor_t**)descriptor->video_media_arr->elts)[id] = media;
 	return TRUE;
 }
+
+/** Get session status phrase  */
+MRCP_DECLARE(const char*) mrcp_session_status_phrase_get(mrcp_session_status_e status);
 
 APT_END_EXTERN_C
 

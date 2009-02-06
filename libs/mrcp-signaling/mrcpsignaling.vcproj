@@ -151,6 +151,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
 			<File
+				RelativePath=".\src\mrcp_session_descriptor.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mrcp_sig_agent.c"
 				>
 			</File>
