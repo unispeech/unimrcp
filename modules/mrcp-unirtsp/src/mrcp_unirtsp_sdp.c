@@ -340,70 +340,85 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 /** Generate RTSP response by MRCP descriptor */
 MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rtsp_message_t *request, const mrcp_session_descriptor_t *descriptor, const apr_table_t *resource_map, apr_pool_t *pool)
 {
-	apr_size_t i;
-	apr_size_t count;
-	apr_size_t audio_index = 0;
-	mpf_rtp_media_descriptor_t *audio_media;
-	apr_size_t video_index = 0;
-	mpf_rtp_media_descriptor_t *video_media;
-	apr_size_t offset = 0;
-	char buffer[2048];
-	apr_size_t size = sizeof(buffer);
-	rtsp_message_t *response;
+	rtsp_message_t *response = NULL;
 
-	if(descriptor->resource_state != TRUE) {
-		response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_FOUND,RTSP_REASON_PHRASE_NOT_FOUND,pool);
-		return response;
+	switch(descriptor->status) {
+		case MRCP_SESSION_STATUS_SUCCESS:
+			response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,pool);
+			break;
+		case MRCP_SESSION_STATUS_NO_SUCH_RESOURCE:
+			response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_FOUND,RTSP_REASON_PHRASE_NOT_FOUND,pool);
+			break;
+		case MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE:
+			response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_ACCEPTABLE,RTSP_REASON_PHRASE_NOT_ACCEPTABLE,pool);
+			break;
+		case MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE:
+			response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_ACCEPTABLE,RTSP_REASON_PHRASE_NOT_ACCEPTABLE,pool);
+			break;
+		case MRCP_SESSION_STATUS_FAILED:
+			response = rtsp_response_create(request,RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,pool);
+			break;
 	}
 
-	response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,pool);
 	if(!response) {
 		return NULL;
 	}
 
-	buffer[0] = '\0';
-	offset += snprintf(buffer+offset,size-offset,
-			"v=0\r\n"
-			"o=%s 0 0 IN IP4 %s\r\n"
-			"s=-\r\n"
-			"c=IN IP4 %s\r\n"
-			"t=0 0\r\n",
-			descriptor->origin.buf ? descriptor->origin.buf : "-",
-			descriptor->ip.buf ? descriptor->ip.buf : "0",
-			descriptor->ip.buf ? descriptor->ip.buf : "0");
-	count = mrcp_session_media_count_get(descriptor);
-	for(i=0; i<count; i++) {
-		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
-		if(audio_media && audio_media->base.id == i) {
-			/* generate audio media */
-			audio_index++;
-			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
-			response->header.transport.server_port_range.min = audio_media->base.port;
-			response->header.transport.server_port_range.max = audio_media->base.port+1;
-			response->header.transport.client_port_range = request->header.transport.client_port_range;
-			continue;
-		}
-		video_media = mrcp_session_video_media_get(descriptor,video_index);
-		if(video_media && video_media->base.id == i) {
-			/* generate video media */
-			video_index++;
-			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);
-			continue;
-		}
-	}
+	if(descriptor->status == MRCP_SESSION_STATUS_SUCCESS) {
+		apr_size_t i;
+		apr_size_t count;
+		apr_size_t audio_index = 0;
+		mpf_rtp_media_descriptor_t *audio_media;
+		apr_size_t video_index = 0;
+		mpf_rtp_media_descriptor_t *video_media;
+		apr_size_t offset = 0;
+		char buffer[2048];
+		apr_size_t size = sizeof(buffer);
 
-	/* ok */
-	response->header.transport.protocol = RTSP_TRANSPORT_RTP;
-	response->header.transport.profile = RTSP_PROFILE_AVP;
-	response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
-	rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+		buffer[0] = '\0';
+		offset += snprintf(buffer+offset,size-offset,
+				"v=0\r\n"
+				"o=%s 0 0 IN IP4 %s\r\n"
+				"s=-\r\n"
+				"c=IN IP4 %s\r\n"
+				"t=0 0\r\n",
+				descriptor->origin.buf ? descriptor->origin.buf : "-",
+				descriptor->ip.buf ? descriptor->ip.buf : "0",
+				descriptor->ip.buf ? descriptor->ip.buf : "0");
+		count = mrcp_session_media_count_get(descriptor);
+		for(i=0; i<count; i++) {
+			audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
+			if(audio_media && audio_media->base.id == i) {
+				/* generate audio media */
+				audio_index++;
+				offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
+				response->header.transport.server_port_range.min = audio_media->base.port;
+				response->header.transport.server_port_range.max = audio_media->base.port+1;
+				response->header.transport.client_port_range = request->header.transport.client_port_range;
+				continue;
+			}
+			video_media = mrcp_session_video_media_get(descriptor,video_index);
+			if(video_media && video_media->base.id == i) {
+				/* generate video media */
+				video_index++;
+				offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);
+				continue;
+			}
+		}
 
-	if(offset) {
-		apt_string_assign_n(&response->body,buffer,offset,pool);
-		response->header.content_type = RTSP_CONTENT_TYPE_SDP;
-		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
-		response->header.content_length = offset;
-		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+		/* ok */
+		response->header.transport.protocol = RTSP_TRANSPORT_RTP;
+		response->header.transport.profile = RTSP_PROFILE_AVP;
+		response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
+		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+
+		if(offset) {
+			apt_string_assign_n(&response->body,buffer,offset,pool);
+			response->header.content_type = RTSP_CONTENT_TYPE_SDP;
+			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+			response->header.content_length = offset;
+			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+		}
 	}
 	return response;
 }
