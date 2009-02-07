@@ -60,7 +60,7 @@ mrcp_message_t* demo_speak_message_create(mrcp_session_t *session, mrcp_channel_
 		synth_header = mrcp_resource_header_prepare(mrcp_message);
 		if(synth_header) {
 			/* set synthesizer header fields */
-			synth_header->voice_param.age = 25;
+			synth_header->voice_param.age = 28;
 			mrcp_resource_header_property_add(mrcp_message,SYNTHESIZER_HEADER_VOICE_AGE);
 		}
 		/* set message body */
