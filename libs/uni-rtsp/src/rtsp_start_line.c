@@ -41,7 +41,9 @@ static const apt_str_table_item_t rtsp_reason_string_table[] = {
 	{{"Bad Request",           11},0},
 	{{"Unauthorized",          12},0},
 	{{"Not Found",              9},4},
-	{{"Method not Allowed",    18},0},
+	{{"Method Not Allowed",    18},0},
+	{{"Not Acceptable",        14},4},
+	{{"Session Not Found",     17},0},
 	{{"Internal Server Error", 21},0},
 	{{"Not Implemented",       15},4}
 };
