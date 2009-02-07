@@ -23,7 +23,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool
 	apt_string_reset(&descriptor->ip);
 	apt_string_reset(&descriptor->resource_name);
 	descriptor->resource_state = FALSE;
-	descriptor->status = MRCP_SESSION_STATUS_SUCCESS;
+	descriptor->status = MRCP_SESSION_STATUS_OK;
 	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(void*));
 	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
 	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));
@@ -33,7 +33,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool
 MRCP_DECLARE(const char*) mrcp_session_status_phrase_get(mrcp_session_status_e status)
 {
 	switch(status) {
-		case MRCP_SESSION_STATUS_SUCCESS:
+		case MRCP_SESSION_STATUS_OK:
 			return "OK";
 		case MRCP_SESSION_STATUS_NO_SUCH_RESOURCE:
 			return "Not Found";
@@ -41,8 +41,8 @@ MRCP_DECLARE(const char*) mrcp_session_status_phrase_get(mrcp_session_status_e s
 			return "Not Acceptable";
 		case MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE:
 			return "Unavailable";
-		case MRCP_SESSION_STATUS_FAILED:
-			return "Failed";
+		case MRCP_SESSION_STATUS_ERROR:
+			return "Error";
 	}
 	return "Unknown";
 }

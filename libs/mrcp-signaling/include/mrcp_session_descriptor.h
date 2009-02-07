@@ -29,11 +29,11 @@ APT_BEGIN_EXTERN_C
 
 /** MRCP session status */
 typedef enum {
-	MRCP_SESSION_STATUS_SUCCESS,			   /**< OK */
-	MRCP_SESSION_STATUS_NO_SUCH_RESOURCE,      /**< no such resource found */
-	MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE, /**< resource exists, but no implementation (plugin) found */
-	MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE,  /**< resource exists, but is temporary unavailable */
-	MRCP_SESSION_STATUS_FAILED                 /**< internal error occuried */
+	MRCP_SESSION_STATUS_OK,			          /**< OK */
+	MRCP_SESSION_STATUS_NO_SUCH_RESOURCE,     /**< no such resource found */
+	MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE,/**< resource exists, but no implementation (plugin) found */
+	MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE, /**< resource exists, but is temporary unavailable */
+	MRCP_SESSION_STATUS_ERROR                 /**< internal error occuried */
 } mrcp_session_status_e;
 
 /** MRCP session descriptor */

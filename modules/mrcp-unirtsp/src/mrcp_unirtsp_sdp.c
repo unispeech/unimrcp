@@ -343,19 +343,17 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 	rtsp_message_t *response = NULL;
 
 	switch(descriptor->status) {
-		case MRCP_SESSION_STATUS_SUCCESS:
+		case MRCP_SESSION_STATUS_OK:
 			response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,pool);
 			break;
 		case MRCP_SESSION_STATUS_NO_SUCH_RESOURCE:
 			response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_FOUND,RTSP_REASON_PHRASE_NOT_FOUND,pool);
 			break;
 		case MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE:
-			response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_ACCEPTABLE,RTSP_REASON_PHRASE_NOT_ACCEPTABLE,pool);
-			break;
 		case MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE:
 			response = rtsp_response_create(request,RTSP_STATUS_CODE_NOT_ACCEPTABLE,RTSP_REASON_PHRASE_NOT_ACCEPTABLE,pool);
 			break;
-		case MRCP_SESSION_STATUS_FAILED:
+		case MRCP_SESSION_STATUS_ERROR:
 			response = rtsp_response_create(request,RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,pool);
 			break;
 	}
@@ -364,7 +362,7 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		return NULL;
 	}
 
-	if(descriptor->status == MRCP_SESSION_STATUS_SUCCESS) {
+	if(descriptor->status == MRCP_SESSION_STATUS_OK) {
 		apr_size_t i;
 		apr_size_t count;
 		apr_size_t audio_index = 0;

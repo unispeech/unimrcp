@@ -216,7 +216,7 @@ static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia
 static int sip_status_get(mrcp_session_status_e status)
 {
 	switch (status) {
-		case MRCP_SESSION_STATUS_SUCCESS:
+		case MRCP_SESSION_STATUS_OK:
 			return 200;
 		case MRCP_SESSION_STATUS_NO_SUCH_RESOURCE:
 			return 404;
@@ -224,7 +224,7 @@ static int sip_status_get(mrcp_session_status_e status)
 			return 406;
 		case MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE:
 			return 480;
-		case MRCP_SESSION_STATUS_FAILED:
+		case MRCP_SESSION_STATUS_ERROR:
 			return 500;
 	}
 	return 200;
@@ -241,7 +241,7 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 		return FALSE;
 	}
 
-	if(descriptor->status != MRCP_SESSION_STATUS_SUCCESS) {
+	if(descriptor->status != MRCP_SESSION_STATUS_OK) {
 		int status = sip_status_get(descriptor->status);
 		nua_respond(sofia_session->nh, status, sip_status_phrase(status),
 					SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
