@@ -152,6 +152,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_activity_detector.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_audio_file_descriptor.h"
 				>
 			</File>
@@ -276,6 +280,10 @@
 			Name="src"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			>
+			<File
+				RelativePath=".\src\mpf_activity_detector.c"
+				>
+			</File>
 			<File
 				RelativePath=".\src\mpf_audio_file_stream.c"
 				>

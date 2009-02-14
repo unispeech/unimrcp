@@ -9,6 +9,7 @@ noinst_LTLIBRARIES       = libmpf.la
 
 include_HEADERS          = codecs/g711/g711.h \
                            include/mpf.h \
+                           include/mpf_activity_detector.h \
                            include/mpf_audio_file_descriptor.h \
                            include/mpf_audio_file_stream.h \
                            include/mpf_bridge.h \
@@ -41,6 +42,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_user.h
 
 libmpf_la_SOURCES        = codecs/g711/g711.c \
+                           src/mpf_activity_detector.c \
                            src/mpf_audio_file_stream.c \
                            src/mpf_bridge.c \
                            src/mpf_buffer.c \
