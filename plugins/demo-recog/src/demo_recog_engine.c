@@ -29,7 +29,9 @@
 #include "mrcp_recog_header.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_message.h"
+#include "mpf_activity_detector.h"
 #include "apt_consumer_task.h"
+#include "apt_log.h"
 
 typedef struct demo_recog_engine_t demo_recog_engine_t;
 typedef struct demo_recog_channel_t demo_recog_channel_t;
@@ -86,24 +88,20 @@ struct demo_recog_engine_t {
 /** Declaration of demo recognizer channel */
 struct demo_recog_channel_t {
 	/** Back pointer to engine */
-	demo_recog_engine_t   *demo_engine;
-	/** Base engine channel */
-	mrcp_engine_channel_t *channel;
+	demo_recog_engine_t     *demo_engine;
+	/** Engine channel base */
+	mrcp_engine_channel_t   *channel;
 
 	/** Active (in-progress) recognition request */
-	mrcp_message_t        *recog_request;
+	mrcp_message_t          *recog_request;
 	/** Pending stop response */
-	mrcp_message_t        *stop_response;
+	mrcp_message_t          *stop_response;
 	/** Indicates whether input timers are started */
-	apt_bool_t             timers_started;
-	/** Indicates whether input is started */
-	apt_bool_t             input_started;
-	/** No input timeout */
-	apr_size_t             no_input_timeout;
-	/** Estimated time to complete */
-	apr_size_t             time_to_complete;
+	apt_bool_t               timers_started;
+	/** Voice activity detector */
+	mpf_activity_detector_t *detector;
 	/** File to write utterance to */
-	FILE                  *audio_out;
+	FILE                    *audio_out;
 };
 
 typedef enum {
@@ -184,6 +182,7 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 	recog_channel->demo_engine = engine->obj;
 	recog_channel->recog_request = NULL;
 	recog_channel->stop_response = NULL;
+	recog_channel->detector = mpf_activity_detector_create(pool);
 	recog_channel->audio_out = NULL;
 	/* create engine channel base */
 	recog_channel->channel = mrcp_engine_sink_channel_create(
@@ -232,10 +231,7 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	/* process RECOGNIZE request */
 	mrcp_recog_header_t *recog_header;
 	demo_recog_channel_t *recog_channel = channel->method_obj;
-	recog_channel->input_started = FALSE;
 	recog_channel->timers_started = TRUE;
-	recog_channel->no_input_timeout = 5000; /* 5 msec */
-	recog_channel->time_to_complete = 5000; /* 5 msec */
 
 	/* get recognizer header */
 	recog_header = mrcp_resource_header_get(request);
@@ -244,7 +240,10 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 			recog_channel->timers_started = recog_header->start_input_timers;
 		}
 		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT) == TRUE) {
-			recog_channel->no_input_timeout = recog_header->no_input_timeout;
+			mpf_activity_detector_noinput_timeout_set(recog_channel->detector,recog_header->no_input_timeout);
+		}
+		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT) == TRUE) {
+			mpf_activity_detector_complete_timeout_set(recog_channel->detector,recog_header->speech_complete_timeout);
 		}
 	}
 
@@ -332,6 +331,77 @@ static apt_bool_t demo_recog_stream_close(mpf_audio_stream_t *stream)
 	return TRUE;
 }
 
+/* Raise demo START-OF-INPUT event */
+static apt_bool_t demo_recog_start_of_input(demo_recog_channel_t *recog_channel)
+{
+	/* create START-OF-INPUT event */
+	mrcp_message_t *message = mrcp_event_create(
+						recog_channel->recog_request,
+						RECOGNIZER_START_OF_INPUT,
+						recog_channel->recog_request->pool);
+	if(!message) {
+		return FALSE;
+	}
+
+	/* set request state */
+	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	/* send asynch event */
+	return mrcp_engine_channel_message_send(recog_channel->channel,message);
+}
+
+/* Raise demo RECOGNITION-COMPLETE event */
+static apt_bool_t demo_recog_recognition_complete(demo_recog_channel_t *recog_channel, mrcp_recog_completion_cause_e cause)
+{
+	mrcp_recog_header_t *recog_header;
+	/* create RECOGNITION-COMPLETE event */
+	mrcp_message_t *message = mrcp_event_create(
+						recog_channel->recog_request,
+						RECOGNIZER_RECOGNITION_COMPLETE,
+						recog_channel->recog_request->pool);
+	if(!message) {
+		return FALSE;
+	}
+
+	/* get/allocate recognizer header */
+	recog_header = mrcp_resource_header_prepare(message);
+	if(recog_header) {
+		/* set completion cause */
+		recog_header->completion_cause = cause;
+		mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
+	}
+	/* set request state */
+	message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+
+	if(cause == RECOGNIZER_COMPLETION_CAUSE_SUCCESS) {
+		mrcp_engine_channel_t *channel = recog_channel->channel;
+		char *file_path = apt_datadir_filepath_get(channel->engine->dir_layout,"result.xml",message->pool);
+		if(file_path) {
+			/* read the demo result from file */
+			FILE *file = fopen(file_path,"r");
+			if(file) {
+				mrcp_generic_header_t *generic_header;
+				char text[1024];
+				apr_size_t size;
+				size = fread(text,1,sizeof(text),file);
+				apt_string_assign_n(&message->body,text,size,message->pool);
+				fclose(file);
+
+				/* get/allocate generic header */
+				generic_header = mrcp_generic_header_prepare(message);
+				if(generic_header) {
+					/* set content types */
+					apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
+					mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
+				}
+			}
+		}
+	}
+
+	recog_channel->recog_request = NULL;
+	/* send asynch event */
+	return mrcp_engine_channel_message_send(recog_channel->channel,message);
+}
+
 /** Callback is called from MPF engine context to write/send new frame */
 static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
@@ -345,106 +415,28 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 	}
 
 	if(recog_channel->recog_request) {
-		if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO) {
-			/* process audio stream */
-			if(recog_channel->audio_out) {
-				fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_out);
-			}
-
-			if(recog_channel->input_started == FALSE) {
-				/* raise START-OF-INPUT event */
-				mrcp_message_t *message = mrcp_event_create(
-									recog_channel->recog_request,
-									RECOGNIZER_START_OF_INPUT,
-									recog_channel->recog_request->pool);
-				if(message) {
-					/* set request state */
-					message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
-					/* send asynch event */
-					mrcp_engine_channel_message_send(recog_channel->channel,message);
+		mpf_detector_event_e det_event = mpf_activity_detector_process(recog_channel->detector,frame);
+		switch(det_event) {
+			case MPF_DETECTOR_EVENT_ACTIVITY:
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity");
+				demo_recog_start_of_input(recog_channel);
+				break;
+			case MPF_DETECTOR_EVENT_INACTIVITY:
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity");
+				demo_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+				break;
+			case MPF_DETECTOR_EVENT_NOINPUT:
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Noinput");
+				if(recog_channel->timers_started == TRUE) {
+					demo_recog_recognition_complete(recog_channel,RECOGNIZER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT);
 				}
-				recog_channel->input_started = TRUE;
-			}
-		}
-		else {
-			if(recog_channel->timers_started == TRUE && recog_channel->input_started == FALSE) {
-				if(recog_channel->no_input_timeout >= CODEC_FRAME_TIME_BASE) {
-					recog_channel->no_input_timeout -= CODEC_FRAME_TIME_BASE;
-				}
-				else {
-					/* raise no input RECOGNITION-COMPLETE event */
-					mrcp_message_t *message = mrcp_event_create(
-										recog_channel->recog_request,
-										RECOGNIZER_RECOGNITION_COMPLETE,
-										recog_channel->recog_request->pool);
-					if(message) {
-						/* get/allocate recognizer header */
-						mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
-						if(recog_header) {
-							/* set completion cause */
-							recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT;
-							mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
-						}
-						/* set request state */
-						message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
-
-						recog_channel->recog_request = NULL;
-						/* send asynch event */
-						mrcp_engine_channel_message_send(recog_channel->channel,message);
-					}
-				}
-			}
+				break;
+			default:
+				break;
 		}
 
-		if(recog_channel->input_started == TRUE) {
-			if(recog_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
-				recog_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
-			}
-			else {
-				/* raise RECOGNITION-COMPLETE event */
-				mrcp_message_t *message = mrcp_event_create(
-									recog_channel->recog_request,
-									RECOGNIZER_RECOGNITION_COMPLETE,
-									recog_channel->recog_request->pool);
-				if(message) {
-					char *file_path;
-					/* get/allocate recognizer header */
-					mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
-					if(recog_header) {
-						/* set completion cause */
-						recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
-						mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
-					}
-					/* set request state */
-					message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
-
-					file_path = apt_datadir_filepath_get(recog_channel->channel->engine->dir_layout,"result.xml",message->pool);
-					if(file_path) {
-						/* read the demo result from file */
-						FILE *file = fopen(file_path,"r");
-						if(file) {
-							mrcp_generic_header_t *generic_header;
-							char text[1024];
-							apr_size_t size;
-							size = fread(text,1,sizeof(text),file);
-							apt_string_assign_n(&message->body,text,size,message->pool);
-							fclose(file);
-
-							/* get/allocate generic header */
-							generic_header = mrcp_generic_header_prepare(message);
-							if(generic_header) {
-								/* set content types */
-								apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
-								mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
-							}
-						}
-					}
-
-					recog_channel->recog_request = NULL;
-					/* send asynch event */
-					mrcp_engine_channel_message_send(recog_channel->channel,message);
-				}
-			}
+		if(recog_channel->audio_out) {
+			fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_out);
 		}
 	}
 	return TRUE;
