@@ -111,9 +111,11 @@ mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_chan
 		/* get/allocate recognizer header */
 		recog_header = mrcp_resource_header_prepare(mrcp_message);
 		if(recog_header) {
-			/* set recognizer header fields */
-			recog_header->cancel_if_queue = FALSE;
-			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CANCEL_IF_QUEUE);
+			if(mrcp_message->start_line.version == MRCP_VERSION_2) {
+				/* set recognizer header fields */
+				recog_header->cancel_if_queue = FALSE;
+				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CANCEL_IF_QUEUE);
+			}
 		}
 		/* set message body */
 		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
