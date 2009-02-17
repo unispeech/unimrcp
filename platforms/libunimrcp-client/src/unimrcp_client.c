@@ -178,6 +178,7 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 	config->local_port = DEFAULT_SIP_LOCAL_PORT;
 	config->remote_ip = DEFAULT_REMOTE_IP_ADDRESS;
 	config->remote_port = DEFAULT_SIP_REMOTE_PORT;
+	config->nat_ip = NULL;
 	config->user_agent_name = DEFAULT_SOFIASIP_UA_NAME;
 	config->origin = DEFAULT_SDP_ORIGIN;
 
@@ -202,6 +203,9 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 				}
 				else if(strcasecmp(attr_name->value,"sip-transport") == 0) {
 					config->transport = apr_pstrdup(pool,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"nat-ip") == 0) {
+					config->nat_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"ua-name") == 0) {
 					config->user_agent_name = apr_pstrdup(pool,attr_value->value);

@@ -46,6 +46,9 @@ struct mrcp_sofia_client_config_t {
 	/** Remote SIP user name */
 	char      *remote_user_name;
 
+	/** NAT IP address */
+	char      *nat_ip;
+
 	/** User agent name */
 	char      *user_agent_name;
 	/** SDP origin */

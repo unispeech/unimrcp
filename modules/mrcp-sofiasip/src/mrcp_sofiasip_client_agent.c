@@ -119,6 +119,7 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 	config->remote_ip = NULL;
 	config->remote_port = 0;
 	config->remote_user_name = NULL;
+	config->nat_ip = NULL;
 	
 	config->user_agent_name = NULL;
 	config->origin = NULL;
@@ -128,9 +129,10 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool)
 {
+	const char *local_ip = config->nat_ip ? config->nat_ip : config->local_ip;
 	sofia_agent->config = config;
-	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d",config->local_ip,config->local_port);
-	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s",config->local_ip);
+	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d", local_ip, config->local_port);
+	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s", local_ip);
 
 	if(config->remote_user_name && config->remote_user_name != '\0') {
 		sofia_agent->sip_to_str = apr_psprintf(pool,"sip:%s@%s:%d",
@@ -145,13 +147,13 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	}
 	if(config->transport) {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d;transport=%s",
-										config->local_ip,
+										local_ip,
 										config->local_port,
 										config->transport);
 	}
 	else {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d",
-										config->local_ip,
+										local_ip,
 										config->local_port);
 	}
 	return TRUE;
