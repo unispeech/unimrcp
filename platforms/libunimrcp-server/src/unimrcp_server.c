@@ -394,6 +394,7 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 {
 	const apr_xml_elem *elem;
 	char *rtp_ip = DEFAULT_IP_ADDRESS;
+	char *rtp_ext_ip = NULL;
 	mpf_rtp_config_t *rtp_config = mpf_rtp_config_create(pool);
 	rtp_config->rtp_port_min = DEFAULT_RTP_PORT_MIN;
 	rtp_config->rtp_port_max = DEFAULT_RTP_PORT_MAX;
@@ -406,6 +407,9 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"rtp-ip") == 0) {
 					rtp_ip = ip_addr_get(attr_value->value,pool);
+				}
+				if(strcasecmp(attr_name->value,"rtp-ext-ip") == 0) {
+					rtp_ext_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-min") == 0) {
 					rtp_config->rtp_port_min = (apr_port_t)atol(attr_value->value);
@@ -441,6 +445,9 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 		}
 	}
 	apt_string_set(&rtp_config->ip,rtp_ip);
+	if(rtp_ext_ip) {
+		apt_string_set(&rtp_config->ext_ip,rtp_ext_ip);
+	}
 	return mpf_rtp_termination_factory_create(rtp_config,pool);
 }
 

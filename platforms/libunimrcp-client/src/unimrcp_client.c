@@ -178,7 +178,7 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 	config->local_port = DEFAULT_SIP_LOCAL_PORT;
 	config->remote_ip = DEFAULT_REMOTE_IP_ADDRESS;
 	config->remote_port = DEFAULT_SIP_REMOTE_PORT;
-	config->nat_ip = NULL;
+	config->ext_ip = NULL;
 	config->user_agent_name = DEFAULT_SOFIASIP_UA_NAME;
 	config->origin = DEFAULT_SDP_ORIGIN;
 
@@ -192,6 +192,9 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 				if(strcasecmp(attr_name->value,"client-ip") == 0) {
 					config->local_ip = ip_addr_get(attr_value->value,pool);
 				}
+				else if(strcasecmp(attr_name->value,"client-ext-ip") == 0) {
+					config->ext_ip = ip_addr_get(attr_value->value,pool);
+				}
 				else if(strcasecmp(attr_name->value,"client-port") == 0) {
 					config->local_port = (apr_port_t)atol(attr_value->value);
 				}
@@ -203,9 +206,6 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 				}
 				else if(strcasecmp(attr_name->value,"sip-transport") == 0) {
 					config->transport = apr_pstrdup(pool,attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"nat-ip") == 0) {
-					config->nat_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"ua-name") == 0) {
 					config->user_agent_name = apr_pstrdup(pool,attr_value->value);
@@ -365,6 +365,7 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 {
 	const apr_xml_elem *elem;
 	char *rtp_ip = DEFAULT_LOCAL_IP_ADDRESS;
+	char *rtp_ext_ip = NULL;
 	mpf_rtp_config_t *rtp_config = mpf_rtp_config_create(pool);
 	rtp_config->rtp_port_min = DEFAULT_RTP_PORT_MIN;
 	rtp_config->rtp_port_max = DEFAULT_RTP_PORT_MAX;
@@ -377,6 +378,9 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"rtp-ip") == 0) {
 					rtp_ip = ip_addr_get(attr_value->value,pool);
+				}
+				if(strcasecmp(attr_name->value,"rtp-ext-ip") == 0) {
+					rtp_ext_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-min") == 0) {
 					rtp_config->rtp_port_min = (apr_port_t)atol(attr_value->value);
@@ -409,6 +413,9 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 		}
 	}    
 	apt_string_set(&rtp_config->ip,rtp_ip);
+	if(rtp_ext_ip) {
+		apt_string_set(&rtp_config->ext_ip,rtp_ext_ip);
+	}
 	return mpf_rtp_termination_factory_create(rtp_config,pool);
 }
 

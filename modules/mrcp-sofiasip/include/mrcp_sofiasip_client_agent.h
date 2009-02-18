@@ -34,6 +34,8 @@ typedef struct mrcp_sofia_client_config_t mrcp_sofia_client_config_t;
 struct mrcp_sofia_client_config_t {
 	/** Local IP address */
 	char      *local_ip;
+	/** External (NAT) IP address */
+	char      *ext_ip;
 	/** Local SIP port */
 	apr_port_t local_port;
 	/** Local SIP user name */
@@ -45,9 +47,6 @@ struct mrcp_sofia_client_config_t {
 	apr_port_t remote_port;
 	/** Remote SIP user name */
 	char      *remote_user_name;
-
-	/** NAT IP address */
-	char      *nat_ip;
 
 	/** User agent name */
 	char      *user_agent_name;

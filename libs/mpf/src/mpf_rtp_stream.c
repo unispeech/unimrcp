@@ -87,6 +87,7 @@ static void mpf_rtp_stream_ip_port_set(mpf_rtp_media_descriptor_t *media, mpf_rt
 {
 	if(media->base.ip.length == 0) {
 		media->base.ip = config->ip;
+		media->base.ext_ip = config->ext_ip;
 	}
 	if(media->base.port == 0) {
 		media->base.port = config->rtp_port_cur;

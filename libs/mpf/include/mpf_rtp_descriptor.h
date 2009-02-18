@@ -86,6 +86,8 @@ struct mpf_jb_config_t {
 struct mpf_rtp_config_t {
 	/** Local IP address to bind to */
 	apt_str_t ip;
+	/** External (NAT) IP address */
+	apt_str_t ext_ip;
 	/** Min RTP port */
 	apr_port_t rtp_port_min;
 	/** Max RTP port */
@@ -140,6 +142,7 @@ static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 {
 	mpf_rtp_config_t *rtp_config = (mpf_rtp_config_t*)apr_palloc(pool,sizeof(mpf_rtp_config_t));
 	apt_string_reset(&rtp_config->ip);
+	apt_string_reset(&rtp_config->ext_ip);
 	rtp_config->rtp_port_cur = 0;
 	rtp_config->rtp_port_min = 0;
 	rtp_config->rtp_port_max = 0;

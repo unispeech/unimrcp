@@ -43,6 +43,8 @@ struct mpf_media_descriptor_t {
 
 	/** Ip address */
 	apt_str_t          ip;
+	/** External (NAT) Ip address */
+	apt_str_t          ext_ip;
 	/** Port */
 	apr_port_t         port;
 	/** Identifier (0,1,...) */
@@ -54,6 +56,7 @@ static APR_INLINE void mpf_media_descriptor_init(mpf_media_descriptor_t *descrip
 {
 	descriptor->state = MPF_MEDIA_DISABLED;
 	apt_string_reset(&descriptor->ip);
+	apt_string_reset(&descriptor->ext_ip);
 	descriptor->port = 0;
 	descriptor->id = 0;
 }
