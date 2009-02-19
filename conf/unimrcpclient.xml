@@ -7,6 +7,7 @@
       <!-- SofiaSIP MRCPv2 signaling agent -->
       <agent name="SIP-Agent-1" class="SofiaSIP">
         <param name="client-ip" value="auto"/>
+        <!-- <param name="client-ext-ip" value="auto"/> -->
         <param name="client-port" value="8062"/>
         <param name="server-ip" value="auto"/>
         <param name="server-port" value="8060"/>
