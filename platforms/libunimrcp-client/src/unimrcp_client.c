@@ -204,6 +204,9 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 				else if(strcasecmp(attr_name->value,"server-port") == 0) {
 					config->remote_port = (apr_port_t)atol(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"server-username") == 0) {
+					config->remote_user_name = apr_pstrdup(pool,attr_value->value);
+				}
 				else if(strcasecmp(attr_name->value,"sip-transport") == 0) {
 					config->transport = apr_pstrdup(pool,attr_value->value);
 				}
@@ -379,7 +382,7 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 				if(strcasecmp(attr_name->value,"rtp-ip") == 0) {
 					rtp_ip = ip_addr_get(attr_value->value,pool);
 				}
-				if(strcasecmp(attr_name->value,"rtp-ext-ip") == 0) {
+				else if(strcasecmp(attr_name->value,"rtp-ext-ip") == 0) {
 					rtp_ext_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-min") == 0) {

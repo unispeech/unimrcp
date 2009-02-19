@@ -408,7 +408,7 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 				if(strcasecmp(attr_name->value,"rtp-ip") == 0) {
 					rtp_ip = ip_addr_get(attr_value->value,pool);
 				}
-				if(strcasecmp(attr_name->value,"rtp-ext-ip") == 0) {
+				else if(strcasecmp(attr_name->value,"rtp-ext-ip") == 0) {
 					rtp_ext_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"rtp-port-min") == 0) {
