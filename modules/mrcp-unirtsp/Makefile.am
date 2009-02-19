@@ -19,5 +19,4 @@ include_HEADERS            = include/mrcp_unirtsp_sdp.h \
 libmrcpunirtsp_la_SOURCES  = src/mrcp_unirtsp_sdp.c \
                              src/mrcp_unirtsp_server_agent.c \
                              src/mrcp_unirtsp_client_agent.c
-libmrcpunirtsp_la_LIBADD   = $(top_builddir)/libs/uni-rtsp/libunirtsp.la \
-                             $(UNIMRCP_SOFIA_LIBS)
+libmrcpunirtsp_la_LIBADD   = $(top_builddir)/libs/uni-rtsp/libunirtsp.la

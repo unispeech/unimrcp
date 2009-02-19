@@ -19,4 +19,3 @@ include_HEADERS            = include/mrcp_sdp.h \
 libmrcpsofiasip_la_SOURCES = src/mrcp_sdp.c \
                              src/mrcp_sofiasip_server_agent.c \
                              src/mrcp_sofiasip_client_agent.c
-libmrcpsofiasip_la_LIBADD  = $(UNIMRCP_SOFIA_LIBS)
