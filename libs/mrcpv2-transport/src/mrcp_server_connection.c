@@ -668,7 +668,7 @@ static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *ag
 	return mrcp_stream_walk(connection->parser,stream,mrcp_server_message_handler,connection);
 }
 
-static apt_bool_t mrcp_server_agent_control_pocess(mrcp_connection_agent_t *agent)
+static apt_bool_t mrcp_server_agent_control_process(mrcp_connection_agent_t *agent)
 {
 	connection_task_msg_data_t task_msg_data;
 	apr_size_t size = sizeof(connection_task_msg_data_t);
@@ -729,7 +729,7 @@ static apt_bool_t mrcp_server_agent_task_run(apt_task_t *task)
 			}
 			if(ret_pfd[i].desc.s == agent->control_sock) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Control Message");
-				if(mrcp_server_agent_control_pocess(agent) == FALSE) {
+				if(mrcp_server_agent_control_process(agent) == FALSE) {
 					running = FALSE;
 					break;
 				}

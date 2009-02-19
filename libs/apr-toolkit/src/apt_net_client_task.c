@@ -203,7 +203,7 @@ static void apt_net_client_task_pollset_destroy(apt_net_client_task_t *task)
 	}
 }
 
-static apt_bool_t apt_net_client_task_pocess(apt_net_client_task_t *task)
+static apt_bool_t apt_net_client_task_process(apt_net_client_task_t *task)
 {
 	apt_bool_t status = TRUE;
 	apt_task_msg_t *msg;
@@ -247,7 +247,7 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 		for(i = 0; i < num; i++) {
 			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Control Message");
-				if(apt_net_client_task_pocess(task) == FALSE) {
+				if(apt_net_client_task_process(task) == FALSE) {
 					running = FALSE;
 					break;
 				}
