@@ -132,7 +132,7 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	const char *local_ip = config->ext_ip ? config->ext_ip : config->local_ip;
 	sofia_agent->config = config;
 	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d", local_ip, config->local_port);
-	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s", local_ip);
+	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s:%d", local_ip, config->local_port);
 
 	if(config->remote_user_name && config->remote_user_name != '\0') {
 		sofia_agent->sip_to_str = apr_psprintf(pool,"sip:%s@%s:%d",
@@ -147,13 +147,13 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	}
 	if(config->transport) {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d;transport=%s",
-										local_ip,
+										config->local_ip,
 										config->local_port,
 										config->transport);
 	}
 	else {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d",
-										local_ip,
+										config->local_ip,
 										config->local_port);
 	}
 	return TRUE;
@@ -265,8 +265,13 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 
 	if(session->signaling_agent) {
 		mrcp_sofia_agent_t *sofia_agent = session->signaling_agent->obj;
-		if(sofia_agent && sofia_agent->config->origin) {
-			apt_string_set(&descriptor->origin,sofia_agent->config->origin);
+		if(sofia_agent) {
+			if(sofia_agent->config->origin) {
+				apt_string_set(&descriptor->origin,sofia_agent->config->origin);
+			}
+			if(sofia_agent->config->ext_ip) {
+				apt_string_set(&descriptor->ip,sofia_agent->config->ext_ip);
+			}
 		}
 	}
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
