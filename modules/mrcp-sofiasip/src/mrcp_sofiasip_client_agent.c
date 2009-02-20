@@ -269,9 +269,6 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 			if(sofia_agent->config->origin) {
 				apt_string_set(&descriptor->origin,sofia_agent->config->origin);
 			}
-			if(sofia_agent->config->ext_ip) {
-				apt_string_set(&descriptor->ip,sofia_agent->config->ext_ip);
-			}
 		}
 	}
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {

@@ -42,6 +42,8 @@ struct mrcp_session_descriptor_t {
 	apt_str_t             origin;
 	/** Session level IP address */
 	apt_str_t             ip;
+	/** Session level external (NAT) IP address */
+	apt_str_t             ext_ip;
 	/** Session level resource name (MRCPv1 only) */
 	apt_str_t             resource_name;
 	/** Resource state (MRCPv1 only) */

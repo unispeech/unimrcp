@@ -42,6 +42,7 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 	apr_size_t control_index = 0;
 	mrcp_control_descriptor_t *control_media;
 	apr_size_t offset = 0;
+	const char *ip = descriptor->ext_ip.buf ? descriptor->ext_ip.buf : (descriptor->ip.buf ? descriptor->ip.buf : "0.0.0.0");
 	buffer[0] = '\0';
 	offset += snprintf(buffer+offset,size-offset,
 			"v=0\r\n"
@@ -50,8 +51,8 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 			"c=IN IP4 %s\r\n"
 			"t=0 0\r\n",
 			descriptor->origin.buf ? descriptor->origin.buf : "-",
-			descriptor->ip.buf ? descriptor->ip.buf : "0",
-			descriptor->ip.buf ? descriptor->ip.buf : "0");
+			ip,
+			ip);
 	count = mrcp_session_media_count_get(descriptor);
 	for(i=0; i<count; i++) {
 		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
@@ -146,7 +147,8 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
 	if(descriptor->ip.length && audio_media->base.ip.length && 
 		apt_string_compare(&descriptor->ip,&audio_media->base.ip) != TRUE) {
-		offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",audio_media->base.ip.buf);
+		const char *media_ip = audio_media->base.ext_ip.buf ? audio_media->base.ext_ip.buf : audio_media->base.ip.buf;
+		offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",media_ip);
 	}
 	if(audio_media->base.state == MPF_MEDIA_ENABLED) {
 		const apt_str_t *mode_str = mpf_stream_mode_str_get(audio_media->mode);

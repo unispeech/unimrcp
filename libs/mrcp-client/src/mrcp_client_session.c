@@ -602,6 +602,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	if(rtp_descriptor) {
 		if(rtp_descriptor->audio.local) {
 			session->offer->ip = rtp_descriptor->audio.local->base.ip;
+			session->offer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
 			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 			rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
 		}
@@ -721,6 +722,7 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 		rtp_descriptor = mpf_message->descriptor;
 		if(rtp_descriptor->audio.local) {
 			session->offer->ip = rtp_descriptor->audio.local->base.ip;
+			session->offer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
 			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 			rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
 		}

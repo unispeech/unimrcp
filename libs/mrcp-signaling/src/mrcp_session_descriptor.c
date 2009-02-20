@@ -21,6 +21,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool
 	mrcp_session_descriptor_t *descriptor = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
 	apt_string_reset(&descriptor->origin);
 	apt_string_reset(&descriptor->ip);
+	apt_string_reset(&descriptor->ext_ip);
 	apt_string_reset(&descriptor->resource_name);
 	descriptor->resource_state = FALSE;
 	descriptor->status = MRCP_SESSION_STATUS_OK;
