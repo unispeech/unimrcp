@@ -109,6 +109,7 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 {
 	mrcp_sofia_server_config_t *config = apr_palloc(pool,sizeof(mrcp_sofia_server_config_t));
 	config->local_ip = NULL;
+	config->ext_ip = NULL;
 	config->local_port = 0;
 	config->user_name = NULL;
 	config->user_agent_name = NULL;
@@ -119,8 +120,9 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_server_config_t *config, apr_pool_t *pool)
 {
+	const char *local_ip = config->ext_ip ? config->ext_ip : config->local_ip;
 	sofia_agent->config = config;
-	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d",config->local_ip,config->local_port);
+	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d",local_ip,config->local_port);
 	if(config->transport) {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d;transport=%s",
 											config->local_ip,

@@ -210,6 +210,7 @@ static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *serve
 	mrcp_sofia_server_config_t *config = mrcp_sofiasip_server_config_alloc(pool);
 	config->local_ip = DEFAULT_IP_ADDRESS;
 	config->local_port = DEFAULT_SIP_PORT;
+	config->ext_ip = NULL;
 	config->user_agent_name = DEFAULT_SOFIASIP_UA_NAME;
 	config->origin = DEFAULT_SDP_ORIGIN;
 
@@ -222,6 +223,9 @@ static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *serve
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"sip-ip") == 0) {
 					config->local_ip = ip_addr_get(attr_value->value,pool);
+				}
+				else if(strcasecmp(attr_name->value,"sip-ext-ip") == 0) {
+					config->ext_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"sip-port") == 0) {
 					config->local_port = (apr_port_t)atol(attr_value->value);

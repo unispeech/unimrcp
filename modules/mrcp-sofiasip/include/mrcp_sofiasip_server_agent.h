@@ -34,6 +34,8 @@ typedef struct mrcp_sofia_server_config_t mrcp_sofia_server_config_t;
 struct mrcp_sofia_server_config_t {
 	/** Local IP address to bind to */
 	char      *local_ip;
+	/** External (NAT) IP address */
+	char      *ext_ip;
 	/** Local port to bind to */
 	apr_port_t local_port;
 

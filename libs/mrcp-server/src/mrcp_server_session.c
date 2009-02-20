@@ -378,6 +378,7 @@ static mrcp_session_descriptor_t* mrcp_session_answer_create(mrcp_session_descri
 	mrcp_session_descriptor_t *answer = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
 	apt_string_reset(&answer->origin);
 	apt_string_reset(&answer->ip);
+	apt_string_reset(&answer->ext_ip);
 	answer->resource_name = offer->resource_name;
 	answer->resource_state = offer->resource_state;
 	answer->status = offer->status;
@@ -846,6 +847,7 @@ static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *sessi
 		rtp_descriptor = mpf_message->descriptor;
 		if(rtp_descriptor->audio.local) {
 			session->answer->ip = rtp_descriptor->audio.local->base.ip;
+			session->answer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
 			mrcp_session_audio_media_set(session->answer,termination_slot->id,rtp_descriptor->audio.local);
 		}
 		if(session->answer_flag_count) {
