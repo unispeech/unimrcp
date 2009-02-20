@@ -42,6 +42,7 @@
       <engine name="Media-Engine-1"/>
       <rtp name="RTP-Factory-1">
         <param name="rtp-ip" value="auto"/>
+        <!-- <param name="rtp-ext-ip" value="auto"/> -->
         <param name="rtp-port-min" value="4000"/>
         <param name="rtp-port-max" value="5000"/>
         <!-- <param name="playout-delay" value="50"/> -->

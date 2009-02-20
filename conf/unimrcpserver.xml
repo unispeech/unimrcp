@@ -6,6 +6,7 @@
     <signaling>
       <agent name="SIP-Agent-1" class="SofiaSIP">
         <param name="sip-ip" value="auto"/>
+        <!-- <param name="sip-ext-ip" value="auto"/> -->
         <param name="sip-port" value="8060"/>
         <param name="sip-transport" value="udp,tcp"/>
  
@@ -37,6 +38,7 @@
       <engine name="Media-Engine-1"/>
       <rtp name="RTP-Factory-1">
         <param name="rtp-ip" value="auto"/>
+        <!-- <param name="rtp-ext-ip" value="auto"/> -->
         <param name="rtp-port-min" value="5000"/>
         <param name="rtp-port-max" value="6000"/>
         <!-- <param name="playout-delay" value="50"/> -->
