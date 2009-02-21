@@ -280,6 +280,7 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 	char buffer[2048];
 	apr_size_t size = sizeof(buffer);
 	rtsp_message_t *request;
+	const char *ip = descriptor->ext_ip.buf ? descriptor->ext_ip.buf : (descriptor->ip.buf ? descriptor->ip.buf : "0.0.0.0");
 
 	request = rtsp_request_create(pool);
 	request->start_line.common.request_line.resource_name = rtsp_name_get_by_mrcp_name(
@@ -300,8 +301,8 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 			"c=IN IP4 %s\r\n"
 			"t=0 0\r\n",
 			descriptor->origin.buf ? descriptor->origin.buf : "-",
-			descriptor->ip.buf ? descriptor->ip.buf : "0",
-			descriptor->ip.buf ? descriptor->ip.buf : "0");
+			ip,
+			ip);
 	count = mrcp_session_media_count_get(descriptor);
 	for(i=0; i<count; i++) {
 		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
@@ -372,6 +373,7 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		apr_size_t offset = 0;
 		char buffer[2048];
 		apr_size_t size = sizeof(buffer);
+		const char *ip = descriptor->ext_ip.buf ? descriptor->ext_ip.buf : (descriptor->ip.buf ? descriptor->ip.buf : "0.0.0.0");
 
 		buffer[0] = '\0';
 		offset += snprintf(buffer+offset,size-offset,
@@ -381,8 +383,8 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 				"c=IN IP4 %s\r\n"
 				"t=0 0\r\n",
 				descriptor->origin.buf ? descriptor->origin.buf : "-",
-				descriptor->ip.buf ? descriptor->ip.buf : "0",
-				descriptor->ip.buf ? descriptor->ip.buf : "0");
+				ip,
+				ip);
 		count = mrcp_session_media_count_get(descriptor);
 		for(i=0; i<count; i++) {
 			audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
