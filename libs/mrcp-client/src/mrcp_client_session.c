@@ -220,7 +220,10 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 		session->answer_flag_count--;
 		if(!session->answer_flag_count) {
 			/* raise app response */
-			mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
+			mrcp_app_sig_response_raise(
+				session,
+				status == TRUE ? MRCP_SIG_STATUS_CODE_SUCCESS : MRCP_SIG_STATUS_CODE_FAILURE,
+				TRUE);
 		}
 	}
 	return TRUE;
@@ -237,7 +240,9 @@ apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel, apt_bool_t sta
 	if(session->terminate_flag_count) {
 		session->terminate_flag_count--;
 		if(!session->terminate_flag_count) {
-			mrcp_app_session_terminate_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS);
+			mrcp_app_session_terminate_raise(
+				session,
+				status == TRUE ? MRCP_SIG_STATUS_CODE_SUCCESS : MRCP_SIG_STATUS_CODE_FAILURE);
 		}
 	}
 	return TRUE;
