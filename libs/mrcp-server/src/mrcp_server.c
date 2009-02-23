@@ -100,11 +100,12 @@ struct connection_agent_task_msg_data_t {
 	mrcp_channel_t            *channel;
 	mrcp_control_descriptor_t *descriptor;
 	mrcp_message_t            *message;
+	apt_bool_t                 status;
 };
 
-static apt_bool_t mrcp_server_channel_add_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
-static apt_bool_t mrcp_server_channel_modify_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
-static apt_bool_t mrcp_server_channel_remove_signal(mrcp_control_channel_t *channel);
+static apt_bool_t mrcp_server_channel_add_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status);
+static apt_bool_t mrcp_server_channel_modify_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status);
+static apt_bool_t mrcp_server_channel_remove_signal(mrcp_control_channel_t *channel, apt_bool_t status);
 static apt_bool_t mrcp_server_message_signal(mrcp_control_channel_t *channel, mrcp_message_t *message);
 
 static const mrcp_connection_event_vtable_t connection_method_vtable = {
@@ -661,17 +662,17 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_ADD_CHANNEL:
 				{
-					mrcp_server_on_channel_modify(connection_message->channel,connection_message->descriptor);
+					mrcp_server_on_channel_modify(connection_message->channel,connection_message->descriptor,connection_message->status);
 					break;
 				}
 				case CONNECTION_AGENT_TASK_MSG_MODIFY_CHANNEL:
 				{
-					mrcp_server_on_channel_modify(connection_message->channel,connection_message->descriptor);
+					mrcp_server_on_channel_modify(connection_message->channel,connection_message->descriptor,connection_message->status);
 					break;
 				}
 				case CONNECTION_AGENT_TASK_MSG_REMOVE_CHANNEL:
 				{
-					mrcp_server_on_channel_remove(connection_message->channel);
+					mrcp_server_on_channel_remove(connection_message->channel,connection_message->status);
 					break;
 				}
 				case CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE:
@@ -744,7 +745,8 @@ static apt_bool_t mrcp_server_connection_task_msg_signal(
 							mrcp_connection_agent_t         *agent,
 							mrcp_control_channel_t          *channel,
 							mrcp_control_descriptor_t       *descriptor,
-							mrcp_message_t                  *message)
+							mrcp_message_t                  *message,
+							apt_bool_t                       status)
 {
 	mrcp_server_t *server = mrcp_server_connection_agent_object_get(agent);
 	apt_task_t *task = apt_consumer_task_base_get(server->task);
@@ -756,6 +758,7 @@ static apt_bool_t mrcp_server_connection_task_msg_signal(
 	data->channel = channel ? channel->obj : NULL;
 	data->descriptor = descriptor;
 	data->message = message;
+	data->status = status;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Connection Task Message");
 	return apt_task_msg_signal(task,task_msg);
@@ -833,7 +836,7 @@ static apt_bool_t mrcp_server_control_signal(mrcp_session_t *session, mrcp_messa
 	return mrcp_server_signaling_task_msg_signal(SIGNALING_MESSAGE_CONTROL,session,NULL,message);
 }
 
-static apt_bool_t mrcp_server_channel_add_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+static apt_bool_t mrcp_server_channel_add_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_connection_agent_t *agent = channel->agent;
 	return mrcp_server_connection_task_msg_signal(
@@ -841,10 +844,11 @@ static apt_bool_t mrcp_server_channel_add_signal(mrcp_control_channel_t *channel
 								agent,
 								channel,
 								descriptor,
-								NULL);
+								NULL,
+								status);
 }
 
-static apt_bool_t mrcp_server_channel_modify_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+static apt_bool_t mrcp_server_channel_modify_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_connection_agent_t *agent = channel->agent;
 	return mrcp_server_connection_task_msg_signal(
@@ -852,10 +856,11 @@ static apt_bool_t mrcp_server_channel_modify_signal(mrcp_control_channel_t *chan
 								agent,
 								channel,
 								descriptor,
-								NULL);
+								NULL,
+								status);
 }
 
-static apt_bool_t mrcp_server_channel_remove_signal(mrcp_control_channel_t *channel)
+static apt_bool_t mrcp_server_channel_remove_signal(mrcp_control_channel_t *channel, apt_bool_t status)
 {
 	mrcp_connection_agent_t *agent = channel->agent;
 	return mrcp_server_connection_task_msg_signal(
@@ -863,7 +868,8 @@ static apt_bool_t mrcp_server_channel_remove_signal(mrcp_control_channel_t *chan
 								agent,
 								channel,
 								NULL,
-								NULL);
+								NULL,
+								status);
 }
 
 static apt_bool_t mrcp_server_message_signal(mrcp_control_channel_t *channel, mrcp_message_t *message)
@@ -874,7 +880,8 @@ static apt_bool_t mrcp_server_message_signal(mrcp_control_channel_t *channel, mr
 								agent,
 								channel,
 								NULL,
-								message);
+								message,
+								TRUE);
 }
 
 static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel, apt_bool_t status)

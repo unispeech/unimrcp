@@ -526,7 +526,7 @@ static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, 
 			channel->identifier.buf,
 			apr_hash_count(agent->null_connection->channel_table));
 	/* send response */
-	return mrcp_control_channel_add_respond(agent->vtable,channel,answer);
+	return mrcp_control_channel_add_respond(agent->vtable,channel,answer,TRUE);
 }
 
 static apt_bool_t mrcp_server_agent_channel_modify(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *offer)
@@ -537,7 +537,7 @@ static apt_bool_t mrcp_server_agent_channel_modify(mrcp_connection_agent_t *agen
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Modify Control Channel <%s>",channel->identifier.buf);
 	/* send response */
-	return mrcp_control_channel_modify_respond(agent->vtable,channel,answer);
+	return mrcp_control_channel_modify_respond(agent->vtable,channel,answer,TRUE);
 }
 
 static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel)
@@ -565,7 +565,7 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 		}
 	}
 	/* send response */
-	return mrcp_control_channel_remove_respond(agent->vtable,channel);
+	return mrcp_control_channel_remove_respond(agent->vtable,channel,TRUE);
 }
 
 static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message)

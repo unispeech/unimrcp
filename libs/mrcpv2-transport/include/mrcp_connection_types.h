@@ -46,11 +46,11 @@ typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
 /** MRCPv2 connection event vtable */
 struct mrcp_connection_event_vtable_t {
 	/** Channel add event handler */
-	apt_bool_t (*on_add)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+	apt_bool_t (*on_add)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status);
 	/** Channel modify event handler */
-	apt_bool_t (*on_modify)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+	apt_bool_t (*on_modify)(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status);
 	/** Channel remove event handler */
-	apt_bool_t (*on_remove)(mrcp_control_channel_t *channel);
+	apt_bool_t (*on_remove)(mrcp_control_channel_t *channel, apt_bool_t status);
 	/** Message receive event handler */
 	apt_bool_t (*on_receive)(mrcp_control_channel_t *channel, mrcp_message_t *message);
 };
@@ -75,10 +75,11 @@ struct mrcp_control_channel_t {
 static APR_INLINE apt_bool_t mrcp_control_channel_add_respond(
 						const mrcp_connection_event_vtable_t *vtable, 
 						mrcp_control_channel_t *channel, 
-						mrcp_control_descriptor_t *descriptor)
+						mrcp_control_descriptor_t *descriptor,
+						apt_bool_t status)
 {
 	if(vtable && vtable->on_add) {
-		return vtable->on_add(channel,descriptor);
+		return vtable->on_add(channel,descriptor,status);
 	}
 	return FALSE;
 }
@@ -87,10 +88,11 @@ static APR_INLINE apt_bool_t mrcp_control_channel_add_respond(
 static APR_INLINE apt_bool_t mrcp_control_channel_modify_respond(
 						const mrcp_connection_event_vtable_t *vtable, 
 						mrcp_control_channel_t *channel, 
-						mrcp_control_descriptor_t *descriptor)
+						mrcp_control_descriptor_t *descriptor,
+						apt_bool_t status)
 {
 	if(vtable && vtable->on_modify) {
-		return vtable->on_modify(channel,descriptor);
+		return vtable->on_modify(channel,descriptor,status);
 	}
 	return FALSE;
 }
@@ -98,10 +100,11 @@ static APR_INLINE apt_bool_t mrcp_control_channel_modify_respond(
 /** Send channel remove response */
 static APR_INLINE apt_bool_t mrcp_control_channel_remove_respond(
 						const mrcp_connection_event_vtable_t *vtable, 
-						mrcp_control_channel_t *channel)
+						mrcp_control_channel_t *channel,
+						apt_bool_t status)
 {
 	if(vtable && vtable->on_remove) {
-		return vtable->on_remove(channel);
+		return vtable->on_remove(channel,status);
 	}
 	return FALSE;
 }

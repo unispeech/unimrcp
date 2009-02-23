@@ -120,9 +120,9 @@ apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signa
 apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
 
 /** Process channel modify event */
-apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *answer);
+apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *answer, apt_bool_t status);
 /** Process channel remove event */
-apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel);
+apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel, apt_bool_t status);
 /** Process channel message receive */
 apt_bool_t mrcp_server_on_channel_message(mrcp_channel_t *channel, mrcp_message_t *message);
 

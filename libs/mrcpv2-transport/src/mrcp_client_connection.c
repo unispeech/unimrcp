@@ -397,11 +397,12 @@ static apt_bool_t mrcp_client_agent_channel_add(mrcp_connection_agent_t *agent, 
 		}
 	}
 	/* send response */
-	return mrcp_control_channel_add_respond(agent->vtable,channel,descriptor);
+	return mrcp_control_channel_add_respond(agent->vtable,channel,descriptor,TRUE);
 }
 
 static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor)
 {
+	apt_bool_t status = TRUE;
 	if(descriptor->port) {
 		if(!channel->connection) {
 			mrcp_connection_t *connection = NULL;
@@ -434,11 +435,12 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 			}
 			else {
 				descriptor->port = 0;
+				status = FALSE;
 			}
 		}
 	}
 	/* send response */
-	return mrcp_control_channel_modify_respond(agent->vtable,channel,descriptor);
+	return mrcp_control_channel_modify_respond(agent->vtable,channel,descriptor,status);
 }
 
 static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel)
@@ -458,7 +460,7 @@ static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agen
 	}
 	
 	/* send response */
-	return mrcp_control_channel_remove_respond(agent->vtable,channel);
+	return mrcp_control_channel_remove_respond(agent->vtable,channel,TRUE);
 }
 
 static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_message_t *message)

@@ -190,7 +190,7 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 	return mrcp_app_control_message_raise(session,channel,message);
 }
 
-apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Add");
@@ -208,7 +208,7 @@ apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_desc
 	return TRUE;
 }
 
-apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor)
+apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Modify");
@@ -226,7 +226,7 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 	return TRUE;
 }
 
-apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel)
+apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Remove");

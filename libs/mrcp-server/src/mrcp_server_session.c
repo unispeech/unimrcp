@@ -247,7 +247,7 @@ apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signa
 	return TRUE;
 }
 
-apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *answer)
+apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *answer, apt_bool_t status)
 {
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Modify");
@@ -270,7 +270,7 @@ apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 	return TRUE;
 }
 
-apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel)
+apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel, apt_bool_t status)
 {
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Control Channel Remove");
