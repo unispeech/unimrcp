@@ -40,7 +40,6 @@ struct apt_logger_t {
 	apt_log_output_e      mode;
 	apt_log_priority_e    priority;
 	int                   header;
-	apt_log_handler_f     handler;
 	apt_log_ext_handler_f ext_handler;
 	FILE                 *file;
 	apr_size_t            cur_size;
@@ -52,7 +51,6 @@ static apt_logger_t apt_logger = {
 	APT_LOG_OUTPUT_CONSOLE, 
 	APT_PRIO_DEBUG, 
 	APT_LOG_HEADER_DEFAULT, 
-	NULL,
 	NULL,
 	NULL,
 	0,
@@ -114,11 +112,6 @@ APT_DECLARE(void) apt_log_header_set(int header)
 	apt_logger.header = header;
 }
 
-APT_DECLARE(void) apt_log_handler_set(apt_log_handler_f handler)
-{
-	apt_logger.handler = handler;
-}
-
 APT_DECLARE(void) apt_log_ext_handler_set(apt_log_ext_handler_f handler)
 {
 	apt_logger.ext_handler = handler;
@@ -130,10 +123,7 @@ APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e p
 	if(priority <= apt_logger.priority) {
 		va_list arg_ptr;
 		va_start(arg_ptr, format);
-		if(apt_logger.handler) {
-			status = apt_logger.handler(priority,format,arg_ptr);
-		}
-		else if(apt_logger.ext_handler) {
+		if(apt_logger.ext_handler) {
 			status = apt_logger.ext_handler(file,line,NULL,priority,format,arg_ptr);
 		}
 		else {

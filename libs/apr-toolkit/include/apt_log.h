@@ -66,8 +66,6 @@ typedef enum {
 	APT_LOG_OUTPUT_FILE     = 0x02, /**< enable log file output */
 } apt_log_output_e;
 
-/** Prototype of log handler function */
-typedef apt_bool_t (*apt_log_handler_f)(apt_log_priority_e priority, const char *format, va_list arg_ptr);
 /** Prototype of extended log handler function */
 typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const char *id, 
 											apt_log_priority_e priority, const char *format, va_list arg_ptr);
@@ -102,14 +100,6 @@ APT_DECLARE(void) apt_log_priority_set(apt_log_priority_e priority);
  * @param header the header to set (used as bitmask)
  */
 APT_DECLARE(void) apt_log_header_set(int header);
-
-/**
- * Set the external log handler.
- * @param handler the handler to pass log events to
- * @remark default logger is used to output the logs to stdout and/or log file,
- *         if external log handler isn't set
- */
-APT_DECLARE(void) apt_log_handler_set(apt_log_handler_f handler);
 
 /**
  * Set the extended external log handler.
