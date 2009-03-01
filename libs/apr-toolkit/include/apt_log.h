@@ -111,6 +111,8 @@ APT_DECLARE(void) apt_log_ext_handler_set(apt_log_ext_handler_f handler);
 
 /**
  * Do logging.
+ * @param file the file name log entry is generated from
+ * @param line the line number log entry is generated from
  * @param priority the priority of the entire log entry
  * @param format the format of the entire log entry
  */

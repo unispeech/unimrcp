@@ -30,6 +30,7 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Size of the buffer used for MRCP rx/tx stream */
 #define MRCP_STREAM_BUFFER_SIZE 1024
 
 /** MRCPv2 connection */
@@ -56,14 +57,19 @@ struct mrcp_connection_t {
 	/** Table of control channels */
 	apr_hash_t       *channel_table;
 
+	/** Rx buffer */
 	char              rx_buffer[MRCP_STREAM_BUFFER_SIZE];
+	/** Rx stream */
 	apt_text_stream_t rx_stream;
+	/** MRCP parser to parser MRCP messages out of rx stream */
 	mrcp_parser_t    *parser;
 
+	/** Tx buffer */
 	char              tx_buffer[MRCP_STREAM_BUFFER_SIZE];
+	/** Tx stream */
 	apt_text_stream_t tx_stream;
+	/** MRCP generator to generate MRCP messages out of tx stream */
 	mrcp_generator_t *generator;
-
 };
 
 /** Create MRCP connection. */
