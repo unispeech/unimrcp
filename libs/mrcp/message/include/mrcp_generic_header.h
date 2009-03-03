@@ -41,6 +41,12 @@ typedef enum {
 	GENERIC_HEADER_CACHE_CONTROL,
 	GENERIC_HEADER_LOGGING_TAG,
 	GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS,
+	
+	/** Additional headers for MRCP v2 */
+	GENERIC_HEADER_ACCEPT,
+	GENERIC_HEADER_FETCH_TIMEOUT,
+	GENERIC_HEADER_SET_COOKIE,
+	GENERIC_HEADER_SET_COOKIE2,
 
 	GENERIC_HEADER_COUNT
 } mrcp_generic_header_id;
@@ -90,6 +96,15 @@ struct mrcp_generic_header_t {
 	apt_str_t              logging_tag;
 	/** Specifies the vendor specific parameters used by the media server */
 	apt_pair_arr_t        *vendor_specific_params;
+
+	/** Additional headers for MRCP v2 */
+	/** Specifies the acceptable media types set for entities returned in the response or events associated with this request */
+	apt_str_t              accept;
+	/** Defines the timeout for content that the server may need to fetch over the network */
+	apr_size_t             fetch_timeout;
+	/** Enables to synchronize the cookie store of MRCP v2 client and Server */
+	apt_str_t              set_cookie;
+	apt_str_t              set_cookie2;
 };
 
 /** Get generic header vtable */

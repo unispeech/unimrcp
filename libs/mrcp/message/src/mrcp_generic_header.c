@@ -18,18 +18,22 @@
 
 /** String table of mrcp generic-header fields (mrcp_generic_header_id) */
 static const apt_str_table_item_t generic_header_string_table[] = {
-	{{"Active-Request-Id-List",    22},2},
+	{{"Active-Request-Id-List",    22},3},
 	{{"Proxy-Sync-Id",             13},0},
-	{{"Accept-Charset",            14},3},
+	{{"Accept-Charset",            14},7},
 	{{"Content-Type",              12},9},
 	{{"Content-Id",                10},8},
 	{{"Content-Base",              12},8},
 	{{"Content-Encoding",          16},8},
 	{{"Content-Location",          16},9},
-	{{"Content-Length",            14},9},
+	{{"Content-Length",            14},10},
 	{{"Cache-Control",             13},1},
 	{{"Logging-Tag",               11},0},
-	{{"Vendor-Specific-Parameters",26},0}
+	{{"Vendor-Specific-Parameters",26},0},
+	{{"Accept",                     6},6},
+	{{"Fetch-Timeout",             13},0},
+	{{"Set-Cookie",                10},10},
+	{{"Set-Cookie2",               11},10}
 };
 
 
@@ -80,6 +84,11 @@ static void mrcp_generic_header_init(mrcp_generic_header_t *generic_header)
 	apt_string_reset(&generic_header->cache_control);
 	apt_string_reset(&generic_header->logging_tag);
 	generic_header->vendor_specific_params = NULL;
+	/* initializes additionnal MRCP V2 generic headers */
+	apt_string_reset(&generic_header->accept);
+	generic_header->fetch_timeout = 0;
+	apt_string_reset(&generic_header->set_cookie);
+	apt_string_reset(&generic_header->set_cookie2);
 }
 
 
@@ -137,6 +146,18 @@ static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, si
 			}
 			apt_pair_array_parse(generic_header->vendor_specific_params,value,pool);
 			break;
+		case GENERIC_HEADER_ACCEPT:
+			apt_string_copy(&generic_header->accept,value,pool);
+			break;
+		case GENERIC_HEADER_FETCH_TIMEOUT:
+			generic_header->fetch_timeout = apt_size_value_parse(value);
+			break;
+		case GENERIC_HEADER_SET_COOKIE:
+			apt_string_copy(&generic_header->set_cookie,value,pool);
+			break;
+		case GENERIC_HEADER_SET_COOKIE2:
+			apt_string_copy(&generic_header->set_cookie2,value,pool);
+			break;
 		default:
 			status = FALSE;
 	}
@@ -183,6 +204,18 @@ static apt_bool_t mrcp_generic_header_generate(mrcp_header_accessor_t *accessor,
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
 			apt_pair_array_generate(generic_header->vendor_specific_params,value);
+			break;
+		case GENERIC_HEADER_ACCEPT:
+			apt_string_value_generate(&generic_header->accept,value);
+			break;
+		case GENERIC_HEADER_FETCH_TIMEOUT:
+			apt_size_value_generate(generic_header->fetch_timeout,value);
+			break;
+		case GENERIC_HEADER_SET_COOKIE:
+			apt_string_value_generate(&generic_header->set_cookie,value);
+			break;
+		case GENERIC_HEADER_SET_COOKIE2:
+			apt_string_value_generate(&generic_header->set_cookie2,value);
 			break;
 		default:
 			break;
@@ -236,6 +269,18 @@ static apt_bool_t mrcp_generic_header_duplicate(mrcp_header_accessor_t *accessor
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
 			generic_header->vendor_specific_params = apt_pair_array_copy(src_generic_header->vendor_specific_params,pool);
+			break;
+		case GENERIC_HEADER_ACCEPT:
+			apt_string_copy(&generic_header->accept,&src_generic_header->accept,pool);
+			break;
+		case GENERIC_HEADER_FETCH_TIMEOUT:
+			generic_header->fetch_timeout = src_generic_header->fetch_timeout;
+			break;
+		case GENERIC_HEADER_SET_COOKIE:
+			apt_string_copy(&generic_header->set_cookie,&src_generic_header->set_cookie,pool);
+			break;
+		case GENERIC_HEADER_SET_COOKIE2:
+			apt_string_copy(&generic_header->set_cookie2,&src_generic_header->set_cookie2,pool);
 			break;
 		default:
 			status = FALSE;
