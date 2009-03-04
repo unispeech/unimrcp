@@ -118,6 +118,13 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 	if(!session->offer) {
 		return FALSE;
 	}
+	if(!descriptor) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Answer <%s> [null descriptor]",	mrcp_session_str(session));
+		status_code = MRCP_SIG_STATUS_CODE_FAILURE;
+		/* raise app response */
+		return mrcp_app_sig_response_raise(session,status_code,TRUE);
+	}
+
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Answer <%s> [c:%d a:%d v:%d]",
 		mrcp_session_str(session),
 		descriptor->control_media_arr->nelts,
