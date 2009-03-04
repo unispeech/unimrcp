@@ -35,7 +35,6 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Dtmf-Interdigit-Timeout",    23},5},
 	{{"Dtmf-Term-Timeout",          17},10},
 	{{"Dtmf-Term-Char",             14},14},
-	{{"Fetch-Timeout",              13},4},
 	{{"Failed-Uri",                 10},10},
 	{{"Failed-Uri-Cause",           16},16},
 	{{"Save-Waveform",              13},5},
@@ -70,7 +69,6 @@ static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Dtmf-Interdigit-Timeout",    23},5},
 	{{"Dtmf-Term-Timeout",          17},10},
 	{{"Dtmf-Term-Char",             14},14},
-	{{"Fetch-Timeout",              13},4},
 	{{"Failed-Uri",                 10},10},
 	{{"Failed-Uri-Cause",           16},16},
 	{{"Save-Waveform",              13},5},
@@ -144,7 +142,6 @@ static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 	recog_header->dtmf_interdigit_timeout = 0;
 	recog_header->dtmf_term_timeout = 0;
 	recog_header->dtmf_term_char = 0;
-	recog_header->fetch_timeout = 0;
 	apt_string_reset(&recog_header->failed_uri);
 	apt_string_reset(&recog_header->failed_uri_cause);
 	recog_header->save_waveform = FALSE;
@@ -225,9 +222,6 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size
 			break;
 		case RECOGNIZER_HEADER_DTMF_TERM_CHAR:
 			recog_header->dtmf_term_char = *value->buf;
-			break;
-		case RECOGNIZER_HEADER_FETCH_TIMEOUT:
-			recog_header->fetch_timeout = apt_size_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI:
 			apt_string_copy(&recog_header->failed_uri,value,pool);
@@ -363,9 +357,6 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 		case RECOGNIZER_HEADER_DTMF_TERM_CHAR:
 			*value->pos++ = recog_header->dtmf_term_char;
 			break;
-		case RECOGNIZER_HEADER_FETCH_TIMEOUT:
-			apt_size_value_generate(recog_header->fetch_timeout,value);
-			break;
 		case RECOGNIZER_HEADER_FAILED_URI:
 			apt_string_value_generate(&recog_header->failed_uri,value);
 			break;
@@ -491,9 +482,6 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			break;
 		case RECOGNIZER_HEADER_DTMF_TERM_CHAR:
 			recog_header->dtmf_term_char = src_recog_header->dtmf_term_char;
-			break;
-		case RECOGNIZER_HEADER_FETCH_TIMEOUT:
-			recog_header->fetch_timeout = src_recog_header->fetch_timeout;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI:
 			apt_string_copy(&recog_header->failed_uri,&src_recog_header->failed_uri,pool);

@@ -46,7 +46,6 @@ typedef enum {
 	RECOGNIZER_HEADER_DTMF_INTERDIGIT_TIMEOUT,
 	RECOGNIZER_HEADER_DTMF_TERM_TIMEOUT,
 	RECOGNIZER_HEADER_DTMF_TERM_CHAR,
-	RECOGNIZER_HEADER_FETCH_TIMEOUT,
 	RECOGNIZER_HEADER_FAILED_URI,
 	RECOGNIZER_HEADER_FAILED_URI_CAUSE,
 	RECOGNIZER_HEADER_SAVE_WAVEFORM,
@@ -142,9 +141,6 @@ struct mrcp_recog_header_t {
 	/** Specifies the terminating DTMF character for DTMF input
     recognition */
 	char                          dtmf_term_char;
-	/** Defines the timeout for content that the server may
-    need to fetch over the network */
-	apr_size_t                    fetch_timeout;
 	/** When a recognizer needs to fetch or access a URI and the access fails
     the server SHOULD provide the failed URI in this header in the method response*/
 	apt_str_t                     failed_uri;
