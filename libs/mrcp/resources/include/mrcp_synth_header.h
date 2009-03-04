@@ -43,7 +43,6 @@ typedef enum {
 	SYNTHESIZER_HEADER_SPEECH_MARKER,
 	SYNTHESIZER_HEADER_SPEECH_LANGUAGE,
 	SYNTHESIZER_HEADER_FETCH_HINT,
-	SYNTHESIZER_HEADER_FETCH_TIMEOUT,
 	SYNTHESIZER_HEADER_AUDIO_FETCH_HINT,
 	SYNTHESIZER_HEADER_FAILED_URI,
 	SYNTHESIZER_HEADER_FAILED_URI_CAUSE,
@@ -215,9 +214,6 @@ struct mrcp_synth_header_t {
     speech audio files, this header controls the corresponding URI access
     properties */
 	apt_str_t                     audio_fetch_hint;
-	/** Defines the timeout for content that the server may
-    need to fetch over the network */
-	apr_size_t                    fetch_timeout;
 	/** When a synthesizer method needs a synthesizer to fetch or access a
     URI and the access fails, the server SHOULD provide the failed URI in
     this header in the method response */

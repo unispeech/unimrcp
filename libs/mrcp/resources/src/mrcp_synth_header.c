@@ -31,8 +31,7 @@ static const apt_str_table_item_t synth_header_string_table[] = {
 	{{"Prosody-Rate",        12},8},
 	{{"Speech-Marker",       13},7},
 	{{"Speech-Language",     15},7},
-	{{"Fetch-Hint",          10},6},
-	{{"Fetch-Timeout",       13},6},
+	{{"Fetch-Hint",          10},2},
 	{{"Audio-Fetch-Hint",    16},0},
 	{{"Failed-Uri",          10},10},
 	{{"Failed-Uri_Cause",    16},10},
@@ -205,7 +204,6 @@ static void mrcp_synth_header_init(mrcp_synth_header_t *synth_header)
 	apt_string_reset(&synth_header->speech_language);
 	apt_string_reset(&synth_header->fetch_hint);
 	apt_string_reset(&synth_header->audio_fetch_hint);
-	synth_header->fetch_timeout = 0;
 	apt_string_reset(&synth_header->failed_uri);
 	apt_string_reset(&synth_header->failed_uri_cause);
 	synth_header->speak_restart = FALSE;
@@ -274,9 +272,6 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			break;
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
 			apt_string_copy(&synth_header->audio_fetch_hint,value,pool);
-			break;
-		case SYNTHESIZER_HEADER_FETCH_TIMEOUT:
-			synth_header->fetch_timeout = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI:
 			apt_string_copy(&synth_header->failed_uri,value,pool);
@@ -352,8 +347,6 @@ static apt_bool_t mrcp_synth_header_generate(mrcp_header_accessor_t *accessor, s
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
 			apt_string_value_generate(&synth_header->audio_fetch_hint,value);
 			break;
-		case SYNTHESIZER_HEADER_FETCH_TIMEOUT:
-			apt_size_value_generate(synth_header->fetch_timeout,value);
 		case SYNTHESIZER_HEADER_FAILED_URI:
 			apt_string_value_generate(&synth_header->failed_uri,value);
 			break;
@@ -434,9 +427,6 @@ static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, 
 			break;
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
 			apt_string_copy(&synth_header->audio_fetch_hint,&src_synth_header->audio_fetch_hint,pool);
-			break;
-		case SYNTHESIZER_HEADER_FETCH_TIMEOUT:
-			synth_header->fetch_timeout = src_synth_header->fetch_timeout;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI:
 			apt_string_copy(&synth_header->failed_uri,&src_synth_header->failed_uri,pool);
