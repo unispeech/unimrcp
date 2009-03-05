@@ -13,6 +13,10 @@ Sofia-SIP library is used to implement MRCPv2 specification
 compliant SIP signaling. Sofia-SIP is an open-source SIP User-Agent
 library, compliant with the IETF RFC3261 specification.
 
+Use the link below to download one of known to work and 
+ready to use packages of APR and Sofia-SIP libraries.
+    http://www.unimrcp.org/dependencies/
+
 
 GNU BUILD
 ===================
