@@ -98,7 +98,11 @@ static const apt_str_table_item_t completion_cause_string_table[] = {
 	{{"uri-failure",                11},0},
 	{{"language-unsupported",       20},0},
 	{{"cancelled",                   9},0},
-	{{"semantics-failure",          17},2}
+	{{"semantics-failure",          17},2},
+	{{"partial-match",              13},13},
+	{{"partial-match-maxtime",      21},13},
+	{{"no-match-maxtime",           16},9},
+	{{"grammar-definition-failure", 26},9}
 };
 
 
