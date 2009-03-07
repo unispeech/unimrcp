@@ -324,7 +324,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 		sdp = sdp_session(parser);		
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,sofia_session->session->pool);
+		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,sofia_session->session->pool);
 		sdp_parser_free(parser);
 	}
 

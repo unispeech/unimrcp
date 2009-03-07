@@ -81,12 +81,15 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 }
 
 /** Generate MRCP descriptor by SDP session */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
 	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
 
-	if(sdp->sdp_connection) {
+	if(force_destination_ip) {
+		apt_string_assign(&descriptor->ip,force_destination_ip,pool);
+	}
+	else if(sdp->sdp_connection) {
 		apt_string_assign(&descriptor->ip,sdp->sdp_connection->c_address,pool);
 	}
 

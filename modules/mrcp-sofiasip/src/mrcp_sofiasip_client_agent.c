@@ -120,6 +120,8 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 	config->remote_ip = NULL;
 	config->remote_port = 0;
 	config->remote_user_name = NULL;
+
+	config->force_destination = FALSE;
 	
 	config->user_agent_name = NULL;
 	config->origin = NULL;
@@ -217,10 +219,14 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 	return TRUE;
 }
 
+static APR_INLINE mrcp_sofia_agent_t* mrcp_sofia_agent_get(mrcp_session_t *session)
+{
+	return session->signaling_agent->obj;
+}
 
 static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session)
 {
-	mrcp_sofia_agent_t *sofia_agent = session->signaling_agent->obj;
+	mrcp_sofia_agent_t *sofia_agent = mrcp_sofia_agent_get(session);
 	mrcp_sofia_session_t *sofia_session;
 	session->request_vtable = &session_request_vtable;
 
@@ -264,7 +270,7 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 	}
 
 	if(session->signaling_agent) {
-		mrcp_sofia_agent_t *sofia_agent = session->signaling_agent->obj;
+		mrcp_sofia_agent_t *sofia_agent = mrcp_sofia_agent_get(session);
 		if(sofia_agent) {
 			if(sofia_agent->config->origin) {
 				apt_string_set(&descriptor->origin,sofia_agent->config->origin);
@@ -313,11 +319,15 @@ static void mrcp_sofia_on_session_ready(
 	if(remote_sdp_str) {
 		sdp_parser_t *parser = NULL;
 		sdp_session_t *sdp = NULL;
+		const char *force_destination_ip = NULL;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 		sdp = sdp_session(parser);
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,sofia_session->session->pool);
+		if(sofia_agent && sofia_agent->config->force_destination == TRUE) {
+			force_destination_ip = sofia_agent->config->remote_ip;
+		}
+		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,sofia_session->session->pool);
 		sdp_parser_free(parser);
 	}
 

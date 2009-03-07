@@ -207,6 +207,9 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 				else if(strcasecmp(attr_name->value,"server-username") == 0) {
 					config->remote_user_name = apr_pstrdup(pool,attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"force-destination") == 0) {
+					config->force_destination = atoi(attr_value->value);
+				}
 				else if(strcasecmp(attr_name->value,"sip-transport") == 0) {
 					config->transport = apr_pstrdup(pool,attr_value->value);
 				}
