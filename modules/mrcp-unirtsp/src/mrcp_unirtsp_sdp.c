@@ -127,12 +127,15 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 }
 
 /** Generate MRCP descriptor by SDP session */
-static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, apr_pool_t *pool)
+static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
 	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
 
-	if(sdp->sdp_connection) {
+	if(force_destination_ip) {
+		apt_string_assign(&descriptor->ip,force_destination_ip,pool);
+	}
+	else if(sdp->sdp_connection) {
 		apt_string_assign(&descriptor->ip,sdp->sdp_connection->c_address,pool);
 	}
 
@@ -164,7 +167,12 @@ static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const 
 
 
 /** Generate MRCP descriptor by RTSP request */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(const rtsp_message_t *request, const apr_table_t *resource_map, apr_pool_t *pool, su_home_t *home)
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(
+											const rtsp_message_t *request,
+											const char *force_destination_ip,
+											const apr_table_t *resource_map,
+											apr_pool_t *pool,
+											su_home_t *home)
 {
 	mrcp_session_descriptor_t *descriptor = NULL;
 	const char *resource_name = mrcp_name_get_by_rtsp_name(
@@ -185,7 +193,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			parser = sdp_parse(home,request->body.buf,request->body.length,0);
 			sdp = sdp_session(parser);
 
-			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
+			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,pool);
 			
 			sdp_parser_free(parser);
 		}
@@ -220,7 +228,13 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 }
 
 /** Generate MRCP descriptor by RTSP response */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_response(const rtsp_message_t *request, const rtsp_message_t *response, const apr_table_t *resource_map, apr_pool_t *pool, su_home_t *home)
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_response(
+											const rtsp_message_t *request, 
+											const rtsp_message_t *response, 
+											const char *force_destination_ip,
+											const apr_table_t *resource_map, 
+											apr_pool_t *pool, 
+											su_home_t *home)
 {
 	mrcp_session_descriptor_t *descriptor = NULL;
 	const char *resource_name = mrcp_name_get_by_rtsp_name(
@@ -241,7 +255,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 			parser = sdp_parse(home,response->body.buf,response->body.length,0);
 			sdp = sdp_session(parser);
 
-			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,pool);
+			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,pool);
 			if(descriptor) {
 				apt_string_assign(&descriptor->resource_name,resource_name,pool);
 				descriptor->resource_state = TRUE;

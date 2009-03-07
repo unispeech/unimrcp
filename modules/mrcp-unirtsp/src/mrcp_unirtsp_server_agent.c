@@ -264,8 +264,12 @@ static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *rtsp_server, rtsp_s
 		case RTSP_METHOD_TEARDOWN:
 		{
 			mrcp_session_descriptor_t *descriptor;
-			descriptor = mrcp_descriptor_generate_by_rtsp_request(rtsp_message,agent->config->resource_map,
-				session->mrcp_session->pool,session->home);
+			descriptor = mrcp_descriptor_generate_by_rtsp_request(
+							rtsp_message,
+							NULL,
+							agent->config->resource_map,
+							session->mrcp_session->pool,
+							session->home);
 			status = mrcp_session_offer(session->mrcp_session,descriptor);
 			break;
 		}
