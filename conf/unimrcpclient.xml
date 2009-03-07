@@ -22,6 +22,7 @@
       <agent name="RTSP-Agent-1" class="UniRTSP">
         <param name="server-ip" value="auto"/>
         <param name="server-port" value="1554"/>
+        <!-- <param name="force-destination" value="1"/> -->
         <param name="resource-location" value="media"/>
         <resourcemap>
           <param name="speechsynth" value="speechsynthesizer"/>
