@@ -9,6 +9,7 @@
         <!-- <param name="sip-ext-ip" value="auto"/> -->
         <param name="sip-port" value="8060"/>
         <param name="sip-transport" value="udp,tcp"/>
+        <!-- <param name="force-destination" value="1"/> -->
  
         <param name="ua-name" value="UniMRCP SofiaSIP"/>
         <param name="sdp-origin" value="UniMRCPServer"/>
@@ -16,6 +17,7 @@
       <agent name="RTSP-Agent-1" class="UniRTSP">
         <param name="rtsp-ip" value="auto"/>
         <param name="rtsp-port" value="1554"/>
+        <!-- <param name="force-destination" value="1"/> -->
         <resourcemap>
           <param name="speechsynth" value="speechsynthesizer"/>
           <param name="speechrecog" value="speechrecognizer"/>
