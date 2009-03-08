@@ -115,6 +115,7 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->user_agent_name = NULL;
 	config->origin = NULL;
 	config->transport = NULL;
+	config->force_destination = FALSE;
 	return config;
 }
 

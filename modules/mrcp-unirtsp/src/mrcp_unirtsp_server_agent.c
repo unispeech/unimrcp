@@ -120,6 +120,7 @@ MRCP_DECLARE(rtsp_server_config_t*) mrcp_unirtsp_server_config_alloc(apr_pool_t 
 	config->resource_location = NULL;
 	config->resource_map = apr_table_make(pool,2);
 	config->max_connection_count = 100;
+	config->force_destination = FALSE;
 	return config;
 }
 
@@ -263,10 +264,15 @@ static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *rtsp_server, rtsp_s
 		case RTSP_METHOD_SETUP:
 		case RTSP_METHOD_TEARDOWN:
 		{
+			const char *force_destination_ip = NULL;
 			mrcp_session_descriptor_t *descriptor;
+
+			if(agent->config->force_destination == TRUE) {
+				force_destination_ip = rtsp_server_session_destination_get(rtsp_session);
+			}
 			descriptor = mrcp_descriptor_generate_by_rtsp_request(
 							rtsp_message,
-							NULL,
+							force_destination_ip,
 							agent->config->resource_map,
 							session->mrcp_session->pool,
 							session->home);

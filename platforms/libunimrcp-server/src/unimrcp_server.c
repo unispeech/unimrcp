@@ -239,6 +239,9 @@ static mrcp_sig_agent_t* unimrcp_server_sofiasip_agent_load(mrcp_server_t *serve
 				else if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
 					config->origin = apr_pstrdup(pool,attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"force-destination") == 0) {
+					config->force_destination = atoi(attr_value->value);
+				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
@@ -276,6 +279,9 @@ static mrcp_sig_agent_t* unimrcp_server_rtsp_agent_load(mrcp_server_t *server, c
 				}
 				else if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
 					config->max_connection_count = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"force-destination") == 0) {
+					config->force_destination = atoi(attr_value->value);
 				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
