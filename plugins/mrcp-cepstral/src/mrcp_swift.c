@@ -548,6 +548,45 @@ static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_chann
 	return TRUE;
 }
 
+apt_bool_t swift_prosody_volume_get(const mrcp_prosody_volume_t *prosody_volume, int *volume)
+{
+	apt_bool_t res = FALSE;
+	if(prosody_volume->type == PROSODY_VOLUME_TYPE_LABEL) {
+		if(prosody_volume->value.label < PROSODY_VOLUME_COUNT) {
+			*volume = swift_prosody_volume_table[prosody_volume->value.label];
+			res = TRUE;
+		}
+	}
+	else if(prosody_volume->type == PROSODY_VOLUME_TYPE_NUMERIC) {
+		*volume = (int)prosody_volume->value.numeric;
+		res = TRUE;
+	}
+	else if(prosody_volume->type == PROSODY_VOLUME_TYPE_RELATIVE_CHANGE) {
+		int def = swift_prosody_volume_table[PROSODY_VOLUME_DEFAULT];
+		*volume = (int)(prosody_volume->value.relative * def);
+		res = TRUE;
+	}
+	return res;
+}
+
+apt_bool_t swift_prosody_rate_get(const mrcp_prosody_rate_t *prosody_rate, int *rate)
+{
+	apt_bool_t res = FALSE;
+	if(prosody_rate->type == PROSODY_RATE_TYPE_LABEL) {
+		if(prosody_rate->value.label < PROSODY_RATE_COUNT) {
+			*rate = swift_prosody_rate_table[prosody_rate->value.label];
+			res = TRUE;
+		}
+	}
+	else if(prosody_rate->type == PROSODY_RATE_TYPE_RELATIVE_CHANGE) {
+		int def = swift_prosody_rate_table[PROSODY_RATE_DEFAULT];
+		*rate = (int)(prosody_rate->value.relative * def);
+		res = TRUE;
+	}
+	return res;
+}
+
+
 /** Set Swift port param */
 static apt_bool_t mrcp_swift_channel_param_set(mrcp_swift_channel_t *synth_channel, const char *name, swift_val *val)
 {
@@ -569,16 +608,16 @@ static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_chan
 
 	if(synth_header) {
 		if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_PROSODY_VOLUME) == TRUE) {
-			if(synth_header->prosody_param.volume < PROSODY_VOLUME_COUNT) {
-				int volume = swift_prosody_volume_table[synth_header->prosody_param.volume];
+			int volume = 0;
+			if(swift_prosody_volume_get(&synth_header->prosody_param.volume,&volume) == TRUE) {
 				name = "audio/volume";
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s=%d",name,volume);
 				mrcp_swift_channel_param_set(synth_channel,name,swift_val_int(volume));
 			}
 		}
 		if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_PROSODY_RATE) == TRUE) {
-			if(synth_header->prosody_param.rate < PROSODY_RATE_COUNT) {
-				int rate = swift_prosody_rate_table[synth_header->prosody_param.rate];
+			int rate = 0;
+			if(swift_prosody_rate_get(&synth_header->prosody_param.rate,&rate) == TRUE) {
 				name = "speech/rate";
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Swift Param %s=%d",name,rate);
 				mrcp_swift_channel_param_set(synth_channel,name,swift_val_int(rate));
