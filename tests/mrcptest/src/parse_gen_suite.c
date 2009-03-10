@@ -179,8 +179,8 @@ static apt_bool_t parse_gen_test_run(apt_test_suite_t *suite, int argc, const ch
 		return FALSE;
 	}
 
-	test_dir_process(suite,factory,MRCP_VERSION_1);
 	test_dir_process(suite,factory,MRCP_VERSION_2);
+	test_dir_process(suite,factory,MRCP_VERSION_1);
 
 	mrcp_resource_factory_destroy(factory);
 	return TRUE;
