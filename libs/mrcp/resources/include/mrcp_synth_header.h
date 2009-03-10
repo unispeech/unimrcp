@@ -84,6 +84,23 @@ typedef enum {
 	VOICE_GENDER_UNKNOWN = VOICE_GENDER_COUNT
 } mrcp_voice_gender_e;
 
+/** Prosody-volume type */
+typedef enum {
+	PROSODY_VOLUME_TYPE_LABEL,
+	PROSODY_VOLUME_TYPE_NUMERIC,
+	PROSODY_VOLUME_TYPE_RELATIVE_CHANGE,
+	
+	PROSODY_VOLUME_TYPE_UNKNOWN
+} mrcp_prosody_volume_type_e;
+
+/** Prosody-rate type */
+typedef enum {
+	PROSODY_RATE_TYPE_LABEL,
+	PROSODY_RATE_TYPE_RELATIVE_CHANGE,
+
+	PROSODY_RATE_TYPE_UNKNOWN
+} mrcp_prosody_rate_type_e;
+
 /** Prosody-volume */
 typedef enum {
 	PROSODY_VOLUME_SILENT,
@@ -96,7 +113,7 @@ typedef enum {
 
 	PROSODY_VOLUME_COUNT,
 	PROSODY_VOLUME_UNKNOWN = PROSODY_VOLUME_COUNT
-} mrcp_prosody_volume_e;
+} mrcp_prosody_volume_label_e;
 
 /** Prosody-rate */
 typedef enum {
@@ -109,7 +126,7 @@ typedef enum {
 
 	PROSODY_RATE_COUNT,
 	PROSODY_RATE_UNKNOWN = PROSODY_RATE_COUNT
-} mrcp_prosody_rate_e;
+} mrcp_prosody_rate_label_e;
 
 /** Synthesizer completion-cause specified in SPEAK-COMPLETE event */
 typedef enum {
@@ -135,6 +152,10 @@ typedef struct mrcp_numeric_speech_length_t mrcp_numeric_speech_length_t;
 typedef struct mrcp_prosody_param_t mrcp_prosody_param_t;
 /** Voice-param declaration */
 typedef struct mrcp_voice_param_t mrcp_voice_param_t;
+/**Prosody-rate declaration*/
+typedef struct mrcp_prosody_rate_t mrcp_prosody_rate_t;
+/**Prosody-volume declaration*/
+typedef struct mrcp_prosody_volume_t mrcp_prosody_volume_t;
 /** MRCP synthesizer-header declaration */
 typedef struct mrcp_synth_header_t mrcp_synth_header_t;
 
@@ -171,12 +192,40 @@ struct mrcp_voice_param_t {
 	apt_str_t           name;
 };
 
+/** MRCP prosody-volume */
+struct mrcp_prosody_volume_t {
+	/** prosody-volume type (one of label,numeric,relative change) */
+	mrcp_prosody_volume_type_e type;
+
+	union {
+		/** one of "silent", "x-soft,..." */ 
+		mrcp_prosody_volume_label_e label;
+		/** numeric value */
+		float                       numeric;
+		/** relative change */
+		float                       relative;
+	} value;
+};
+
+/** MRCP prosody-rate */
+struct mrcp_prosody_rate_t {
+	/** prosody-rate type (one of label, relative change) */
+	mrcp_prosody_rate_type_e type;
+
+	union {
+		/** one of "x-slow", "slow,..." */ 
+		mrcp_prosody_rate_label_e label;
+		/** relative change */
+		float                     relative;
+	} value;
+};
+
 /** MRCP prosody-param */
 struct mrcp_prosody_param_t {
 	/** Prosofy volume */
-	mrcp_prosody_volume_e volume;
+	mrcp_prosody_volume_t volume;
 	/** Prosofy rate */
-	mrcp_prosody_rate_e   rate;
+	mrcp_prosody_rate_t   rate;
 };
 
 /** MRCP synthesizer-header */

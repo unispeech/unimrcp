@@ -107,6 +107,91 @@ static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *st
 	return TRUE;
 }
 
+/** Parse MRCP prosody-rate value */
+static apt_bool_t mrcp_prosody_param_rate_parse(mrcp_prosody_rate_t *prosody_rate, const apt_str_t *value, apr_pool_t *pool)
+{
+	if(!value->length) {
+		return FALSE;
+	}
+
+	/** For the rate attribute, relative changes are a number. (not preceded by a "+" or "-")(w3c ssml)*/
+	if('0'<=value->buf[0] && value->buf[0]<='9') {
+		prosody_rate->type = PROSODY_RATE_TYPE_RELATIVE_CHANGE;
+	}
+	else {
+		prosody_rate->type = PROSODY_RATE_TYPE_LABEL;
+	}
+
+	if(prosody_rate->type == PROSODY_RATE_TYPE_RELATIVE_CHANGE) {
+		prosody_rate->value.relative = apt_float_value_parse(value);
+	}
+	else {
+		prosody_rate->value.label = apt_string_table_value_parse(prosody_rate_string_table,PROSODY_RATE_COUNT,value);
+	}
+
+	return TRUE;
+}
+
+/** Generate MRCP prosody-rate value */
+static apt_bool_t mrcp_prosody_rate_generate(mrcp_prosody_rate_t *prosody_rate, apt_text_stream_t *stream)
+{
+	if(prosody_rate->type == PROSODY_RATE_TYPE_LABEL) {
+		apt_string_table_value_generate(prosody_rate_string_table,PROSODY_RATE_COUNT,prosody_rate->value.label,stream);
+	}
+	else {
+		apt_float_value_generate(prosody_rate->value.relative, stream);
+	}
+
+	return TRUE;
+}
+
+/** Parse MRCP prosody-volume value */
+static apt_bool_t mrcp_prosody_param_volume_parse(mrcp_prosody_volume_t *prosody_volume, const apt_str_t *value, apr_pool_t *pool)
+{
+	if(!value->length) {
+		return FALSE;
+	}
+
+	/** For the volume attribute, relative changes are a number preceded by "+" or "-" (w3c ssml)*/
+	if(value->buf[0]=='+' || value->buf[0]=='-') {
+		prosody_volume->type = PROSODY_VOLUME_TYPE_RELATIVE_CHANGE;
+	}
+	else if('0'<=value->buf[0] && value->buf[0]<='9') {
+		prosody_volume->type = PROSODY_VOLUME_TYPE_NUMERIC;
+	}
+	else {
+		prosody_volume->type = PROSODY_VOLUME_TYPE_LABEL;
+	}
+
+	if(prosody_volume->type == PROSODY_VOLUME_TYPE_RELATIVE_CHANGE) {
+		prosody_volume->value.relative = apt_float_value_parse(value);
+	}
+	else if(prosody_volume->type == PROSODY_VOLUME_TYPE_NUMERIC) {
+		prosody_volume->value.numeric = apt_float_value_parse(value);
+	}
+	else {
+		prosody_volume->value.label = apt_string_table_value_parse(prosody_volume_string_table,PROSODY_VOLUME_COUNT,value);
+	}
+
+	return TRUE;
+}
+
+/** Generate MRCP prosody-volume value */
+static apt_bool_t mrcp_prosody_volume_generate(mrcp_prosody_volume_t *prosody_volume, apt_text_stream_t *stream)
+{
+	if(prosody_volume->type == PROSODY_VOLUME_TYPE_LABEL) {
+		apt_string_table_value_generate(prosody_volume_string_table,PROSODY_VOLUME_COUNT,prosody_volume->value.label,stream);
+	}
+	else if (prosody_volume->type == PROSODY_VOLUME_TYPE_NUMERIC) {
+		apt_float_value_generate(prosody_volume->value.numeric, stream);
+	}
+	else {
+		apt_float_value_generate(prosody_volume->value.relative, stream);
+	}
+
+	return TRUE;
+}
+
 /** Parse MRCP speech-length value */
 static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *speech_length, const apt_str_t *value, apr_pool_t *pool)
 {
@@ -198,8 +283,8 @@ static void mrcp_synth_header_init(mrcp_synth_header_t *synth_header)
 	synth_header->voice_param.age = 0;
 	synth_header->voice_param.variant = 0;
 	apt_string_reset(&synth_header->voice_param.name);
-	synth_header->prosody_param.volume = PROSODY_VOLUME_UNKNOWN;
-	synth_header->prosody_param.rate = PROSODY_RATE_UNKNOWN;
+	synth_header->prosody_param.volume.type = PROSODY_VOLUME_TYPE_UNKNOWN;
+	synth_header->prosody_param.rate.type = PROSODY_RATE_TYPE_UNKNOWN;
 	apt_string_reset(&synth_header->speech_marker);
 	apt_string_reset(&synth_header->speech_language);
 	apt_string_reset(&synth_header->fetch_hint);
@@ -256,10 +341,10 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			apt_string_copy(&synth_header->voice_param.name,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
-			synth_header->prosody_param.volume = apt_string_table_value_parse(prosody_volume_string_table,PROSODY_VOLUME_COUNT,value);
+			mrcp_prosody_param_volume_parse(&synth_header->prosody_param.volume,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_RATE:
-			synth_header->prosody_param.rate = apt_string_table_value_parse(prosody_rate_string_table,PROSODY_RATE_COUNT,value);
+			mrcp_prosody_param_rate_parse(&synth_header->prosody_param.rate,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_MARKER:
 			apt_string_copy(&synth_header->speech_marker,value,pool);
@@ -330,10 +415,10 @@ static apt_bool_t mrcp_synth_header_generate(mrcp_header_accessor_t *accessor, s
 			apt_string_value_generate(&synth_header->voice_param.name,value);
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
-			apt_string_table_value_generate(prosody_volume_string_table,PROSODY_VOLUME_COUNT,synth_header->prosody_param.volume,value);
+			mrcp_prosody_volume_generate(&synth_header->prosody_param.volume,value);
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_RATE:
-			apt_string_table_value_generate(prosody_rate_string_table,PROSODY_RATE_COUNT,synth_header->prosody_param.rate,value);
+			mrcp_prosody_rate_generate(&synth_header->prosody_param.rate,value);
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_MARKER:
 			apt_string_value_generate(&synth_header->speech_marker,value);
