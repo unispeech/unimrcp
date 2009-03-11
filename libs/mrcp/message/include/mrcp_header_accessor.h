@@ -28,9 +28,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Bit field masks are used to define properties */
-typedef int mrcp_header_property_t;
-
 /** MRCP header accessor declaration */
 typedef struct mrcp_header_accessor_t mrcp_header_accessor_t;
 /** MRCP header vtable declaration */
@@ -79,15 +76,15 @@ static APR_INLINE apt_bool_t mrcp_header_vtable_validate(const mrcp_header_vtabl
 }
 
 
-
 /** MRCP header accessor */
 struct mrcp_header_accessor_t {
 	/** Actual header data allocated by accessor */
 	void                       *data;
-	/** Property set explicitly shows which fields are present(set) in entire header */
-	mrcp_header_property_t      property_set;
-	/** Indicates that only name of the header is required ("name:"), no value needed */
-	apt_bool_t                  empty_values;
+
+	/** Array properties (mrcp_header_property_e) */
+	char                       *properties;
+	/** Number of filled properties (header fields) */
+	apr_size_t                  counter;
 	
 	/** Header accessor interface */
 	const mrcp_header_vtable_t *vtable;
@@ -97,8 +94,8 @@ struct mrcp_header_accessor_t {
 static APR_INLINE void mrcp_header_accessor_init(mrcp_header_accessor_t *accessor)
 {
 	accessor->data = NULL;
-	accessor->property_set = 0;
-	accessor->empty_values = FALSE;
+	accessor->properties = NULL;
+	accessor->counter = 0;
 	accessor->vtable = NULL;
 }
 
@@ -112,6 +109,8 @@ static APR_INLINE void* mrcp_header_allocate(mrcp_header_accessor_t *accessor, a
 	if(!accessor->vtable || !accessor->vtable->allocate) {
 		return NULL;
 	}
+	accessor->properties = (char*)apr_pcalloc(pool,sizeof(char)*accessor->vtable->field_count);
+	accessor->counter = 0;
 	return accessor->vtable->allocate(accessor,pool);
 }
 
@@ -132,34 +131,23 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, con
 MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, apt_text_stream_t *text_stream);
 
 /** Set header */
-MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, mrcp_header_property_t mask, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, const mrcp_header_accessor_t *mask, apr_pool_t *pool);
 
 /** Inherit header */
 MRCP_DECLARE(apt_bool_t) mrcp_header_inherit(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *parent, apr_pool_t *pool);
 
 
-
-/** Add property */
-static APR_INLINE void mrcp_header_property_add(mrcp_header_property_t *property_set, apr_size_t id)
-{
-	int mask = 1 << id;
-	*property_set |= mask;
-}
+/** Add name:value property */
+MRCP_DECLARE(void) mrcp_header_property_add(mrcp_header_accessor_t *accessor, apr_size_t id);
 
 /** Remove property */
-static APR_INLINE void mrcp_header_property_remove(mrcp_header_property_t *property_set, apr_size_t id)
-{
-	int mask = 1 << id;
-	*property_set &= ~mask;
-}
+MRCP_DECLARE(void) mrcp_header_property_remove(mrcp_header_accessor_t *accessor, apr_size_t id);
 
 /** Check the property */
-static APR_INLINE apt_bool_t mrcp_header_property_check(mrcp_header_property_t *property_set, apr_size_t id)
-{
-	int mask = 1 << id;
-	return ((*property_set & mask) == mask) ? TRUE : FALSE;
-}
+MRCP_DECLARE(apt_bool_t) mrcp_header_property_check(mrcp_header_accessor_t *accessor, apr_size_t id);
 
+/** Add name only property */
+MRCP_DECLARE(void) mrcp_header_name_property_add(mrcp_header_accessor_t *accessor, apr_size_t id);
 
 APT_END_EXTERN_C
 

@@ -16,6 +16,14 @@
 
 #include "mrcp_header_accessor.h"
 
+typedef enum {
+	MRCP_HEADER_FIELD_NONE       = 0x0,
+	MRCP_HEADER_FIELD_NAME       = 0x1,
+	MRCP_HEADER_FIELD_VALUE      = 0x2,
+	MRCP_HEADER_FIELD_NAME_VALUE = MRCP_HEADER_FIELD_NAME | MRCP_HEADER_FIELD_VALUE
+} mrcp_header_property_e;
+
+
 MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, const apt_pair_t *pair, apr_pool_t *pool)
 {
 	size_t id;
@@ -28,48 +36,95 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_parse(mrcp_header_accessor_t *accessor, con
 		return FALSE;
 	}
 
+	if(!pair->value.length) {
+		mrcp_header_name_property_add(accessor,id);
+		return TRUE;
+	}
+
 	if(accessor->vtable->parse_field(accessor,id,&pair->value,pool) == FALSE) {
 		return FALSE;
 	}
 	
-	mrcp_header_property_add(&accessor->property_set,id);
+	mrcp_header_property_add(accessor,id);
 	return TRUE;
 }
 
 MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, apt_text_stream_t *text_stream)
 {
 	const apt_str_t *name;
-	apr_size_t i;
-	mrcp_header_property_t property_set;
+	apr_size_t i,j;
+	char prop;
 
 	if(!accessor->vtable) {
 		return FALSE;
 	}
 
-	property_set = accessor->property_set;
-	for(i=0; i<accessor->vtable->field_count && property_set != 0; i++) {
-		if(mrcp_header_property_check(&property_set,i) == TRUE) {
+	for(i=0, j=0; i<accessor->vtable->field_count && j<accessor->counter; i++) {
+		prop = accessor->properties[i];
+		if((prop & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
+			j++;
 			name = apt_string_table_str_get(accessor->vtable->field_table,accessor->vtable->field_count,i);
-			if(!name) {
-				continue;
-			}
+			if(!name) continue;
 			
 			apt_text_header_name_generate(name,text_stream);
-			if(accessor->empty_values == FALSE) {
+			if((prop & MRCP_HEADER_FIELD_VALUE) == MRCP_HEADER_FIELD_VALUE) {
 				accessor->vtable->generate_field(accessor,i,text_stream);
 			}
 			apt_text_eol_insert(text_stream);
-			
-			mrcp_header_property_remove(&property_set,i);
 		}
 	}
+
 	return TRUE;
 }
 
-MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, mrcp_header_property_t mask, apr_pool_t *pool)
+MRCP_DECLARE(void) mrcp_header_property_add(mrcp_header_accessor_t *accessor, apr_size_t id)
 {
-	size_t i;
-	mrcp_header_property_t property_set = src->property_set;
+	if(id < accessor->vtable->field_count) {
+		char *prop = &accessor->properties[id];
+		if((*prop & MRCP_HEADER_FIELD_NAME) != MRCP_HEADER_FIELD_NAME) {
+			accessor->counter++;
+		}
+		*prop = MRCP_HEADER_FIELD_NAME_VALUE;
+	}
+}
+
+MRCP_DECLARE(void) mrcp_header_name_property_add(mrcp_header_accessor_t *accessor, apr_size_t id)
+{
+	if(id < accessor->vtable->field_count) {
+		char *prop = &accessor->properties[id];
+		if((*prop & MRCP_HEADER_FIELD_NAME) != MRCP_HEADER_FIELD_NAME) {
+			*prop = MRCP_HEADER_FIELD_NAME;
+			accessor->counter++;
+		}
+	}
+}
+
+
+MRCP_DECLARE(void) mrcp_header_property_remove(mrcp_header_accessor_t *accessor, apr_size_t id)
+{
+	if(id < accessor->vtable->field_count) {
+		char *prop = &accessor->properties[id];
+		if((*prop & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
+			accessor->counter--;
+		}
+		*prop = MRCP_HEADER_FIELD_NONE;
+	}
+}
+
+MRCP_DECLARE(apt_bool_t) mrcp_header_property_check(mrcp_header_accessor_t *accessor, apr_size_t id)
+{
+	if((id < accessor->vtable->field_count) && accessor->properties) {
+		if((accessor->properties[id] & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, const mrcp_header_accessor_t *mask, apr_pool_t *pool)
+{
+	apr_size_t i,j;
 
 	if(!accessor->vtable || !src->vtable) {
 		return FALSE;
@@ -77,24 +132,25 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_set(mrcp_header_accessor_t *accessor, const
 
 	mrcp_header_allocate(accessor,pool);
 
-	property_set = src->property_set;
-	for(i=0; i<src->vtable->field_count && property_set != 0; i++) {
-		if(mrcp_header_property_check(&property_set,i) == TRUE) {
-			if(mrcp_header_property_check(&mask,i) == TRUE) {
+	for(i=0, j=0; i < src->vtable->field_count && j < src->counter; i++) {
+		if((mask->properties[i] & src->properties[i] & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
+			j++;
+			if((src->properties[i] & MRCP_HEADER_FIELD_VALUE) == MRCP_HEADER_FIELD_VALUE) {
 				accessor->vtable->duplicate_field(accessor,src,i,pool);
-				mrcp_header_property_add(&accessor->property_set,i);
+				mrcp_header_property_add(accessor,i);
 			}
-			
-			mrcp_header_property_remove(&property_set,i);
+			else {
+				mrcp_header_name_property_add(accessor,i);
+			}
 		}
 	}
+
 	return TRUE;
 }
 
 MRCP_DECLARE(apt_bool_t) mrcp_header_inherit(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *parent, apr_pool_t *pool)
 {
-	size_t i;
-	mrcp_header_property_t property_set;
+	apr_size_t i,j;
 
 	if(!accessor->vtable || !parent->vtable) {
 		return FALSE;
@@ -102,16 +158,18 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_inherit(mrcp_header_accessor_t *accessor, c
 
 	mrcp_header_allocate(accessor,pool);
 
-	property_set = parent->property_set;
-	for(i=0; i<parent->vtable->field_count && property_set != 0; i++) {
-		if(mrcp_header_property_check(&property_set,i) == TRUE) {
-			if(mrcp_header_property_check(&accessor->property_set,i) != TRUE) {
+	for(i=0, j=0; i<parent->vtable->field_count && j < parent->counter; i++) {
+		if((parent->properties[i] & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
+			j++;
+			if((parent->properties[i] & MRCP_HEADER_FIELD_VALUE) == MRCP_HEADER_FIELD_VALUE) {
 				accessor->vtable->duplicate_field(accessor,parent,i,pool);
-				mrcp_header_property_add(&accessor->property_set,i);
+				mrcp_header_property_add(accessor,i);
 			}
-			
-			mrcp_header_property_remove(&property_set,i);
+			else {
+				mrcp_header_name_property_add(accessor,i);
+			}
 		}
 	}
+
 	return TRUE;
 }

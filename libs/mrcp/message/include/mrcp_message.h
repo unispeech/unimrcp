@@ -49,7 +49,7 @@ typedef enum {
 	/* success codes (2xx) */
 	MRCP_STATUS_CODE_SUCCESS                   = 200,
 	MRCP_STATUS_CODE_SUCCESS_WITH_IGNORE       = 201,
-	/* failure codec (4xx) */
+	/* failure codes (4xx) */
 	MRCP_STATUS_CODE_METHOD_NOT_ALLOWED        = 401,
 	MRCP_STATUS_CODE_METHOD_NOT_VALID          = 402,
 	MRCP_STATUS_CODE_UNSUPPORTED_PARAM         = 403,
@@ -227,13 +227,19 @@ static APR_INLINE void* mrcp_generic_header_prepare(mrcp_message_t *mrcp_message
 /** Add MRCP generic-header proprerty */
 static APR_INLINE void mrcp_generic_header_property_add(mrcp_message_t *mrcp_message, size_t id)
 {
-	mrcp_header_property_add(&mrcp_message->header.generic_header_accessor.property_set,id);
+	mrcp_header_property_add(&mrcp_message->header.generic_header_accessor,id);
+}
+
+/** Add MRCP generic-header name only proprerty (usefull only in case of GET-PARAMS request) */
+static APR_INLINE void mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_message, size_t id)
+{
+	mrcp_header_name_property_add(&mrcp_message->header.generic_header_accessor,id);
 }
 
 /** Check MRCP generic-header proprerty */
 static APR_INLINE apt_bool_t mrcp_generic_header_property_check(mrcp_message_t *mrcp_message, size_t id)
 {
-	return mrcp_header_property_check(&mrcp_message->header.generic_header_accessor.property_set,id);
+	return mrcp_header_property_check(&mrcp_message->header.generic_header_accessor,id);
 }
 
 
@@ -252,13 +258,19 @@ static APR_INLINE void* mrcp_resource_header_prepare(mrcp_message_t *mrcp_messag
 /** Add MRCP resource-header proprerty */
 static APR_INLINE void mrcp_resource_header_property_add(mrcp_message_t *mrcp_message, size_t id)
 {
-	mrcp_header_property_add(&mrcp_message->header.resource_header_accessor.property_set,id);
+	mrcp_header_property_add(&mrcp_message->header.resource_header_accessor,id);
+}
+
+/** Add MRCP resource-header name only proprerty (usefull only in case of GET-PARAMS request) */
+static APR_INLINE void mrcp_resource_header_name_property_add(mrcp_message_t *mrcp_message, size_t id)
+{
+	mrcp_header_name_property_add(&mrcp_message->header.resource_header_accessor,id);
 }
 
 /** Check MRCP resource-header proprerty */
 static APR_INLINE apt_bool_t mrcp_resource_header_property_check(mrcp_message_t *mrcp_message, size_t id)
 {
-	return mrcp_header_property_check(&mrcp_message->header.resource_header_accessor.property_set,id);
+	return mrcp_header_property_check(&mrcp_message->header.resource_header_accessor,id);
 }
 
 APT_END_EXTERN_C

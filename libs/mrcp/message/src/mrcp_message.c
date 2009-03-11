@@ -530,11 +530,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *message_
 	mrcp_header_set(
 		&message_header->resource_header_accessor,
 		&src->resource_header_accessor,
-		src->resource_header_accessor.property_set,pool);
+		&src->resource_header_accessor,pool);
 	mrcp_header_set(
 		&message_header->generic_header_accessor,
 		&src->generic_header_accessor,
-		src->generic_header_accessor.property_set,pool);
+		&src->generic_header_accessor,pool);
 	return TRUE;
 }
 
@@ -544,12 +544,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *message_
 	mrcp_header_set(
 		&message_header->resource_header_accessor,
 		&src->resource_header_accessor,
-		message_header->resource_header_accessor.property_set,
+		&message_header->resource_header_accessor,
 		pool);
 	mrcp_header_set(
 		&message_header->generic_header_accessor,
 		&src->generic_header_accessor,
-		message_header->generic_header_accessor.property_set,
+		&message_header->generic_header_accessor,
 		pool);
 	return TRUE;
 }
