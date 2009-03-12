@@ -36,9 +36,7 @@ typedef enum {
 	RECOGNIZER_HEADER_NO_INPUT_TIMEOUT,
 	RECOGNIZER_HEADER_RECOGNITION_TIMEOUT,
 	RECOGNIZER_HEADER_WAVEFORM_URI,
-	RECOGNIZER_HEADER_INPUT_WAVEFORM_URI,
 	RECOGNIZER_HEADER_COMPLETION_CAUSE,
-	RECOGNIZER_HEADER_COMPLETION_REASON,
 	RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK,
 	RECOGNIZER_HEADER_START_INPUT_TIMERS,
 	RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT,
@@ -51,11 +49,18 @@ typedef enum {
 	RECOGNIZER_HEADER_SAVE_WAVEFORM,
 	RECOGNIZER_HEADER_NEW_AUDIO_CHANNEL,
 	RECOGNIZER_HEADER_SPEECH_LANGUAGE,
+
+	/** Additional headers for MRCP v2 */
+	RECOGNIZER_HEADER_INPUT_TYPE,
+	RECOGNIZER_HEADER_INPUT_WAVEFORM_URI,
+	RECOGNIZER_HEADER_COMPLETION_REASON,
+	RECOGNIZER_HEADER_MEDIA_TYPE,
 	RECOGNIZER_HEADER_VER_BUFFER_UTTERANCE,
 	RECOGNIZER_HEADER_RECOGNITION_MODE,
 	RECOGNIZER_HEADER_CANCEL_IF_QUEUE,
 	RECOGNIZER_HEADER_HOTWORD_MAX_DURATION,
 	RECOGNIZER_HEADER_HOTWORD_MIN_DURATION,
+	RECOGNIZER_HEADER_INTERPRET_TEXT,
 	RECOGNIZER_HEADER_DTMF_BUFFER_TIME,
 	RECOGNIZER_HEADER_CLEAR_DTMF_BUFFER,
 	RECOGNIZER_HEADER_EARLY_NO_MATCH,
@@ -77,6 +82,8 @@ typedef enum {
 	RECOGNIZER_COMPLETION_CAUSE_TOO_MUCH_SPEECH_TIMEOUT = 8,
 	RECOGNIZER_COMPLETION_CAUSE_URI_FAILURE             = 9,
 	RECOGNIZER_COMPLETION_CAUSE_LANGUAGE_UNSUPPORTED    = 10,
+
+	/** Additional completion-cause for MRCP v2 */
 	RECOGNIZER_COMPLETION_CAUSE_CANCELLED               = 11,
 	RECOGNIZER_COMPLETION_CAUSE_SEMANTICS_FAILURE       = 12,
 	RECOGNIZER_COMPLETION_CAUSE_PARTIAL_MATCH           = 13,
@@ -112,15 +119,9 @@ struct mrcp_recog_header_t {
 	/** MUST be present in the RECOGNITION-COMPLETE event if the Save-Waveform
 	header was set to true */
 	apt_str_t                     waveform_uri;
-	/** Optional header specifies a URI pointing to audio content to be
-    processed by the RECOGNIZE operation */
-	apt_str_t                     input_waveform_uri;
 	/** MUST be part of a RECOGNITION-COMPLETE, event coming from
     the recognizer resource to the client */
 	mrcp_recog_completion_cause_e completion_cause;
-	/** MAY be specified in a RECOGNITION-COMPLETE event coming from
-    the recognizer resource to the client */
-	apt_str_t                     completion_reason;
 	/** MAY be sent as part of the SET-PARAMS or GET-PARAMS request */
 	apt_str_t                     recognizer_context_block;
 	/** MAY be sent as part of the RECOGNIZE request. A value of false tells
@@ -158,6 +159,19 @@ struct mrcp_recog_header_t {
 	/** Specifies the language of recognition grammar data within
     a session or request, if it is not specified within the data */
 	apt_str_t                     speech_language;
+
+	/** Additional headers for MRCP v2 */
+	/** Specifies if the input that caused a barge-in was DTMF or speech */
+	apt_str_t                     input_type;
+	/** Optional header specifies a URI pointing to audio content to be
+    processed by the RECOGNIZE operation */
+	apt_str_t                     input_waveform_uri;
+	/** MAY be specified in a RECOGNITION-COMPLETE event coming from
+    the recognizer resource to the client */
+	apt_str_t                     completion_reason;
+	/** tells the server resource the Media Type in which to store captured 
+	audio such as the one captured and returned by the Waveform-URI header */
+	apt_str_t                     media_type;
 	/** lets the client request the server to buffer the
     utterance associated with this recognition request into a buffer
     available to a co-resident verification resource */
@@ -174,6 +188,8 @@ struct mrcp_recog_header_t {
 	/** Specifies the minimum length of an utterance (in seconds) that will
     be considered for Hotword recognition */
 	apr_size_t                    hotword_min_duration;
+	/** Provides a pointer to the text for which a natural language interpretation is desired */
+	apt_str_t                     interpret_text;
 	/** MAY be specified in a GET-PARAMS or SET-PARAMS method and
     is used to specify the size in time, in milliseconds, of the
     typeahead buffer for the recognizer */
