@@ -604,3 +604,8 @@ MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_recog_header_vtable_get(mrcp_vers
 	}
 	return &v2_vtable;
 }
+
+MRCP_DECLARE(const apt_str_t*) mrcp_recog_completion_cause_get(mrcp_recog_completion_cause_e completion_cause, mrcp_version_e version)
+{
+	return apt_string_table_str_get(completion_cause_string_table,RECOGNIZER_COMPLETION_CAUSE_COUNT,completion_cause);
+}
