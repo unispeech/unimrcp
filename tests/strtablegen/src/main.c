@@ -22,9 +22,11 @@ static apt_bool_t is_unique(const apt_str_table_item_t table[], apr_size_t count
 							apr_size_t item_index, apr_size_t char_index, char value)
 {
 	size_t i;
+	const char *buf;
 	for(i=0; i<count; i++) {
+		buf = table[i].value.buf;
 		if(i != item_index && char_index < table[i].value.length && 
-			value == table[i].value.buf[char_index]) {
+			tolower(value) == tolower(buf[char_index])) {
 			return FALSE;
 		}
 	}
