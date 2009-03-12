@@ -350,6 +350,9 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 		case RECOGNIZER_HEADER_WAVEFORM_URI:
 			apt_string_value_generate(&recog_header->waveform_uri,value);
 			break;
+		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
+			mrcp_completion_cause_generate(recog_header->completion_cause,value);
+			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
 			apt_string_value_generate(&recog_header->recognizer_context_block,value);
 			break;
