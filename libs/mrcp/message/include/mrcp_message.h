@@ -230,7 +230,7 @@ static APR_INLINE void mrcp_generic_header_property_add(mrcp_message_t *mrcp_mes
 	mrcp_header_property_add(&mrcp_message->header.generic_header_accessor,id);
 }
 
-/** Add MRCP generic-header name only proprerty (usefull only in case of GET-PARAMS request) */
+/** Add MRCP generic-header name only proprerty (should be used to construct empty headers in case of GET-PARAMS request) */
 static APR_INLINE void mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_message, size_t id)
 {
 	mrcp_header_name_property_add(&mrcp_message->header.generic_header_accessor,id);
@@ -261,7 +261,7 @@ static APR_INLINE void mrcp_resource_header_property_add(mrcp_message_t *mrcp_me
 	mrcp_header_property_add(&mrcp_message->header.resource_header_accessor,id);
 }
 
-/** Add MRCP resource-header name only proprerty (usefull only in case of GET-PARAMS request) */
+/** Add MRCP resource-header name only proprerty (should be used to construct empty headers in case of GET-PARAMS request) */
 static APR_INLINE void mrcp_resource_header_name_property_add(mrcp_message_t *mrcp_message, size_t id)
 {
 	mrcp_header_name_property_add(&mrcp_message->header.resource_header_accessor,id);
