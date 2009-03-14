@@ -18,6 +18,7 @@
 #include "apt_log.h"
 
 apt_test_suite_t* parse_gen_test_suite_create(apr_pool_t *pool);
+apt_test_suite_t* set_get_test_suite_create(apr_pool_t *pool);
 
 int main(int argc, const char * const *argv)
 {
@@ -35,6 +36,8 @@ int main(int argc, const char * const *argv)
 	pool = apt_test_framework_pool_get(test_framework);
 
 	/* create test suites and add them to test framework */
+	test_suite = set_get_test_suite_create(pool);
+	apt_test_framework_suite_add(test_framework,test_suite);
 	test_suite = parse_gen_test_suite_create(pool);
 	apt_test_framework_suite_add(test_framework,test_suite);
 
