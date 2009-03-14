@@ -63,6 +63,10 @@ APT_DECLARE(apt_pair_arr_t*) apt_pair_array_copy(const apt_pair_arr_t *src, apr_
 APT_DECLARE(apt_bool_t) apt_pair_array_append(apt_pair_arr_t *arr, const apt_str_t *name, const apt_str_t *value, apr_pool_t *pool);
 /** Find name-value pair by name */
 APT_DECLARE(const apt_pair_t*) apt_pair_array_find(const apt_pair_arr_t *arr, const apt_str_t *name);
+/** Get size of pair array */
+APT_DECLARE(int) apt_pair_array_size_get(const apt_pair_arr_t *arr);
+/** Get name-value pair by id */
+APT_DECLARE(const apt_pair_t*) apt_pair_array_get(const apt_pair_arr_t *arr, int id);
 
 APT_END_EXTERN_C
 

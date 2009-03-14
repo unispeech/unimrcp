@@ -69,3 +69,18 @@ APT_DECLARE(const apt_pair_t*) apt_pair_array_find(const apt_pair_arr_t *arr, co
 	}
 	return NULL;
 }
+
+/** Get size of pair array */
+APT_DECLARE(int) apt_pair_array_size_get(const apt_pair_arr_t *arr)
+{
+	return arr->nelts;
+}
+
+/** Get name-value pair by id */
+APT_DECLARE(const apt_pair_t*) apt_pair_array_get(const apt_pair_arr_t *arr, int id)
+{
+	if(id < arr->nelts) {
+		return (apt_pair_t*)arr->elts + id;
+	}
+	return NULL;
+}
