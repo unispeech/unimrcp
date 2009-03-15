@@ -29,7 +29,8 @@ static const apt_str_table_item_t synth_method_string_table[] = {
 	{{"PAUSE",             5},0},
 	{{"RESUME",            6},0},
 	{{"BARGE-IN-OCCURRED",17},0},
-	{{"CONTROL",           7},0}
+	{{"CONTROL",           7},0},
+	{{"DEFINE-LEXICON",   14},0}
 };
 
 /** String table of MRCP synthesizer events (mrcp_synthesizer_event_id) */

@@ -372,7 +372,7 @@ static apt_bool_t synth_request_define_lexicon(mrcp_synth_state_machine_t *state
 		return synth_request_dispatch(state_machine,message);
 	}
 
-	/* sending failuer response */
+	/* sending failure response */
 	response_message = mrcp_response_create(message,message->pool);
 	response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
 	return synth_response_dispatch(state_machine,response_message);
@@ -380,11 +380,7 @@ static apt_bool_t synth_request_define_lexicon(mrcp_synth_state_machine_t *state
 
 static apt_bool_t synth_response_define_lexicon(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-LEXICON Response [%d]",message->start_line.request_id);
-	/* append active id list */
-	active_request_id_list_append(generic_header,state_machine->speaker->start_line.request_id);
-	mrcp_generic_header_property_add(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
 	return synth_response_dispatch(state_machine,message);
 }
 
