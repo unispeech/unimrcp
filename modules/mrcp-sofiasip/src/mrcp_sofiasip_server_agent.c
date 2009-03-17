@@ -372,6 +372,22 @@ static void mrcp_sofia_on_resource_discover(mrcp_sofia_agent_t   *sofia_agent,
 									        sip_t const          *sip,
 									        tagi_t                tags[])
 {
+	char sdp_str[2048];
+	char *local_sdp_str = NULL;
+
+	const char *ip = sofia_agent->config->ext_ip ? 
+		sofia_agent->config->ext_ip : sofia_agent->config->local_ip;
+
+	if(sdp_resource_discovery_string_generate(ip,sofia_agent->config->origin,sdp_str,sizeof(sdp_str)) > 0) {
+		local_sdp_str = sdp_str;
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP\n[%s]\n", local_sdp_str);
+	}
+
+	nua_respond(nh, SIP_200_OK, 
+				NUTAG_WITH_CURRENT(sofia_agent->nua),
+				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
+				TAG_END());
 }
 
 /** This callback will be called by SIP stack to process incoming events */

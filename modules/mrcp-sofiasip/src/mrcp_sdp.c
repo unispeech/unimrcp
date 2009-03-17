@@ -357,3 +357,32 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 	control_media->port = (apr_port_t)sdp_media->m_port;
 	return TRUE;
 }
+
+/** Generate SDP resource discovery string */
+MRCP_DECLARE(apr_size_t) sdp_resource_discovery_string_generate(const char *ip, const char *origin, char *buffer, apr_size_t size)
+{
+	apr_size_t offset = 0;
+	if(!ip) {
+		ip = "0.0.0.0";
+	}
+	if(!origin) {
+		origin = "-";
+	}
+	buffer[0] = '\0';
+	offset += snprintf(buffer+offset,size-offset,
+			"v=0\r\n"
+			"o=%s 0 0 IN IP4 %s\r\n"
+			"s=-\r\n"
+			"c=IN IP4 %s\r\n"
+			"t=0 0\r\n"
+			"m=application 0 TCP/MRCPv2 1\r\n"
+			"a=resource:speechsynth\r\n"
+			"a=resource:speechrecog\r\n"
+			"m=audio 0 RTP/AVP 0 8\r\n"
+			"a=rtpmap:0 PCMU/8000\r\n"
+			"a=rtpmap:8 PCMA/8000\r\n",
+			origin,
+			ip,
+			ip);
+	return offset;
+}
