@@ -246,7 +246,9 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 	apr_thread_mutex_lock(engine->request_queue_guard);
 	msg = apt_cyclic_queue_pop(engine->request_queue);
 	while(msg) {
+		apr_thread_mutex_unlock(engine->request_queue_guard);
 		mpf_engine_msg_process(engine,msg);
+		apr_thread_mutex_lock(engine->request_queue_guard);
 		apt_task_msg_release(msg);
 		
 		msg = apt_cyclic_queue_pop(engine->request_queue);
