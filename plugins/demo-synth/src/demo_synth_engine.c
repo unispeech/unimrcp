@@ -285,6 +285,53 @@ static apt_bool_t demo_synth_channel_resume(mrcp_engine_channel_t *channel, mrcp
 	return TRUE;
 }
 
+/** Process SET-PARAMS request */
+static apt_bool_t demo_synth_channel_set_params(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	mrcp_synth_header_t *req_synth_header;
+	/* get synthesizer header */
+	req_synth_header = mrcp_resource_header_get(request);
+	if(req_synth_header) {
+		/* check voice age header */
+		if(mrcp_resource_header_property_check(request,SYNTHESIZER_HEADER_VOICE_AGE) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Voice Age [%d]",req_synth_header->voice_param.age);
+		}
+		/* check voice name header */
+		if(mrcp_resource_header_property_check(request,SYNTHESIZER_HEADER_VOICE_NAME) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Voice Name [%s]",req_synth_header->voice_param.name);
+		}
+	}
+	
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
+}
+
+/** Process GET-PARAMS request */
+static apt_bool_t demo_synth_channel_get_params(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	mrcp_synth_header_t *req_synth_header;
+	/* get synthesizer header */
+	req_synth_header = mrcp_resource_header_get(request);
+	if(req_synth_header) {
+		mrcp_synth_header_t *res_synth_header = mrcp_resource_header_prepare(response);
+		/* check voice age header */
+		if(mrcp_resource_header_property_check(request,SYNTHESIZER_HEADER_VOICE_AGE) == TRUE) {
+			res_synth_header->voice_param.age = 25;
+			mrcp_resource_header_property_add(response,SYNTHESIZER_HEADER_VOICE_AGE);
+		}
+		/* check voice name header */
+		if(mrcp_resource_header_property_check(request,SYNTHESIZER_HEADER_VOICE_NAME) == TRUE) {
+			apt_string_set(&res_synth_header->voice_param.name,"David");
+			mrcp_resource_header_property_add(response,SYNTHESIZER_HEADER_VOICE_NAME);
+		}
+	}
+
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(channel,response);
+	return TRUE;
+}
+
 /** Dispatch MRCP request */
 static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
@@ -292,8 +339,10 @@ static apt_bool_t demo_synth_channel_request_dispatch(mrcp_engine_channel_t *cha
 	mrcp_message_t *response = mrcp_response_create(request,request->pool);
 	switch(request->start_line.method_id) {
 		case SYNTHESIZER_SET_PARAMS:
+			processed = demo_synth_channel_set_params(channel,request,response);
 			break;
 		case SYNTHESIZER_GET_PARAMS:
+			processed = demo_synth_channel_get_params(channel,request,response);
 			break;
 		case SYNTHESIZER_SPEAK:
 			processed = demo_synth_channel_speak(channel,request,response);
