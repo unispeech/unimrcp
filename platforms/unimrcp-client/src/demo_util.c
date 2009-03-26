@@ -116,6 +116,12 @@ mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_chan
 				recog_header->cancel_if_queue = FALSE;
 				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CANCEL_IF_QUEUE);
 			}
+			recog_header->no_input_timeout = 5000;
+			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
+			recog_header->recognition_timeout = 10000;
+			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_RECOGNITION_TIMEOUT);
+			recog_header->start_input_timers = TRUE;
+			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_START_INPUT_TIMERS);
 		}
 		/* set message body */
 		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
