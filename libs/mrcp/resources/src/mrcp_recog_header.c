@@ -16,7 +16,7 @@
 
 #include "mrcp_recog_header.h"
 
-/** String table of MRCP recognizer headers (mrcp_recog_header_id) */
+/** String table of MRCPv1 recognizer headers (mrcp_recog_header_id) */
 static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},7},
 	{{"Sensitivity-Level",          17},3},
@@ -53,7 +53,7 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Early-No-Match",             14},0}
 };
 
-/** String table of mrcpv2 recognizer headers (mrcp_recog_header_id) */
+/** String table of MRCPv2 recognizer headers (mrcp_recog_header_id) */
 static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},8},
 	{{"Sensitivity-Level",          17},3},
@@ -90,8 +90,30 @@ static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Early-No-Match",             14},0}
 };
 
-/** String table of MRCP recognizer completion-cause fields (mrcp_recog_completion_cause_e) */
-static const apt_str_table_item_t completion_cause_string_table[] = {
+/** String table of MRCPv1 recognizer completion-cause fields (mrcp_recog_completion_cause_e) */
+static const apt_str_table_item_t v1_completion_cause_string_table[] = {
+	{{"success",                     7},1},
+	{{"no-match",                    8},8},
+	{{"no-input-timeout",           16},3},
+	{{"recognition-timeout",        19},0},
+	{{"gram-load-failure",          17},7},
+	{{"gram-comp-failure",          17},5},
+	{{"error",                       5},0},
+	{{"speech-too-early",           16},1},
+	{{"too-much-speech-timeout",    23},0},
+	{{"uri-failure",                11},0},
+	{{"language-unsupported",       20},0},
+	{{"cancelled",                   9},0},
+	{{"semantics-failure",          17},2},
+	{{"partial-match",              13},13},
+	{{"partial-match-maxtime",      21},13},
+	{{"no-match-maxtime",           16},9},
+	{{"gram-definition-failure",    23},5}
+};
+
+
+/** String table of MRCPv2 recognizer completion-cause fields (mrcp_recog_completion_cause_e) */
+static const apt_str_table_item_t v2_completion_cause_string_table[] = {
 	{{"success",                     7},7},
 	{{"no-match",                    8},4},
 	{{"no-input-timeout",           16},3},
@@ -111,23 +133,19 @@ static const apt_str_table_item_t completion_cause_string_table[] = {
 	{{"grammar-definition-failure", 26},9}
 };
 
-
 /** Generate MRCP recognizer completion-cause */
-static apt_bool_t mrcp_completion_cause_generate(mrcp_recog_completion_cause_e completion_cause, apt_text_stream_t *stream)
+static apt_bool_t mrcp_completion_cause_generate(mrcp_recog_completion_cause_e completion_cause, const apt_str_t *name, apt_text_stream_t *stream)
 {
-	int length;
-	const apt_str_t *name = apt_string_table_str_get(completion_cause_string_table,RECOGNIZER_COMPLETION_CAUSE_COUNT,completion_cause);
-	if(!name) {
-		return FALSE;
-	}
-	length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT" ",completion_cause);
+	int length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT" ",completion_cause);
 	if(length <= 0) {
 		return FALSE;
 	}
 	stream->pos += length;
 
-	memcpy(stream->pos,name->buf,name->length);
-	stream->pos += name->length;
+	if(name) {
+		memcpy(stream->pos,name->buf,name->length);
+		stream->pos += name->length;
+	}
 	return TRUE;
 }
 
@@ -181,20 +199,10 @@ static void* mrcp_recog_header_allocate(mrcp_header_accessor_t *accessor, apr_po
 }
 
 /** Parse MRCP recognizer header */
-static apt_bool_t mrcp_recog_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_recog_header_parse(mrcp_recog_header_t *recog_header, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_bool_t status = TRUE;
-	mrcp_recog_header_t *recog_header = accessor->data;
 	switch(id) {
-		case RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD:
-			recog_header->confidence_threshold = apt_float_value_parse(value);
-			break;
-		case RECOGNIZER_HEADER_SENSITIVITY_LEVEL:
-			recog_header->sensitivity_level = apt_float_value_parse(value);
-			break;
-		case RECOGNIZER_HEADER_SPEED_VS_ACCURACY:
-			recog_header->speed_vs_accuracy = apt_float_value_parse(value);
-			break;
 		case RECOGNIZER_HEADER_N_BEST_LIST_LENGTH:
 			recog_header->n_best_list_length = apt_size_value_parse(value);
 			break;
@@ -303,41 +311,48 @@ static APR_INLINE apt_bool_t apt_size_value_generate_from_float(float value, apt
 	return apt_size_value_generate(s,stream);
 }
 
-/** Parse MRCP v1 recognizer header */
-static apt_bool_t mrcp_v1_recog_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
+/** Parse MRCPv1 recognizer header */
+static apt_bool_t mrcp_v1_recog_header_parse(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
+	mrcp_recog_header_t *recog_header = accessor->data;
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
-		mrcp_recog_header_t *recog_header = accessor->data;
 		recog_header->confidence_threshold = apt_size_value_parse_as_float(value);
 		return TRUE;
 	}
 	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
-		mrcp_recog_header_t *recog_header = accessor->data;
 		recog_header->sensitivity_level = apt_size_value_parse_as_float(value);
 		return TRUE;
 	}
 	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
-		mrcp_recog_header_t *recog_header = accessor->data;
 		recog_header->speed_vs_accuracy = apt_size_value_parse_as_float(value);
 		return TRUE;
 	}
-	return mrcp_recog_header_parse(accessor,id,value,pool);
+	return mrcp_recog_header_parse(recog_header,id,value,pool);
+}
+
+/** Parse MRCPv2 recognizer header */
+static apt_bool_t mrcp_v2_recog_header_parse(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
+{
+	mrcp_recog_header_t *recog_header = accessor->data;
+	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
+		recog_header->confidence_threshold = apt_float_value_parse(value);
+		return TRUE;
+	}
+	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
+		recog_header->sensitivity_level = apt_float_value_parse(value);
+		return TRUE;
+	}
+	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
+		recog_header->speed_vs_accuracy = apt_float_value_parse(value);
+		return TRUE;
+	}
+	return mrcp_recog_header_parse(recog_header,id,value,pool);
 }
 
 /** Generate MRCP recognizer header */
-static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_recog_header_generate(mrcp_recog_header_t *recog_header, apr_size_t id, apt_text_stream_t *value)
 {
-	mrcp_recog_header_t *recog_header = accessor->data;
 	switch(id) {
-		case RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD:
-			apt_float_value_generate(recog_header->confidence_threshold,value);
-			break;
-		case RECOGNIZER_HEADER_SENSITIVITY_LEVEL:
-			apt_float_value_generate(recog_header->sensitivity_level,value);
-			break;
-		case RECOGNIZER_HEADER_SPEED_VS_ACCURACY:
-			apt_float_value_generate(recog_header->speed_vs_accuracy,value);
-			break;
 		case RECOGNIZER_HEADER_N_BEST_LIST_LENGTH:
 			apt_size_value_generate(recog_header->n_best_list_length,value);
 			break;
@@ -349,9 +364,6 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 			break;
 		case RECOGNIZER_HEADER_WAVEFORM_URI:
 			apt_string_value_generate(&recog_header->waveform_uri,value);
-			break;
-		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
-			mrcp_completion_cause_generate(recog_header->completion_cause,value);
 			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
 			apt_string_value_generate(&recog_header->recognizer_context_block,value);
@@ -434,26 +446,54 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_header_accessor_t *accessor, s
 	return TRUE;
 }
 
-/** Generate MRCP v1 recognizer header */
-static apt_bool_t mrcp_v1_recog_header_generate(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value)
+/** Generate MRCPv1 recognizer header */
+static apt_bool_t mrcp_v1_recog_header_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value)
 {
+	mrcp_recog_header_t *recog_header = accessor->data;
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
-		mrcp_recog_header_t *recog_header = accessor->data;
 		return apt_size_value_generate_from_float(recog_header->confidence_threshold,value);
 	}
 	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
-		mrcp_recog_header_t *recog_header = accessor->data;
 		return apt_size_value_generate_from_float(recog_header->sensitivity_level,value);
 	}
 	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
-		mrcp_recog_header_t *recog_header = accessor->data;
 		return apt_size_value_generate_from_float(recog_header->speed_vs_accuracy,value);
 	}
-	return mrcp_recog_header_generate(accessor,id,value);
+	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
+		const apt_str_t *name = apt_string_table_str_get(
+			v1_completion_cause_string_table,
+			RECOGNIZER_COMPLETION_CAUSE_COUNT,
+			recog_header->completion_cause);
+		return mrcp_completion_cause_generate(recog_header->completion_cause,name,value);
+	}
+	return mrcp_recog_header_generate(recog_header,id,value);
+}
+
+/** Generate MRCPv2 recognizer header */
+static apt_bool_t mrcp_v2_recog_header_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value)
+{
+	mrcp_recog_header_t *recog_header = accessor->data;
+	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
+		return apt_float_value_generate(recog_header->confidence_threshold,value);
+	}
+	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
+		return apt_float_value_generate(recog_header->sensitivity_level,value);
+	}
+	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
+		return apt_float_value_generate(recog_header->speed_vs_accuracy,value);
+	}
+	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
+		const apt_str_t *name = apt_string_table_str_get(
+			v2_completion_cause_string_table,
+			RECOGNIZER_COMPLETION_CAUSE_COUNT,
+			recog_header->completion_cause);
+		return mrcp_completion_cause_generate(recog_header->completion_cause,name,value);
+	}
+	return mrcp_recog_header_generate(recog_header,id,value);
 }
 
 /** Duplicate MRCP recognizer header */
-static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, size_t id, apr_pool_t *pool)
+static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool)
 {
 	mrcp_recog_header_t *recog_header = accessor->data;
 	const mrcp_recog_header_t *src_recog_header = src->data;
@@ -590,8 +630,8 @@ static const mrcp_header_vtable_t v1_vtable = {
 static const mrcp_header_vtable_t v2_vtable = {
 	mrcp_recog_header_allocate,
 	NULL, /* nothing to destroy */
-	mrcp_recog_header_parse,
-	mrcp_recog_header_generate,
+	mrcp_v2_recog_header_parse,
+	mrcp_v2_recog_header_generate,
 	mrcp_recog_header_duplicate,
 	v2_recog_header_string_table,
 	RECOGNIZER_HEADER_COUNT
@@ -607,5 +647,10 @@ MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_recog_header_vtable_get(mrcp_vers
 
 MRCP_DECLARE(const apt_str_t*) mrcp_recog_completion_cause_get(mrcp_recog_completion_cause_e completion_cause, mrcp_version_e version)
 {
-	return apt_string_table_str_get(completion_cause_string_table,RECOGNIZER_COMPLETION_CAUSE_COUNT,completion_cause);
+	const apt_str_table_item_t *table = v2_completion_cause_string_table;
+	if(version == MRCP_VERSION_1) {
+		table = v1_completion_cause_string_table;
+	}
+
+	return apt_string_table_str_get(table,RECOGNIZER_COMPLETION_CAUSE_COUNT,completion_cause);
 }
