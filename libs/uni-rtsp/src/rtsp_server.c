@@ -71,6 +71,9 @@ struct rtsp_server_session_t {
 	apt_str_t                 id;
 	apt_str_t                 url;
 
+	/** Last cseq sent */
+	apr_size_t                last_cseq;
+
 	/** In-progress request */
 	rtsp_message_t           *active_request;
 	/** request queue */
@@ -248,6 +251,7 @@ static rtsp_server_session_t* rtsp_server_session_create(rtsp_server_t *server)
 	session = apr_palloc(pool,sizeof(rtsp_server_session_t));
 	session->pool = pool;
 	session->obj = NULL;
+	session->last_cseq = 0;
 	session->active_request = NULL;
 	session->request_queue = apt_list_create(pool);
 	session->terminating = FALSE;
@@ -416,23 +420,22 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 /* Process outgoing RTSP response */
 static apt_bool_t rtsp_server_session_response_process(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message)
 {
-	if(message->start_line.message_type == RTSP_MESSAGE_TYPE_REQUEST) {
-		/* RTSP ANNOUNCE request (asynch event) */
-		message->start_line.common.request_line.url = session->url;
-		if(session->id.buf) {
-			message->header.session_id = session->id;
-			rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
-		}
-
-		rtsp_server_message_send(server,session->connection->base,message);
-		return TRUE;
-	}
-
 	if(session->id.buf) {
 		message->header.session_id = session->id;
 		rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
 	}
 
+	if(message->start_line.message_type == RTSP_MESSAGE_TYPE_REQUEST) {
+		/* RTSP ANNOUNCE request (asynch event) */
+		message->start_line.common.request_line.url = session->url;
+		message->header.cseq = session->last_cseq;
+		rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_CSEQ);
+		
+		rtsp_server_message_send(server,session->connection->base,message);
+		return TRUE;
+	}
+
+	session->last_cseq = message->header.cseq;
 	rtsp_server_message_send(server,session->connection->base,message);
 
 	if(session->active_request) {
