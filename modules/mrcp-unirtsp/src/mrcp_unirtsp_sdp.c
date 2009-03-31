@@ -437,6 +437,57 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 	return response;
 }
 
+/** Generate RTSP resource discovery response */
+MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
+											const rtsp_message_t *request, 
+											const char *ip,
+											const char *origin,
+											apr_pool_t *pool)
+{
+	rtsp_message_t *response = rtsp_response_create(request,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,pool);
+	if(response) {
+		apr_size_t offset = 0;
+		char buffer[2048];
+		apr_size_t size = sizeof(buffer);
+		
+		if(!ip) {
+			ip = "0.0.0.0";
+		}
+		if(!origin) {
+			origin = "-";
+		}
+		
+		buffer[0] = '\0';
+		offset += snprintf(buffer+offset,size-offset,
+			"v=0\r\n"
+			"o=%s 0 0 IN IP4 %s\r\n"
+			"s=-\r\n"
+			"c=IN IP4 %s\r\n"
+			"t=0 0\r\n"
+			"m=audio 0 RTP/AVP 0 8\r\n"
+			"a=rtpmap:0 PCMU/8000\r\n"
+			"a=rtpmap:8 PCMA/8000\r\n",
+			origin,
+			ip,
+			ip);
+		
+		response->header.transport.protocol = RTSP_TRANSPORT_RTP;
+		response->header.transport.profile = RTSP_PROFILE_AVP;
+		response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
+		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+
+		if(offset) {
+			apt_string_assign_n(&response->body,buffer,offset,pool);
+			response->header.content_type = RTSP_CONTENT_TYPE_SDP;
+			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+			response->header.content_length = offset;
+			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+		}
+	}
+
+	return response;
+}
+
 /** Get MRCP resource name by RTSP resource name */
 MRCP_DECLARE(const char*) mrcp_name_get_by_rtsp_name(const apr_table_t *resource_map, const char *rtsp_name)
 {

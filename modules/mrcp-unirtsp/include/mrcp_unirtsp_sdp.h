@@ -55,6 +55,13 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(
 											const apr_table_t *resource_map, 
 											apr_pool_t *pool);
 
+/** Generate RTSP resource discovery response */
+MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
+											const rtsp_message_t *request,
+											const char *ip,
+											const char *origin,
+											apr_pool_t *pool);
+
 
 /** Get MRCP resource name by RTSP resource name */
 MRCP_DECLARE(const char*) mrcp_name_get_by_rtsp_name(const apr_table_t *resource_map, const char *rtsp_name);

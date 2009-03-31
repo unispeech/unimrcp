@@ -281,8 +281,17 @@ static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *rtsp_server, rtsp_s
 		}
 		case RTSP_METHOD_ANNOUNCE:
 		{
-			mrcp_unirtsp_agent_t *agent = rtsp_server_object_get(rtsp_server);
 			status = mrcp_unirtsp_session_announce(agent,session,rtsp_message);
+			break;
+		}
+		case RTSP_METHOD_DESCRIBE:
+		{
+			rtsp_message_t *response = rtsp_resource_discovery_response_generate(
+						rtsp_message,
+						agent->config->local_ip,
+						agent->config->origin,
+						session->mrcp_session->pool);
+			status = rtsp_server_session_respond(rtsp_server,session->rtsp_session,response);
 			break;
 		}
 		default:
