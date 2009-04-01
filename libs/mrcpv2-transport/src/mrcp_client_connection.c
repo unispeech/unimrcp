@@ -478,8 +478,7 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 
 	mrcp_generator_message_set(connection->generator,message);
 	do {
-		stream->text.length = sizeof(connection->tx_buffer)-1;
-		stream->pos = stream->text.buf;
+		apt_text_stream_init(&connection->tx_stream,connection->tx_buffer,sizeof(connection->tx_buffer)-1);
 		result = mrcp_generator_run(connection->generator,stream);
 		if(result == MRCP_STREAM_MESSAGE_COMPLETE || result == MRCP_STREAM_MESSAGE_TRUNCATED) {
 			stream->text.length = stream->pos - stream->text.buf;
