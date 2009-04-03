@@ -67,6 +67,7 @@ mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *applicatio
 	mrcp_client_session_t *session = (mrcp_client_session_t*) mrcp_session_create(sizeof(mrcp_client_session_t)-sizeof(mrcp_session_t));
 	pool = session->base.pool;
 	session->application = application;
+	session->codec_manager = NULL;
 	session->app_obj = obj;
 	session->profile = NULL;
 	session->context = NULL;

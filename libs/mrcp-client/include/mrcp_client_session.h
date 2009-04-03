@@ -50,6 +50,9 @@ struct mrcp_client_session_t {
 
 	/** Media context */
 	mpf_context_t             *context;
+	/** Codec manager */
+	const mpf_codec_manager_t *codec_manager;
+
 
 	/** RTP termination array (mrcp_termination_slot_t) */
 	apr_array_header_t        *terminations;

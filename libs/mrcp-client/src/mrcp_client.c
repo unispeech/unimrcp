@@ -22,6 +22,8 @@
 #include "mrcp_client_connection.h"
 #include "mrcp_message.h"
 #include "mpf_engine.h"
+#include "mpf_termination.h"
+#include "mpf_codec_manager.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -479,6 +481,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 	
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Session [%s] <new>",profile_name);
 	session->profile = profile;
+	session->codec_manager = application->client->codec_manager;
 	session->base.response_vtable = &session_response_vtable;
 	session->base.event_vtable = &session_event_vtable;
 	return &session->base;
@@ -621,6 +624,60 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
 	return mrcp_app_control_task_msg_signal(session,channel,message);
 }
 
+/** Create source media termination */
+MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
+										mrcp_session_t *session,
+										const mpf_audio_stream_vtable_t *stream_vtable,
+										mpf_codec_descriptor_t *codec_descriptor,
+										void *obj)
+{
+	mpf_audio_stream_t *audio_stream;
+	/* create audio stream */
+	audio_stream = mpf_audio_stream_create(
+			obj,                  /* object to associate */
+			stream_vtable,        /* virtual methods table of audio stream */
+			STREAM_MODE_RECEIVE,  /* stream mode/direction */
+			session->pool);       /* memory pool to allocate memory from */
+
+	if(codec_descriptor) {
+		mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+		audio_stream->rx_codec = mpf_codec_manager_codec_get(client_session->codec_manager,codec_descriptor,session->pool);
+	}
+
+	/* create raw termination */
+	return mpf_raw_termination_create(
+			NULL,                 /* no object to associate */
+			audio_stream,         /* audio stream */
+			NULL,                 /* no video stream */
+			session->pool);       /* memory pool to allocate memory from */
+}
+
+MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
+										mrcp_session_t *session,
+										const mpf_audio_stream_vtable_t *stream_vtable,
+										mpf_codec_descriptor_t *codec_descriptor,
+										void *obj)
+{
+	mpf_audio_stream_t *audio_stream;
+	/* create audio stream */
+	audio_stream = mpf_audio_stream_create(
+			obj,                  /* object to associate */
+			stream_vtable,        /* virtual methods table of audio stream */
+			STREAM_MODE_SEND,     /* stream mode/direction */
+			session->pool);       /* memory pool to allocate memory from */
+
+	if(codec_descriptor) {
+		mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+		audio_stream->tx_codec = mpf_codec_manager_codec_get(client_session->codec_manager,codec_descriptor,session->pool);
+	}
+
+	/* create raw termination */
+	return mpf_raw_termination_create(
+			NULL,                 /* no object to associate */
+			audio_stream,         /* audio stream */
+			NULL,                 /* no video stream */
+			session->pool);       /* memory pool to allocate memory from */
+}
 
 void mrcp_client_session_add(mrcp_client_t *client, mrcp_client_session_t *session)
 {

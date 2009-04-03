@@ -24,6 +24,7 @@
 
 #include "mrcp_client_types.h"
 #include "mpf_rtp_descriptor.h"
+#include "mpf_stream.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -256,6 +257,29 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session
  */
 MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_message_dispatcher_t *dispatcher, const mrcp_app_message_t *app_message);
 
+
+/** Create source media termination
+ * @param session the session to create channel for
+ * @param stream_vtable the virtual table of audio stream
+ * @param codec_descriptor the descriptor of audio stream (NULL by default)
+ * @param obj the external object
+ */
+MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
+										mrcp_session_t *session,
+										const mpf_audio_stream_vtable_t *stream_vtable,
+										mpf_codec_descriptor_t *codec_descriptor,
+										void *obj);
+/** Create sink media termination
+ * @param session the session to create channel for
+ * @param stream_vtable the virtual table of audio stream
+ * @param codec_descriptor the descriptor of audio stream (NULL by default)
+ * @param obj the external object
+ */
+MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
+										mrcp_session_t *session,
+										const mpf_audio_stream_vtable_t *stream_vtable,
+										mpf_codec_descriptor_t *codec_descriptor,
+										void *obj);
 
 APT_END_EXTERN_C
 
