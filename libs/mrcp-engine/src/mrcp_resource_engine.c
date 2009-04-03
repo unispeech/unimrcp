@@ -111,6 +111,10 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 			STREAM_MODE_SEND,       /* stream mode/direction */
 			pool);                  /* pool to allocate memory from */
 	
+	if(engine->codec_manager) {
+		audio_stream->tx_codec = mpf_codec_manager_codec_get(engine->codec_manager,codec_descriptor,pool);
+	}
+	
 	/* create media termination */
 	termination = mpf_raw_termination_create(
 			NULL,            /* no object to associate */
