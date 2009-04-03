@@ -21,8 +21,6 @@
 #include "mrcp_generic_header.h"
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
-#include "mpf_termination.h"
-#include "mpf_stream.h"
 #include "apt_log.h"
 
 #define DEMO_SPEECH_SOURCE_FILE "one.pcm"
@@ -32,16 +30,14 @@ typedef struct recog_app_channel_t recog_app_channel_t;
 /** Declaration of recognizer application channel */
 struct recog_app_channel_t {
 	/** MRCP control channel */
-	mrcp_channel_t     *channel;
-	/** Audio stream */
-	mpf_audio_stream_t *audio_stream;
+	mrcp_channel_t *channel;
 
 	/** Input is started */
-	apt_bool_t          start_of_input;
+	apt_bool_t      start_of_input;
 	/** File to read audio stream from */
-	FILE               *audio_in;
+	FILE           *audio_in;
 	/** Estimated time to complete (used if no audio_in available) */
-	apr_size_t          time_to_complete;
+	apr_size_t      time_to_complete;
 };
 
 /** Declaration of recognizer application methods */
@@ -96,29 +92,35 @@ static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
 {
 	mrcp_channel_t *channel;
 	mpf_termination_t *termination;
+	mpf_codec_descriptor_t *codec_descriptor = NULL;
+
 	/* create channel */
 	recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
 	recog_channel->start_of_input = FALSE;
 	recog_channel->audio_in = NULL;
 	recog_channel->time_to_complete = 0;
-	/* create audio stream */
-	recog_channel->audio_stream = mpf_audio_stream_create(
-			recog_channel,        /* object to associate */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
-			STREAM_MODE_RECEIVE,  /* stream mode/direction */
-			session->pool);       /* memory pool to allocate memory from */
-	/* create raw termination */
-	termination = mpf_raw_termination_create(
-			NULL,                        /* no object to associate */
-			recog_channel->audio_stream, /* audio stream */
-			NULL,                        /* no video stream */
-			session->pool);              /* memory pool to allocate memory from */
+
+#if 0 /* in case your audio source isn't in linear PCM, create appropriate codec descriptor below */
+	codec_descriptor = apr_palloc(session->pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_init(codec_descriptor);
+	codec_descriptor->channel_count = 1;
+	codec_descriptor->payload_type = 0;
+	apt_string_set(&codec_descriptor->name,"PCMU");
+	codec_descriptor->sampling_rate = 8000;
+#endif
+
+	termination = mrcp_application_source_termination_create(
+			session,                   /* session, termination belongs to */
+			&audio_stream_vtable,      /* virtual methods table of audio stream */
+			codec_descriptor,          /* codec descriptor of audio stream (NULL by default) */
+			recog_channel);            /* object to associate */
+	
 	channel = mrcp_application_channel_create(
-			session,                     /* session, channel belongs to */
-			MRCP_RECOGNIZER_RESOURCE,    /* MRCP resource identifier */
-			termination,                 /* media termination, used to terminate audio stream */
-			NULL,                        /* RTP descriptor, used to create RTP termination (NULL by default) */
-			recog_channel);              /* object to associate */
+			session,                   /* session, channel belongs to */
+			MRCP_RECOGNIZER_RESOURCE,  /* MRCP resource identifier */
+			termination,               /* media termination, used to terminate audio stream */
+			NULL,                      /* RTP descriptor, used to create RTP termination (NULL by default) */
+			recog_channel);            /* object to associate */
 	return channel;
 }
 

@@ -21,19 +21,15 @@
 #include "mrcp_generic_header.h"
 #include "mrcp_synth_header.h"
 #include "mrcp_synth_resource.h"
-#include "mpf_termination.h"
-#include "mpf_stream.h"
 
 typedef struct synth_app_channel_t synth_app_channel_t;
 
 /** Declaration of synthesizer application channel */
 struct synth_app_channel_t {
 	/** MRCP control channel */
-	mrcp_channel_t     *channel;
-	/** Audio stream */
-	mpf_audio_stream_t *audio_stream;
+	mrcp_channel_t *channel;
 	/** File to write audio stream to */
-	FILE               *audio_out;
+	FILE           *audio_out;
 };
 
 /** Declaration of synthesizer application methods */
@@ -88,27 +84,33 @@ static mrcp_channel_t* synth_application_channel_create(mrcp_session_t *session)
 {
 	mrcp_channel_t *channel;
 	mpf_termination_t *termination;
+	mpf_codec_descriptor_t *codec_descriptor = NULL;
+
 	/* create channel */
 	synth_app_channel_t *synth_channel = apr_palloc(session->pool,sizeof(synth_app_channel_t));
 	synth_channel->audio_out = NULL;
-	/* create audio stream */
-	synth_channel->audio_stream = mpf_audio_stream_create(
-			synth_channel,        /* object to associate */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
-			STREAM_MODE_SEND,     /* stream mode/direction */
-			session->pool);       /* memory pool to allocate memory from */
-	/* create raw termination */
-	termination = mpf_raw_termination_create(
-			NULL,                        /* no object to associate */
-			synth_channel->audio_stream, /* audio stream */
-			NULL,                        /* no video stream */
-			session->pool);              /* memory pool to allocate memory from */
+
+#if 0
+	codec_descriptor = apr_palloc(session->pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_init(codec_descriptor);
+	codec_descriptor->channel_count = 1;
+	codec_descriptor->payload_type = 0;
+	apt_string_set(&codec_descriptor->name,"PCMU");
+	codec_descriptor->sampling_rate = 8000;
+#endif
+
+	termination = mrcp_application_sink_termination_create(
+			session,                   /* session, termination belongs to */
+			&audio_stream_vtable,      /* virtual methods table of audio stream */
+			codec_descriptor,          /* codec descriptor of audio stream (NULL by default) */
+			synth_channel);            /* object to associate */
+	
 	channel = mrcp_application_channel_create(
-			session,                     /* session, channel belongs to */
-			MRCP_SYNTHESIZER_RESOURCE,   /* MRCP resource identifier */
-			termination,                 /* media termination, used to terminate audio stream */
-			NULL,                        /* RTP descriptor, used to create RTP termination (NULL by default) */
-			synth_channel);              /* object to associate */
+			session,                   /* session, channel belongs to */
+			MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
+			termination,               /* media termination, used to terminate audio stream */
+			NULL,                      /* RTP descriptor, used to create RTP termination (NULL by default) */
+			synth_channel);            /* object to associate */
 	return channel;
 }
 
