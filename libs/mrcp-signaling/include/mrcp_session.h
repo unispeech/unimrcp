@@ -66,6 +66,8 @@ struct mrcp_session_request_vtable_t {
 	apt_bool_t (*terminate)(mrcp_session_t *session);
 	/** Control session (MRCPv1 only) */
 	apt_bool_t (*control)(mrcp_session_t *session, mrcp_message_t *message);
+	/** Discover resources */
+	apt_bool_t (*discover)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 };
 
 /** MRCP session response vtable */
@@ -76,6 +78,8 @@ struct mrcp_session_response_vtable_t {
 	apt_bool_t (*on_terminate)(mrcp_session_t *session);
 	/** Control session (MRCPv1 only) */
 	apt_bool_t (*on_control)(mrcp_session_t *session, mrcp_message_t *message);
+	/** Response to resource discovery request */
+	apt_bool_t (*on_discover)(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 };
 
 /** MRCP session event vtable */
@@ -151,6 +155,24 @@ static APR_INLINE apt_bool_t mrcp_session_control_response(mrcp_session_t *sessi
 {
 	if(session->response_vtable->on_control) {
 		return session->response_vtable->on_control(session,message);
+	}
+	return FALSE;
+}
+
+/** Resource discovery request */
+static APR_INLINE apt_bool_t mrcp_session_discover_request(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	if(session->request_vtable->discover) {
+		return session->request_vtable->discover(session,descriptor);
+	}
+	return FALSE;
+}
+
+/** On resource discovery response */
+static APR_INLINE apt_bool_t mrcp_session_discover_response(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	if(session->response_vtable->on_discover) {
+		return session->response_vtable->on_discover(session,descriptor);
 	}
 	return FALSE;
 }
