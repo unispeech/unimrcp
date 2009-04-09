@@ -594,6 +594,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session
 	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_CHANNEL_REMOVE,session,channel);
 }
 
+/** Send resource discovery request */
+MRCP_DECLARE(apt_bool_t) mrcp_application_resource_discover(mrcp_session_t *session)
+{
+	if(!session) {
+		return FALSE;
+	}
+	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_RESOURCE_DISCOVER,session,NULL);
+}
+
 /** Create MRCP message */
 mrcp_message_t* mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id)
 {

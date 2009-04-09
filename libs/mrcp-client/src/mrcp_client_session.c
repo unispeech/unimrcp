@@ -556,9 +556,6 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	}
 
 	if(!session->offer) {
-		session->base.signaling_agent = profile->signaling_agent;
-		session->base.signaling_agent->create_client_session(&session->base);
-
 		session->offer = mrcp_session_descriptor_create(pool);
 		session->context = mpf_context_create(session,5,pool);
 	}
@@ -716,6 +713,14 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 	session->terminate_flag_count++;
 	mrcp_session_terminate_request(&session->base);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_client_resource_discover(mrcp_client_session_t *session)
+{
+	if(mrcp_session_discover_request(&session->base,NULL) == FALSE) {
+		mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_FAILURE,TRUE);
+	}
 	return TRUE;
 }
 
@@ -961,6 +966,9 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, const mrcp_app_message_t *app_message)
 {
 	if(session->registered == FALSE) {
+		session->base.signaling_agent = session->profile->signaling_agent;
+		session->base.signaling_agent->create_client_session(&session->base);
+
 		mrcp_client_session_add(session->application->client,session);
 		session->registered = TRUE;
 	}
@@ -980,6 +988,9 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 					break;
 				case MRCP_SIG_COMMAND_CHANNEL_REMOVE:
 					mrcp_client_channel_modify(session,app_message->channel,FALSE);
+					break;
+				case MRCP_SIG_COMMAND_RESOURCE_DISCOVER:
+					mrcp_client_resource_discover(session);
 					break;
 				default:
 					break;
@@ -1035,6 +1046,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_messag
 										app_message->application,
 										app_message->session,
 										app_message->channel,
+										app_message->sig_message.status);
+						}
+						break;
+					case MRCP_SIG_COMMAND_RESOURCE_DISCOVER:
+						if(dispatcher->on_resource_discover) {
+							status = dispatcher->on_resource_discover(
+										app_message->application,
+										app_message->session,
+										NULL,
 										app_message->sig_message.status);
 						}
 						break;

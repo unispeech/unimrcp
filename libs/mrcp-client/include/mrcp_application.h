@@ -62,7 +62,7 @@ typedef enum {
 	MRCP_SIG_COMMAND_SESSION_TERMINATE,
 	MRCP_SIG_COMMAND_CHANNEL_ADD,
 	MRCP_SIG_COMMAND_CHANNEL_REMOVE,
-	MRCP_SIG_COMMAND_MESSAGE
+	MRCP_SIG_COMMAND_RESOURCE_DISCOVER
 } mrcp_sig_command_e;
 
 /** Enumeration of MRCP signaling events */
@@ -129,6 +129,9 @@ struct mrcp_app_message_dispatcher_t {
 
 	/** Event indicating unexpected session/channel termination */
 	apt_bool_t (*on_terminate_event)(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel);
+
+	/** Response to mrcp_application_resource_discover() request */
+	apt_bool_t (*on_resource_discover)(mrcp_application_t *application, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_sig_status_code_e status);
 };
 
 
@@ -249,6 +252,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
  * @param channel the control channel to remove
  */
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session, mrcp_channel_t *channel);
+
+/** 
+ * Discover resources.
+ * @param session the session to use as communication object
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_application_resource_discover(mrcp_session_t *session);
 
 /**
  * Dispatch application message.
