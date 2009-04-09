@@ -59,6 +59,9 @@ struct mrcp_client_session_t {
 	/** MRCP control channel array (mrcp_channel_t*) */
 	apr_array_header_t        *channels;
 
+	/** Indicates whether session is already added to session table */
+	apt_bool_t                 registered;
+
 	/** In-progress offer */
 	mrcp_session_descriptor_t *offer;
 	/** In-progress answer */

@@ -73,6 +73,7 @@ mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *applicatio
 	session->context = NULL;
 	session->terminations = apr_array_make(pool,2,sizeof(rtp_termination_slot_t));
 	session->channels = apr_array_make(pool,2,sizeof(mrcp_channel_t*));
+	session->registered = FALSE;
 	session->offer = NULL;
 	session->answer = NULL;
 	session->active_request = NULL;
@@ -869,7 +870,6 @@ static apt_bool_t mrcp_client_resource_answer_process(mrcp_client_session_t *ses
 	apt_bool_t status = TRUE;
 	if(session->offer->resource_state == TRUE) {
 		if(descriptor->resource_state == TRUE) {
-			mrcp_client_session_add(session->application->client,session);
 			mrcp_client_av_media_answer_process(session,descriptor);
 		}
 		else {
@@ -896,7 +896,6 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 		control_descriptor = mrcp_session_control_media_get(descriptor,0);
 		if(control_descriptor) {
 			session->base.id = control_descriptor->session_id;
-			mrcp_client_session_add(session->application->client,session);
 		}
 	}
 
@@ -961,6 +960,10 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 
 static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, const mrcp_app_message_t *app_message)
 {
+	if(session->registered == FALSE) {
+		mrcp_client_session_add(session->application->client,session);
+		session->registered = TRUE;
+	}
 	switch(app_message->message_type) {
 		case MRCP_APP_MESSAGE_TYPE_SIGNALING:
 		{

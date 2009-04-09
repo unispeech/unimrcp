@@ -50,7 +50,7 @@ struct mrcp_client_t {
 	/** Table of applications (mrcp_application_t*) */
 	apr_hash_t              *app_table;
 
-	/** Table of sessions */
+	/** Table of sessions/handles */
 	apr_hash_t              *session_table;
 
 	/** Connection task message pool */
@@ -479,7 +479,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 		return NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Session [%s] <new>",profile_name);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Handle 0x%x [%s]",session,profile_name);
 	session->profile = profile;
 	session->codec_manager = application->client->codec_manager;
 	session->base.response_vtable = &session_response_vtable;
@@ -522,7 +522,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session <%s>",session->id.buf ? session->id.buf : "new");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCP Handle 0x%x <%s>",session,session->id.buf ? session->id.buf : "new");
 	mrcp_session_destroy(session);
 	return TRUE;
 }
@@ -681,23 +681,18 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
 
 void mrcp_client_session_add(mrcp_client_t *client, mrcp_client_session_t *session)
 {
-	if(session->base.id.buf) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Session <%s>",session->base.id.buf);
-		apr_hash_set(client->session_table,session->base.id.buf,session->base.id.length,session);
+	if(session) {
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add MRCP Handle 0x%x",session);
+		apr_hash_set(client->session_table,session,sizeof(session),session);
 	}
 }
 
 void mrcp_client_session_remove(mrcp_client_t *client, mrcp_client_session_t *session)
 {
-	if(session->base.id.buf) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Remove Session <%s>",session->base.id.buf);
-		apr_hash_set(client->session_table,session->base.id.buf,session->base.id.length,NULL);
+	if(session) {
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Remove MRCP Handle 0x%x",session);
+		apr_hash_set(client->session_table,session,sizeof(session),NULL);
 	}
-}
-
-static APR_INLINE mrcp_client_session_t* mrcp_client_session_find(mrcp_client_t *client, const apt_str_t *session_id)
-{
-	return apr_hash_get(client->session_table,session_id->buf,session_id->length);
 }
 
 static void mrcp_client_on_start_complete(apt_task_t *task)
