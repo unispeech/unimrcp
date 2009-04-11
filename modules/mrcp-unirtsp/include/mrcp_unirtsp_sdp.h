@@ -55,6 +55,20 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(
 											const apr_table_t *resource_map, 
 											apr_pool_t *pool);
 
+/** Generate RTSP resource discovery request */
+MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_request_generate(
+											const char *resource_name,
+											const apr_table_t *resource_map,
+											apr_pool_t *pool);
+
+/** Generate resource descovery descriptor by RTSP response */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_generate(
+											const rtsp_message_t *request, 
+											const rtsp_message_t *response,
+											const apr_table_t *resource_map,
+											apr_pool_t *pool,
+											su_home_t *home);
+
 /** Generate RTSP resource discovery response */
 MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
 											const rtsp_message_t *request,

@@ -53,11 +53,13 @@ static void client_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_unirtsp_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_unirtsp_session_terminate(mrcp_session_t *session);
 static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *session, mrcp_message_t *message);
+static apt_bool_t mrcp_unirtsp_resource_discover(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 
 static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_unirtsp_session_offer,
 	mrcp_unirtsp_session_terminate,
-	mrcp_unirtsp_session_control
+	mrcp_unirtsp_session_control,
+	mrcp_unirtsp_resource_discover
 };
 
 static apt_bool_t mrcp_unirtsp_on_session_terminate_response(rtsp_client_t *client, rtsp_client_session_t *session);
@@ -74,6 +76,7 @@ static const rtsp_client_vtable_t session_response_vtable = {
 
 static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *session);
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_client_config_t *config, apr_pool_t *pool);
+static apt_bool_t mrcp_unirtsp_on_resource_discover(mrcp_unirtsp_agent_t *agent, mrcp_unirtsp_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
 
 
 /** Create UniRTSP Signaling Agent */
@@ -317,6 +320,12 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 			mrcp_unirtsp_on_announce_response(agent,session,response,resource_name);
 			break;
 		}
+		case RTSP_METHOD_DESCRIBE:
+		{
+			mrcp_unirtsp_agent_t *agent = rtsp_client_object_get(rtsp_client);
+			mrcp_unirtsp_on_resource_discover(agent,session,request,response);
+			break;
+		}
 		default:
 			break;
 	}
@@ -401,5 +410,43 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
 
 	rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,rtsp_message);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_resource_discover(mrcp_session_t *mrcp_session, mrcp_session_descriptor_t *descriptor)
+{
+	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+	rtsp_message_t *request;
+
+	if(!descriptor) {
+		return FALSE;
+	}
+	request = rtsp_resource_discovery_request_generate(
+							descriptor->resource_name.buf,
+							agent->config->resource_map,
+							mrcp_session->pool);
+	if(request) {
+		rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,request);
+	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_on_resource_discover(mrcp_unirtsp_agent_t *agent, mrcp_unirtsp_session_t *session, rtsp_message_t *request, rtsp_message_t *response)
+{
+	mrcp_session_descriptor_t *descriptor;
+	if(!session) {
+		return FALSE;
+	}
+
+	descriptor = mrcp_resource_discovery_response_generate(
+									request,
+									response,
+									agent->config->resource_map,
+									session->mrcp_session->pool,
+									session->home);
+	if(descriptor) {
+		mrcp_session_discover_response(session->mrcp_session,descriptor);
+	}
 	return TRUE;
 }

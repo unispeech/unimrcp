@@ -127,10 +127,9 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 }
 
 /** Generate MRCP descriptor by SDP session */
-static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
+static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t *descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
-	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(pool);
 
 	if(force_destination_ip) {
 		apt_string_assign(&descriptor->ip,force_destination_ip,pool);
@@ -182,6 +181,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 		return NULL;
 	}
 	
+	descriptor = mrcp_session_descriptor_create(pool);
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
@@ -193,36 +193,28 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			parser = sdp_parse(home,request->body.buf,request->body.length,0);
 			sdp = sdp_session(parser);
 
-			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,pool);
+			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
 			
 			sdp_parser_free(parser);
 		}
 		else {
-			/* create default descriptor in case RTSP SETUP constains no SDP */
-			descriptor = mrcp_session_descriptor_create(pool);
-			if(descriptor) {
-				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
-				media->base.state = MPF_MEDIA_ENABLED;
-				media->base.id = mrcp_session_audio_media_add(descriptor,media);
-				if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
-					media->base.port = request->header.transport.client_port_range.min;
-					media->base.ip = request->header.transport.destination;
-				}
+			/* create default descriptor in case RTSP SETUP contains no SDP */
+			mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+			mpf_rtp_media_descriptor_init(media);
+			media->base.state = MPF_MEDIA_ENABLED;
+			media->base.id = mrcp_session_audio_media_add(descriptor,media);
+			if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
+				media->base.port = request->header.transport.client_port_range.min;
+				media->base.ip = request->header.transport.destination;
 			}
 		}
 
-		if(descriptor) {
-			apt_string_assign(&descriptor->resource_name,resource_name,pool);
-			descriptor->resource_state = TRUE;
-		}
+		apt_string_assign(&descriptor->resource_name,resource_name,pool);
+		descriptor->resource_state = TRUE;
 	}
 	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
-		descriptor = mrcp_session_descriptor_create(pool);
-		if(descriptor) {
-			apt_string_assign(&descriptor->resource_name,resource_name,pool);
-			descriptor->resource_state = FALSE;
-		}
+		apt_string_assign(&descriptor->resource_name,resource_name,pool);
+		descriptor->resource_state = FALSE;
 	}
 	return descriptor;
 }
@@ -244,6 +236,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 		return NULL;
 	}
 	
+	descriptor = mrcp_session_descriptor_create(pool);
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
@@ -255,28 +248,20 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 			parser = sdp_parse(home,response->body.buf,response->body.length,0);
 			sdp = sdp_session(parser);
 
-			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,pool);
-			if(descriptor) {
-				apt_string_assign(&descriptor->resource_name,resource_name,pool);
-				descriptor->resource_state = TRUE;
-			}
+			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
+			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+			descriptor->resource_state = TRUE;
 			
 			sdp_parser_free(parser);
 		}
 		else {
-			descriptor = mrcp_session_descriptor_create(pool);
-			if(descriptor) {
-				apt_string_assign(&descriptor->resource_name,resource_name,pool);
-				descriptor->resource_state = FALSE;
-			}
-		}
-	}
-	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
-		descriptor = mrcp_session_descriptor_create(pool);
-		if(descriptor) {
 			apt_string_assign(&descriptor->resource_name,resource_name,pool);
 			descriptor->resource_state = FALSE;
 		}
+	}
+	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+		apt_string_assign(&descriptor->resource_name,resource_name,pool);
+		descriptor->resource_state = FALSE;
 	}
 	return descriptor;
 }
@@ -435,6 +420,65 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		}
 	}
 	return response;
+}
+
+/** Generate RTSP resource discovery request */
+MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_request_generate(
+											const char *resource_name,
+											const apr_table_t *resource_map,
+											apr_pool_t *pool)
+{
+	rtsp_message_t *request = rtsp_request_create(pool);
+	request->start_line.common.request_line.resource_name = rtsp_name_get_by_mrcp_name(
+		resource_map,
+		resource_name);
+	
+	request->start_line.common.request_line.method_id = RTSP_METHOD_DESCRIBE;
+	request->header.transport.protocol = RTSP_TRANSPORT_RTP;
+	request->header.transport.profile = RTSP_PROFILE_AVP;
+	request->header.transport.delivery = RTSP_DELIVERY_UNICAST;
+	rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+	return request;
+}
+
+/** Generate resource descovery descriptor by RTSP response */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_generate(
+											const rtsp_message_t *request, 
+											const rtsp_message_t *response,
+											const apr_table_t *resource_map,
+											apr_pool_t *pool,
+											su_home_t *home)
+{
+	mrcp_session_descriptor_t *descriptor = NULL;
+	const char *resource_name = mrcp_name_get_by_rtsp_name(
+					resource_map,
+					request->start_line.common.request_line.resource_name);
+	if(!resource_name) {
+		return NULL;
+	}
+	
+	descriptor = mrcp_session_descriptor_create(pool);
+	apt_string_assign(&descriptor->resource_name,resource_name,pool);
+	
+	if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+		rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		response->body.buf) {
+			
+		sdp_parser_t *parser;
+		sdp_session_t *sdp;
+
+		parser = sdp_parse(home,response->body.buf,response->body.length,0);
+		sdp = sdp_session(parser);
+
+		mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,0,pool);
+		descriptor->resource_state = TRUE;
+
+		sdp_parser_free(parser);
+	}
+	else {
+		descriptor->resource_state = FALSE;
+	}
+	return descriptor;
 }
 
 /** Generate RTSP resource discovery response */
