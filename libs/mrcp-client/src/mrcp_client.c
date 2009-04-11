@@ -722,11 +722,8 @@ static void mrcp_client_on_start_complete(apt_task_t *task)
 		application = val;
 		if(!application) continue;
 
-		/* raise one-time ready event */			
-		app_message = apr_palloc(client->pool,sizeof(mrcp_app_message_t));
-		app_message->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
-		app_message->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_EVENT;
-		app_message->sig_message.event_id = MRCP_SIG_EVENT_READY;
+		/* raise one-time application-ready event */
+		app_message = mrcp_client_app_signaling_event_create(MRCP_SIG_EVENT_READY,client->pool);
 		app_message->sig_message.status = MRCP_SIG_STATUS_CODE_SUCCESS;
 		app_message->application = application;
 		application->handler(app_message);
@@ -828,10 +825,7 @@ static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_
 		mrcp_app_message_t *app_message;
 		task_msg->type = MRCP_CLIENT_APPLICATION_TASK_MSG;
 
-		app_message = apr_palloc(session->pool,sizeof(mrcp_app_message_t));
-		app_message->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
-		app_message->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_REQUEST;
-		app_message->sig_message.command_id = command_id;
+		app_message = mrcp_client_app_signaling_request_create(command_id,session->pool);
 		app_message->application = client_session->application;
 		app_message->session = session;
 		app_message->channel = channel;
@@ -853,8 +847,7 @@ static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp
 		mrcp_app_message_t *app_message;
 		task_msg->type = MRCP_CLIENT_APPLICATION_TASK_MSG;
 
-		app_message = apr_palloc(session->pool,sizeof(mrcp_app_message_t));
-		app_message->message_type = MRCP_APP_MESSAGE_TYPE_CONTROL;
+		app_message = mrcp_client_app_control_message_create(session->pool);
 		app_message->application = client_session->application;
 		app_message->session = session;
 		app_message->channel = channel;

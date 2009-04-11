@@ -291,6 +291,40 @@ apt_bool_t mrcp_client_on_message_receive(mrcp_channel_t *channel, mrcp_message_
 	return mrcp_app_control_message_raise(session,channel,message);
 }
 
+mrcp_app_message_t* mrcp_client_app_signaling_request_create(mrcp_sig_command_e command_id, apr_pool_t *pool)
+{
+	mrcp_app_message_t *app_message = apr_palloc(pool,sizeof(mrcp_app_message_t));
+	app_message->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
+	app_message->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_REQUEST;
+	app_message->sig_message.command_id = command_id;
+	return app_message;
+}
+
+mrcp_app_message_t* mrcp_client_app_signaling_event_create(mrcp_sig_event_e event_id, apr_pool_t *pool)
+{
+	mrcp_app_message_t *app_message = apr_palloc(pool,sizeof(mrcp_app_message_t));
+	app_message->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
+	app_message->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_EVENT;
+	app_message->sig_message.event_id = event_id;
+	return app_message;
+}
+
+mrcp_app_message_t* mrcp_client_app_control_message_create(apr_pool_t *pool)
+{
+	mrcp_app_message_t *app_message = apr_palloc(pool,sizeof(mrcp_app_message_t));
+	app_message->message_type = MRCP_APP_MESSAGE_TYPE_CONTROL;
+	return app_message;
+}
+
+mrcp_app_message_t* mrcp_client_app_response_create(const mrcp_app_message_t *app_request, mrcp_sig_status_code_e status, apr_pool_t *pool)
+{
+	mrcp_app_message_t *app_response = apr_palloc(pool,sizeof(mrcp_app_message_t));
+	*app_response = *app_request;
+	app_response->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_RESPONSE;
+	app_response->sig_message.status = status;
+	return app_response;
+}
+
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)app_message->session;
@@ -350,10 +384,7 @@ static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, mr
 	if(!session->active_request) {
 		return FALSE;
 	}
-	response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
-	*response = *session->active_request;
-	response->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_RESPONSE;
-	response->sig_message.status = status;
+	response = mrcp_client_app_response_create(session->active_request,status,session->base.pool);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Response <%s> [%d] %s [%d]", 
 		mrcp_session_str(session),
 		response->sig_message.command_id,
@@ -379,10 +410,7 @@ static apt_bool_t mrcp_app_sig_event_raise(mrcp_client_session_t *session, mrcp_
 	if(!session) {
 		return FALSE;
 	}
-	app_event = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
-	app_event->message_type = MRCP_APP_MESSAGE_TYPE_SIGNALING;
-	app_event->sig_message.message_type = MRCP_SIG_MESSAGE_TYPE_EVENT;
-	app_event->sig_message.event_id = MRCP_SIG_EVENT_TERMINATE;
+	app_event = mrcp_client_app_signaling_event_create(MRCP_SIG_EVENT_TERMINATE,session->base.pool);
 	app_event->application = session->application;
 	app_event->session = &session->base;
 	app_event->channel = channel;
@@ -400,8 +428,7 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 		if(!session->active_request || !session->active_request->control_message) {
 			return FALSE;
 		}
-		response = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
-		*response = *session->active_request;
+		response = mrcp_client_app_response_create(session->active_request,0,session->base.pool);
 		mrcp_request = session->active_request->control_message;
 		mrcp_message->start_line.method_id = mrcp_request->start_line.method_id;
 		mrcp_message->start_line.method_name = mrcp_request->start_line.method_name;
@@ -416,8 +443,7 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 	}
 	else if(mrcp_message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
 		mrcp_app_message_t *app_message;
-		app_message = apr_palloc(session->base.pool,sizeof(mrcp_app_message_t));
-		app_message->message_type = MRCP_APP_MESSAGE_TYPE_CONTROL;
+		app_message = mrcp_client_app_control_message_create(session->base.pool);
 		app_message->control_message = mrcp_message;
 		app_message->application = session->application;
 		app_message->session = &session->base;

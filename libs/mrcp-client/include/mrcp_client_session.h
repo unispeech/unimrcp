@@ -154,6 +154,15 @@ mrcp_channel_t* mrcp_client_channel_create(
 					mpf_rtp_termination_descriptor_t *rtp_descriptor, 
 					void *obj);
 
+/** Create signaling app_message_t request */
+mrcp_app_message_t* mrcp_client_app_signaling_request_create(mrcp_sig_command_e command_id, apr_pool_t *pool);
+/** Create signaling app_message_t event */
+mrcp_app_message_t* mrcp_client_app_signaling_event_create(mrcp_sig_event_e event_id, apr_pool_t *pool);
+/** Create control app_message_t */
+mrcp_app_message_t* mrcp_client_app_control_message_create(apr_pool_t *pool);
+/** Create response to app_message_t request */
+mrcp_app_message_t* mrcp_client_app_response_create(const mrcp_app_message_t *app_request, mrcp_sig_status_code_e status, apr_pool_t *pool);
+
 /** Process application message */
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message);
 /** Process MPF message */
