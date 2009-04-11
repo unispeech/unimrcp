@@ -74,6 +74,7 @@ typedef enum {
 	SIG_AGENT_TASK_MSG_ANSWER,
 	SIG_AGENT_TASK_MSG_TERMINATE_RESPONSE,
 	SIG_AGENT_TASK_MSG_CONTROL_RESPONSE,
+	SIG_AGENT_TASK_MSG_DISCOVER_RESPONSE,
 	SIG_AGENT_TASK_MSG_TERMINATE_EVENT
 } sig_agent_task_msg_type_e;
 
@@ -87,13 +88,15 @@ struct sig_agent_task_msg_data_t {
 static apt_bool_t mrcp_client_answer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_client_terminate_response_signal(mrcp_session_t *session);
 static apt_bool_t mrcp_client_control_response_signal(mrcp_session_t *session, mrcp_message_t *message);
+static apt_bool_t mrcp_client_discover_response_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 
 static apt_bool_t mrcp_client_terminate_event_signal(mrcp_session_t *session);
 
 static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_client_answer_signal,
 	mrcp_client_terminate_response_signal,
-	mrcp_client_control_response_signal
+	mrcp_client_control_response_signal,
+	mrcp_client_discover_response_signal
 };
 
 static const mrcp_session_event_vtable_t session_event_vtable = {
@@ -604,7 +607,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_resource_discover(mrcp_session_t *sess
 }
 
 /** Create MRCP message */
-mrcp_message_t* mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id)
+MRCP_DECLARE(mrcp_message_t*) mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id)
 {
 	mrcp_message_t *mrcp_message;
 	mrcp_profile_t *profile;
@@ -757,6 +760,9 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 					break;
 				case SIG_AGENT_TASK_MSG_CONTROL_RESPONSE:
 					mrcp_client_session_control_response_process(sig_message->session,sig_message->message);
+					break;
+				case SIG_AGENT_TASK_MSG_DISCOVER_RESPONSE:
+					mrcp_client_session_discover_response_process(sig_message->session,sig_message->descriptor);
 					break;
 				case SIG_AGENT_TASK_MSG_TERMINATE_EVENT:
 					mrcp_client_session_terminate_event_process(sig_message->session);
@@ -913,6 +919,11 @@ static apt_bool_t mrcp_client_terminate_response_signal(mrcp_session_t *session)
 static apt_bool_t mrcp_client_control_response_signal(mrcp_session_t *session, mrcp_message_t *message)
 {
 	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_CONTROL_RESPONSE,session,NULL,message);
+}
+
+static apt_bool_t mrcp_client_discover_response_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	return mrcp_client_signaling_task_msg_signal(SIG_AGENT_TASK_MSG_DISCOVER_RESPONSE,session,descriptor,NULL);
 }
 
 static apt_bool_t mrcp_client_terminate_event_signal(mrcp_session_t *session)

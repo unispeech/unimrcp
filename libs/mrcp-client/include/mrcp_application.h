@@ -97,16 +97,18 @@ struct mrcp_app_message_t {
 	mrcp_app_message_type_e message_type;
 
 	/** Application */
-	mrcp_application_t     *application;
+	mrcp_application_t        *application;
 	/** Session */
-	mrcp_session_t         *session;
+	mrcp_session_t            *session;
 	/** Channel */
-	mrcp_channel_t         *channel;
+	mrcp_channel_t            *channel;
+	/** Session/resource descriptor */
+	mrcp_session_descriptor_t *descriptor;
 
 	/** MRCP signaling message (used if message_type == MRCP_APP_MESSAGE_SIGNALING) */
-	mrcp_sig_message_t      sig_message;
+	mrcp_sig_message_t         sig_message;
 	/** MRCP control message (used if message_type == MRCP_APP_MESSAGE_CONTROL) */
-	mrcp_message_t         *control_message;
+	mrcp_message_t            *control_message;
 };
 
 /** MRCP application message dispatcher interface */
@@ -236,7 +238,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, m
  * @param channel the control channel
  * @param method_id the method identifier of MRCP message
  */
-mrcp_message_t* mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id);
+MRCP_DECLARE(mrcp_message_t*) mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id);
 
 /** 
  * Send MRCP message.

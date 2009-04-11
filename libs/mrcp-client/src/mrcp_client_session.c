@@ -199,6 +199,34 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 	return mrcp_app_control_message_raise(session,channel,message);
 }
 
+apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Resource Discovery Response 0x%x", session);
+
+	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+		if(descriptor->resource_state == TRUE) {
+			mrcp_control_descriptor_t *control_media;
+			if(!session->answer) {
+				session->answer = descriptor;
+			}
+			control_media = apr_palloc(session->base.pool,sizeof(mrcp_control_descriptor_t));
+			mrcp_control_descriptor_init(control_media);
+			control_media->id = mrcp_session_control_media_add(session->answer,control_media);
+			control_media->resource_name = descriptor->resource_name;
+		}
+	}
+
+	if(session->answer_flag_count) {
+		session->answer_flag_count--;
+	}
+
+	if(!session->answer_flag_count) {
+		mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
+		session->answer = NULL;
+	}
+	return TRUE;
+}
+
 apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
@@ -665,9 +693,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	mrcp_channel_t *channel;
 	rtp_termination_slot_t *slot;
 	int i;
-	if(!session->offer) {
-		return FALSE;
-	}
+	
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Session <%s>", mrcp_session_str(session));
 	profile = session->profile;
 	/* remove existing control channels */
@@ -718,7 +744,31 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 static apt_bool_t mrcp_client_resource_discover(mrcp_client_session_t *session)
 {
-	if(mrcp_session_discover_request(&session->base,NULL) == FALSE) {
+	mrcp_session_descriptor_t *descriptor = NULL;
+	
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Resource Discovery Request 0x%x", session);
+	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+		const apt_str_t *resource_name;
+		mrcp_resource_id i;
+
+		for(i=0; i<MRCP_RESOURCE_TYPE_COUNT; i++) {
+			resource_name = mrcp_resource_name_get(session->profile->resource_factory,i);
+			if(!resource_name) continue;
+		
+			descriptor = mrcp_session_descriptor_create(session->base.pool);
+			apt_string_copy(&descriptor->resource_name,resource_name,session->base.pool);
+			if(mrcp_session_discover_request(&session->base,descriptor) == TRUE) {
+				session->answer_flag_count++;
+			}
+		}
+	}
+	else {
+		if(mrcp_session_discover_request(&session->base,descriptor) == TRUE) {
+			session->answer_flag_count++;
+		}
+	}
+
+	if(session->answer_flag_count == 0) {
 		mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_FAILURE,TRUE);
 	}
 	return TRUE;
