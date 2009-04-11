@@ -830,6 +830,7 @@ static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_
 		app_message->session = session;
 		app_message->channel = channel;
 		app_message->control_message = NULL;
+		app_message->descriptor = NULL;
 		*slot = app_message;
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Application Task Message");

@@ -202,6 +202,9 @@ apt_bool_t mrcp_client_session_control_response_process(mrcp_client_session_t *s
 apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Resource Discovery Response 0x%x", session);
+	if(!session->active_request) {
+		return FALSE;
+	}
 
 	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
 		if(descriptor->resource_state == TRUE) {
@@ -221,8 +224,17 @@ apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *
 	}
 
 	if(!session->answer_flag_count) {
-		mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS,TRUE);
+		mrcp_app_message_t *response;
+		response = mrcp_client_app_response_create(session->active_request,MRCP_SIG_STATUS_CODE_SUCCESS,session->base.pool);
+		response->descriptor = session->answer;
 		session->answer = NULL;
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Resource Discovery Response 0x%x",session);
+		session->application->handler(response);
+
+		session->active_request = apt_list_pop_front(session->request_queue);
+		if(session->active_request) {
+			mrcp_app_request_dispatch(session,session->active_request);
+		}
 	}
 	return TRUE;
 }
@@ -773,6 +785,7 @@ static apt_bool_t mrcp_client_resource_discover(mrcp_client_session_t *session)
 	mrcp_session_descriptor_t *descriptor = NULL;
 	
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Resource Discovery Request 0x%x", session);
+	session->answer = NULL;
 	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
 		const apt_str_t *resource_name;
 		mrcp_resource_id i;
@@ -1130,7 +1143,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_messag
 							status = dispatcher->on_resource_discover(
 										app_message->application,
 										app_message->session,
-										NULL,
+										app_message->descriptor,
 										app_message->sig_message.status);
 						}
 						break;

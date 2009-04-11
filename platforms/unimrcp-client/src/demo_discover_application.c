@@ -15,6 +15,8 @@
  */
 
 #include "demo_application.h"
+#include "mrcp_session_descriptor.h"
+#include "mrcp_control_descriptor.h"
 #include "apt_log.h"
 
 
@@ -86,8 +88,22 @@ static apt_bool_t discover_application_on_session_terminate(mrcp_application_t *
 /** Handle the responses sent to resource discover requests */
 static apt_bool_t discover_application_on_resource_discover(mrcp_application_t *application, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_sig_status_code_e status)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Resource Discover");
+	if(descriptor && status == MRCP_SIG_STATUS_CODE_SUCCESS) {
+		int i;
+		int count = descriptor->control_media_arr->nelts;
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Resource Discover [%d]", count);
 
+		for(i = 0; i < count; i++) {
+			mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(descriptor,i);
+			if(control_media) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"[%d] - %s", i,control_media->resource_name.buf);
+			}
+		}
+	}
+	else {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Discover Resources");
+	}
+	
 	mrcp_application_session_terminate(session);
 	return TRUE;
 }
