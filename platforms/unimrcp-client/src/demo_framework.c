@@ -85,6 +85,12 @@ demo_framework_t* demo_framework_create(apt_dir_layout_t *dir_layout)
 			demo_framework_app_register(framework,demo_application,"bypass");
 		}
 
+		/* create demo resource discover application */
+		demo_application = demo_discover_application_create(framework->pool);
+		if(demo_application) {
+			demo_framework_app_register(framework,demo_application,"discover");
+		}
+
 		demo_framework_consumer_task_create(framework);
 
 		if(framework->task) {

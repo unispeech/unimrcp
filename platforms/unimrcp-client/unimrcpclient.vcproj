@@ -153,6 +153,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\demo_discover_application.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\demo_framework.c"
 				>
 			</File>

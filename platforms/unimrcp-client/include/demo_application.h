@@ -52,6 +52,9 @@ demo_application_t* demo_recog_application_create(apr_pool_t *pool);
 /** Create demo bypass media application */
 demo_application_t* demo_bypass_application_create(apr_pool_t *pool);
 
+/** Create demo resource discover application */
+demo_application_t* demo_discover_application_create(apr_pool_t *pool);
+
 
 APT_END_EXTERN_C
 
