@@ -62,10 +62,13 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task);
 /* MRCP Signaling Interface */
 static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session);
+static apt_bool_t mrcp_sofia_session_discover_request(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 
 static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_sofia_session_offer,
-	mrcp_sofia_session_terminate_request
+	mrcp_sofia_session_terminate_request,
+	NULL,
+	mrcp_sofia_session_discover_request
 };
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool);
@@ -300,6 +303,17 @@ static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session)
 	return TRUE;
 }
 
+static apt_bool_t mrcp_sofia_session_discover_request(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
+{
+	mrcp_sofia_session_t *sofia_session = session->obj;
+	if(!sofia_session || !sofia_session->nh) {
+		return FALSE;
+	}
+	
+	nua_options(sofia_session->nh,TAG_END());
+	return TRUE;
+}
+
 static void mrcp_sofia_on_session_ready(
 						int                   status,
 						mrcp_sofia_agent_t   *sofia_agent,
@@ -401,6 +415,25 @@ static void mrcp_sofia_on_resource_discover(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
+	const char *remote_sdp_str = NULL;
+	mrcp_session_descriptor_t *descriptor = NULL;
+
+	tl_gets(tags, 
+			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
+			TAG_END());
+
+	if(remote_sdp_str) {
+		sdp_parser_t *parser = NULL;
+		sdp_session_t *sdp = NULL;
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP\n%s", remote_sdp_str);
+
+		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
+		sdp = sdp_session(parser);
+		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,sofia_session->session->pool);
+		sdp_parser_free(parser);
+	}
+
+	mrcp_session_discover_response(sofia_session->session,descriptor);
 }
 
 /** This callback will be called by SIP stack to process incoming events */
@@ -421,7 +454,7 @@ static void mrcp_sofia_event_callback(
 		case nua_i_state:
 			mrcp_sofia_on_state_change(status,sofia_agent,nh,sofia_session,sip,tags);
 			break;
-		case nua_i_options:
+		case nua_r_options:
 			mrcp_sofia_on_resource_discover(status,sofia_agent,nh,sofia_session,sip,tags);
 			break;
 		case nua_r_bye:
