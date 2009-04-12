@@ -434,10 +434,6 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_request_generate(
 		resource_name);
 	
 	request->start_line.common.request_line.method_id = RTSP_METHOD_DESCRIBE;
-	request->header.transport.protocol = RTSP_TRANSPORT_RTP;
-	request->header.transport.profile = RTSP_PROFILE_AVP;
-	request->header.transport.delivery = RTSP_DELIVERY_UNICAST;
-	rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
 	return request;
 }
 
