@@ -551,7 +551,7 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	message->start_line.request_id = ++session->base.last_request_id;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCP Request <%s@%s> [%d]",
 					channel->resource_name->buf,
-					session->base.id,
+					session->base.id.buf,
 					message->start_line.request_id);
 
 	if(channel->control_channel) {
