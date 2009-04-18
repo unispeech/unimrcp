@@ -625,31 +625,27 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 	rtsp_message_t *response;
 	apr_size_t remaining_handles = 0;
 	apr_size_t cancelled_requests = 0;
-	apt_list_elem_t *elem;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP Connection Disconnected");
 	apt_net_client_connection_close(client->task,rtsp_connection->base);
 
 	/* Cancel in-progreess requests */
 	do {
-		elem = apt_list_pop_front(rtsp_connection->inprogress_request_queue);
-		if(elem) {
-			session = apt_list_elem_object_get(elem);
-			if(session && session->active_request) {
-				request = session->active_request;
-				session->active_request = NULL;
-				cancelled_requests++;
+		session = apt_list_pop_front(rtsp_connection->inprogress_request_queue);
+		if(session && session->active_request) {
+			request = session->active_request;
+			session->active_request = NULL;
+			cancelled_requests++;
 
-				response = rtsp_response_create(
-									request,
-									RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
-									RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,
-									session->pool);
-				rtsp_client_session_response_process(client,session,request,response);
-			}
+			response = rtsp_response_create(
+								request,
+								RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
+								RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,
+								session->pool);
+			rtsp_client_session_response_process(client,session,request,response);
 		}
 	}
-	while(elem);
+	while(session);
 
 	/* Walk through RTSP handles and raise termination event for them */
 	remaining_handles = apr_hash_count(rtsp_connection->handle_table);
