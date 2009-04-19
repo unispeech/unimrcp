@@ -39,6 +39,7 @@ struct mrcp_unirtsp_agent_t {
 };
 
 struct mrcp_unirtsp_session_t {
+	mrcp_message_t        *mrcp_message;
 	mrcp_session_t        *mrcp_session;
 	rtsp_client_session_t *rtsp_session;
 	su_home_t             *home;
@@ -178,6 +179,7 @@ static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session)
 
 	session = apr_palloc(mrcp_session->pool,sizeof(mrcp_unirtsp_session_t));
 	session->home = su_home_new(sizeof(*session->home));
+	session->mrcp_message = NULL;
 	session->mrcp_session = mrcp_session;
 	mrcp_session->obj = session;
 	
@@ -222,10 +224,13 @@ static apt_bool_t mrcp_unirtsp_on_session_terminate_event(rtsp_client_t *rtsp_cl
 
 static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent, mrcp_unirtsp_session_t *session, rtsp_message_t *message, const char *resource_name)
 {
-	apt_bool_t status = TRUE;
+	mrcp_message_t *mrcp_message = NULL;
 
-	if(session && resource_name &&
-		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+	if(!session || !resource_name) {
+		return FALSE;
+	}
+	
+	if(rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 		message->header.content_type == RTSP_CONTENT_TYPE_MRCP &&
 		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 		message->header.content_length > 0) {
@@ -241,21 +246,29 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		parser = mrcp_parser_create(agent->sig_agent->resource_factory,session->mrcp_session->pool);
 		mrcp_parser_resource_name_set(parser,&resource_name_str);
 		if(mrcp_parser_run(parser,&text_stream) == MRCP_STREAM_MESSAGE_COMPLETE) {
-			mrcp_message_t *mrcp_message = mrcp_parser_message_get(parser);
+			mrcp_message = mrcp_parser_message_get(parser);
 			mrcp_message->channel_id.session_id = message->header.session_id;
-			status = mrcp_session_control_response(session->mrcp_session,mrcp_message);
 		}
 		else {
-			/* error response */
+			/* error case */
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
-			status = FALSE;
 		}
 	}
 	else {
-		/* error response */
-		status = FALSE;
+		/* error case */
 	}
-	return status;
+
+	if(!mrcp_message) {
+		if(!session->mrcp_message) {
+			return FALSE;
+		}
+		mrcp_message = mrcp_response_create(session->mrcp_message,session->mrcp_session->pool);
+		mrcp_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+	}
+
+	session->mrcp_message = NULL;
+	mrcp_session_control_response(session->mrcp_session,mrcp_message);
+	return TRUE;
 }
 
 static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, rtsp_client_session_t *rtsp_session, rtsp_message_t *request, rtsp_message_t *response)
@@ -409,6 +422,7 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 	rtsp_message->header.content_length = body->length;
 	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
 
+	session->mrcp_message = mrcp_message;
 	rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,rtsp_message);
 	return TRUE;
 }
