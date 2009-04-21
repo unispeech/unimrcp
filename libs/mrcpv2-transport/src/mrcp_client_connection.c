@@ -182,19 +182,19 @@ static apt_bool_t mrcp_client_control_message_signal(
 								mrcp_control_descriptor_t *descriptor,
 								mrcp_message_t *message)
 {
-	apr_size_t size;
-	connection_task_msg_data_t task_msg_data;
+	apr_size_t size = sizeof(connection_task_msg_data_t);
+	connection_task_msg_data_t data;
 	if(!agent->control_sock) {
 		return FALSE;
 	}
-	size = sizeof(connection_task_msg_data_t);
-	task_msg_data.type = type;
-	task_msg_data.agent = agent;
-	task_msg_data.channel = channel;
-	task_msg_data.descriptor = descriptor;
-	task_msg_data.message = message;
+	memset(&data,0,size);
+	data.type = type;
+	data.agent = agent;
+	data.channel = channel;
+	data.descriptor = descriptor;
+	data.message = message;
 
-	if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&task_msg_data,&size) != APR_SUCCESS) {
+	if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&data,&size) != APR_SUCCESS) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Signal Control Message");
 		return FALSE;
 	}
@@ -572,25 +572,25 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 
 static apt_bool_t mrcp_client_agent_control_process(mrcp_connection_agent_t *agent)
 {
-	connection_task_msg_data_t task_msg_data;
+	connection_task_msg_data_t data;
 	apr_size_t size = sizeof(connection_task_msg_data_t);
-	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&task_msg_data, &size);
+	apr_status_t status = apr_socket_recv(agent->control_sock, (char*)&data, &size);
 	if(status == APR_EOF || size == 0) {
 		return FALSE;
 	}
 
-	switch(task_msg_data.type) {
+	switch(data.type) {
 		case CONNECTION_TASK_MSG_ADD_CHANNEL:
-			mrcp_client_agent_channel_add(agent,task_msg_data.channel,task_msg_data.descriptor);
+			mrcp_client_agent_channel_add(agent,data.channel,data.descriptor);
 			break;
 		case CONNECTION_TASK_MSG_MODIFY_CHANNEL:
-			mrcp_client_agent_channel_modify(agent,task_msg_data.channel,task_msg_data.descriptor);
+			mrcp_client_agent_channel_modify(agent,data.channel,data.descriptor);
 			break;
 		case CONNECTION_TASK_MSG_REMOVE_CHANNEL:
-			mrcp_client_agent_channel_remove(agent,task_msg_data.channel);
+			mrcp_client_agent_channel_remove(agent,data.channel);
 			break;
 		case CONNECTION_TASK_MSG_SEND_MESSAGE:
-			mrcp_client_agent_messsage_send(agent,task_msg_data.channel,task_msg_data.message);
+			mrcp_client_agent_messsage_send(agent,data.channel,data.message);
 			break;
 		case CONNECTION_TASK_MSG_TERMINATE:
 			return FALSE;
@@ -648,10 +648,11 @@ static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task)
 	apt_bool_t status = FALSE;
 	mrcp_connection_agent_t *agent = apt_task_object_get(task);
 	if(agent->control_sock) {
-		connection_task_msg_data_t task_msg_data;
+		connection_task_msg_data_t data;
 		apr_size_t size = sizeof(connection_task_msg_data_t);
-		task_msg_data.type = CONNECTION_TASK_MSG_TERMINATE;
-		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&task_msg_data,&size) == APR_SUCCESS) {
+		memset(&data,0,size);
+		data.type = CONNECTION_TASK_MSG_TERMINATE;
+		if(apr_socket_sendto(agent->control_sock,agent->control_sockaddr,0,(const char*)&data,&size) == APR_SUCCESS) {
 			status = TRUE;
 		}
 		else {
