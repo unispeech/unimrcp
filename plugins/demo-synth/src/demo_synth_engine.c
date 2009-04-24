@@ -228,10 +228,12 @@ static apt_bool_t demo_synth_channel_request_process(mrcp_engine_channel_t *chan
 /** Process SPEAK request */
 static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
-	char *file_path;
+	char *file_path = NULL;
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->time_to_complete = 0;
-	file_path = apt_datadir_filepath_get(channel->engine->dir_layout,DEMO_SPEECH_SOURCE_FILE,channel->pool);
+	if(channel->engine) {
+		file_path = apt_datadir_filepath_get(channel->engine->dir_layout,DEMO_SPEECH_SOURCE_FILE,channel->pool);
+	}
 	if(file_path) {
 		synth_channel->audio_file = fopen(file_path,"rb");
 		if(synth_channel->audio_file) {
@@ -453,6 +455,10 @@ static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 				message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 
 				synth_channel->speak_request = NULL;
+				if(synth_channel->audio_file) {
+					fclose(synth_channel->audio_file);
+					synth_channel->audio_file = NULL;
+				}
 				/* send asynch event */
 				mrcp_engine_channel_message_send(synth_channel->channel,message);
 			}
