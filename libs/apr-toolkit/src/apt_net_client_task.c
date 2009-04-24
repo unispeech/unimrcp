@@ -206,17 +206,21 @@ static void apt_net_client_task_pollset_destroy(apt_net_client_task_t *task)
 static apt_bool_t apt_net_client_task_process(apt_net_client_task_t *task)
 {
 	apt_bool_t status = TRUE;
+	apt_bool_t running = TRUE;
 	apt_task_msg_t *msg;
 
-	apr_thread_mutex_lock(task->guard);
 	do {
+		apr_thread_mutex_lock(task->guard);
 		msg = apt_cyclic_queue_pop(task->msg_queue);
+		apr_thread_mutex_unlock(task->guard);
 		if(msg) {
 			status = apt_task_msg_process(task->base,msg);
 		}
+		else {
+			running = FALSE;
+		}
 	}
-	while(msg);
-	apr_thread_mutex_unlock(task->guard);
+	while(running == TRUE);
 	return status;
 }
 
