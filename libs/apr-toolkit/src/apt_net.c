@@ -20,7 +20,7 @@
 /** Get the IP address (in numeric address string format) by hostname */
 apt_bool_t apt_ip_get(char **addr, apr_pool_t *pool)
 {
-	apr_sockaddr_t *sockaddr;
+	apr_sockaddr_t *sockaddr = NULL;
 	char *hostname = apr_palloc(pool,APRMAXHOSTLEN+1);
 	if(apr_gethostname(hostname,APRMAXHOSTLEN,pool) != APR_SUCCESS) {
 		return FALSE;

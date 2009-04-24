@@ -156,9 +156,9 @@ static apr_status_t socket_pipe_create(apr_socket_t **rd, apr_socket_t **wr, apr
 {
 	static int id = 0;
 
-	apr_socket_t *ls;
-	apr_sockaddr_t *pa;
-	apr_sockaddr_t *ca;
+	apr_socket_t *ls = NULL;
+	apr_sockaddr_t *pa = NULL;
+	apr_sockaddr_t *ca = NULL;
 	apr_size_t nrd;
 	int uid[2];
 	int iid[2];
@@ -250,8 +250,8 @@ static apr_status_t socket_pipe_create(apr_socket_t **rd, apr_socket_t **wr, apr
 /** Create a dummy wakeup pipe for interrupting the poller */
 static apt_bool_t apt_wakeup_pipe_create(apt_pollset_t *pollset)
 {
-	apr_socket_t *rd;
-	apr_socket_t *wr;
+	apr_socket_t *rd = NULL;
+	apr_socket_t *wr = NULL;
 	apr_status_t rv;
 	rv = socket_pipe_create(&rd,&wr,pollset->pool);
 	if(rv != APR_SUCCESS) {

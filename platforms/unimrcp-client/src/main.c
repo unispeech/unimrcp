@@ -120,11 +120,11 @@ static void usage()
 static apt_bool_t demo_framework_options_load(client_options_t *options, int argc, const char * const *argv, apr_pool_t *pool)
 {
 	apr_status_t rv;
-	apr_getopt_t *opt;
+	apr_getopt_t *opt = NULL;
 	int optch;
 	const char *optarg;
 
-	static const apr_getopt_option_t opt_option[] = {
+	const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
 		{ "root-dir",    'r', TRUE,  "path to root dir" },  /* -r arg or --root-dir arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
@@ -169,7 +169,7 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 
 int main(int argc, const char * const *argv)
 {
-	apr_pool_t *pool;
+	apr_pool_t *pool = NULL;
 	client_options_t options;
 	apt_dir_layout_t *dir_layout;
 	demo_framework_t *framework;
@@ -181,7 +181,7 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* create APR pool */
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	if(apr_pool_create(&pool,NULL) != APR_SUCCESS || !pool) {
 		apr_terminate();
 		return 0;
 	}

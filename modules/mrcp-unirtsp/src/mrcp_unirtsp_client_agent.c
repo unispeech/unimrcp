@@ -134,6 +134,9 @@ MRCP_DECLARE(rtsp_client_config_t*) mrcp_unirtsp_client_config_alloc(apr_pool_t 
 
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_client_config_t *config, apr_pool_t *pool)
 {
+	if(!config->server_ip) {
+		return FALSE;
+	}
 	agent->config = config;
 	return TRUE;
 }

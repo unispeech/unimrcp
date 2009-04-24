@@ -71,6 +71,9 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 	pool = mrcp_server_memory_pool_get(server);
+	if(!pool) {
+		return NULL;
+	}
 
 	resource_factory = mrcp_default_factory_create(pool);
 	if(resource_factory) {
@@ -104,9 +107,9 @@ MRCP_DECLARE(apt_bool_t) unimrcp_server_shutdown(mrcp_server_t *server)
 /** Parse config file */
 static apr_xml_doc* unimrcp_server_config_parse(const char *dir_path, apr_pool_t *pool)
 {
-	apr_xml_parser *parser;
-	apr_xml_doc *doc;
-	apr_file_t *fd;
+	apr_xml_parser *parser = NULL;
+	apr_xml_doc *doc = NULL;
+	apr_file_t *fd = NULL;
 	apr_status_t rv;
 	const char *file_path;
 

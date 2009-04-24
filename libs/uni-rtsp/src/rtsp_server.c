@@ -123,6 +123,10 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	apt_task_vtable_t vtable;
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_server_t *server;
+
+	if(!listen_ip) {
+		return NULL;
+	}
 	
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Server %s:%hu [%d]",listen_ip,listen_port,max_connection_count);
 	server = apr_palloc(pool,sizeof(rtsp_server_t));

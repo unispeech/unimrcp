@@ -792,12 +792,14 @@ static mrcp_profile_t* mrcp_server_profile_get_by_agent(mrcp_server_t *server, m
 	mrcp_profile_t *profile;
 	apr_hash_index_t *it;
 	void *val;
-	char *name;
+	const void *key;
+	const char *name;
 	it = apr_hash_first(session->base.pool,server->profile_table);
 	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,(void*)&name,NULL,&val);
+		apr_hash_this(it,&key,NULL,&val);
 		profile = val;
-		if(profile && profile->signaling_agent == signaling_agent) {
+		name = key;
+		if(profile && name && profile->signaling_agent == signaling_agent) {
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Found Profile [%s]",name);
 			return profile;
 		}

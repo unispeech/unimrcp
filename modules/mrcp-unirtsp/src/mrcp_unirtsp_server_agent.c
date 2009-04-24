@@ -89,8 +89,13 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(rtsp_server_con
 		return NULL;
 	}
 
-	agent->rtsp_server = rtsp_server_create(config->local_ip,config->local_port,config->max_connection_count,
-										agent,&session_request_vtable,pool);
+	agent->rtsp_server = rtsp_server_create(
+								config->local_ip,
+								config->local_port,
+								config->max_connection_count,
+								agent,
+								&session_request_vtable,
+								pool);
 	if(!agent->rtsp_server) {
 		return NULL;
 	}
@@ -127,6 +132,9 @@ MRCP_DECLARE(rtsp_server_config_t*) mrcp_unirtsp_server_config_alloc(apr_pool_t 
 
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_server_config_t *config, apr_pool_t *pool)
 {
+	if(!config->local_ip) {
+		return FALSE;
+	}
 	agent->config = config;
 	return TRUE;
 }
