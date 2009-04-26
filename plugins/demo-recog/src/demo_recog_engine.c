@@ -248,8 +248,9 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 	}
 
 	if(!recog_channel->audio_out) {
+		apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
 		char *file_name = apr_pstrcat(channel->pool,"utter-",request->channel_id.session_id.buf,".pcm",NULL);
-		char *file_path = apt_datadir_filepath_get(channel->engine->dir_layout,file_name,channel->pool);
+		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
 		if(file_path) {
 			recog_channel->audio_out = fopen(file_path,"wb");
 		}
@@ -349,6 +350,38 @@ static apt_bool_t demo_recog_start_of_input(demo_recog_channel_t *recog_channel)
 	return mrcp_engine_channel_message_send(recog_channel->channel,message);
 }
 
+/* Load demo recognition result */
+static apt_bool_t demo_recog_result_load(demo_recog_channel_t *recog_channel, mrcp_message_t *message)
+{
+	FILE *file;
+	mrcp_engine_channel_t *channel = recog_channel->channel;
+	apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
+	char *file_path = apt_datadir_filepath_get(dir_layout,"result.xml",message->pool);
+	if(!file_path) {
+		return FALSE;
+	}
+	
+	/* read the demo result from file */
+	file = fopen(file_path,"r");
+	if(file) {
+		mrcp_generic_header_t *generic_header;
+		char text[1024];
+		apr_size_t size;
+		size = fread(text,1,sizeof(text),file);
+		apt_string_assign_n(&message->body,text,size,message->pool);
+		fclose(file);
+
+		/* get/allocate generic header */
+		generic_header = mrcp_generic_header_prepare(message);
+		if(generic_header) {
+			/* set content types */
+			apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
+			mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
+		}
+	}
+	return TRUE;
+}
+
 /* Raise demo RECOGNITION-COMPLETE event */
 static apt_bool_t demo_recog_recognition_complete(demo_recog_channel_t *recog_channel, mrcp_recog_completion_cause_e cause)
 {
@@ -373,28 +406,7 @@ static apt_bool_t demo_recog_recognition_complete(demo_recog_channel_t *recog_ch
 	message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 
 	if(cause == RECOGNIZER_COMPLETION_CAUSE_SUCCESS) {
-		mrcp_engine_channel_t *channel = recog_channel->channel;
-		char *file_path = apt_datadir_filepath_get(channel->engine->dir_layout,"result.xml",message->pool);
-		if(file_path) {
-			/* read the demo result from file */
-			FILE *file = fopen(file_path,"r");
-			if(file) {
-				mrcp_generic_header_t *generic_header;
-				char text[1024];
-				apr_size_t size;
-				size = fread(text,1,sizeof(text),file);
-				apt_string_assign_n(&message->body,text,size,message->pool);
-				fclose(file);
-
-				/* get/allocate generic header */
-				generic_header = mrcp_generic_header_prepare(message);
-				if(generic_header) {
-					/* set content types */
-					apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
-					mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
-				}
-			}
-		}
+		demo_recog_result_load(recog_channel,message);
 	}
 
 	recog_channel->recog_request = NULL;
