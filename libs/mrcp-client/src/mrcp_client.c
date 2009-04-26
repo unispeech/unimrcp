@@ -882,10 +882,15 @@ static apt_bool_t mrcp_client_connection_task_msg_signal(
 							mrcp_message_t                  *message,
 							apt_bool_t                       status)
 {
-	mrcp_client_t *client = mrcp_client_connection_agent_object_get(agent);
-	apt_task_t *task = apt_consumer_task_base_get(client->task);
+	apt_task_t *task;
+	apt_task_msg_t *task_msg;
 	connection_agent_task_msg_data_t *data;
-	apt_task_msg_t *task_msg = apt_task_msg_acquire(client->cnt_msg_pool);
+	mrcp_client_t *client = mrcp_client_connection_agent_object_get(agent);
+	if(!client || !client->cnt_msg_pool) {
+		return FALSE;
+	}
+	task = apt_consumer_task_base_get(client->task);
+	task_msg = apt_task_msg_acquire(client->cnt_msg_pool);
 	task_msg->type = MRCP_CLIENT_CONNECTION_TASK_MSG;
 	task_msg->sub_type = type;
 	data = (connection_agent_task_msg_data_t*) task_msg->data;
