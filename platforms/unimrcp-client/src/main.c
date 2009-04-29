@@ -200,11 +200,8 @@ int main(int argc, const char * const *argv)
 
 	/* create the structure of default directories layout */
 	dir_layout = apt_default_dir_layout_create(options.root_dir_path,pool);
-
-	/* set the log level */
-	apt_log_priority_set(options.log_priority);
-	/* set the log output mode */
-	apt_log_output_mode_set(options.log_output);
+	/* create singleton logger */
+	apt_log_instance_create(options.log_output,options.log_priority,pool);
 
 	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
@@ -222,10 +219,8 @@ int main(int argc, const char * const *argv)
 		demo_framework_destroy(framework);
 	}
 
-	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
-		apt_log_file_close();
-	}
-
+	/* destroy singleton logger */
+	apt_log_instance_destroy();
 	/* destroy APR pool */
 	apr_pool_destroy(pool);
 	/* APR global termination */

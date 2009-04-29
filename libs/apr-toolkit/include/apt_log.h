@@ -66,9 +66,35 @@ typedef enum {
 	APT_LOG_OUTPUT_FILE     = 0x02, /**< enable log file output */
 } apt_log_output_e;
 
+/** Opaque logger declaration */
+typedef struct apt_logger_t apt_logger_t;
+
 /** Prototype of extended log handler function */
 typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const char *id, 
 											apt_log_priority_e priority, const char *format, va_list arg_ptr);
+
+/**
+ * Create the singleton instance of the logger.
+ * @param mode the log output mode
+ * @param priority the log priority level
+ * @param pool the memory pool to use
+ */
+APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_priority_e priority, apr_pool_t *pool);
+
+/**
+ * Destroy the singleton instance of the logger.
+ */
+APT_DECLARE(apt_bool_t) apt_log_instance_destroy();
+
+/**
+ * Get the singleton instance of the logger.
+ */
+APT_DECLARE(apt_logger_t*) apt_log_instance_get();
+
+/**
+ * Set the singleton instance of the logger.
+ */
+APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger);
 
 /**
  * Open the log file.
@@ -87,19 +113,19 @@ APT_DECLARE(apt_bool_t) apt_log_file_close();
  * Set the logging output.
  * @param mode the mode to set
  */
-APT_DECLARE(void) apt_log_output_mode_set(apt_log_output_e mode);
+APT_DECLARE(apt_bool_t) apt_log_output_mode_set(apt_log_output_e mode);
 
 /**
  * Set the logging priority (log level).
  * @param priority the priority to set
  */
-APT_DECLARE(void) apt_log_priority_set(apt_log_priority_e priority);
+APT_DECLARE(apt_bool_t) apt_log_priority_set(apt_log_priority_e priority);
 
 /**
  * Set the header (format) for log messages.
  * @param header the header to set (used as bitmask)
  */
-APT_DECLARE(void) apt_log_header_set(int header);
+APT_DECLARE(apt_bool_t) apt_log_header_set(int header);
 
 /**
  * Set the extended external log handler.
@@ -107,7 +133,7 @@ APT_DECLARE(void) apt_log_header_set(int header);
  * @remark default logger is used to output the logs to stdout and/or log file,
  *         if external log handler isn't set
  */
-APT_DECLARE(void) apt_log_ext_handler_set(apt_log_ext_handler_f handler);
+APT_DECLARE(apt_bool_t) apt_log_ext_handler_set(apt_log_ext_handler_f handler);
 
 /**
  * Do logging.
