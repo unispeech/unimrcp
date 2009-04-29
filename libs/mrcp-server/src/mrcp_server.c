@@ -511,11 +511,10 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(mrcp_server_t *server, con
 /** Register resource engine plugin */
 MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, const char *name)
 {
+	apt_bool_t status = FALSE;
 	apr_dso_handle_t *plugin = NULL;
 	apr_dso_handle_sym_t func_handle = NULL;
-	apt_bool_t dso_err = FALSE;
 	mrcp_plugin_creator_f plugin_creator = NULL;
-	mrcp_resource_engine_t *engine;
 	if(!path || !name) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Plugin: no name");
 		return FALSE;
@@ -523,52 +522,60 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,name);
 	if(apr_dso_load(&plugin,path,server->pool) == APR_SUCCESS) {
-		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_SYM_NAME) == APR_SUCCESS) {
+		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_ENGINE_SYM_NAME) == APR_SUCCESS) {
 			if(func_handle) {
 				plugin_creator = (mrcp_plugin_creator_f)(intptr_t)func_handle;
 			}
 		}
 		else {
-			dso_err = TRUE;
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO Symbol: "MRCP_PLUGIN_ENGINE_SYM_NAME);
+			apr_dso_unload(plugin);
+			return FALSE;
+		}
+		
+		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_LOGGER_SYM_NAME) == APR_SUCCESS) {
+			if(func_handle) {
+				apt_logger_t *logger = apt_log_instance_get();
+				mrcp_plugin_log_accessor_f log_accessor;
+				log_accessor = (mrcp_plugin_log_accessor_f)(intptr_t)func_handle;
+				log_accessor(logger);
+			}
 		}
 	}
 	else {
-		dso_err = TRUE;
-	}
-
-	if(dso_err == TRUE) {
 		char derr[512] = "";
 		apr_dso_error(plugin,derr,sizeof(derr));
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO Symbol: %s", derr);
-		apr_dso_unload(plugin);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO: %s", derr);
 		return FALSE;
 	}
 
-	if(!plugin_creator) {
+	if(plugin_creator) {
+		mrcp_resource_engine_t *engine = plugin_creator(server->pool);
+		if(engine) {
+			if(mrcp_plugin_version_check(&engine->plugin_version)) {
+				status = TRUE;
+				mrcp_server_resource_engine_register(server,engine,name);
+				apr_hash_set(server->plugin_table,name,APR_HASH_KEY_STRING,plugin);
+			}
+			else {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
+					engine->plugin_version.major,
+					engine->plugin_version.minor,
+					engine->plugin_version.patch);
+			}
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine");
+		}
+	}
+	else {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Entry Point Found for Plugin");
-		apr_dso_unload(plugin);
-		return FALSE;
 	}
 
-	engine = plugin_creator(server->pool);
-	if(!engine) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null Resource Engine");
+	if(status == FALSE) {
 		apr_dso_unload(plugin);
-		return FALSE;
 	}
-
-	if(!mrcp_plugin_version_check(&engine->plugin_version)) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
-			engine->plugin_version.major,
-			engine->plugin_version.minor,
-			engine->plugin_version.patch);
-		apr_dso_unload(plugin);
-		return FALSE;
-	}
-
-	mrcp_server_resource_engine_register(server,engine,name);
-	apr_hash_set(server->plugin_table,name,APR_HASH_KEY_STRING,plugin);
-	return TRUE;
+	return status;
 }
 
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server)
