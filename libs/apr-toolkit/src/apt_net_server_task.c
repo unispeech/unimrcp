@@ -159,6 +159,7 @@ static apt_bool_t apt_net_server_task_listen_socket_create(apt_net_server_task_t
 		return FALSE;
 	}
 
+	memset(&task->listen_sock_pfd,0,sizeof(apr_pollfd_t));
 	task->listen_sock_pfd.desc_type = APR_POLL_SOCKET;
 	task->listen_sock_pfd.reqevents = APR_POLLIN;
 	task->listen_sock_pfd.desc.s = task->listen_sock;
@@ -251,6 +252,7 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 		apr_pool_destroy(pool);
 		return FALSE;
 	}
+	memset(&connection->sock_pfd,0,sizeof(apr_pollfd_t));
 	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;

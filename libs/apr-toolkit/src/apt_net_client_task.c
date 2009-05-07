@@ -147,6 +147,7 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 		return NULL;
 	}
 
+	memset(&connection->sock_pfd,0,sizeof(apr_pollfd_t));
 	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;

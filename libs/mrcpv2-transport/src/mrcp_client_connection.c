@@ -277,6 +277,7 @@ static apt_bool_t mrcp_client_agent_pollset_create(mrcp_connection_agent_t *agen
 		return FALSE;
 	}
 	/* add control socket to pollset */
+	memset(&agent->control_sock_pfd,0,sizeof(apr_pollfd_t));
 	agent->control_sock_pfd.desc_type = APR_POLL_SOCKET;
 	agent->control_sock_pfd.reqevents = APR_POLLIN;
 	agent->control_sock_pfd.desc.s = agent->control_sock;
@@ -327,6 +328,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 		return NULL;
 	}
 
+	memset(&connection->sock_pfd,0,sizeof(apr_pollfd_t));
 	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;
