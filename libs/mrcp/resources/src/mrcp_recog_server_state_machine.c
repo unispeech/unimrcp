@@ -145,7 +145,7 @@ static apt_bool_t recog_request_recognize(mrcp_recog_state_machine_t *state_mach
 		mrcp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up RECOGNIZE Request [%d]",message->start_line.request_id);
 		message->start_line.request_state = MRCP_REQUEST_STATE_PENDING;
-		apt_list_push_back(state_machine->queue,message);
+		apt_list_push_back(state_machine->queue,message,message->pool);
 		
 		response = mrcp_response_create(message,message->pool);
 		response->start_line.request_state = MRCP_REQUEST_STATE_PENDING;

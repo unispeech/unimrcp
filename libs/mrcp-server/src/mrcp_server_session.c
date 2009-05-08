@@ -238,7 +238,7 @@ apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signa
 	mrcp_server_session_t *session = signaling_message->session;
 	if(session->active_request) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push Request to Queue");
-		apt_list_push_back(session->request_queue,signaling_message);
+		apt_list_push_back(session->request_queue,signaling_message,session->base.pool);
 	}
 	else {
 		session->active_request = signaling_message;

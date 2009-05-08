@@ -119,7 +119,7 @@ static apt_bool_t synth_request_speak(mrcp_synth_state_machine_t *state_machine,
 		mrcp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up SPEAK Request [%d]",message->start_line.request_id);
 		message->start_line.request_state = MRCP_REQUEST_STATE_PENDING;
-		apt_list_push_back(state_machine->queue,message);
+		apt_list_push_back(state_machine->queue,message,message->pool);
 		
 		response = mrcp_response_create(message,message->pool);
 		response->start_line.request_state = MRCP_REQUEST_STATE_PENDING;

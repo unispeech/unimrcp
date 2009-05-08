@@ -351,7 +351,7 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 
 	if(session->active_request) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push Request to Queue");
-		apt_list_push_back(session->request_queue,app_message);
+		apt_list_push_back(session->request_queue,app_message,session->base.pool);
 		return TRUE;
 	}
 

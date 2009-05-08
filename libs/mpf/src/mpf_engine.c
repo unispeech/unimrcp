@@ -198,7 +198,7 @@ static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_ms
 			mpf_context_topology_apply(context,termination);
 			if(context->termination_count == 1) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Context");
-				request->context->elem = apt_list_push_back(engine->contexts,context);
+				context->elem = apt_list_push_back(engine->contexts,context,context->pool);
 			}
 			break;
 		}

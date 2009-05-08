@@ -45,9 +45,9 @@ APT_DECLARE(void) apt_list_destroy(apt_obj_list_t *list)
 	/* nothing to do, the list is allocated from the pool */
 }
 
-APT_DECLARE(apt_list_elem_t*) apt_list_push_back(apt_obj_list_t *list, void *obj)
+APT_DECLARE(apt_list_elem_t*) apt_list_push_back(apt_obj_list_t *list, void *obj, apr_pool_t *pool)
 {
-	apt_list_elem_t *elem = apr_palloc(list->pool,sizeof(apt_list_elem_t));
+	apt_list_elem_t *elem = apr_palloc(pool,sizeof(apt_list_elem_t));
 	elem->obj = obj;
 
 	APR_RING_INSERT_TAIL(&list->head,elem,apt_list_elem_t,link);
@@ -119,9 +119,9 @@ APT_DECLARE(apt_list_elem_t*) apt_list_prev_elem_get(apt_obj_list_t *list, apt_l
 	return prev_elem;
 }
 
-APT_DECLARE(apt_list_elem_t*) apt_list_elem_insert(apt_obj_list_t *list, apt_list_elem_t *elem, void *obj)
+APT_DECLARE(apt_list_elem_t*) apt_list_elem_insert(apt_obj_list_t *list, apt_list_elem_t *elem, void *obj, apr_pool_t *pool)
 {
-	apt_list_elem_t *new_elem = apr_palloc(list->pool,sizeof(apt_list_elem_t));
+	apt_list_elem_t *new_elem = apr_palloc(pool,sizeof(apt_list_elem_t));
 	new_elem->obj = obj;
 	APR_RING_INSERT_BEFORE(elem,new_elem,link);
 	return new_elem;

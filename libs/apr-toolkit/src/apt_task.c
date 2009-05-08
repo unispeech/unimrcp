@@ -101,7 +101,7 @@ APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 APT_DECLARE(apt_bool_t) apt_task_add(apt_task_t *task, apt_task_t *child_task)
 {
 	child_task->parent_task = task;
-	return (apt_list_push_back(task->child_tasks,child_task) ? TRUE : FALSE);
+	return (apt_list_push_back(task->child_tasks,child_task, child_task->pool) ? TRUE : FALSE);
 }
 
 APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)

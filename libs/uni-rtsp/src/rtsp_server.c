@@ -411,7 +411,7 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 	
 	if(session->active_request) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push RTSP Request to Queue <%s>",session->id.buf);
-		apt_list_push_back(session->request_queue,message);
+		apt_list_push_back(session->request_queue,message,message->pool);
 		return TRUE;
 	}
 
@@ -583,7 +583,7 @@ static apt_bool_t rtsp_server_on_connect(apt_net_server_task_t *task, apt_net_se
 		server->connection_list = apt_list_create(server->sub_pool);
 	}
 	rtsp_connection->server = server;
-	rtsp_connection->it = apt_list_push_back(server->connection_list,rtsp_connection);
+	rtsp_connection->it = apt_list_push_back(server->connection_list,rtsp_connection,connection->pool);
 	return TRUE;
 }
 

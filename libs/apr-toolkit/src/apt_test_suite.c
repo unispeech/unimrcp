@@ -55,7 +55,7 @@ APT_DECLARE(void) apt_test_framework_destroy(apt_test_framework_t *framework)
 APT_DECLARE(apt_bool_t) apt_test_framework_suite_add(apt_test_framework_t *framework, apt_test_suite_t *suite)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Test Suite [%s]",suite->name);
-	return (apt_list_push_back(framework->suites,suite) ? TRUE : FALSE);
+	return (apt_list_push_back(framework->suites,suite,suite->pool) ? TRUE : FALSE);
 }
 
 APT_DECLARE(apr_pool_t*) apt_test_framework_pool_get(apt_test_framework_t *framework)

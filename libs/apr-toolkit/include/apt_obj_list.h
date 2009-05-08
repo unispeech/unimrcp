@@ -49,9 +49,10 @@ APT_DECLARE(void) apt_list_destroy(apt_obj_list_t *list);
  * Push object to the list as first in, first out.
  * @param list the list to push object to
  * @param obj the object to push
+ * @param pool the pool to allocate list element from
  * @return the inserted element
  */
-APT_DECLARE(apt_list_elem_t*) apt_list_push_back(apt_obj_list_t *list, void *obj);
+APT_DECLARE(apt_list_elem_t*) apt_list_push_back(apt_obj_list_t *list, void *obj, apr_pool_t *pool);
 
 /**
  * Pop object from the list as first in, first out.
@@ -104,9 +105,10 @@ APT_DECLARE(apt_list_elem_t*) apt_list_prev_elem_get(apt_obj_list_t *list, apt_l
  * @param list the list to insert element to
  * @param elem the element to insert before
  * @param data the data to insert
+ * @param obj the object to insert
  * @return the inserted element
  */
-APT_DECLARE(apt_list_elem_t*) apt_list_elem_insert(apt_obj_list_t *list, apt_list_elem_t *elem, void *data);
+APT_DECLARE(apt_list_elem_t*) apt_list_elem_insert(apt_obj_list_t *list, apt_list_elem_t *elem, void *obj, apr_pool_t *pool);
 
 /**
  * Remove element from the list.

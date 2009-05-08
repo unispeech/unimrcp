@@ -343,7 +343,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 			connection->remote_ip.buf,
 			connection->sockaddr->port);
 	connection->agent = agent;
-	connection->it = apt_list_push_back(agent->connection_list,connection);
+	connection->it = apt_list_push_back(agent->connection_list,connection,connection->pool);
 	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
 	connection->generator = mrcp_generator_create(agent->resource_factory,connection->pool);
 	return connection;

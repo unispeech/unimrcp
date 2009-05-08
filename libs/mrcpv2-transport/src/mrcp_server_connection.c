@@ -472,7 +472,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	}
 
 	connection->agent = agent;
-	connection->it = apt_list_push_back(agent->connection_list,connection);
+	connection->it = apt_list_push_back(agent->connection_list,connection,connection->pool);
 	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
 	connection->generator = mrcp_generator_create(agent->resource_factory,connection->pool);
 

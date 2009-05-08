@@ -298,7 +298,7 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 		client->connection_list = apt_list_create(client->sub_pool);
 	}
 	rtsp_connection->client = client;
-	rtsp_connection->it = apt_list_push_back(client->connection_list,rtsp_connection);
+	rtsp_connection->it = apt_list_push_back(client->connection_list,rtsp_connection,connection->pool);
 	session->connection = rtsp_connection;
 	return TRUE;
 }
@@ -408,7 +408,7 @@ static apt_bool_t rtsp_client_request_push(rtsp_client_connection_t *rtsp_connec
 		session,
 		message->header.cseq,
 		message->header.session_id.buf ? message->header.session_id.buf : "new");
-	apt_list_push_back(rtsp_connection->inprogress_request_queue,session);
+	apt_list_push_back(rtsp_connection->inprogress_request_queue,session,session->pool);
 	session->active_request = message;
 	return TRUE;
 }
@@ -506,7 +506,7 @@ static apt_bool_t rtsp_client_session_message_process(rtsp_client_t *client, rts
 {
 	if(session->active_request) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push RTSP Request to Pending Queue 0x%x",session);
-		apt_list_push_back(session->pending_request_queue,message);
+		apt_list_push_back(session->pending_request_queue,message,message->pool);
 		return TRUE;
 	}
 
