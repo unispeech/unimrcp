@@ -102,8 +102,9 @@ struct mrcp_generic_header_t {
 	apt_str_t              accept;
 	/** Defines the timeout for content that the server may need to fetch over the network */
 	apr_size_t             fetch_timeout;
-	/** Enables to synchronize the cookie store of MRCP v2 client and Server */
+	/** Enables to synchronize the cookie store of MRCP v2 client and server */
 	apt_str_t              set_cookie;
+	/** Enables to synchronize the cookie store of MRCP v2 client and server */
 	apt_str_t              set_cookie2;
 };
 

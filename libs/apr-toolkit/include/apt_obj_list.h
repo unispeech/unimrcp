@@ -104,8 +104,8 @@ APT_DECLARE(apt_list_elem_t*) apt_list_prev_elem_get(apt_obj_list_t *list, apt_l
  * Insert element to the list.
  * @param list the list to insert element to
  * @param elem the element to insert before
- * @param data the data to insert
  * @param obj the object to insert
+ * @param pool the pool to allocate list element from
  * @return the inserted element
  */
 APT_DECLARE(apt_list_elem_t*) apt_list_elem_insert(apt_obj_list_t *list, apt_list_elem_t *elem, void *obj, apr_pool_t *pool);

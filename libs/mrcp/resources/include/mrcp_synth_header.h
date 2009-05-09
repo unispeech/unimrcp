@@ -197,6 +197,7 @@ struct mrcp_prosody_volume_t {
 	/** prosody-volume type (one of label,numeric,relative change) */
 	mrcp_prosody_volume_type_e type;
 
+	/** prosody-volume value */
 	union {
 		/** one of "silent", "x-soft,..." */ 
 		mrcp_prosody_volume_label_e label;
@@ -212,6 +213,7 @@ struct mrcp_prosody_rate_t {
 	/** prosody-rate type (one of label, relative change) */
 	mrcp_prosody_rate_type_e type;
 
+	/** prosody-rate value */
 	union {
 		/** one of "x-slow", "slow,..." */ 
 		mrcp_prosody_rate_label_e label;
