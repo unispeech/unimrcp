@@ -134,7 +134,6 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 		}
 
 		descriptor = mpf_codec_list_add(codec_list);
-		mpf_codec_descriptor_init(descriptor);
 		descriptor->name = name;
 
 		/* set defualt attributes */
