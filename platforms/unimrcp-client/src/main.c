@@ -56,8 +56,8 @@ static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, ch
 	else if(strcasecmp(name,"help") == 0) {
 		printf("usage:\n"
 		       "\n- run [app_name] [profile_name] (run demo application)\n"
-			   "       app_name is one of 'synth', 'recog', 'bypass'\n"
-			   "       profile_name is one of 'MRCPv2-Default', 'MRCPv1-Default, ...\n"
+			   "       app_name is one of 'synth', 'recog', 'bypass', 'discover'\n"
+			   "       profile_name is one of 'MRCPv2-Default', 'MRCPv1-Default', ...\n"
 			   "\n       examples: \n"
 			   "           run synth\n"
 			   "           run recog\n"
