@@ -62,6 +62,8 @@ struct mrcp_server_t {
 
 	/** Dir layout structure */
 	apt_dir_layout_t        *dir_layout;
+	/** Time server started at */
+	apr_time_t               start_time;
 	/** Memory pool */
 	apr_pool_t              *pool;
 };
@@ -210,6 +212,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
 		return FALSE;
 	}
+	server->start_time = apr_time_now();
 	task = apt_consumer_task_base_get(server->task);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Server Task");
 	if(apt_task_start(task) == FALSE) {
@@ -223,6 +226,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server)
 MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 {
 	apt_task_t *task;
+	apr_time_t uptime;
 	if(!server || !server->task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
 		return FALSE;
@@ -234,6 +238,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 		return FALSE;
 	}
 	server->session_table = NULL;
+	uptime = apr_time_now() - server->start_time;
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Server Uptime [%d sec]", apr_time_sec(uptime));
 	return TRUE;
 }
 
