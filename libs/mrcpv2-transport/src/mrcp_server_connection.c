@@ -284,7 +284,6 @@ static void mrcp_server_agent_listen_socket_destroy(mrcp_connection_agent_t *age
 
 static apt_bool_t mrcp_server_agent_pollset_create(mrcp_connection_agent_t *agent)
 {
-	apr_status_t status;
 	/* create pollset */
 	agent->pollset = apt_pollset_create((apr_uint32_t)agent->max_connection_count + 1, agent->pool);
 	if(!agent->pollset) {
@@ -299,8 +298,7 @@ static apt_bool_t mrcp_server_agent_pollset_create(mrcp_connection_agent_t *agen
 		agent->listen_sock_pfd.reqevents = APR_POLLIN;
 		agent->listen_sock_pfd.desc.s = agent->listen_sock;
 		agent->listen_sock_pfd.client_data = agent->listen_sock;
-		status = apt_pollset_add(agent->pollset, &agent->listen_sock_pfd);
-		if(status != APR_SUCCESS) {
+		if(apt_pollset_add(agent->pollset, &agent->listen_sock_pfd) != TRUE) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listen Socket to Pollset");
 			mrcp_server_agent_listen_socket_destroy(agent);
 		}
