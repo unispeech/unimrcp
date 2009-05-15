@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/* 
+ * Demo resource discovery.
+ * C -> S: SIP OPTIONS or RTPS DESCRIBE
+ * S -> C: SIP OK or RTPS OK
+ */
+
 #include "demo_application.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"

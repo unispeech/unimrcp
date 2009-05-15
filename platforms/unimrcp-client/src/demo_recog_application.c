@@ -14,6 +14,22 @@
  * limitations under the License.
  */
 
+/*
+ * Demo recognizer scenario.
+ * C -> S: SIP INVITE or RTPS SETUP   (add recognizer channel)
+ * S -> C: SIP OK or RTPS OK
+ * C -> S: MRCP RECOGNIZE
+ * S -> C: MRCP IN-PROGRESS
+ * C -> S: RTP Start Transmission
+ * S -> C: MRCP START-OF-INPUT
+ * S -> C: MRCP RECOGNITION-COMPLETE
+ * C -> S: RTP Stop Transmission
+ * C -> S: SIP INVITE or RTPS SETUP   (optionally remove recognizer channel)
+ * S -> C: SIP OK or RTPS OK
+ * C -> S: SIP BYE or RTPS TEARDOWN
+ * S -> C: SIP OK or RTPS OK
+ */
+
 #include "demo_application.h"
 #include "demo_util.h"
 #include "mrcp_session.h"

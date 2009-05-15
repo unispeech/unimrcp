@@ -14,6 +14,21 @@
  * limitations under the License.
  */
 
+/* 
+ * Demo synthesizer scenario (client stack stays out of media path).
+ * C -> S: SIP INVITE or RTPS SETUP   (add synthesizer channel)
+ * S -> C: SIP OK or RTPS OK
+ * C -> S: MRCP SPEAK
+ * S -> C: MRCP IN-PROGRESS
+ * S -> X: RTP Start Transmission     (RTP stream is sent directly to external endpoint bypassing client stack)
+ * S -> C: MRCP SPEAK-COMPLETE
+ * S -> X: RTP Stop Transmission
+ * C -> S: SIP INVITE or RTPS SETUP   (optionally remove synthesizer channel)
+ * S -> C: SIP OK or RTPS OK
+ * C -> S: SIP BYE or RTPS TEARDOWN
+ * S -> C: SIP OK or RTPS OK
+ */
+
 #include "demo_application.h"
 #include "demo_util.h"
 #include "mrcp_session.h"
