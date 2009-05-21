@@ -85,7 +85,7 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	engine->request_queue = apt_cyclic_queue_create(100,engine->pool);
+	engine->request_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
 
 	engine->contexts = apt_list_create(engine->pool);

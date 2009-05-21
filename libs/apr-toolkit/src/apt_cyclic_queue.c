@@ -17,31 +17,31 @@
 #include "apt_cyclic_queue.h"
 
 struct apt_cyclic_queue_t {
-	void              **data;
-	apr_size_t          max_size;
-	apr_size_t          actual_size;
-	apr_size_t          head;
-	apr_size_t          tail;
-	
-	apr_pool_t         *pool;
+	void       **data;
+	apr_size_t   max_size;
+	apr_size_t   actual_size;
+	apr_size_t   head;
+	apr_size_t   tail;
 };
 
 
-APT_DECLARE(apt_cyclic_queue_t*) apt_cyclic_queue_create(apr_size_t size, apr_pool_t *pool)
+APT_DECLARE(apt_cyclic_queue_t*) apt_cyclic_queue_create(apr_size_t size)
 {
-	apt_cyclic_queue_t *queue = apr_palloc(pool, sizeof(apt_cyclic_queue_t));
-	queue->pool = pool;
+	apt_cyclic_queue_t *queue = malloc(sizeof(apt_cyclic_queue_t));
 	queue->max_size = size;
 	queue->actual_size = 0;
-	queue->data = apr_palloc(pool,sizeof(void*) * queue->max_size);
+	queue->data = malloc(sizeof(void*) * queue->max_size);
 	queue->head = queue->tail = 0;
-	queue->pool = pool;
 	return queue;
 }
 
 APT_DECLARE(void) apt_cyclic_queue_destroy(apt_cyclic_queue_t *queue)
 {
-	/* nothing to do, the queue is allocated from the pool */
+	if(queue->data) {
+		free(queue->data);
+		queue->data = NULL;
+	}
+	free(queue);
 }
 
 APT_DECLARE(apt_bool_t) apt_cyclic_queue_push(apt_cyclic_queue_t *queue, void *obj)

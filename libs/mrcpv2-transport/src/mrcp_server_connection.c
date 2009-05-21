@@ -106,7 +106,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 		return NULL;
 	}
 
-	agent->msg_queue = apt_cyclic_queue_create(100,pool);
+	agent->msg_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&agent->guard,APR_THREAD_MUTEX_UNNESTED,pool);
 
 	agent->connection_list = NULL;
@@ -121,6 +121,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_ag
 	if(agent->guard) {
 		apr_thread_mutex_destroy(agent->guard);
 		agent->guard = NULL;
+	}
+	if(agent->msg_queue) {
+		apt_cyclic_queue_destroy(agent->msg_queue);
+		agent->msg_queue = NULL;
 	}
 	return apt_task_destroy(agent->task);
 }

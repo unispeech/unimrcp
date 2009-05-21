@@ -73,7 +73,7 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 		return NULL;
 	}
 
-	task->msg_queue = apt_cyclic_queue_create(100,pool);
+	task->msg_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&task->guard,APR_THREAD_MUTEX_UNNESTED,pool);
 	return task;
 }
@@ -84,6 +84,10 @@ APT_DECLARE(apt_bool_t) apt_net_client_task_destroy(apt_net_client_task_t *task)
 	if(task->guard) {
 		apr_thread_mutex_destroy(task->guard);
 		task->guard = NULL;
+	}
+	if(task->msg_queue) {
+		apt_cyclic_queue_destroy(task->msg_queue);
+		task->msg_queue = NULL;
 	}
 	return apt_task_destroy(task->base);
 }

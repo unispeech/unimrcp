@@ -26,17 +26,17 @@
 
 APT_BEGIN_EXTERN_C
 
+#define CYCLIC_QUEUE_DEFAULT_SIZE	100
 
 /** Opaque cyclic queue declaration */
 typedef struct apt_cyclic_queue_t apt_cyclic_queue_t;
 
 /**
  * Create cyclic queue.
- * @param size the queue size
- * @param pool the pool to allocate memory from
+ * @param size the initial size of the queue
  * @return the created queue
  */
-APT_DECLARE(apt_cyclic_queue_t*) apt_cyclic_queue_create(apr_size_t size, apr_pool_t *pool);
+APT_DECLARE(apt_cyclic_queue_t*) apt_cyclic_queue_create(apr_size_t size);
 
 /**
  * Destroy cyclic queue.
