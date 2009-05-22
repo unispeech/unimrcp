@@ -24,6 +24,8 @@ struct apt_cyclic_queue_t {
 	apr_size_t   tail;
 };
 
+static apt_bool_t apt_cyclic_queue_resize(apt_cyclic_queue_t *queue);
+
 
 APT_DECLARE(apt_cyclic_queue_t*) apt_cyclic_queue_create(apr_size_t size)
 {
@@ -46,13 +48,16 @@ APT_DECLARE(void) apt_cyclic_queue_destroy(apt_cyclic_queue_t *queue)
 
 APT_DECLARE(apt_bool_t) apt_cyclic_queue_push(apt_cyclic_queue_t *queue, void *obj)
 {
-	if(queue->actual_size < queue->max_size) {
-		queue->data[queue->head] = obj;
-		queue->head = (queue->head + 1) % queue->max_size;
-		queue->actual_size++;
-		return TRUE;
+	if(queue->actual_size >= queue->max_size) {
+		if(apt_cyclic_queue_resize(queue) != TRUE) {
+			return FALSE;
+		}
 	}
-	return FALSE;
+	
+	queue->data[queue->head] = obj;
+	queue->head = (queue->head + 1) % queue->max_size;
+	queue->actual_size++;
+	return TRUE;
 }
 
 APT_DECLARE(void*) apt_cyclic_queue_pop(apt_cyclic_queue_t *queue)
@@ -75,4 +80,24 @@ APT_DECLARE(void) apt_cyclic_queue_clear(apt_cyclic_queue_t *queue)
 APT_DECLARE(apt_bool_t) apt_cyclic_queue_is_empty(apt_cyclic_queue_t *queue)
 {
 	return queue->actual_size ? TRUE : FALSE;
+}
+
+static apt_bool_t apt_cyclic_queue_resize(apt_cyclic_queue_t *queue)
+{
+	apr_size_t new_size = queue->max_size + queue->max_size/2;
+	void **new_data = malloc(sizeof(void*) * new_size);
+	apr_size_t offset;
+
+	offset = queue->max_size - queue->head;
+	memcpy(new_data, queue->data + queue->head, sizeof(void*) * offset);
+	if(queue->head) {
+		memcpy(new_data + offset, queue->data, sizeof(void*) * queue->head);
+	}
+
+	queue->tail = 0;
+	queue->head = queue->max_size;
+	queue->max_size = new_size;
+	free(queue->data);
+	queue->data = new_data;
+	return TRUE;
 }
