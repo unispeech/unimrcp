@@ -445,15 +445,21 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_
 	apt_pair_t pair;
 	do {
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
-			if(strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
-				match = TRUE;
-				apt_id_resource_parse(&pair.value,'@',&channel_id->session_id,&channel_id->resource_name,pool);
+			if(pair.name.length) {
+				if(pair.value.length && strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
+					match = TRUE;
+					apt_id_resource_parse(&pair.value,'@',&channel_id->session_id,&channel_id->resource_name,pool);
+					break;
+				}
+				/* skip this header, expecting channel identifier first */
+			}
+			else {
+				/* empty header */
 				break;
 			}
-			/* skip this header, expecting channel identifier first */
 		}
 	}
-	while(pair.name.length || pair.name.buf);
+	while(apt_text_is_eos(text_stream) == FALSE);
 	return match;
 }
 
@@ -493,21 +499,22 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *messag
 
 	do {
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
-			/* normal header */
-			if(mrcp_header_parse(&message_header->resource_header_accessor,&pair,pool) != TRUE) {
-				if(mrcp_header_parse(&message_header->generic_header_accessor,&pair,pool) != TRUE) {
-					/* unknown MRCP header */
+			if(pair.name.length) {
+				/* normal header */
+				if(mrcp_header_parse(&message_header->resource_header_accessor,&pair,pool) != TRUE) {
+					if(mrcp_header_parse(&message_header->generic_header_accessor,&pair,pool) != TRUE) {
+						/* unknown MRCP header */
+					}
 				}
 			}
-		}
-		else {
-			if(pair.name.length == 0 && !pair.name.buf) {
+			else {
 				/* empty header -> exit */
 				result = TRUE;
 				break;
 			}
-			
-			/* length == 0 && buf -> malformed header, skip to the next one */
+		}
+		else {
+			/* malformed header, skip to the next one */
 		}
 	}
 	while(apt_text_is_eos(text_stream) == FALSE);

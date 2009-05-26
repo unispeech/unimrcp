@@ -345,22 +345,20 @@ RTSP_DECLARE(apt_bool_t) rtsp_header_parse(rtsp_header_t *header, apt_text_strea
 
 	do {
 		if(apt_text_header_read(text_stream,&pair) == TRUE) {
-			/* parse header_field (name/value) */
-			rtsp_header_field_id id = apt_string_table_id_find(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,&pair.name);
-			if(id < RTSP_HEADER_FIELD_COUNT) {
-				if(rtsp_header_field_parse(header,id,&pair.value,pool) == TRUE) {
-					rtsp_header_property_add(&header->property_set,id);
+			if(pair.name.length) {
+				/* parse header_field (name/value) */
+				rtsp_header_field_id id = apt_string_table_id_find(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,&pair.name);
+				if(id < RTSP_HEADER_FIELD_COUNT) {
+					if(rtsp_header_field_parse(header,id,&pair.value,pool) == TRUE) {
+						rtsp_header_property_add(&header->property_set,id);
+					}
 				}
 			}
-		}
-		else {
-			if(pair.name.length == 0 && !pair.name.buf) {
+			else {
 				/* empty header -> exit */
 				result = TRUE;
 				break;
 			}
-			
-			/* length == 0 && buf -> malformed header, skip to the next one */
 		}
 	}
 	while(apt_text_is_eos(text_stream) == FALSE);

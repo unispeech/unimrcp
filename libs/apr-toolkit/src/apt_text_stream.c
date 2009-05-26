@@ -54,11 +54,23 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 	return line->length ? TRUE : FALSE;
 }
 
-/** Navigate through the headers (name:value pairs) of the text stream (message) */
+/** Navigate through the headers (name:value pairs) of the text stream (message) 
+	Valid headers are:
+		name:value<CRLF>
+		name: value<CRLF>
+		name:    value<CRLF>
+		name: value<LF>
+		name:<CRLF>              (only name, no value)
+		<CRLF>                   (empty header)
+	Malformed headers are:
+		name:value               (missing end of line <CRLF>)
+		name<CRLF>               (missing separator ':')
+*/
 APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair_t *pair)
 {
 	char *pos = stream->pos;
 	const char *end = stream->text.buf + stream->text.length;
+	apt_bool_t eol = FALSE;
 	apt_string_reset(&pair->name);
 	apt_string_reset(&pair->value);
 	/* while not end of stream */
@@ -73,6 +85,7 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
 			if(pos < end && *pos == APT_TOKEN_LF) {
 				pos++;
 			}
+			eol = TRUE;
 			break;
 		}
 		else if(*pos == APT_TOKEN_LF) {
@@ -82,6 +95,7 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
 				pair->value.length = pos - pair->value.buf;
 			}
 			pos++;
+			eol = TRUE;
 			break;
 		}
 		else if(!pair->name.length) {
@@ -104,7 +118,8 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
 	}
 
 	stream->pos = pos;
-	return (pair->name.length) ? TRUE : FALSE;
+	/* if length == 0 && buf -> header is malformed */
+	return (eol && (pair->name.length || !pair->name.buf));
 }
 
 
