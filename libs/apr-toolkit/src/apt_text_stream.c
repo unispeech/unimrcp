@@ -28,6 +28,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 {
 	char *pos = stream->pos;
 	const char *end = stream->text.buf + stream->text.length;
+	apt_bool_t eol = FALSE;
 	line->length = 0;
 	line->buf = pos;
 	/* while not end of stream */
@@ -39,19 +40,21 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 			if(pos < end && *pos == APT_TOKEN_LF) {
 				pos++;
 			}
+			eol = TRUE;
 			break;
 		}
 		else if(*pos == APT_TOKEN_LF) {
 			/* end of line detected */
 			line->length = pos - line->buf;
 			pos++;
+			eol = TRUE;
 			break;
 		}
 		pos++;
 	}
 
 	stream->pos = pos;
-	return line->length ? TRUE : FALSE;
+	return eol;
 }
 
 /** Navigate through the headers (name:value pairs) of the text stream (message) 

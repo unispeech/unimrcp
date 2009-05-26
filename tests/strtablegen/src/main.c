@@ -66,7 +66,7 @@ static size_t string_table_read(apt_str_table_item_t table[], apr_size_t max_cou
 	text_stream.pos = parse_buffer;
 
 	do {
-		if(apt_text_line_read(&text_stream,&line) == FALSE) {
+		if(apt_text_line_read(&text_stream,&line) == FALSE || !line.length) {
 			break;
 		}
 		item = &table[count];
