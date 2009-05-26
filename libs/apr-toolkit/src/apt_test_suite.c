@@ -42,6 +42,8 @@ APT_DECLARE(apt_test_framework_t*) apt_test_framework_create()
 	framework = apr_palloc(pool,sizeof(apt_test_framework_t));
 	framework->pool = pool;
 	framework->suites = apt_list_create(pool);
+
+	apt_log_instance_create(APT_LOG_OUTPUT_CONSOLE,APT_PRIO_INFO,pool);
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Test Framework");
 	return framework;
 }
@@ -49,6 +51,7 @@ APT_DECLARE(apt_test_framework_t*) apt_test_framework_create()
 APT_DECLARE(void) apt_test_framework_destroy(apt_test_framework_t *framework)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Test Framework");
+	apt_log_instance_destroy();
 	apr_pool_destroy(framework->pool);
 }
 
