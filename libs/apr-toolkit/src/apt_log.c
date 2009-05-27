@@ -105,7 +105,7 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path, apr_size_t max_
 		return FALSE;
 	}
 	/* open log file */
-	apt_logger->file = fopen(file_path,"w");
+	apt_logger->file = fopen(file_path,"wb");
 	if(!apt_logger->file) {
 		apr_thread_mutex_destroy(apt_logger->mutex);
 		return FALSE;
