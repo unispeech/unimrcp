@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "apt_cyclic_queue.h"
 
 struct apt_cyclic_queue_t {
