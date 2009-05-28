@@ -78,6 +78,17 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 
 APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 {
+	apt_task_t *child_task = NULL;
+	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
+	/* walk through the list of the child tasks and destroy them */
+	while(elem) {
+		child_task = apt_list_elem_object_get(elem);
+		if(child_task) {
+			apt_task_destroy(child_task);
+		}
+		elem = apt_list_next_elem_get(task->child_tasks,elem);
+	}
+
 	if(task->state != TASK_STATE_IDLE) {
 		apt_task_wait_till_complete(task);
 	}
