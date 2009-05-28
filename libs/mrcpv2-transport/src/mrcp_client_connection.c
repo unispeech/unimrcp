@@ -25,6 +25,8 @@
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
 
+#define MRCPV2_CONNECTION_TASK_NAME "TCP/MRCPv2 Connection Agent"
+
 struct mrcp_connection_agent_t {
 	apr_pool_t              *pool;
 	apt_task_t              *task;
@@ -75,7 +77,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	apt_task_vtable_t *vtable;
 	mrcp_connection_agent_t *agent;
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create TCP/MRCPv2 Connection Agent [%d]",max_connection_count);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "MRCPV2_CONNECTION_TASK_NAME" [%d]",max_connection_count);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
 	agent->pollset = NULL;
@@ -87,6 +89,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 		return NULL;
 	}
 
+	apt_task_name_set(agent->task,MRCPV2_CONNECTION_TASK_NAME);
 	vtable = apt_task_vtable_get(agent->task);
 	if(vtable) {
 		vtable->run = mrcp_client_agent_task_run;

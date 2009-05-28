@@ -26,7 +26,7 @@
 #include "apt_obj_list.h"
 #include "apt_log.h"
 
-#define MRCP_SESSION_ID_HEX_STRING_LENGTH 16
+#define SERVER_TASK_NAME "MRCP Server"
 
 /** MRCP server */
 struct mrcp_server_t {
@@ -155,6 +155,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 {
 	mrcp_server_t *server;
 	apr_pool_t *pool;
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	
@@ -162,7 +163,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Server");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "SERVER_TASK_NAME);
 	server = apr_palloc(pool,sizeof(mrcp_server_t));
 	server->pool = pool;
 	server->dir_layout = dir_layout;
@@ -185,8 +186,9 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Server Task");
 		return NULL;
 	}
-
-	vtable = apt_consumer_task_vtable_get(server->task);
+	task = apt_consumer_task_base_get(server->task);
+	apt_task_name_set(task,SERVER_TASK_NAME);
+	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = mrcp_server_msg_process;
 		vtable->on_start_complete = mrcp_server_on_start_complete;
@@ -216,7 +218,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server)
 	}
 	server->start_time = apr_time_now();
 	task = apt_consumer_task_base_get(server->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Server Task");
 	if(apt_task_start(task) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Server Task");
 		return FALSE;
@@ -234,7 +235,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(server->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Shutdown Server Task");
 	if(apt_task_terminate(task,TRUE) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Shutdown Server Task");
 		return FALSE;
@@ -254,7 +254,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(server->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy Server Task");
 	apt_task_destroy(task);
 
 	apr_pool_destroy(server->pool);
@@ -628,7 +627,7 @@ static void mrcp_server_on_start_complete(apt_task_t *task)
 			mrcp_resource_engine_open(resource_engine);
 		}
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Server Task Start");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Started");
 }
 
 static void mrcp_server_on_terminate_complete(apt_task_t *task)
@@ -657,7 +656,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 			apr_dso_unload(plugin);
 		}
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Server Task Terminate");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Terminated");
 }
 
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)

@@ -27,6 +27,8 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
+#define CLIENT_TASK_NAME "MRCP Client"
+
 /** MRCP client */
 struct mrcp_client_t {
 	/** Main message processing task */
@@ -144,6 +146,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	mrcp_client_t *client;
 	apr_pool_t *pool;
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	
@@ -151,7 +154,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Client");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "CLIENT_TASK_NAME);
 	client = apr_palloc(pool,sizeof(mrcp_client_t));
 	client->pool = pool;
 	client->dir_layout = dir_layout;
@@ -171,8 +174,9 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Client Task");
 		return NULL;
 	}
-
-	vtable = apt_consumer_task_vtable_get(client->task);
+	task = apt_consumer_task_base_get(client->task);
+	apt_task_name_set(task,CLIENT_TASK_NAME);
+	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = mrcp_client_msg_process;
 		vtable->on_start_complete = mrcp_client_on_start_complete;
@@ -199,7 +203,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_start(mrcp_client_t *client)
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(client->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Client Task");
 	if(apt_task_start(task) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Client Task");
 		return FALSE;
@@ -216,7 +219,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_shutdown(mrcp_client_t *client)
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(client->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Shutdown Client Task");
 	if(apt_task_terminate(task,TRUE) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Shutdown Client Task");
 		return FALSE;
@@ -234,7 +236,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_destroy(mrcp_client_t *client)
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(client->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy Client Task");
 	apt_task_destroy(task);
 
 	apr_pool_destroy(client->pool);
@@ -717,7 +718,7 @@ static void mrcp_client_on_start_complete(apt_task_t *task)
 	mrcp_application_t *application;
 	mrcp_app_message_t *app_message;
 	apr_hash_index_t *it;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Client Task Start");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,CLIENT_TASK_NAME" Started");
 	it = apr_hash_first(client->pool,client->app_table);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
@@ -734,7 +735,7 @@ static void mrcp_client_on_start_complete(apt_task_t *task)
 
 static void mrcp_client_on_terminate_complete(apt_task_t *task)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On Client Task Terminate");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,CLIENT_TASK_NAME" Terminated");
 }
 
 

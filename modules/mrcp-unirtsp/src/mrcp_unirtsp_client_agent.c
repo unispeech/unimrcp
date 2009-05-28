@@ -28,6 +28,8 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
+#define UNIRTSP_TASK_NAME "UniRTSP Agent"
+
 typedef struct mrcp_unirtsp_agent_t mrcp_unirtsp_agent_t;
 typedef struct mrcp_unirtsp_session_t mrcp_unirtsp_session_t;
 
@@ -78,6 +80,7 @@ static apt_bool_t mrcp_unirtsp_on_resource_discover(mrcp_unirtsp_agent_t *agent,
 /** Create UniRTSP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_config_t *config, apr_pool_t *pool)
 {
+	apt_task_t *task;
 	mrcp_unirtsp_agent_t *agent;
 	agent = apr_palloc(pool,sizeof(mrcp_unirtsp_agent_t));
 	agent->sig_agent = mrcp_signaling_agent_create(agent,MRCP_VERSION_1,pool);
@@ -94,9 +97,11 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
 		return NULL;
 	}
 
-	agent->sig_agent->task = rtsp_client_task_get(agent->rtsp_client);
+	task = rtsp_client_task_get(agent->rtsp_client);
+	apt_task_name_set(task,UNIRTSP_TASK_NAME);
+	agent->sig_agent->task = task;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "UNIRTSP_TASK_NAME" %s:%hu [%d]",
 								config->server_ip,
 								config->server_port,
 								config->max_connection_count);

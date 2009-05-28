@@ -145,6 +145,19 @@ APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
 APT_DECLARE(apt_task_vtable_t*) apt_task_vtable_get(apt_task_t *task);
 
 /**
+ * Give a name to the task.
+ * @param task the task to give name for
+ * @param name the name to set
+ */
+APT_DECLARE(void) apt_task_name_set(apt_task_t *task, const char *name);
+
+/**
+ * Get task name.
+ * @param task the task to get name from
+ */
+APT_DECLARE(const char*) apt_task_name_get(apt_task_t *task);
+
+/**
  * Hold task execution.
  * @param msec the time to hold
  */

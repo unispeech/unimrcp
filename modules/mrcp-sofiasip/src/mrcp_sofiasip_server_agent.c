@@ -33,6 +33,8 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include "mrcp_sdp.h"
 #include "apt_log.h"
 
+#define SOFIA_TASK_NAME "SofiaSIP Agent"
+
 struct mrcp_sofia_agent_t {
 	mrcp_sig_agent_t           *sig_agent;
 
@@ -80,6 +82,7 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 /** Create Sofia-SIP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_server_config_t *config, apr_pool_t *pool)
 {
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	mrcp_sofia_agent_t *sofia_agent;
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
@@ -92,14 +95,19 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_ser
 		return NULL;
 	}
 
-	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,NULL,pool);
-	vtable = apt_task_vtable_get(sofia_agent->sig_agent->task);
+	task = apt_task_create(sofia_agent,NULL,pool);
+	if(!task) {
+		return NULL;
+	}
+	apt_task_name_set(task,SOFIA_TASK_NAME);
+	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->on_pre_run = mrcp_sofia_task_initialize;
 		vtable->run = mrcp_sofia_task_run;
 		vtable->terminate = mrcp_sofia_task_terminate;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu %s",
+	sofia_agent->sig_agent->task = task;
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "SOFIA_TASK_NAME" ["SOFIA_SIP_VERSION"] %s:%hu %s",
 								config->local_ip,
 								config->local_port,
 								config->transport ? config->transport : "");

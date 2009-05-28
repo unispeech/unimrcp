@@ -33,6 +33,8 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
+#define RECOG_ENGINE_TASK_NAME "Demo Recog Engine"
+
 typedef struct demo_recog_engine_t demo_recog_engine_t;
 typedef struct demo_recog_channel_t demo_recog_channel_t;
 typedef struct demo_recog_msg_t demo_recog_msg_t;
@@ -127,6 +129,7 @@ MRCP_PLUGIN_LOGGER_IMPLEMENT
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	demo_recog_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_recog_engine_t));
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 
@@ -135,7 +138,9 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 	if(!demo_engine->task) {
 		return NULL;
 	}
-	vtable = apt_consumer_task_vtable_get(demo_engine->task);
+	task = apt_consumer_task_base_get(demo_engine->task);
+	apt_task_name_set(task,RECOG_ENGINE_TASK_NAME);
+	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = demo_recog_msg_process;
 	}

@@ -21,6 +21,8 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
+#define FRAMEWORK_TASK_NAME "Framework Task"
+
 #define MAX_APP_NAME_LENGTH     16
 #define MAX_PROFILE_NAME_LENGTH 16
 
@@ -194,6 +196,7 @@ static apt_bool_t demo_framework_msg_process(apt_task_t *task, apt_task_msg_t *m
 
 static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framework)
 {
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 
@@ -202,6 +205,8 @@ static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framewor
 	if(!framework->task) {
 		return FALSE;
 	}
+	task = apt_consumer_task_base_get(framework->task);
+	apt_task_name_set(task,FRAMEWORK_TASK_NAME);
 	vtable = apt_consumer_task_vtable_get(framework->task);
 	if(vtable) {
 		vtable->process_msg = demo_framework_msg_process;

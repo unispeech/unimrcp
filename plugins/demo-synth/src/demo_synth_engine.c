@@ -32,6 +32,8 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
+#define SYNTH_ENGINE_TASK_NAME "Demo Synth Engine"
+
 typedef struct demo_synth_engine_t demo_synth_engine_t;
 typedef struct demo_synth_channel_t demo_synth_channel_t;
 typedef struct demo_synth_msg_t demo_synth_msg_t;
@@ -129,6 +131,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 {
 	/* create demo engine */
 	demo_synth_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_synth_engine_t));
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 
@@ -138,7 +141,9 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 	if(!demo_engine->task) {
 		return NULL;
 	}
-	vtable = apt_consumer_task_vtable_get(demo_engine->task);
+	task = apt_consumer_task_base_get(demo_engine->task);
+	apt_task_name_set(task,SYNTH_ENGINE_TASK_NAME);
+	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = demo_synth_msg_process;
 	}

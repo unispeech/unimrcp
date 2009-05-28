@@ -26,14 +26,16 @@
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
 
+#define MPF_TASK_NAME "Media Processing Engine"
+
 struct mpf_engine_t {
-	apr_pool_t          *pool;
-	apt_task_t          *task;
-	apt_task_msg_type_e  task_msg_type;
-	apr_thread_mutex_t  *request_queue_guard;
-	apt_cyclic_queue_t  *request_queue;
-	apt_obj_list_t      *contexts;
-	mpf_timer_t         *timer;
+	apr_pool_t                *pool;
+	apt_task_t                *task;
+	apt_task_msg_type_e        task_msg_type;
+	apr_thread_mutex_t        *request_queue_guard;
+	apt_cyclic_queue_t        *request_queue;
+	apt_obj_list_t            *contexts;
+	mpf_timer_t               *timer;
 	const mpf_codec_manager_t *codec_manager;
 };
 
@@ -62,11 +64,13 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Media Processing Engine");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "MPF_TASK_NAME);
 	engine->task = apt_task_create(engine,msg_pool,pool);
 	if(!engine->task) {
 		return NULL;
 	}
+
+	apt_task_name_set(engine->task,MPF_TASK_NAME);
 
 	vtable = apt_task_vtable_get(engine->task);
 	if(vtable) {
@@ -112,7 +116,6 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Media Processing Engine");
 	engine->timer = mpf_timer_start(CODEC_FRAME_TIME_BASE,mpf_engine_main,engine,engine->pool);
 	apt_task_child_start(task);
 	return TRUE;
@@ -122,7 +125,6 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Media Processing Engine");
 	mpf_timer_stop(engine->timer);
 	mpf_engine_contexts_destroy(engine);
 	return TRUE;

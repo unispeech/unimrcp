@@ -18,6 +18,7 @@
 #include <apr_thread_cond.h>
 #include "apt_task.h"
 #include "apt_obj_list.h"
+#include "apt_log.h"
 
 /** Internal states of the task */
 typedef enum {
@@ -39,6 +40,7 @@ struct apt_task_t {
 	apt_obj_list_t      *child_tasks;   /* list of the child (slave) tasks */
 	apr_size_t           pending_start; /* number of pending start requests */
 	apr_size_t           pending_term;  /* number of pending terminate requests */
+	const char          *name;          /* name of the task */
 };
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
@@ -73,6 +75,7 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 	task->child_tasks = apt_list_create(pool);
 	task->pending_start = 0;
 	task->pending_term = 0;
+	task->name = "Task";
 	return task;
 }
 
@@ -93,6 +96,7 @@ APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 		apt_task_wait_till_complete(task);
 	}
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy %s",task->name);
 	if(task->vtable.destroy) {
 		task->vtable.destroy(task);
 	}
@@ -114,6 +118,7 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 	if(task->state == TASK_STATE_IDLE) {
 		apr_status_t rv;
 		task->state = TASK_STATE_START_REQUESTED;
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start %s",task->name);
 		if(task->vtable.start) {
 			/* raise virtual start method */
 			task->vtable.start(task);
@@ -145,6 +150,7 @@ APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_til
 
 	if(task->state == TASK_STATE_TERMINATE_REQUESTED) {
 		/* raise virtual terminate method */
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate %s",task->name);
 		if(task->vtable.terminate) {
 			status = task->vtable.terminate(task);
 		}
@@ -190,6 +196,16 @@ APT_DECLARE(void*) apt_task_object_get(apt_task_t *task)
 APT_DECLARE(apt_task_vtable_t*) apt_task_vtable_get(apt_task_t *task)
 {
 	return &task->vtable;
+}
+
+APT_DECLARE(void) apt_task_name_set(apt_task_t *task, const char *name)
+{
+	task->name = name;
+}
+
+APT_DECLARE(const char*) apt_task_name_get(apt_task_t *task)
+{
+	return task->name;
 }
 
 APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task)
