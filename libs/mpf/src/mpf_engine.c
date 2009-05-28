@@ -38,6 +38,7 @@ struct mpf_engine_t {
 };
 
 static void mpf_engine_main(mpf_timer_t *timer, void *data);
+static apt_bool_t mpf_engine_destroy(apt_task_t *task);
 static apt_bool_t mpf_engine_start(apt_task_t *task);
 static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
@@ -69,6 +70,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 
 	vtable = apt_task_vtable_get(engine->task);
 	if(vtable) {
+		vtable->destroy = mpf_engine_destroy;
 		vtable->start = mpf_engine_start;
 		vtable->terminate = mpf_engine_terminate;
 		vtable->signal_msg = mpf_engine_msg_signal;
@@ -76,6 +78,12 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	}
 
 	engine->task_msg_type = TASK_MSG_USER;
+
+	engine->request_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
+	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
+
+	engine->contexts = apt_list_create(engine->pool);
+
 	return engine;
 }
 
@@ -89,14 +97,20 @@ MPF_DECLARE(void) mpf_engine_task_msg_type_set(mpf_engine_t *engine, apt_task_ms
 	engine->task_msg_type = type;
 }
 
-static apt_bool_t mpf_engine_start(apt_task_t *task)
+static apt_bool_t mpf_engine_destroy(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	engine->request_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
-	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
+	apt_list_destroy(engine->contexts);
 
-	engine->contexts = apt_list_create(engine->pool);
+	apt_cyclic_queue_destroy(engine->request_queue);
+	apr_thread_mutex_destroy(engine->request_queue_guard);
+	return TRUE;
+}
+
+static apt_bool_t mpf_engine_start(apt_task_t *task)
+{
+	mpf_engine_t *engine = apt_task_object_get(task);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Media Processing Engine");
 	engine->timer = mpf_timer_start(CODEC_FRAME_TIME_BASE,mpf_engine_main,engine,engine->pool);
@@ -111,13 +125,6 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Media Processing Engine");
 	mpf_timer_stop(engine->timer);
 	mpf_engine_contexts_destroy(engine);
-
-	apt_task_child_terminate(task);
-
-	apt_list_destroy(engine->contexts);
-
-	apt_cyclic_queue_destroy(engine->request_queue);
-	apr_thread_mutex_destroy(engine->request_queue_guard);
 	return TRUE;
 }
 
