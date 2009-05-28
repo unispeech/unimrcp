@@ -41,6 +41,7 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data);
 static apt_bool_t mpf_engine_start(apt_task_t *task);
 static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
+static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine);
 
@@ -62,6 +63,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	vtable.start = mpf_engine_start;
 	vtable.terminate = mpf_engine_terminate;
 	vtable.signal_msg = mpf_engine_msg_signal;
+	vtable.process_msg = mpf_engine_msg_process;
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
@@ -160,8 +162,9 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 	return TRUE;
 }
 
-static apt_bool_t mpf_engine_msg_process(mpf_engine_t *engine, const apt_task_msg_t *msg)
+static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
+	mpf_engine_t *engine = apt_task_object_get(task);
 	apt_task_msg_t *response_msg;
 	mpf_message_t *response;
 	mpf_context_t *context;
@@ -247,10 +250,8 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 	msg = apt_cyclic_queue_pop(engine->request_queue);
 	while(msg) {
 		apr_thread_mutex_unlock(engine->request_queue_guard);
-		mpf_engine_msg_process(engine,msg);
+		apt_task_msg_process(engine->task,msg);
 		apr_thread_mutex_lock(engine->request_queue_guard);
-		apt_task_msg_release(msg);
-		
 		msg = apt_cyclic_queue_pop(engine->request_queue);
 	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
