@@ -38,6 +38,7 @@ struct apt_net_client_task_t {
 
 static apt_bool_t apt_net_client_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t apt_net_client_task_run(apt_task_t *task);
+static apt_bool_t apt_net_client_task_on_destroy(apt_task_t *task);
 
 /** Create connection task */
 APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
@@ -69,6 +70,7 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 	vtable = apt_task_vtable_get(task->base);
 	if(vtable) {
 		vtable->run = apt_net_client_task_run;
+		vtable->destroy = apt_net_client_task_on_destroy;
 		vtable->signal_msg = apt_net_client_task_msg_signal;
 	}
 
@@ -77,9 +79,10 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 	return task;
 }
 
-/** Destroy connection task. */
-APT_DECLARE(apt_bool_t) apt_net_client_task_destroy(apt_net_client_task_t *task)
+/** Virtual destroy handler */
+static apt_bool_t apt_net_client_task_on_destroy(apt_task_t *base)
 {
+	apt_net_client_task_t *task = apt_task_object_get(base);
 	if(task->guard) {
 		apr_thread_mutex_destroy(task->guard);
 		task->guard = NULL;
@@ -88,6 +91,12 @@ APT_DECLARE(apt_bool_t) apt_net_client_task_destroy(apt_net_client_task_t *task)
 		apt_cyclic_queue_destroy(task->msg_queue);
 		task->msg_queue = NULL;
 	}
+	return TRUE;
+}
+
+/** Destroy connection task. */
+APT_DECLARE(apt_bool_t) apt_net_client_task_destroy(apt_net_client_task_t *task)
+{
 	return apt_task_destroy(task->base);
 }
 

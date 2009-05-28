@@ -46,11 +46,6 @@ struct mrcp_unirtsp_session_t {
 };
 
 
-static apt_bool_t client_destroy(apt_task_t *task);
-static void client_on_start_complete(apt_task_t *task);
-static void client_on_terminate_complete(apt_task_t *task);
-
-
 static apt_bool_t mrcp_unirtsp_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_unirtsp_session_terminate(mrcp_session_t *session);
 static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *session, mrcp_message_t *message);
@@ -83,9 +78,6 @@ static apt_bool_t mrcp_unirtsp_on_resource_discover(mrcp_unirtsp_agent_t *agent,
 /** Create UniRTSP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_config_t *config, apr_pool_t *pool)
 {
-	apt_task_vtable_t *vtable;
-	apt_task_msg_pool_t *msg_pool;
-	apt_consumer_task_t *consumer_task;
 	mrcp_unirtsp_agent_t *agent;
 	agent = apr_palloc(pool,sizeof(mrcp_unirtsp_agent_t));
 	agent->sig_agent = mrcp_signaling_agent_create(agent,MRCP_VERSION_1,pool);
@@ -102,16 +94,8 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
 		return NULL;
 	}
 
-	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
+	agent->sig_agent->task = rtsp_client_task_get(agent->rtsp_client);
 
-	consumer_task = apt_consumer_task_create(agent,msg_pool,pool);
-	agent->sig_agent->task = apt_consumer_task_base_get(consumer_task);
-	vtable = apt_task_vtable_get(agent->sig_agent->task);
-	if(vtable) {
-		vtable->destroy = client_destroy;
-		vtable->on_start_complete = client_on_start_complete;
-		vtable->on_terminate_complete = client_on_terminate_complete;
-	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu [%d]",
 								config->server_ip,
 								config->server_port,
@@ -148,32 +132,6 @@ static APR_INLINE mrcp_unirtsp_agent_t* client_agent_get(apt_task_t *task)
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_unirtsp_agent_t *agent = apt_consumer_task_object_get(consumer_task);
 	return agent;
-}
-
-static apt_bool_t client_destroy(apt_task_t *task)
-{
-	mrcp_unirtsp_agent_t *agent = client_agent_get(task);
-	if(agent->rtsp_client) {
-		rtsp_client_destroy(agent->rtsp_client);
-		agent->rtsp_client = NULL;
-	}
-	return TRUE;
-}
-
-static void client_on_start_complete(apt_task_t *task)
-{
-	mrcp_unirtsp_agent_t *agent = client_agent_get(task);
-	if(agent->rtsp_client) {
-		rtsp_client_start(agent->rtsp_client);
-	}
-}
-
-static void client_on_terminate_complete(apt_task_t *task)
-{
-	mrcp_unirtsp_agent_t *agent = client_agent_get(task);
-	if(agent->rtsp_client) {
-		rtsp_client_terminate(agent->rtsp_client);
-	}
 }
 
 static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session)
