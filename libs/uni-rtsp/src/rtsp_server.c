@@ -175,7 +175,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_terminate(rtsp_server_t *server)
 /** Get task */
 RTSP_DECLARE(apt_task_t*) rtsp_server_task_get(rtsp_server_t *server)
 {
-	return apt_net_server_task_object_get(server->task);
+	return apt_net_server_task_base_get(server->task);
 }
 
 /** Get external object */
