@@ -144,7 +144,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	mrcp_client_t *client;
 	apr_pool_t *pool;
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	
 	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
@@ -165,16 +165,18 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 	client->session_table = NULL;
 	client->cnt_msg_pool = NULL;
 
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = mrcp_client_msg_process;
-	vtable.on_start_complete = mrcp_client_on_start_complete;
-	vtable.on_terminate_complete = mrcp_client_on_terminate_complete;
-
 	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
-	client->task = apt_consumer_task_create(client, &vtable, msg_pool, pool);
+	client->task = apt_consumer_task_create(client,msg_pool,pool);
 	if(!client->task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Client Task");
 		return NULL;
+	}
+
+	vtable = apt_consumer_task_vtable_get(client->task);
+	if(vtable) {
+		vtable->process_msg = mrcp_client_msg_process;
+		vtable->on_start_complete = mrcp_client_on_start_complete;
+		vtable->on_terminate_complete = mrcp_client_on_terminate_complete;
 	}
 
 	client->media_engine_table = apr_hash_make(client->pool);

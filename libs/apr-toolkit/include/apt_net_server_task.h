@@ -65,7 +65,6 @@ struct apt_net_server_vtable_t {
  * @param listen_port the listen port
  * @param max_connection_count the number of max connections to accept
  * @param obj the external object
- * @param task_vtable the table of virtual methods of the task base
  * @param server_vtable the table of virtual methods of the net server task
  * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
@@ -75,7 +74,6 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 										apr_port_t listen_port, 
 										apr_size_t max_connection_count,
 										void *obj,
-										apt_task_vtable_t *task_vtable,
 										const apt_net_server_vtable_t *server_vtable,
 										apt_task_msg_pool_t *msg_pool,
 										apr_pool_t *pool);
@@ -103,6 +101,12 @@ APT_DECLARE(apt_bool_t) apt_net_server_task_terminate(apt_net_server_task_t *tas
  * @param task the network server task to get task base from
  */
 APT_DECLARE(apt_task_t*) apt_net_server_task_base_get(apt_net_server_task_t *task);
+
+/**
+ * Get task vtable.
+ * @param task the network server task to get vtable from
+ */
+APT_DECLARE(apt_task_vtable_t*) apt_net_server_task_vtable_get(apt_net_server_task_t *task);
 
 /**
  * Get external object.

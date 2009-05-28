@@ -88,7 +88,7 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 /** Create Sofia-SIP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_client_config_t *config, apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	mrcp_sofia_agent_t *sofia_agent;
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
 	sofia_agent->sig_agent = mrcp_signaling_agent_create(sofia_agent,MRCP_VERSION_2,pool);
@@ -100,11 +100,13 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_cli
 		return NULL;
 	}
 
-	apt_task_vtable_reset(&vtable);
-	vtable.on_pre_run = mrcp_sofia_task_initialize;
-	vtable.run = mrcp_sofia_task_run;
-	vtable.terminate = mrcp_sofia_task_terminate;
-	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,&vtable,NULL,pool);
+	sofia_agent->sig_agent->task = apt_task_create(sofia_agent,NULL,pool);
+	vtable = apt_task_vtable_get(sofia_agent->sig_agent->task);
+	if(vtable) {
+		vtable->on_pre_run = mrcp_sofia_task_initialize;
+		vtable->run = mrcp_sofia_task_run;
+		vtable->terminate = mrcp_sofia_task_terminate;
+	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Sofia SIP ["SOFIA_SIP_VERSION"] Agent %s:%hu -> %s:%hu %s",
 			config->local_ip,config->local_port,
 			config->remote_ip,config->remote_port,

@@ -32,13 +32,11 @@ typedef struct apt_consumer_task_t apt_consumer_task_t;
 /**
  * Create consumer task.
  * @param obj the external object to associate with the task
- * @param vtable the table of virtual methods of the composite task
  * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
 									void *obj,
-									apt_task_vtable_t *vtable,
 									apt_task_msg_pool_t *msg_pool,
 									apr_pool_t *pool);
 
@@ -47,6 +45,12 @@ APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
  * @param task the consumer task to get base for
  */
 APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task);
+
+/**
+ * Get task vtable.
+ * @param task the consumer task to get vtable for
+ */
+APT_DECLARE(apt_task_vtable_t*) apt_consumer_task_vtable_get(apt_consumer_task_t *task);
 
 /**
  * Get consumer task object.

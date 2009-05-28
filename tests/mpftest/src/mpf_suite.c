@@ -91,7 +91,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	mpf_engine_t *engine;
 
 	apt_task_t *task;
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 
 	suite_engine = apr_palloc(suite->pool,sizeof(mpf_suite_engine_t));
@@ -114,20 +114,21 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	suite_engine->rtp_termination_factory = mpf_rtp_termination_factory_create(config,suite->pool);
 	suite_engine->file_termination_factory = mpf_file_termination_factory_create(suite->pool);
 
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = mpf_suite_msg_process;
-	vtable.on_start_complete = mpf_suite_on_start_complete;
-	vtable.on_terminate_complete = mpf_suite_on_terminate_complete;
-
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),suite->pool);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Consumer Task");
-	suite_engine->consumer_task = apt_consumer_task_create(suite_engine,&vtable,msg_pool,suite->pool);
+	suite_engine->consumer_task = apt_consumer_task_create(suite_engine,msg_pool,suite->pool);
 	if(!suite_engine->consumer_task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Consumer Task");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(suite_engine->consumer_task);
+	vtable = apt_task_vtable_get(task);
+	if(vtable) {
+		vtable->process_msg = mpf_suite_msg_process;
+		vtable->on_start_complete = mpf_suite_on_start_complete;
+		vtable->on_terminate_complete = mpf_suite_on_terminate_complete;
+	}
 
 	apt_task_add(task,suite_engine->engine_task);
 

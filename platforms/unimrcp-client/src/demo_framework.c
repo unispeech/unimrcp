@@ -194,15 +194,20 @@ static apt_bool_t demo_framework_msg_process(apt_task_t *task, apt_task_msg_t *m
 
 static apt_bool_t demo_framework_consumer_task_create(demo_framework_t *framework)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = demo_framework_msg_process;
-	vtable.on_start_complete = demo_framework_on_start_complete;
-
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(framework_task_data_t),framework->pool);
-	framework->task = apt_consumer_task_create(framework, &vtable, msg_pool, framework->pool);
+	framework->task = apt_consumer_task_create(framework,msg_pool,framework->pool);
+	if(!framework->task) {
+		return FALSE;
+	}
+	vtable = apt_consumer_task_vtable_get(framework->task);
+	if(vtable) {
+		vtable->process_msg = demo_framework_msg_process;
+		vtable->on_start_complete = demo_framework_on_start_complete;
+	}
+
 	return TRUE;
 }
 

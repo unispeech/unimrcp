@@ -28,10 +28,10 @@ static apt_bool_t apt_consumer_task_run(apt_task_t *task);
 
 APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
 									void *obj,
-									apt_task_vtable_t *vtable,
 									apt_task_msg_pool_t *msg_pool,
 									apr_pool_t *pool)
 {
+	apt_task_vtable_t *vtable;
 	apt_consumer_task_t *consumer_task = apr_palloc(pool,sizeof(apt_consumer_task_t));
 	consumer_task->obj = obj;
 	consumer_task->msg_queue = NULL;
@@ -39,14 +39,15 @@ APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
 		return NULL;
 	}
 	
+	consumer_task->base = apt_task_create(consumer_task,msg_pool,pool);
+	if(!consumer_task->base) {
+		return NULL;
+	}
+
+	vtable = apt_task_vtable_get(consumer_task->base);
 	if(vtable) {
 		vtable->run = apt_consumer_task_run;
 		vtable->signal_msg = apt_consumer_task_msg_signal;
-	}
-	
-	consumer_task->base = apt_task_create(consumer_task,vtable,msg_pool,pool);
-	if(!consumer_task->base) {
-		return NULL;
 	}
 	return consumer_task;
 }
@@ -54,6 +55,11 @@ APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
 APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task)
 {
 	return task->base;
+}
+
+APT_DECLARE(apt_task_vtable_t*) apt_consumer_task_vtable_get(apt_consumer_task_t *task)
+{
+	return apt_task_vtable_get(task->base);
 }
 
 APT_DECLARE(void*) apt_consumer_task_object_get(apt_consumer_task_t *task)

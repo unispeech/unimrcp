@@ -155,7 +155,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 {
 	mrcp_server_t *server;
 	apr_pool_t *pool;
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	
 	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
@@ -178,17 +178,19 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	server->connection_msg_pool = NULL;
 	server->resource_engine_msg_pool = NULL;
 
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = mrcp_server_msg_process;
-	vtable.on_start_complete = mrcp_server_on_start_complete;
-	vtable.on_terminate_complete = mrcp_server_on_terminate_complete;
-
 	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
 
-	server->task = apt_consumer_task_create(server, &vtable, msg_pool, pool);
+	server->task = apt_consumer_task_create(server,msg_pool,pool);
 	if(!server->task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Server Task");
 		return NULL;
+	}
+
+	vtable = apt_consumer_task_vtable_get(server->task);
+	if(vtable) {
+		vtable->process_msg = mrcp_server_msg_process;
+		vtable->on_start_complete = mrcp_server_on_start_complete;
+		vtable->on_terminate_complete = mrcp_server_on_terminate_complete;
 	}
 
 	server->resource_engine_table = apr_hash_make(server->pool);

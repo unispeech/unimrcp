@@ -77,7 +77,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 										apt_bool_t force_new_connection,
 										apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	mrcp_connection_agent_t *agent;
 
 	if(!listen_ip) {
@@ -98,12 +98,15 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 		return NULL;
 	}
 
-	apt_task_vtable_reset(&vtable);
-	vtable.run = mrcp_server_agent_task_run;
-	vtable.terminate = mrcp_server_agent_task_terminate;
-	agent->task = apt_task_create(agent,&vtable,NULL,pool);
+	agent->task = apt_task_create(agent,NULL,pool);
 	if(!agent->task) {
 		return NULL;
+	}
+
+	vtable = apt_task_vtable_get(agent->task);
+	if(vtable) {
+		vtable->run = mrcp_server_agent_task_run;
+		vtable->terminate = mrcp_server_agent_task_terminate;
 	}
 
 	agent->msg_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);

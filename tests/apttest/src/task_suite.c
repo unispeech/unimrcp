@@ -28,15 +28,17 @@ static apt_bool_t task_main(apt_task_t *task)
 static apt_bool_t task_test_run(apt_test_suite_t *suite, int argc, const char * const *argv)
 {
 	apt_task_t *task;
-	apt_task_vtable_t vtable;
-	apt_task_vtable_reset(&vtable);
-	vtable.run = task_main;
+	apt_task_vtable_t *vtable;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Task");
-	task = apt_task_create(NULL,&vtable,NULL,suite->pool);
+	task = apt_task_create(NULL,NULL,suite->pool);
 	if(!task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Task");
 		return FALSE;
+	}
+	vtable = apt_task_vtable_get(task);
+	if(vtable) {
+		vtable->run = task_main;
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task");

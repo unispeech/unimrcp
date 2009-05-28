@@ -133,7 +133,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 										const rtsp_client_vtable_t *handler,
 										apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_client_t *client;
 	
@@ -145,11 +145,14 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(task_msg_data_t),pool);
 
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = rtsp_client_task_msg_process;
-	client->task = apt_net_client_task_create(max_connection_count,client,&vtable,&client_vtable,msg_pool,pool);
+	client->task = apt_net_client_task_create(max_connection_count,client,&client_vtable,msg_pool,pool);
 	if(!client->task) {
 		return NULL;
+	}
+
+	vtable = apt_net_client_task_vtable_get(client->task);
+	if(vtable) {
+		vtable->process_msg = rtsp_client_task_msg_process;
 	}
 
 	apr_pool_create(&client->sub_pool,pool);

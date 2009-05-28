@@ -83,7 +83,7 @@ static apt_bool_t mrcp_unirtsp_on_resource_discover(mrcp_unirtsp_agent_t *agent,
 /** Create UniRTSP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_config_t *config, apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	apt_consumer_task_t *consumer_task;
 	mrcp_unirtsp_agent_t *agent;
@@ -104,12 +104,14 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
 
 	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
 
-	apt_task_vtable_reset(&vtable);
-	vtable.destroy = client_destroy;
-	vtable.on_start_complete = client_on_start_complete;
-	vtable.on_terminate_complete = client_on_terminate_complete;
-	consumer_task = apt_consumer_task_create(agent,&vtable,msg_pool,pool);
+	consumer_task = apt_consumer_task_create(agent,msg_pool,pool);
 	agent->sig_agent->task = apt_consumer_task_base_get(consumer_task);
+	vtable = apt_task_vtable_get(agent->sig_agent->task);
+	if(vtable) {
+		vtable->destroy = client_destroy;
+		vtable->on_start_complete = client_on_start_complete;
+		vtable->on_terminate_complete = client_on_terminate_complete;
+	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create UniRTSP Agent %s:%hu [%d]",
 								config->server_ip,
 								config->server_port,

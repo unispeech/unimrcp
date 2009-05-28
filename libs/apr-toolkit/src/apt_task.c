@@ -42,13 +42,11 @@ struct apt_task_t {
 };
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
-static APR_INLINE void apt_task_vtable_copy(apt_task_t *task, const apt_task_vtable_t *vtable);
 static apt_bool_t apt_task_terminate_request(apt_task_t *task);
 
 
 APT_DECLARE(apt_task_t*) apt_task_create(
 								void *obj,
-								apt_task_vtable_t *vtable,
 								apt_task_msg_pool_t *msg_pool,
 								apr_pool_t *pool)
 {
@@ -69,13 +67,7 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 
 	/* reset and copy vtable */
 	apt_task_vtable_reset(&task->vtable);
-	if(vtable) {
-		apt_task_vtable_copy(task,vtable);
-	}
-	/* set default terminate method if not specified */
-	if(!task->vtable.terminate) {
-		task->vtable.terminate = apt_task_terminate_request;
-	}
+	task->vtable.terminate = apt_task_terminate_request;
 	
 	task->parent_task = NULL;
 	task->child_tasks = apt_list_create(pool);
@@ -182,6 +174,11 @@ APT_DECLARE(apr_pool_t*) apt_task_pool_get(apt_task_t *task)
 APT_DECLARE(void*) apt_task_object_get(apt_task_t *task)
 {
 	return task->obj;
+}
+
+APT_DECLARE(apt_task_vtable_t*) apt_task_vtable_get(apt_task_t *task)
+{
+	return &task->vtable;
 }
 
 APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task)
@@ -390,39 +387,4 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 		task->vtable.on_post_run(task);
 	}
 	return NULL;
-}
-
-static APR_INLINE void apt_task_vtable_copy(apt_task_t *task, const apt_task_vtable_t *vtable)
-{
-	if(vtable->destroy) {
-		task->vtable.destroy = vtable->destroy;
-	}
-	if(vtable->start) {
-		task->vtable.start = vtable->start;
-	}
-	if(vtable->terminate) {
-		task->vtable.terminate = vtable->terminate;
-	}
-	if(vtable->run) {
-		task->vtable.run = vtable->run;
-	}
-	if(vtable->signal_msg) {
-		task->vtable.signal_msg = vtable->signal_msg;
-	}
-	if(vtable->process_msg) {
-		task->vtable.process_msg = vtable->process_msg;
-	}
-
-	if(vtable->on_pre_run) {
-		task->vtable.on_pre_run = vtable->on_pre_run;
-	}
-	if(vtable->on_post_run) {
-		task->vtable.on_post_run = vtable->on_post_run;
-	}
-	if(vtable->on_start_complete) {
-		task->vtable.on_start_complete = vtable->on_start_complete;
-	}
-	if(vtable->on_terminate_complete) {
-		task->vtable.on_terminate_complete = vtable->on_terminate_complete;
-	}
 }

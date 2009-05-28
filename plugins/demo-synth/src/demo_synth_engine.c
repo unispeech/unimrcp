@@ -129,14 +129,19 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 {
 	/* create demo engine */
 	demo_synth_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_synth_engine_t));
-	apt_task_vtable_t task_vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 
 	/* create task/thread to run demo engine in the context of this task */
-	apt_task_vtable_reset(&task_vtable);
-	task_vtable.process_msg = demo_synth_msg_process;
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(demo_synth_msg_t),pool);
-	demo_engine->task = apt_consumer_task_create(demo_engine,&task_vtable,msg_pool,pool);
+	demo_engine->task = apt_consumer_task_create(demo_engine,msg_pool,pool);
+	if(!demo_engine->task) {
+		return NULL;
+	}
+	vtable = apt_consumer_task_vtable_get(demo_engine->task);
+	if(vtable) {
+		vtable->process_msg = demo_synth_msg_process;
+	}
 
 	/* create resource engine base */
 	return mrcp_resource_engine_create(

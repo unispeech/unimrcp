@@ -71,7 +71,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 											apt_bool_t offer_new_connection,
 											apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	mrcp_connection_agent_t *agent;
 	
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create TCP/MRCPv2 Connection Agent [%d]",max_connection_count);
@@ -81,12 +81,15 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	agent->max_connection_count = max_connection_count;
 	agent->offer_new_connection = offer_new_connection;
 
-	apt_task_vtable_reset(&vtable);
-	vtable.run = mrcp_client_agent_task_run;
-	vtable.terminate = mrcp_client_agent_task_terminate;
-	agent->task = apt_task_create(agent,&vtable,NULL,pool);
+	agent->task = apt_task_create(agent,NULL,pool);
 	if(!agent->task) {
 		return NULL;
+	}
+
+	vtable = apt_task_vtable_get(agent->task);
+	if(vtable) {
+		vtable->run = mrcp_client_agent_task_run;
+		vtable->terminate = mrcp_client_agent_task_terminate;
 	}
 
 	agent->connection_list = apt_list_create(pool);

@@ -40,13 +40,11 @@ typedef void (*apt_task_event_f)(apt_task_t *task);
 /**
  * Create task.
  * @param obj the external object to associate with the task
- * @param vtable the table of virtual methods of the task
  * @param msg_pool the pool of task messages
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_task_t*) apt_task_create(
 								void *obj,
-								apt_task_vtable_t *vtable,
 								apt_task_msg_pool_t *msg_pool,
 								apr_pool_t *pool);
 
@@ -139,6 +137,12 @@ APT_DECLARE(apr_pool_t*) apt_task_pool_get(apt_task_t *task);
  * @param task the task to get object from
  */
 APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
+
+/**
+ * Get task vtable.
+ * @param task the task to get vtable from
+ */
+APT_DECLARE(apt_task_vtable_t*) apt_task_vtable_get(apt_task_t *task);
 
 /**
  * Hold task execution.

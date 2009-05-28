@@ -50,12 +50,11 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 										apr_port_t listen_port,
 										apr_size_t max_connection_count,
 										void *obj,
-										apt_task_vtable_t *task_vtable,
 										const apt_net_server_vtable_t *server_vtable,
 										apt_task_msg_pool_t *msg_pool,
 										apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_net_server_task_t *task;
 	
 	task = apr_palloc(pool,sizeof(apt_net_server_task_t));
@@ -77,15 +76,15 @@ APT_DECLARE(apt_net_server_task_t*) apt_net_server_task_create(
 	}
 	task->server_vtable = server_vtable;
 
-	apt_task_vtable_reset(&vtable);
-	if(task_vtable) {
-		vtable = *task_vtable;
-	}
-	vtable.run = apt_net_server_task_run;
-	vtable.signal_msg = apt_net_server_task_msg_signal;
-	task->base = apt_task_create(task,&vtable,msg_pool,pool);
+	task->base = apt_task_create(task,msg_pool,pool);
 	if(!task->base) {
 		return NULL;
+	}
+
+	vtable = apt_task_vtable_get(task->base);
+	if(vtable) {
+		vtable->run = apt_net_server_task_run;
+		vtable->signal_msg = apt_net_server_task_msg_signal;
 	}
 
 	task->msg_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
@@ -123,6 +122,12 @@ APT_DECLARE(apt_bool_t) apt_net_server_task_terminate(apt_net_server_task_t *tas
 APT_DECLARE(apt_task_t*) apt_net_server_task_base_get(apt_net_server_task_t *task)
 {
 	return task->base;
+}
+
+/** Get task vtable */
+APT_DECLARE(apt_task_vtable_t*) apt_net_server_task_vtable_get(apt_net_server_task_t *task)
+{
+	return apt_task_vtable_get(task->base);
 }
 
 /** Get external object */

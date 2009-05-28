@@ -51,7 +51,7 @@ mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
 
 MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 {
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	mpf_engine_t *engine = apr_palloc(pool,sizeof(mpf_engine_t));
 	engine->pool = pool;
@@ -59,16 +59,22 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	engine->contexts = NULL;
 	engine->codec_manager = NULL;
 
-	apt_task_vtable_reset(&vtable);
-	vtable.start = mpf_engine_start;
-	vtable.terminate = mpf_engine_terminate;
-	vtable.signal_msg = mpf_engine_msg_signal;
-	vtable.process_msg = mpf_engine_msg_process;
-
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_t),pool);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Media Processing Engine");
-	engine->task = apt_task_create(engine,&vtable,msg_pool,pool);
+	engine->task = apt_task_create(engine,msg_pool,pool);
+	if(!engine->task) {
+		return NULL;
+	}
+
+	vtable = apt_task_vtable_get(engine->task);
+	if(vtable) {
+		vtable->start = mpf_engine_start;
+		vtable->terminate = mpf_engine_terminate;
+		vtable->signal_msg = mpf_engine_msg_signal;
+		vtable->process_msg = mpf_engine_msg_process;
+	}
+
 	engine->task_msg_type = TASK_MSG_USER;
 	return engine;
 }

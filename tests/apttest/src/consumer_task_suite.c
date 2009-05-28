@@ -46,26 +46,27 @@ static apt_bool_t consumer_task_test_run(apt_test_suite_t *suite, int argc, cons
 {
 	apt_consumer_task_t *consumer_task;
 	apt_task_t *task;
-	apt_task_vtable_t vtable;
+	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	apt_task_msg_t *msg;
 	sample_msg_data_t *data;
 	int i;
 	
-	apt_task_vtable_reset(&vtable);
-	vtable.process_msg = task_msg_process;
-	vtable.on_start_complete = task_on_start_complete;
-	vtable.on_terminate_complete = task_on_terminate_complete;
-
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(sample_msg_data_t),suite->pool);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Consumer Task");
-	consumer_task = apt_consumer_task_create(NULL,&vtable,msg_pool,suite->pool);
+	consumer_task = apt_consumer_task_create(NULL,msg_pool,suite->pool);
 	if(!consumer_task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Consumer Task");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(consumer_task);
+	vtable = apt_task_vtable_get(task);
+	if(vtable) {
+		vtable->process_msg = task_msg_process;
+		vtable->on_start_complete = task_on_start_complete;
+		vtable->on_terminate_complete = task_on_terminate_complete;
+	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task");
 	if(apt_task_start(task) == FALSE) {
