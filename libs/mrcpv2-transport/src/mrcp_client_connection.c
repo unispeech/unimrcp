@@ -64,6 +64,7 @@ struct connection_task_msg_t {
 
 static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task);
 static apt_bool_t mrcp_client_agent_task_terminate(apt_task_t *task);
+static apt_bool_t mrcp_client_agent_task_on_destroy(apt_task_t *task);
 
 /** Create connection agent. */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
@@ -90,6 +91,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	if(vtable) {
 		vtable->run = mrcp_client_agent_task_run;
 		vtable->terminate = mrcp_client_agent_task_terminate;
+		vtable->destroy = mrcp_client_agent_task_on_destroy;
 	}
 
 	agent->connection_list = apt_list_create(pool);
@@ -99,10 +101,10 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	return agent;
 }
 
-/** Destroy connection agent. */
-MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_destroy(mrcp_connection_agent_t *agent)
+/** Virtual destroy handler. */
+static apt_bool_t mrcp_client_agent_task_on_destroy(apt_task_t *task)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	mrcp_connection_agent_t *agent = apt_task_object_get(task);
 	if(agent->guard) {
 		apr_thread_mutex_destroy(agent->guard);
 		agent->guard = NULL;
@@ -111,6 +113,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_destroy(mrcp_connection_ag
 		apt_cyclic_queue_destroy(agent->msg_queue);
 		agent->msg_queue = NULL;
 	}
+	return TRUE;
+}
+
+/** Destroy connection agent. */
+MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_destroy(mrcp_connection_agent_t *agent)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
 	return apt_task_destroy(agent->task);
 }
 
