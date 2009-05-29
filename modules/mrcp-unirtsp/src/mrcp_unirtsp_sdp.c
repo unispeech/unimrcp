@@ -181,7 +181,6 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 		return NULL;
 	}
 	
-	descriptor = mrcp_session_descriptor_create(pool);
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
@@ -192,14 +191,20 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 
 			parser = sdp_parse(home,request->body.buf,request->body.length,0);
 			sdp = sdp_session(parser);
-
-			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
-			
+			if(sdp) {
+				descriptor = mrcp_session_descriptor_create(pool);
+				mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
+			}
+			else {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
+			}
 			sdp_parser_free(parser);
 		}
 		else {
 			/* create default descriptor in case RTSP SETUP contains no SDP */
-			mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+			mpf_rtp_media_descriptor_t *media;
+			descriptor = mrcp_session_descriptor_create(pool);
+			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 			mpf_rtp_media_descriptor_init(media);
 			media->base.state = MPF_MEDIA_ENABLED;
 			media->base.id = mrcp_session_audio_media_add(descriptor,media);
@@ -209,10 +214,13 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			}
 		}
 
-		apt_string_assign(&descriptor->resource_name,resource_name,pool);
-		descriptor->resource_state = TRUE;
+		if(descriptor) {
+			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+			descriptor->resource_state = TRUE;
+		}
 	}
 	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+		descriptor = mrcp_session_descriptor_create(pool);
 		apt_string_assign(&descriptor->resource_name,resource_name,pool);
 		descriptor->resource_state = FALSE;
 	}
@@ -236,7 +244,6 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 		return NULL;
 	}
 	
-	descriptor = mrcp_session_descriptor_create(pool);
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
@@ -247,19 +254,27 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 
 			parser = sdp_parse(home,response->body.buf,response->body.length,0);
 			sdp = sdp_session(parser);
+			if(sdp) {
+				descriptor = mrcp_session_descriptor_create(pool);
+				mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
 
-			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
-			apt_string_assign(&descriptor->resource_name,resource_name,pool);
-			descriptor->resource_state = TRUE;
+				apt_string_assign(&descriptor->resource_name,resource_name,pool);
+				descriptor->resource_state = TRUE;
+			}
+			else {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
+			}
 			
 			sdp_parser_free(parser);
 		}
 		else {
+			descriptor = mrcp_session_descriptor_create(pool);
 			apt_string_assign(&descriptor->resource_name,resource_name,pool);
 			descriptor->resource_state = FALSE;
 		}
 	}
 	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
+		descriptor = mrcp_session_descriptor_create(pool);
 		apt_string_assign(&descriptor->resource_name,resource_name,pool);
 		descriptor->resource_state = FALSE;
 	}
@@ -465,9 +480,14 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_genera
 
 		parser = sdp_parse(home,response->body.buf,response->body.length,0);
 		sdp = sdp_session(parser);
-
-		mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,0,pool);
-		descriptor->resource_state = TRUE;
+		if(sdp) {
+			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,0,pool);
+			descriptor->resource_state = TRUE;
+		}
+		else {
+			apt_string_assign(&descriptor->resource_name,resource_name,pool);
+			descriptor->resource_state = TRUE;
+		}
 
 		sdp_parser_free(parser);
 	}

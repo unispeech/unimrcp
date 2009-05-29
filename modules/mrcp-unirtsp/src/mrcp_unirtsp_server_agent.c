@@ -249,6 +249,14 @@ static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *rtsp_server, rtsp_s
 							agent->config->resource_map,
 							session->mrcp_session->pool,
 							session->home);
+			if(!descriptor) {
+				rtsp_message_t *response = rtsp_response_create(rtsp_message,
+										RTSP_STATUS_CODE_BAD_REQUEST,
+										RTSP_REASON_PHRASE_BAD_REQUEST,
+										rtsp_message->pool);
+				status = rtsp_server_session_respond(rtsp_server,session->rtsp_session,response);
+				break;
+			}
 			status = mrcp_session_offer(session->mrcp_session,descriptor);
 			break;
 		}
