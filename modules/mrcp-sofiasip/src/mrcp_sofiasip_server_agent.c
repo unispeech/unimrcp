@@ -339,6 +339,11 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 		sdp_parser_free(parser);
 	}
 
+	if(!descriptor) {
+		nua_respond(nh, SIP_400_BAD_REQUEST, TAG_END());
+		return;
+	}
+
 	mrcp_session_offer(sofia_session->session,descriptor);
 }
 
