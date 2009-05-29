@@ -206,6 +206,11 @@ apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *
 		return FALSE;
 	}
 
+	if(!descriptor) {
+		/* raise app response */
+		return mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_FAILURE,TRUE);
+	}
+
 	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
 		if(descriptor->resource_state == TRUE) {
 			mrcp_control_descriptor_t *control_media;
