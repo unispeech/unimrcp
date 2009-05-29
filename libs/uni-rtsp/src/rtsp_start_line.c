@@ -48,17 +48,27 @@ static const apt_str_table_item_t rtsp_reason_string_table[] = {
 	{{"Not Implemented",       15},4}
 };
 
-/** Parse resource name fom RTSP URL */
-static const char* rtsp_resource_name_parse(const apt_str_t *rtsp_url)
+/** Parse RTSP URI */
+static apt_bool_t rtsp_resource_uri_parse(const apt_str_t *field, rtsp_request_line_t *request_line, apr_pool_t *pool)
 {
-	char *str = NULL;
-	if(rtsp_url->buf) {
-		str = strrchr(rtsp_url->buf,'/');
-		if(str) {
-			str++;
-		}
+	char *str;
+	apt_str_t *url = &request_line->url;
+	if(!field->length || !field->buf) {
+		return FALSE;
 	}
-	return str;
+
+	apt_string_copy(url,field,pool);
+	if(url->buf[url->length-1] == '/') {
+		url->length--;
+		url->buf[url->length] = '\0';
+	}
+
+	str = strrchr(url->buf,'/');
+	if(str) {
+		str++;
+	}
+	request_line->resource_name = str;
+	return TRUE;
 }
 
 /** Parse RTSP version */
@@ -186,8 +196,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse URL in request-line");
 			return FALSE;
 		}
-		apt_string_copy(&request_line->url,&field,pool);
-		request_line->resource_name = rtsp_resource_name_parse(&request_line->url);
+		rtsp_resource_uri_parse(&field,request_line,pool);
 
 		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse version in request-line");
