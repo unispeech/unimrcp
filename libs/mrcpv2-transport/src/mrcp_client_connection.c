@@ -246,14 +246,13 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 {
 	mrcp_connection_t *connection = mrcp_connection_create();
 
-	connection->remote_ip = descriptor->ip;
-	apr_sockaddr_info_get(&connection->sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
-	if(!connection->sockaddr) {
+	apr_sockaddr_info_get(&connection->r_sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
+	if(!connection->r_sockaddr) {
 		mrcp_connection_destroy(connection);
 		return NULL;
 	}
 
-	if(apr_socket_create(&connection->sock, connection->sockaddr->family, SOCK_STREAM, APR_PROTO_TCP, connection->pool) != APR_SUCCESS) {
+	if(apr_socket_create(&connection->sock,connection->r_sockaddr->family,SOCK_STREAM,APR_PROTO_TCP,connection->pool) != APR_SUCCESS) {
 		mrcp_connection_destroy(connection);
 		return NULL;
 	}
@@ -262,7 +261,13 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	apr_socket_timeout_set(connection->sock, -1);
 	apr_socket_opt_set(connection->sock, APR_SO_REUSEADDR, 1);
 
-	if(apr_socket_connect(connection->sock, connection->sockaddr) != APR_SUCCESS) {
+	if(apr_socket_connect(connection->sock, connection->r_sockaddr) != APR_SUCCESS) {
+		apr_socket_close(connection->sock);
+		mrcp_connection_destroy(connection);
+		return NULL;
+	}
+
+	if(apr_socket_addr_get(&connection->l_sockaddr,APR_LOCAL,connection->sock) != APR_SUCCESS) {
 		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
 		return NULL;
@@ -279,9 +284,9 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 		return NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP/MRCPv2 Connection %s:%d",
-			connection->remote_ip.buf,
-			connection->sockaddr->port);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP/MRCPv2 Connection %pI <-> %pI",
+			connection->l_sockaddr,
+			connection->r_sockaddr);
 	connection->agent = agent;
 	connection->it = apt_list_push_back(agent->connection_list,connection,connection->pool);
 	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
@@ -299,7 +304,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_find(mrcp_connection_agen
 		connection = apt_list_elem_object_get(elem);
 		if(connection) {
 			if(apr_sockaddr_info_get(&sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool) == APR_SUCCESS) {
-				if(apr_sockaddr_equal(sockaddr,connection->sockaddr) != 0) {
+				if(apr_sockaddr_equal(sockaddr,connection->r_sockaddr) != 0) {
 					return connection;
 				}
 			}
@@ -318,10 +323,12 @@ static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *a
 	}
 	apt_pollset_remove(agent->pollset,&connection->sock_pfd);
 	if(connection->sock) {
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Close TCP/MRCPv2 Connection %pI <-> %pI",
+			connection->l_sockaddr,
+			connection->r_sockaddr);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Disconnected TCP/MRCPv2 Connection");
 	return TRUE;
 }
 
@@ -367,8 +374,10 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 
 			if(connection) {
 				mrcp_connection_channel_add(connection,channel);
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s> [%d]",
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s> %pI <-> %pI [%d]",
 						channel->identifier.buf,
+						connection->l_sockaddr,
+						connection->r_sockaddr,
 						apr_hash_count(connection->channel_table));
 				if(descriptor->connection_type == MRCP_CONNECTION_TYPE_NEW) {
 					/* set connection type to existing for the next offers / if any */
@@ -426,8 +435,11 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream [%lu bytes]\n%s",
-				stream->text.length,stream->text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %pI -> %pI [%lu bytes]\n%s",
+				connection->l_sockaddr,
+				connection->r_sockaddr,
+				stream->text.length,
+				stream->text.buf);
 			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
@@ -465,9 +477,12 @@ static apt_bool_t mrcp_client_message_handler(void *obj, mrcp_message_t *message
 			mrcp_connection_message_receive(agent->vtable,channel,message);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s>",
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s> in Connection %pI <-> %pI [%d]",
 				message->channel_id.session_id.buf,
-				message->channel_id.resource_name.buf);
+				message->channel_id.resource_name.buf,
+				connection->l_sockaddr,
+				connection->r_sockaddr,
+				apr_hash_count(connection->channel_table));
 		}
 	}
 	return TRUE;
@@ -493,7 +508,9 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 	length = stream->text.length - offset;
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP/MRCPv2 Connection Disconnected");
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP/MRCPv2 Connection Disconnected %pI <-> %pI",
+			connection->l_sockaddr,
+			connection->r_sockaddr);
 		apt_pollset_remove(agent->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
@@ -504,7 +521,11 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream [%lu bytes]\n%s",length,stream->pos);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream %pI <- %pI [%lu bytes]\n%s",
+		connection->l_sockaddr,
+		connection->r_sockaddr,
+		length,
+		stream->pos);
 
 	/* reset pos */
 	stream->pos = stream->text.buf;

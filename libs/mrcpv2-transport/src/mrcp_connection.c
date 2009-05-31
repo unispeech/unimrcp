@@ -27,7 +27,8 @@ mrcp_connection_t* mrcp_connection_create()
 	connection = apr_palloc(pool,sizeof(mrcp_connection_t));
 	connection->pool = pool;
 	apt_string_reset(&connection->remote_ip);
-	connection->sockaddr = NULL;
+	connection->l_sockaddr = NULL;
+	connection->r_sockaddr = NULL;
 	connection->sock = NULL;
 	connection->access_count = 0;
 	connection->it = NULL;

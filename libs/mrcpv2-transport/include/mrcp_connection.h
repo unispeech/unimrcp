@@ -42,8 +42,10 @@ struct mrcp_connection_t {
 	apr_socket_t     *sock;
 	/** Socket poll descriptor */
 	apr_pollfd_t      sock_pfd;
+	/** Local sockaddr */
+	apr_sockaddr_t   *l_sockaddr;
 	/** Remote sockaddr */
-	apr_sockaddr_t   *sockaddr;
+	apr_sockaddr_t   *r_sockaddr;
 	/** Remote IP */
 	apt_str_t         remote_ip;
 
