@@ -629,7 +629,7 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 	apr_size_t remaining_handles = 0;
 	apr_size_t cancelled_requests = 0;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP Connection Disconnected");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP Peer Disconnected %pI", rtsp_connection->base->r_sockaddr);
 	apt_net_client_connection_close(client->task,rtsp_connection->base);
 
 	/* Cancel in-progreess requests */
@@ -697,8 +697,11 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream [%lu bytes]\n%s",
-				stream->text.length,stream->text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream %pI -> %pI [%lu bytes]\n%s",
+				connection->l_sockaddr,
+				connection->r_sockaddr,
+				stream->text.length,
+				stream->text.buf);
 			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
@@ -785,7 +788,11 @@ static apt_bool_t rtsp_client_message_receive(apt_net_client_task_t *task, apt_n
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream [%lu bytes]\n%s",length,stream->pos);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream %pI <- %pI [%lu bytes]\n%s",
+		connection->l_sockaddr,
+		connection->r_sockaddr,
+		length,
+		stream->pos);
 
 	/* reset pos */
 	stream->pos = stream->text.buf;

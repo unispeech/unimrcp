@@ -133,7 +133,6 @@ APT_DECLARE(void*) apt_net_client_task_object_get(apt_net_client_task_t *task)
 /** Create connection */
 APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_task_t *task, const char *ip, apr_port_t port)
 {
-	apr_sockaddr_t *sockaddr;
 	apt_net_client_connection_t *connection;
 	apr_pool_t *pool;
 	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
@@ -145,12 +144,12 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 	connection->obj = NULL;
 	connection->sock = NULL;
 
-	if(apr_sockaddr_info_get(&sockaddr,ip,APR_INET,port,0,connection->pool) != APR_SUCCESS) {
+	if(apr_sockaddr_info_get(&connection->r_sockaddr,ip,APR_INET,port,0,connection->pool) != APR_SUCCESS) {
 		apr_pool_destroy(pool);
 		return NULL;
 	}
 
-	if(apr_socket_create(&connection->sock,sockaddr->family,SOCK_STREAM,APR_PROTO_TCP,connection->pool) != APR_SUCCESS) {
+	if(apr_socket_create(&connection->sock,connection->r_sockaddr->family,SOCK_STREAM,APR_PROTO_TCP,connection->pool) != APR_SUCCESS) {
 		apr_pool_destroy(pool);
 		return NULL;
 	}
@@ -159,7 +158,13 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 	apr_socket_timeout_set(connection->sock, -1);
 	apr_socket_opt_set(connection->sock, APR_SO_REUSEADDR, 1);
 
-	if(apr_socket_connect(connection->sock,sockaddr) != APR_SUCCESS) {
+	if(apr_socket_connect(connection->sock,connection->r_sockaddr) != APR_SUCCESS) {
+		apr_socket_close(connection->sock);
+		apr_pool_destroy(pool);
+		return NULL;
+	}
+
+	if(apr_socket_addr_get(&connection->l_sockaddr,APR_LOCAL,connection->sock) != APR_SUCCESS) {
 		apr_socket_close(connection->sock);
 		apr_pool_destroy(pool);
 		return NULL;
@@ -176,7 +181,9 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 		return NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP Connection %s:%d",ip,port);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP Connection %pI <-> %pI",
+		connection->l_sockaddr,
+		connection->r_sockaddr);
 	return connection;
 }
 
@@ -184,6 +191,9 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 APT_DECLARE(apt_bool_t) apt_net_client_connection_close(apt_net_client_task_t *task, apt_net_client_connection_t *connection)
 {
 	if(connection->sock) {
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Close TCP Connection %pI <-> %pI",
+			connection->l_sockaddr,
+			connection->r_sockaddr);
 		apt_pollset_remove(task->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
