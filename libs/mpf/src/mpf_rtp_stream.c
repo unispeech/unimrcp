@@ -626,7 +626,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 							stream->tx_codec->attribs);
 	transmitter->packet_data = apr_palloc(
 							rtp_stream->pool,
-							transmitter->packet_frames * frame_size);
+							sizeof(rtp_header_t) + transmitter->packet_frames * frame_size);
 	
 	transmitter->inactivity = 1;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Transmit %s:%hu -> %s:%hu",
