@@ -174,6 +174,13 @@ static APR_INLINE void apt_text_spaces_skip(apt_text_stream_t *stream)
 	while(stream->pos < end && *stream->pos == APT_TOKEN_SP) stream->pos++;
 }
 
+/** Skip specified character */
+static APR_INLINE void apt_text_char_skip(apt_text_stream_t *stream, char ch)
+{
+	const char *end = stream->text.buf + stream->text.length;
+	if(stream->pos < end && *stream->pos == ch) stream->pos++;
+}
+
 /** Check whether end of stream is reached */
 static APR_INLINE apt_bool_t apt_text_is_eos(const apt_text_stream_t *stream)
 {
