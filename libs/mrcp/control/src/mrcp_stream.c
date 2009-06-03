@@ -26,6 +26,7 @@ struct mrcp_parser_t {
 	apt_str_t                resource_name;
 	mrcp_stream_result_e     result;
 	char                    *pos;
+	apt_bool_t               skip_lf;
 	mrcp_message_t          *message;
 	apr_pool_t              *pool;
 };
@@ -182,6 +183,7 @@ MRCP_DECLARE(mrcp_parser_t*) mrcp_parser_create(mrcp_resource_factory_t *resourc
 	apt_string_reset(&parser->resource_name);
 	parser->result = MRCP_STREAM_MESSAGE_INVALID;
 	parser->pos = NULL;
+	parser->skip_lf = FALSE;
 	parser->message = NULL;
 	parser->pool = pool;
 	return parser;
@@ -235,6 +237,13 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_parser_run(mrcp_parser_t *parser, apt_te
 
 	/* parse body */
 	parser->result = mrcp_message_body_parse(message,stream,message->pool);
+
+	/* in the worst case message segmentation may occur between <CR> and <LF> 
+	   of the final empty header */
+	if(!message->body.length && *(stream->pos-1)== APT_TOKEN_CR) {
+		/* if this is the case be prepared to skip <LF> */
+		parser->skip_lf = TRUE;
+	}
 	return parser->result;
 }
 
@@ -311,6 +320,11 @@ MRCP_DECLARE(mrcp_stream_result_e) mrcp_generator_run(mrcp_generator_t *generato
 MRCP_DECLARE(apt_bool_t) mrcp_stream_walk(mrcp_parser_t *parser, apt_text_stream_t *stream, mrcp_message_handler_f handler, void *obj)
 {
 	mrcp_stream_result_e result;
+	if(parser->skip_lf == TRUE) {
+		/* skip <LF> occurred as a result of message segmentation between <CR> and <LF> */
+		apt_text_char_skip(stream,APT_TOKEN_LF);
+		parser->skip_lf = FALSE;
+	}
 	do {
 		result = mrcp_parser_run(parser,stream);
 		if(result == MRCP_STREAM_MESSAGE_COMPLETE) {

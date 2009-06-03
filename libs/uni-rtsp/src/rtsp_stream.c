@@ -21,6 +21,7 @@
 struct rtsp_parser_t {
 	rtsp_stream_result_e result;
 	char                *pos;
+	apt_bool_t           skip_lf;
 	rtsp_message_t      *message;
 	apr_pool_t          *pool;
 };
@@ -112,6 +113,7 @@ RTSP_DECLARE(rtsp_parser_t*) rtsp_parser_create(apr_pool_t *pool)
 	rtsp_parser_t *parser = apr_palloc(pool,sizeof(rtsp_parser_t));
 	parser->result = RTSP_STREAM_MESSAGE_INVALID;
 	parser->pos = NULL;
+	parser->skip_lf = FALSE;
 	parser->message = NULL;
 	parser->pool = pool;
 	return parser;
@@ -158,6 +160,13 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_parser_run(rtsp_parser_t *parser, apt_te
 	}
 	/* parse body */
 	parser->result = rtsp_message_body_parse(message,stream,message->pool);
+	
+	/* in the worst case message segmentation may occur between <CR> and <LF> 
+	   of the final empty header */
+	if(!message->body.length && *(stream->pos-1)== APT_TOKEN_CR) {
+		/* if this is the case be prepared to skip <LF> */
+		parser->skip_lf = TRUE;
+	}
 	return parser->result;
 }
 
@@ -238,6 +247,11 @@ RTSP_DECLARE(rtsp_stream_result_e) rtsp_generator_run(rtsp_generator_t *generato
 RTSP_DECLARE(apt_bool_t) rtsp_stream_walk(rtsp_parser_t *parser, apt_text_stream_t *stream, rtsp_message_handler_f handler, void *obj)
 {
 	rtsp_stream_result_e result;
+	if(parser->skip_lf == TRUE) {
+		/* skip <LF> occurred as a result of message segmentation between <CR> and <LF> */
+		apt_text_char_skip(stream,APT_TOKEN_LF);
+		parser->skip_lf = FALSE;
+	}
 	do {
 		result = rtsp_parser_run(parser,stream);
 		if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
