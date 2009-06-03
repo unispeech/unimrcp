@@ -152,12 +152,15 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 /** Scroll text stream */
 APT_DECLARE(apt_bool_t) apt_text_stream_scroll(apt_text_stream_t *stream)
 {
-	apr_size_t scroll_length = stream->pos - stream->text.buf;
-	if(!scroll_length || scroll_length == stream->text.length) {
+	apr_size_t remaining_length = stream->text.buf + stream->text.length - stream->pos;
+	if(!remaining_length || remaining_length == stream->text.length) {
+		stream->pos = stream->text.buf;
 		return FALSE;
 	}
-	memmove(stream->text.buf,stream->pos,scroll_length);
-	stream->pos = stream->text.buf + stream->text.length - scroll_length;
+	memmove(stream->text.buf,stream->pos,remaining_length);
+	stream->pos = stream->text.buf + remaining_length;
+	stream->text.length = remaining_length;
+	*stream->pos = '\0';
 	return TRUE;
 }
 
