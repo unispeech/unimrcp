@@ -48,6 +48,8 @@ struct mrcp_connection_t {
 	apr_sockaddr_t   *r_sockaddr;
 	/** Remote IP */
 	apt_str_t         remote_ip;
+	/** String identifier used for traces */
+	const char       *id;
 
 	/** Reference count */
 	apr_size_t        access_count;

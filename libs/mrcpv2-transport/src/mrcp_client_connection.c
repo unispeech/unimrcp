@@ -187,7 +187,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_control_channel_destroy(mrcp_control_channe
 	if(channel && channel->connection && channel->removed == TRUE) {
 		mrcp_connection_t *connection = channel->connection;
 		channel->connection = NULL;
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy TCP/MRCPv2 Connection");
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy TCP/MRCPv2 Connection %s",connection->id);
 		mrcp_connection_destroy(connection);
 	}
 	return TRUE;
@@ -244,6 +244,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_control_message_send(mrcp_control_channel_t
 
 static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_agent_t *agent, mrcp_control_descriptor_t *descriptor)
 {
+	char *local_ip = NULL;
+	char *remote_ip = NULL;
 	mrcp_connection_t *connection = mrcp_connection_create();
 
 	apr_sockaddr_info_get(&connection->r_sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
@@ -273,6 +275,12 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 		return NULL;
 	}
 
+	apr_sockaddr_ip_get(&local_ip,connection->l_sockaddr);
+	apr_sockaddr_ip_get(&remote_ip,connection->r_sockaddr);
+	connection->id = apr_psprintf(connection->pool,"%s:%hu <-> %s:%hu",
+		local_ip,connection->l_sockaddr->port,
+		remote_ip,connection->r_sockaddr->port);
+
 	memset(&connection->sock_pfd,0,sizeof(apr_pollfd_t));
 	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
 	connection->sock_pfd.reqevents = APR_POLLIN;
@@ -284,9 +292,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 		return NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP/MRCPv2 Connection %pI <-> %pI",
-			connection->l_sockaddr,
-			connection->r_sockaddr);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Established TCP/MRCPv2 Connection %s",connection->id);
 	connection->agent = agent;
 	connection->it = apt_list_push_back(agent->connection_list,connection,connection->pool);
 	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
@@ -323,9 +329,7 @@ static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *a
 	}
 	apt_pollset_remove(agent->pollset,&connection->sock_pfd);
 	if(connection->sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Close TCP/MRCPv2 Connection %pI <-> %pI",
-			connection->l_sockaddr,
-			connection->r_sockaddr);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close TCP/MRCPv2 Connection %s",connection->id);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 	}
@@ -374,10 +378,9 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 
 			if(connection) {
 				mrcp_connection_channel_add(connection,channel);
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s> %pI <-> %pI [%d]",
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s> %s [%d]",
 						channel->identifier.buf,
-						connection->l_sockaddr,
-						connection->r_sockaddr,
+						connection->id,
 						apr_hash_count(connection->channel_table));
 				if(descriptor->connection_type == MRCP_CONNECTION_TYPE_NEW) {
 					/* set connection type to existing for the next offers / if any */
@@ -435,9 +438,8 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %pI -> %pI [%lu bytes]\n%s",
-				connection->l_sockaddr,
-				connection->r_sockaddr,
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %s [%lu bytes]\n%s",
+				connection->id,
 				stream->text.length,
 				stream->text.buf);
 			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
@@ -477,11 +479,10 @@ static apt_bool_t mrcp_client_message_handler(void *obj, mrcp_message_t *message
 			mrcp_connection_message_receive(agent->vtable,channel,message);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s> in Connection %pI <-> %pI [%d]",
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s> in Connection %s [%d]",
 				message->channel_id.session_id.buf,
 				message->channel_id.resource_name.buf,
-				connection->l_sockaddr,
-				connection->r_sockaddr,
+				connection->id,
 				apr_hash_count(connection->channel_table));
 		}
 	}
@@ -508,9 +509,7 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 	length = stream->text.length - offset;
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"TCP/MRCPv2 Connection Disconnected %pI <-> %pI",
-			connection->l_sockaddr,
-			connection->r_sockaddr);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"TCP/MRCPv2 Peer Disconnected %s",connection->id);
 		apt_pollset_remove(agent->pollset,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
@@ -521,9 +520,8 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream %pI <- %pI [%lu bytes]\n%s",
-		connection->l_sockaddr,
-		connection->r_sockaddr,
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream %s [%lu bytes]\n%s",
+		connection->id,
 		length,
 		stream->pos);
 

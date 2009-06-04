@@ -37,17 +37,15 @@ typedef struct apt_net_client_vtable_t apt_net_client_vtable_t;
 /** Network client connection */
 struct apt_net_client_connection_t {
 	/** Memory pool */
-	apr_pool_t     *pool;
+	apr_pool_t   *pool;
 	/** External object */
-	void           *obj;
+	void         *obj;
 	/** Connected socket */
-	apr_socket_t   *sock;
+	apr_socket_t *sock;
 	/** Socket poll descriptor */
-	apr_pollfd_t    sock_pfd;
-	/** Local sockaddr */
-	apr_sockaddr_t *l_sockaddr;
-	/** Remote sockaddr */
-	apr_sockaddr_t *r_sockaddr;
+	apr_pollfd_t  sock_pfd;
+	/** String identifier used for traces */
+	const char   *id;
 };
 
 /** Virtual table of network client events */
