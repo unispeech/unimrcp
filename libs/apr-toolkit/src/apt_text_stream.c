@@ -154,7 +154,7 @@ APT_DECLARE(apt_bool_t) apt_text_stream_scroll(apt_text_stream_t *stream)
 {
 	apr_size_t remaining_length = stream->text.buf + stream->text.length - stream->pos;
 	if(!remaining_length || remaining_length == stream->text.length) {
-		stream->pos = stream->text.buf;
+		stream->pos = stream->text.buf + remaining_length;
 		return FALSE;
 	}
 	memmove(stream->text.buf,stream->pos,remaining_length);
