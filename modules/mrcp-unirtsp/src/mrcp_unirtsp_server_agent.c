@@ -180,6 +180,8 @@ static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
 		session->home = NULL;
 	}
 	rtsp_server_session_object_set(session->rtsp_session,NULL);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session <%s>",
+		session->mrcp_session->id.buf ? session->mrcp_session->id.buf : "new");
 	mrcp_session_destroy(session->mrcp_session);
 }
 
