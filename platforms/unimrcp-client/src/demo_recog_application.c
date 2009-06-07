@@ -48,8 +48,8 @@ struct recog_app_channel_t {
 	/** MRCP control channel */
 	mrcp_channel_t *channel;
 
-	/** Input is started */
-	apt_bool_t      start_of_input;
+	/** Streaming is in-progress */
+	apt_bool_t      streaming;
 	/** File to read audio stream from */
 	FILE           *audio_in;
 	/** Estimated time to complete (used if no audio_in available) */
@@ -112,7 +112,7 @@ static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
 
 	/* create channel */
 	recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
-	recog_channel->start_of_input = FALSE;
+	recog_channel->streaming = FALSE;
 	recog_channel->audio_in = NULL;
 	recog_channel->time_to_complete = 0;
 
@@ -277,7 +277,7 @@ static apt_bool_t recog_application_on_message_receive(mrcp_application_t *appli
 			if(message->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS) {
 				/* start to stream the speech to recognize */
 				if(recog_channel) {
-					recog_channel->start_of_input = TRUE;
+					recog_channel->streaming = TRUE;
 				}
 			}
 			else {
@@ -292,9 +292,12 @@ static apt_bool_t recog_application_on_message_receive(mrcp_application_t *appli
 	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
 		if(message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
 			if(recog_channel) {
-				recog_channel->start_of_input = FALSE;
+				recog_channel->streaming = FALSE;
 			}
 			mrcp_application_channel_remove(session,channel);
+		}
+		else if(message->start_line.method_id == RECOGNIZER_START_OF_INPUT) {
+			/* received start-of-input, do whatever you need here */
 		}
 	}
 	return TRUE;
@@ -322,7 +325,7 @@ static apt_bool_t recog_app_stream_close(mpf_audio_stream_t *stream)
 static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	recog_app_channel_t *recog_channel = stream->obj;
-	if(recog_channel && recog_channel->start_of_input == TRUE) {
+	if(recog_channel && recog_channel->streaming == TRUE) {
 		if(recog_channel->audio_in) {
 			if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_in) == frame->codec_frame.size) {
 				/* normal read */
@@ -330,7 +333,7 @@ static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t 
 			}
 			else {
 				/* file is over */
-				recog_channel->start_of_input = FALSE;
+				recog_channel->streaming = FALSE;
 			}
 		}
 		else {
@@ -341,7 +344,7 @@ static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t 
 				recog_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
 			}
 			else {
-				recog_channel->start_of_input = FALSE;
+				recog_channel->streaming = FALSE;
 			}
 		}
 	}
