@@ -49,11 +49,12 @@ struct mrcp_sofia_agent_t {
 };
 
 struct mrcp_sofia_session_t {
-	mrcp_session_t *session;
-	su_home_t      *home;
-	nua_handle_t   *nh;
+	mrcp_session_t     *session;
+	su_home_t          *home;
+	nua_handle_t       *nh;
 
-	apt_bool_t      terminate_requested;
+	apt_bool_t          terminate_requested;
+	apr_thread_mutex_t *mutex;
 };
 
 /* Task Interface */
@@ -248,6 +249,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session)
 	session->request_vtable = &session_request_vtable;
 
 	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
+	sofia_session->mutex = NULL;
 	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
 	sofia_session->session = session;
 	sofia_session->terminate_requested = FALSE;
@@ -260,20 +262,32 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session)
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
 				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
 				TAG_END());
+
+	apr_thread_mutex_create(&sofia_session->mutex,APR_THREAD_MUTEX_DEFAULT,session->pool);
 	return TRUE;
 }
 
 static apt_bool_t mrcp_sofia_session_destroy(mrcp_sofia_session_t *sofia_session)
 {
-	if(sofia_session->nh) {
-		nua_handle_bind(sofia_session->nh, NULL);
-		nua_handle_destroy(sofia_session->nh);
+	if(sofia_session->mutex) {
+		apr_thread_mutex_destroy(sofia_session->mutex);
+		sofia_session->mutex = NULL;
 	}
 	if(sofia_session->home) {
-		sofia_session->session->obj = NULL;
 		su_home_unref(sofia_session->home);
 		sofia_session->home = NULL;
 	}
+	return TRUE;
+}
+
+static apt_bool_t mrcp_sofia_session_unref(mrcp_sofia_session_t *sofia_session)
+{
+	if(sofia_session->nh) {
+		nua_handle_bind(sofia_session->nh, NULL);
+		nua_handle_destroy(sofia_session->nh);
+		sofia_session->nh = NULL;
+	}
+	sofia_session->session = NULL;
 	return TRUE;
 }
 
@@ -281,8 +295,9 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 {
 	char sdp_str[2048];
 	char *local_sdp_str = NULL;
+	apt_bool_t res = FALSE;
 	mrcp_sofia_session_t *sofia_session = session->obj;
-	if(!sofia_session || !sofia_session->nh) {
+	if(!sofia_session) {
 		return FALSE;
 	}
 
@@ -299,33 +314,56 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP\n%s", local_sdp_str);
 	}
 
-	nua_invite(sofia_session->nh,
-			   TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
-			   TAG_END());
+	apr_thread_mutex_lock(sofia_session->mutex);
 
-	return TRUE;
+	if(sofia_session->nh) {
+		res = TRUE;
+		nua_invite(sofia_session->nh,
+				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
+				TAG_END());
+	}
+
+	apr_thread_mutex_unlock(sofia_session->mutex);
+	return res;
 }
 
 static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session)
 {
 	mrcp_sofia_session_t *sofia_session = session->obj;
-	if(!sofia_session || !sofia_session->nh) {
+	if(!sofia_session) {
 		return FALSE;
 	}
 
-	nua_bye(sofia_session->nh,TAG_END());
+	sofia_session->terminate_requested = FALSE;
+	apr_thread_mutex_lock(sofia_session->mutex);
+	if(sofia_session->nh) {
+		sofia_session->terminate_requested = TRUE;
+		nua_bye(sofia_session->nh,TAG_END());
+	}
+	apr_thread_mutex_unlock(sofia_session->mutex);
+
+	if(sofia_session->terminate_requested == FALSE) {
+		mrcp_sofia_session_destroy(sofia_session);
+		mrcp_session_terminate_response(session);
+	}
 	return TRUE;
 }
 
 static apt_bool_t mrcp_sofia_session_discover_request(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
+	apt_bool_t res = FALSE;
 	mrcp_sofia_session_t *sofia_session = session->obj;
-	if(!sofia_session || !sofia_session->nh) {
+	if(!sofia_session) {
 		return FALSE;
 	}
 	
-	nua_options(sofia_session->nh,TAG_END());
-	return TRUE;
+	apr_thread_mutex_lock(sofia_session->mutex);
+	if(sofia_session->nh) {
+		res = TRUE;
+		nua_options(sofia_session->nh,TAG_END());
+	}
+	apr_thread_mutex_unlock(sofia_session->mutex);
+	return res;
 }
 
 static void mrcp_sofia_on_session_ready(
@@ -336,30 +374,33 @@ static void mrcp_sofia_on_session_ready(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	const char *local_sdp_str = NULL, *remote_sdp_str = NULL;
-	mrcp_session_descriptor_t *descriptor = NULL;
+	mrcp_session_t *session = sofia_session->session;
+	if(session) {
+		const char *local_sdp_str = NULL, *remote_sdp_str = NULL;
+		mrcp_session_descriptor_t *descriptor = NULL;
 
-	tl_gets(tags, 
-			SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
-			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
-			TAG_END());
+		tl_gets(tags, 
+				SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
+				SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
+				TAG_END());
 
-	if(remote_sdp_str) {
-		sdp_parser_t *parser = NULL;
-		sdp_session_t *sdp = NULL;
-		const char *force_destination_ip = NULL;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
+		if(remote_sdp_str) {
+			sdp_parser_t *parser = NULL;
+			sdp_session_t *sdp = NULL;
+			const char *force_destination_ip = NULL;
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
 
-		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
-		sdp = sdp_session(parser);
-		if(sofia_agent && sofia_agent->config->force_destination == TRUE) {
-			force_destination_ip = sofia_agent->config->remote_ip;
+			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
+			sdp = sdp_session(parser);
+			if(sofia_agent && sofia_agent->config->force_destination == TRUE) {
+				force_destination_ip = sofia_agent->config->remote_ip;
+			}
+			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,session->pool);
+			sdp_parser_free(parser);
 		}
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,sofia_session->session->pool);
-		sdp_parser_free(parser);
-	}
 
-	mrcp_session_answer(sofia_session->session,descriptor);
+		mrcp_session_answer(session,descriptor);
+	}
 }
 
 static void mrcp_sofia_on_session_terminate(
@@ -370,12 +411,23 @@ static void mrcp_sofia_on_session_terminate(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	if(sofia_session->terminate_requested == TRUE) {
-		mrcp_session_terminate_response(sofia_session->session);
-		mrcp_sofia_session_destroy(sofia_session);
-	}
-	else {
-		mrcp_session_terminate_event(sofia_session->session);
+	mrcp_session_t *session = sofia_session->session;
+	if(session) {
+		apt_bool_t terminate_requested;
+	
+		apr_thread_mutex_lock(sofia_session->mutex);
+		terminate_requested = sofia_session->terminate_requested;
+		session = sofia_session->session;
+		mrcp_sofia_session_unref(sofia_session);
+		apr_thread_mutex_unlock(sofia_session->mutex);
+
+		if(terminate_requested == TRUE) {
+			mrcp_sofia_session_destroy(sofia_session);
+			mrcp_session_terminate_response(session);
+		}
+		else {
+			mrcp_session_terminate_event(session);
+		}
 	}
 }
 
@@ -412,6 +464,7 @@ static void mrcp_sofia_on_bye(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
+/*
 	if(status == 200) {
 		sofia_session->terminate_requested = TRUE;
 	}
@@ -419,6 +472,7 @@ static void mrcp_sofia_on_bye(
 		mrcp_session_terminate_response(sofia_session->session);
 		mrcp_sofia_session_destroy(sofia_session);
 	}
+*/
 }
 
 static void mrcp_sofia_on_resource_discover(
@@ -429,25 +483,28 @@ static void mrcp_sofia_on_resource_discover(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	const char *remote_sdp_str = NULL;
-	mrcp_session_descriptor_t *descriptor = NULL;
+	mrcp_session_t *session = sofia_session->session;
+	if(session) {
+		const char *remote_sdp_str = NULL;
+		mrcp_session_descriptor_t *descriptor = NULL;
 
-	tl_gets(tags, 
-			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
-			TAG_END());
+		tl_gets(tags, 
+				SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
+				TAG_END());
 
-	if(remote_sdp_str) {
-		sdp_parser_t *parser = NULL;
-		sdp_session_t *sdp = NULL;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP\n%s", remote_sdp_str);
+		if(remote_sdp_str) {
+			sdp_parser_t *parser = NULL;
+			sdp_session_t *sdp = NULL;
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP\n%s", remote_sdp_str);
 
-		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
-		sdp = sdp_session(parser);
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,sofia_session->session->pool);
-		sdp_parser_free(parser);
+			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
+			sdp = sdp_session(parser);
+			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,session->pool);
+			sdp_parser_free(parser);
+		}
+
+		mrcp_session_discover_response(session,descriptor);
 	}
-
-	mrcp_session_discover_response(sofia_session->session,descriptor);
 }
 
 /** This callback will be called by SIP stack to process incoming events */
