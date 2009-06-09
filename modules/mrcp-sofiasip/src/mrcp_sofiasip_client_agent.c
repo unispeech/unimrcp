@@ -311,7 +311,7 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 	}
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
 		local_sdp_str = sdp_str;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP\n%s", local_sdp_str);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP 0x%x\n%s", session, local_sdp_str);
 	}
 
 	apr_thread_mutex_lock(sofia_session->mutex);
@@ -388,7 +388,7 @@ static void mrcp_sofia_on_session_ready(
 			sdp_parser_t *parser = NULL;
 			sdp_session_t *sdp = NULL;
 			const char *force_destination_ip = NULL;
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP\n%s", remote_sdp_str);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP 0x%x\n%s",session, remote_sdp_str);
 
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 			sdp = sdp_session(parser);
@@ -444,7 +444,9 @@ static void mrcp_sofia_on_state_change(
 			NUTAG_CALLSTATE_REF(ss_state),
 			TAG_END());
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State [%s]", nua_callstate_name(ss_state));
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State 0x%x [%s]", 
+		sofia_session ? sofia_session->session : NULL,
+		nua_callstate_name(ss_state));
 
 	switch(ss_state) {
 		case nua_callstate_ready:
@@ -495,7 +497,7 @@ static void mrcp_sofia_on_resource_discover(
 		if(remote_sdp_str) {
 			sdp_parser_t *parser = NULL;
 			sdp_session_t *sdp = NULL;
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP\n%s", remote_sdp_str);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP 0x%x\n%s", session, remote_sdp_str);
 
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 			sdp = sdp_session(parser);
@@ -519,7 +521,8 @@ static void mrcp_sofia_event_callback(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive SIP Event [%s] Status %d %s",nua_event_name(nua_event),status,phrase);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive SIP Event [%s] Status %d %s",
+		nua_event_name(nua_event),status,phrase);
 
 	switch(nua_event) {
 		case nua_i_state:
