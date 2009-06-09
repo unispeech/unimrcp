@@ -438,7 +438,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	apr_sockaddr_ip_get(&local_ip,connection->l_sockaddr);
 	apr_sockaddr_ip_get(&remote_ip,connection->r_sockaddr);
 	apt_string_set(&connection->remote_ip,remote_ip);
-	connection->id = apr_psprintf(pool,"%s:%hu <-> %s:%hu",
+	connection->id = apr_psprintf(connection->pool,"%s:%hu <-> %s:%hu",
 		local_ip,connection->l_sockaddr->port,
 		remote_ip,connection->r_sockaddr->port);
 
