@@ -284,12 +284,6 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 {
 	mrcp_sofia_session_t *sofia_session = session->obj;
 	if(sofia_session) {
-		if(sofia_session->session) {
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session <%s>",
-				session->id.buf ? session->id.buf : "new");
-			mrcp_session_destroy(session);
-			sofia_session->session = NULL;
-		}
 		if(sofia_session->nh) {
 			nua_handle_bind(sofia_session->nh, NULL);
 			nua_handle_destroy(sofia_session->nh);
@@ -298,7 +292,12 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 			su_home_unref(sofia_session->home);
 			sofia_session->home = NULL;
 		}
+		sofia_session->session = NULL;
 	}
+	
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session <%s>",
+		session->id.buf ? session->id.buf : "new");
+	mrcp_session_destroy(session);
 	return TRUE;
 }
 
