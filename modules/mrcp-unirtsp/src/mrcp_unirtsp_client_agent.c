@@ -271,7 +271,10 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 			}
 			session_id = rtsp_client_session_id_get(session->rtsp_session);
 			if(session_id) {
-				session->mrcp_session->id = *session_id;
+				apt_string_copy(
+					&session->mrcp_session->id,
+					session_id,
+					session->mrcp_session->pool);
 			}
 			status = mrcp_session_answer(session->mrcp_session,descriptor);
 			break;
