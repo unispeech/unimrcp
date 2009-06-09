@@ -392,16 +392,18 @@ static apt_bool_t mrcp_app_session_terminate_raise(mrcp_client_session_t *sessio
 
 	mrcp_client_session_remove(session->application->client,session);
 	/* raise app response */
-	return mrcp_app_sig_response_raise(session,status,TRUE);
+	return mrcp_app_sig_response_raise(session,status,FALSE);
 }
 
 static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, mrcp_sig_status_code_e status, apt_bool_t process_pending_requests)
 {
 	mrcp_app_message_t *response;
-	if(!session->active_request) {
+	const mrcp_app_message_t *request = session->active_request;
+	if(!request) {
 		return FALSE;
 	}
-	response = mrcp_client_app_response_create(session->active_request,status,session->base.pool);
+	session->active_request = NULL;
+	response = mrcp_client_app_response_create(request,status,session->base.pool);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Response <%s> [%d] %s [%d]", 
 		mrcp_session_str(session),
 		response->sig_message.command_id,
@@ -414,9 +416,6 @@ static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, mr
 		if(session->active_request) {
 			mrcp_app_request_dispatch(session,session->active_request);
 		}
-	}
-	else {
-		session->active_request = NULL;
 	}
 	return TRUE;
 }
