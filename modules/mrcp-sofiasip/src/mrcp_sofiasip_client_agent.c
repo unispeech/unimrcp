@@ -458,25 +458,6 @@ static void mrcp_sofia_on_state_change(
 	}
 }
 
-static void mrcp_sofia_on_bye(
-						int                   status,
-						mrcp_sofia_agent_t   *sofia_agent,
-						nua_handle_t         *nh,
-						mrcp_sofia_session_t *sofia_session,
-						sip_t const          *sip,
-						tagi_t                tags[])
-{
-/*
-	if(status == 200) {
-		sofia_session->terminate_requested = TRUE;
-	}
-	else {
-		mrcp_session_terminate_response(sofia_session->session);
-		mrcp_sofia_session_destroy(sofia_session);
-	}
-*/
-}
-
 static void mrcp_sofia_on_resource_discover(
 						int                   status,
 						mrcp_sofia_agent_t   *sofia_agent,
@@ -530,9 +511,6 @@ static void mrcp_sofia_event_callback(
 			break;
 		case nua_r_options:
 			mrcp_sofia_on_resource_discover(status,sofia_agent,nh,sofia_session,sip,tags);
-			break;
-		case nua_r_bye:
-			mrcp_sofia_on_bye(status,sofia_agent,nh,sofia_session,sip,tags);
 			break;
 		case nua_r_shutdown:
 			/* break main loop of sofia thread */
