@@ -15,12 +15,13 @@
  */
 
 #include "mrcp_connection.h"
+#include "apt_pool.h"
 
 mrcp_connection_t* mrcp_connection_create()
 {
 	mrcp_connection_t *connection;
-	apr_pool_t *pool;
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	apr_pool_t *pool = apt_pool_create();
+	if(!pool) {
 		return NULL;
 	}
 	

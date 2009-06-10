@@ -23,6 +23,7 @@
 #include "mpf_file_termination_factory.h"
 #include "mpf_audio_file_descriptor.h"
 #include "mpf_rtp_descriptor.h"
+#include "apt_pool.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -170,7 +171,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	suite_engine = apt_task_object_get(consumer_task);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On MPF Suite Start");
-	apr_pool_create(&pool,NULL);
+	pool = apt_pool_create();
 	session = apr_palloc(pool,sizeof(mpf_suite_session_t));
 	session->pool = pool;
 	session->context = NULL;

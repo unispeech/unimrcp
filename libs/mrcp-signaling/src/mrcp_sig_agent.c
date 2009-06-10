@@ -16,6 +16,7 @@
 
 #include "mrcp_sig_agent.h"
 #include "mrcp_session.h"
+#include "apt_pool.h"
 
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
@@ -35,8 +36,8 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_vers
 MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding)
 {
 	mrcp_session_t *session;
-	apr_pool_t *pool;
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	apr_pool_t *pool = apt_pool_create();
+	if(!pool) {
 		return NULL;
 	}
 	session = apr_palloc(pool,sizeof(mrcp_session_t)+padding);

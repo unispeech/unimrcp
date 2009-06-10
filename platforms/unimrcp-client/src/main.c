@@ -19,6 +19,7 @@
 #include <apr_getopt.h>
 #include <apr_file_info.h>
 #include "demo_framework.h"
+#include "apt_pool.h"
 #include "apt_log.h"
 
 typedef struct {
@@ -181,7 +182,8 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* create APR pool */
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS || !pool) {
+	pool = apt_pool_create();
+	if(!pool) {
 		apr_terminate();
 		return 0;
 	}

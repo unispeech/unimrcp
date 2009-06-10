@@ -22,6 +22,7 @@
 #include "mrcp_sig_agent.h"
 #include "mrcp_server_connection.h"
 #include "mpf_engine.h"
+#include "apt_pool.h"
 #include "apt_consumer_task.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
@@ -159,7 +160,8 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	pool = apt_pool_create();
+	if(!pool) {
 		return NULL;
 	}
 

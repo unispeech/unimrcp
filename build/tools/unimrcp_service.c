@@ -16,7 +16,8 @@
 
 #include <windows.h>
 #include <apr_getopt.h>
-#include <apt.h>
+#include "apt.h"
+#include "apt_pool.h"
 
 #define WIN_SERVICE_NAME "unimrcp"
 
@@ -192,7 +193,8 @@ int main(int argc, const char * const *argv)
 	}
 
 	/* create APR pool */
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	pool = apt_pool_create();
+	if(!pool) {
 		apr_terminate();
 		return 0;
 	}

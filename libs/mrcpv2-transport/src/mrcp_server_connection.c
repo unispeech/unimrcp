@@ -21,6 +21,7 @@
 #include "mrcp_message.h"
 #include "apt_text_stream.h"
 #include "apt_task.h"
+#include "apt_pool.h"
 #include "apt_pollset.h"
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
@@ -410,7 +411,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	mrcp_connection_t *connection;
 
 	if(!agent->null_connection) {
-		apr_pool_create(&pool,NULL);
+		pool = apt_pool_create();
 		if(apr_socket_accept(&sock,agent->listen_sock,pool) != APR_SUCCESS) {
 			return FALSE;
 		}

@@ -16,6 +16,7 @@
 
 #include "apt_net_client_task.h"
 #include "apt_task.h"
+#include "apt_pool.h"
 #include "apt_pollset.h"
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
@@ -138,8 +139,8 @@ APT_DECLARE(apt_net_client_connection_t*) apt_net_client_connect(apt_net_client_
 	apr_sockaddr_t *l_sockaddr = NULL;
 	apr_sockaddr_t *r_sockaddr = NULL;
 	apt_net_client_connection_t *connection;
-	apr_pool_t *pool;
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	apr_pool_t *pool = apt_pool_create();
+	if(!pool) {
 		return NULL;
 	}
 	

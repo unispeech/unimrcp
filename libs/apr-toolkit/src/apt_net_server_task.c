@@ -16,6 +16,7 @@
 
 #include "apt_net_server_task.h"
 #include "apt_task.h"
+#include "apt_pool.h"
 #include "apt_pollset.h"
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
@@ -258,8 +259,8 @@ static apt_bool_t apt_net_server_task_accept(apt_net_server_task_t *task)
 	apr_sockaddr_t *l_sockaddr = NULL;
 	apr_sockaddr_t *r_sockaddr = NULL;
 	apt_net_server_connection_t *connection;
-	apr_pool_t *pool;
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	apr_pool_t *pool = apt_pool_create();
+	if(!pool) {
 		return FALSE;
 	}
 	

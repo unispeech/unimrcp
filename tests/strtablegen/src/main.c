@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include "apt_pool.h"
 #include "apt_string_table.h"
 #include "apt_text_stream.h"
 
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
 	if(apr_initialize() != APR_SUCCESS) {
 		return 0;
 	}
-	apr_pool_create(&pool,NULL);
+	pool = apt_pool_create();
 
 	if(argc < 2) {
 		printf("usage: stringtablegen stringtable.in [stringtable.out]\n");

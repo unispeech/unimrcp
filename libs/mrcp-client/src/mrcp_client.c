@@ -24,6 +24,7 @@
 #include "mpf_engine.h"
 #include "mpf_termination.h"
 #include "mpf_codec_manager.h"
+#include "apt_pool.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -150,7 +151,8 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	
-	if(apr_pool_create(&pool,NULL) != APR_SUCCESS) {
+	pool = apt_pool_create();
+	if(!pool) {
 		return NULL;
 	}
 

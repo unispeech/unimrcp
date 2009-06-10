@@ -19,6 +19,7 @@
 #include "rtsp_stream.h"
 #include "apt_net_server_task.h"
 #include "apt_text_stream.h"
+#include "apt_pool.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
 
@@ -148,7 +149,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 		vtable->process_msg = rtsp_server_task_msg_process;
 	}
 
-	apr_pool_create(&server->sub_pool,pool);
+	server->sub_pool = apt_subpool_create(pool);
 	server->connection_list = NULL;
 	return server;
 }
@@ -253,8 +254,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_session_terminate(rtsp_server_t *server, rt
 static rtsp_server_session_t* rtsp_server_session_create(rtsp_server_t *server)
 {
 	rtsp_server_session_t *session;
-	apr_pool_t *pool;
-	apr_pool_create(&pool,NULL);
+	apr_pool_t *pool = apt_pool_create();
 	session = apr_palloc(pool,sizeof(rtsp_server_session_t));
 	session->pool = pool;
 	session->obj = NULL;

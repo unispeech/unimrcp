@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "apt_pool.h"
 #include "apt_obj_list.h"
 #include "apt_test_suite.h"
 #include "apt_log.h"
@@ -37,8 +38,7 @@ APT_DECLARE(apt_test_suite_t*) apt_test_suite_create(apr_pool_t *pool, const cha
 APT_DECLARE(apt_test_framework_t*) apt_test_framework_create()
 {
 	apt_test_framework_t *framework;
-	apr_pool_t* pool;
-	apr_pool_create(&pool,NULL);
+	apr_pool_t* pool = apt_pool_create();
 	framework = apr_palloc(pool,sizeof(apt_test_framework_t));
 	framework->pool = pool;
 	framework->suites = apt_list_create(pool);
