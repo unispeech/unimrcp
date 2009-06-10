@@ -47,12 +47,13 @@ static apt_bool_t mpf_encoder_close(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_encoder_process(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	mpf_encoder_t *encoder = stream->obj;
-	if(mpf_codec_encode(encoder->sink->tx_codec,&frame->codec_frame,&encoder->frame_out.codec_frame) != TRUE) {
-		return FALSE;
-	}
+
 	encoder->frame_out.type = frame->type;
 	if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
 		encoder->frame_out.event_frame = frame->event_frame;
+	}
+	if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO) {
+		mpf_codec_encode(encoder->sink->tx_codec,&frame->codec_frame,&encoder->frame_out.codec_frame);
 	}
 	return mpf_audio_stream_frame_write(encoder->sink,&encoder->frame_out);
 }
