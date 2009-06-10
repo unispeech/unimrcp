@@ -80,7 +80,12 @@ mrcp_message_t* demo_define_grammar_message_create(mrcp_session_t *session, mrcp
 		generic_header = mrcp_generic_header_prepare(mrcp_message);
 		if(generic_header) {
 			/* set generic header fields */
-			apt_string_assign(&generic_header->content_type,"application/grammar+xml",mrcp_message->pool);
+			if(mrcp_message->start_line.version == MRCP_VERSION_2) {
+				apt_string_assign(&generic_header->content_type,"application/srgs+xml",mrcp_message->pool);
+			}
+			else {
+				apt_string_assign(&generic_header->content_type,"application/grammar+xml",mrcp_message->pool);
+			}
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
 			apt_string_assign(&generic_header->content_id,"request1@form-level.store",mrcp_message->pool);
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
