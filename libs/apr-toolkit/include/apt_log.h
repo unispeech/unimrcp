@@ -29,7 +29,7 @@
 APT_BEGIN_EXTERN_C
 
 /** Default max size of the log file */
-#define MAX_LOG_FILE_SIZE 4000000 /*(~4Mb)*/
+#define MAX_LOG_FILE_SIZE (40 * 1024 * 1024) /*(40Mb)*/
 
 /** File:line mark */
 #define APT_LOG_MARK	__FILE__,__LINE__
