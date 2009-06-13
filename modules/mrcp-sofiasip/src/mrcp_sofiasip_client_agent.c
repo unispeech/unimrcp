@@ -312,7 +312,7 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
 		local_sdp_str = sdp_str;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP "APT_PTRSID_FMT"\n%s", 
-			MRCP_SESSION_SID(session), 
+			MRCP_SESSION_PTRSID(session), 
 			local_sdp_str);
 	}
 
