@@ -409,8 +409,8 @@ static apt_bool_t rtsp_client_request_push(rtsp_client_connection_t *rtsp_connec
 	/* add request to inprogress request queue */
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Push RTSP Request to In-Progress Queue "APT_PTRSID_FMT" CSeq:%d",
 		session,
-		message->header.session_id.buf ? message->header.session_id.buf : "new");
-		message->header.cseq,
+		message->header.session_id.buf ? message->header.session_id.buf : "new",
+		message->header.cseq);
 	apt_list_push_back(rtsp_connection->inprogress_request_queue,session,session->pool);
 	session->active_request = message;
 	return TRUE;
