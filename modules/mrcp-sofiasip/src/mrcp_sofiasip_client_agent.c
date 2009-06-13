@@ -448,8 +448,8 @@ static void mrcp_sofia_on_state_change(
 			NUTAG_CALLSTATE_REF(ss_state),
 			TAG_END());
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State "APT_PTRSID_FMT" [%s]",
-		sofia_session ? MRCP_SESSION_PTRSID(sofia_session->session) : NULL,
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State "APT_PTR_FMT" [%s]",
+		sofia_session ? MRCP_SESSION_PTR(sofia_session->session) : NULL,
 		nua_callstate_name(ss_state));
 
 	switch(ss_state) {
