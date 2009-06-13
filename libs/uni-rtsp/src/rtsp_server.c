@@ -265,7 +265,7 @@ static rtsp_server_session_t* rtsp_server_session_create(rtsp_server_t *server)
 
 	apt_string_reset(&session->url);
 	apt_unique_id_generate(&session->id,RTSP_SESSION_ID_HEX_STRING_LENGTH,pool);
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Session <%s>",session->id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Session "APT_SID_FMT,session->id.buf);
 	if(server->vtable->create_session(server,session) != TRUE) {
 		apr_pool_destroy(pool);
 		return NULL;
@@ -276,7 +276,7 @@ static rtsp_server_session_t* rtsp_server_session_create(rtsp_server_t *server)
 /* Destroy RTSP session */
 static void rtsp_server_session_destroy(rtsp_server_session_t *session)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Session <%s>",session->id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Session "APT_SID_FMT,session->id.buf);
 	if(session && session->pool) {
 		apr_pool_destroy(session->pool);
 	}
@@ -302,7 +302,7 @@ static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_s
 		}
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session <%s>",session->id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session "APT_SID_FMT,session->id.buf);
 	apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
 	rtsp_server_session_destroy(session);
 
@@ -340,7 +340,7 @@ static apt_bool_t rtsp_server_session_message_handle(rtsp_server_t *server, rtsp
 	}
 
 	if(server->vtable->handle_message(server,session,message) != TRUE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Handle Message <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Handle Message "APT_SID_FMT,session->id.buf);
 		rtsp_server_error_respond(server,session->connection,message,
 								RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
 								RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR);
@@ -358,14 +358,14 @@ static rtsp_server_session_t* rtsp_server_session_setup_process(rtsp_server_t *s
 		session = rtsp_server_session_create(server);
 		session->connection = rtsp_connection;
 		session->url = message->start_line.common.request_line.url;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session "APT_SID_FMT,session->id.buf);
 		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 	}
 	else if(message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
 		/* create new session as a communication object */
 		session = rtsp_server_session_create(server);
 		session->connection = rtsp_connection;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session "APT_SID_FMT,session->id.buf);
 		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 	}
 	else {
@@ -406,14 +406,14 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 				message->header.session_id.length);
 	if(!session) {
 		/* error case */
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such RTSP Session <%s>",message->header.session_id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such RTSP Session "APT_SID_FMT,message->header.session_id.buf);
 		return rtsp_server_error_respond(server,rtsp_connection,message,
 								RTSP_STATUS_CODE_NOT_FOUND,
 								RTSP_REASON_PHRASE_NOT_FOUND);
 	}
 	
 	if(session->active_request) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push RTSP Request to Queue <%s>",session->id.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push RTSP Request to Queue "APT_SID_FMT,session->id.buf);
 		apt_list_push_back(session->request_queue,message,message->pool);
 		return TRUE;
 	}
