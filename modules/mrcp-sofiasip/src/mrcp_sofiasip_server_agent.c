@@ -295,8 +295,7 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 		sofia_session->session = NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session <%s>",
-		session->id.buf ? session->id.buf : "new");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session "APT_SID_FMT, MRCP_SESSION_SID(session));
 	mrcp_session_destroy(session);
 	return TRUE;
 }

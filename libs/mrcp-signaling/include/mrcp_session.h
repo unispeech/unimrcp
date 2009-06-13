@@ -27,6 +27,13 @@
 
 APT_BEGIN_EXTERN_C
 
+#define MRCP_SESSION_PTR(session) (session)
+#define MRCP_SESSION_SID(session) \
+	(session)->id.buf ? (session)->id.buf : "new"
+
+#define MRCP_SESSION_PTRSID(session) \
+	MRCP_SESSION_PTR(session), MRCP_SESSION_SID(session)
+
 /** MRCP session request vtable declaration */
 typedef struct mrcp_session_request_vtable_t mrcp_session_request_vtable_t;
 /** MRCP session response vtable declaration */
