@@ -207,9 +207,7 @@ int main(int argc, const char * const *argv)
 
 	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
-		char *log_file_path;
-		apr_filepath_merge(&log_file_path,dir_layout->log_dir_path,"unimrcpclient.log",0,pool);
-		apt_log_file_open(log_file_path,MAX_LOG_FILE_SIZE,pool);
+		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,pool);
 	}
 
 	/* create demo framework */

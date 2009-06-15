@@ -33,21 +33,34 @@ static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 	"[DEBUG]  "
 };
 
+typedef struct apt_log_file_data_t apt_log_file_data_t;
+
+struct apt_log_file_data_t {
+	const char           *log_dir_path;
+	const char           *log_file_name;
+	FILE                 *file;
+	apr_size_t            cur_size;
+	apr_size_t            max_size;
+	apr_size_t            cur_file_index;
+	apr_size_t            max_file_count;
+	apr_thread_mutex_t   *mutex;
+	apr_pool_t           *pool;
+};
 
 struct apt_logger_t {
 	apt_log_output_e      mode;
 	apt_log_priority_e    priority;
 	int                   header;
 	apt_log_ext_handler_f ext_handler;
-	FILE                 *file;
-	apr_size_t            cur_size;
-	apr_size_t            max_size;
-	apr_thread_mutex_t   *mutex;
+	apt_log_file_data_t  *file_data;
 };
 
 static apt_logger_t *apt_logger = NULL;
 
 static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr);
+
+static const char* apt_log_file_path_make(apt_log_file_data_t *file_data);
+static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *log_entry, apr_size_t size);
 
 
 APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_priority_e priority, apr_pool_t *pool)
@@ -60,10 +73,7 @@ APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_p
 	apt_logger->priority = priority;
 	apt_logger->header = APT_LOG_HEADER_DEFAULT;
 	apt_logger->ext_handler = NULL;
-	apt_logger->file = NULL;
-	apt_logger->cur_size = 0;
-	apt_logger->max_size = MAX_LOG_FILE_SIZE;
-	apt_logger->mutex = NULL;
+	apt_logger->file_data = NULL;
 	return TRUE;
 }
 
@@ -73,7 +83,7 @@ APT_DECLARE(apt_bool_t) apt_log_instance_destroy()
 		return FALSE;
 	}
 
-	if(apt_logger->file) {
+	if(apt_logger->file_data) {
 		apt_log_file_close();
 	}
 	apt_logger = NULL;
@@ -94,40 +104,67 @@ APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger)
 	return TRUE;
 }
 
-APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path, apr_size_t max_size, apr_pool_t *pool)
+APT_DECLARE(apt_bool_t) apt_log_file_open(const char *dir_path, const char *file_name, apr_size_t max_file_size, apr_size_t max_file_count, apr_pool_t *pool)
 {
-	if(!apt_logger) {
+	const char *log_file_path;
+	apt_log_file_data_t *file_data;
+	if(!apt_logger || !dir_path || !file_name) {
 		return FALSE;
 	}
 
+	if(apt_logger->file_data) {
+		return FALSE;
+	}
+
+	file_data = apr_palloc(pool,sizeof(apt_log_file_data_t));
+	file_data->log_dir_path = dir_path;
+	file_data->log_file_name = file_name;
+	file_data->cur_file_index = 0;
+	file_data->cur_size = 0;
+	file_data->max_file_count = max_file_count;
+	file_data->max_size = max_file_size;
+	file_data->mutex = NULL;
+	file_data->pool = pool;
+
+	if(!file_data->max_size) {
+		file_data->max_file_count = MAX_LOG_FILE_SIZE;
+	}
+	if(!file_data->max_file_count) {
+		file_data->max_file_count = MAX_LOG_FILE_COUNT;
+	}
+
 	/* create mutex */
-	if(apr_thread_mutex_create(&apt_logger->mutex,APR_THREAD_MUTEX_DEFAULT,pool) != APR_SUCCESS) {
+	if(apr_thread_mutex_create(&file_data->mutex,APR_THREAD_MUTEX_DEFAULT,pool) != APR_SUCCESS) {
 		return FALSE;
 	}
 	/* open log file */
-	apt_logger->file = fopen(file_path,"wb");
-	if(!apt_logger->file) {
-		apr_thread_mutex_destroy(apt_logger->mutex);
+	log_file_path = apt_log_file_path_make(file_data);
+	file_data->file = fopen(log_file_path,"wb");
+	if(!file_data->file) {
+		apr_thread_mutex_destroy(file_data->mutex);
 		return FALSE;
 	}
-	apt_logger->cur_size = 0;
-	apt_logger->max_size = max_size;
+
+	apt_logger->file_data = file_data;
 	return TRUE;
 }
 
 APT_DECLARE(apt_bool_t) apt_log_file_close()
 {
-	if(!apt_logger) {
+	apt_log_file_data_t *file_data;
+	if(!apt_logger || !apt_logger->file_data) {
 		return FALSE;
 	}
-	if(apt_logger->file) {
+	file_data = apt_logger->file_data;
+	if(file_data->file) {
 		/* close log file */
-		fclose(apt_logger->file);
-		apt_logger->file = NULL;
+		fclose(file_data->file);
+		file_data->file = NULL;
 		/* destroy mutex */
-		apr_thread_mutex_destroy(apt_logger->mutex);
-		apt_logger->mutex = NULL;
+		apr_thread_mutex_destroy(file_data->mutex);
+		file_data->mutex = NULL;
 	}
+	apt_logger->file_data = NULL;
 	return TRUE;
 }
 
@@ -223,20 +260,45 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 		printf(log_entry);
 	}
 	
-	if((apt_logger->mode & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE && apt_logger->file) {
-		apr_thread_mutex_lock(apt_logger->mutex);
-
-		apt_logger->cur_size += offset;
-		if(apt_logger->cur_size > apt_logger->max_size) {
-			/* roll over */
-			fseek(apt_logger->file,0,SEEK_SET);
-			apt_logger->cur_size = offset;
-		}
-		/* write to log file */
-		fwrite(log_entry,1,offset,apt_logger->file);
-		fflush(apt_logger->file);
-
-		apr_thread_mutex_unlock(apt_logger->mutex);
+	if((apt_logger->mode & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE && apt_logger->file_data) {
+		apt_log_file_dump(apt_logger->file_data,log_entry,offset);
 	}
+	return TRUE;
+}
+
+static const char* apt_log_file_path_make(apt_log_file_data_t *file_data)
+{
+	char *log_file_path = NULL;
+	const char *log_file_name = apr_psprintf(file_data->pool,"%s-%d.log",file_data->log_file_name,file_data->cur_file_index);
+	apr_filepath_merge(&log_file_path,file_data->log_dir_path,log_file_name,0,file_data->pool);
+	return log_file_path;
+}
+
+static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *log_entry, apr_size_t size)
+{
+	apr_thread_mutex_lock(file_data->mutex);
+
+	file_data->cur_size += size;
+	if(file_data->cur_size > file_data->max_size) {
+		const char *log_file_path;
+		/* close current log file */
+		fclose(file_data->file);
+		/* roll over the next log file */
+		file_data->cur_file_index++;
+		file_data->cur_file_index %= file_data->max_file_count;
+		/* open log file */
+		log_file_path = apt_log_file_path_make(file_data);
+		file_data->file = fopen(log_file_path,"wb");
+		if(!file_data->file) {
+			return FALSE;
+		}
+
+		file_data->cur_size = size;
+	}
+	/* write to log file */
+	fwrite(log_entry,1,size,file_data->file);
+	fflush(file_data->file);
+
+	apr_thread_mutex_unlock(file_data->mutex);
 	return TRUE;
 }

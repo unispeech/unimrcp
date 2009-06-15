@@ -28,8 +28,10 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Default max size of the log file */
-#define MAX_LOG_FILE_SIZE (40 * 1024 * 1024) /*(40Mb)*/
+/** Default max size of the log file (8Mb) */
+#define MAX_LOG_FILE_SIZE (8 * 1024 * 1024)
+/** Default max number of rotated log files */
+#define MAX_LOG_FILE_COUNT 10
 
 /** File:line mark */
 #define APT_LOG_MARK	__FILE__,__LINE__
@@ -110,11 +112,18 @@ APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger);
 
 /**
  * Open the log file.
- * @param file_path the path to the log file
- * @param max_size the max size of the log file
+ * @param dir_path the path to the log directory
+ * @param file_name the name of the log file
+ * @param max_file_size the max size of the log file
+ * @param max_file_count the max number of files used in log rotation
  * @param pool the memory pool to use
  */
-APT_DECLARE(apt_bool_t) apt_log_file_open(const char *file_path, apr_size_t max_size, apr_pool_t *pool);
+APT_DECLARE(apt_bool_t) apt_log_file_open(
+							const char *dir_path, 
+							const char *file_name, 
+							apr_size_t max_file_size, 
+							apr_size_t max_file_count, 
+							apr_pool_t *pool);
 
 /**
  * Close the log file.
