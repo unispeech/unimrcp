@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#define APR_WANT_BYTEFUNC
+#include <apr_want.h>
 #include "mpf_codec.h"
 
 /* linear 16-bit PCM (host horder) */
