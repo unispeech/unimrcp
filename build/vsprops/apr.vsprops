@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="apr"
-	InheritedPropertySheets="$(SolutionDir)build\vsprops\unibase.vsprops"
+	InheritedPropertySheets="$(ProjectDir)..\..\build\vsprops\unibase.vsprops"
 	>
 	<Tool
 		Name="VCCLCompilerTool"
@@ -15,14 +15,14 @@
 	/>
 	<UserMacro
 		Name="AprDir"
-		Value="$(ProjectRootDir)libs\apr"
+		Value="$(LibRootDir)libs\apr"
 	/>
 	<UserMacro
 		Name="AprUtilDir"
-		Value="$(ProjectRootDir)libs\apr-util"
+		Value="$(LibRootDir)libs\apr-util"
 	/>
 	<UserMacro
 		Name="AprIconvDir"
-		Value="$(ProjectRootDir)libs\apr-iconv"
+		Value="$(LibRootDir)libs\apr-iconv"
 	/>
 </VisualStudioPropertySheet>
