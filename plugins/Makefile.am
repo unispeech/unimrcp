@@ -13,3 +13,7 @@ endif
 if CEPSTRAL_PLUGIN
 SUBDIRS               += mrcp-cepstral
 endif
+
+if POCKETSPHINX_PLUGIN
+SUBDIRS               += mrcp-pocketsphinx
+endif
