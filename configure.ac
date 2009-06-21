@@ -127,7 +127,8 @@ if test "${enable_cepstral_plugin}" != "no"; then
     UNIMRCP_CHECK_SWIFT
 fi
 
-AM_CONDITIONAL([CEPSTRAL_PLUGIN],[test "${enable_cepstral_plugin}" = "yes" && test "${found_swift}" = "yes"])
+AM_CONDITIONAL([CEPSTRAL_PLUGIN],[test "${enable_cepstral_plugin}" = "yes" &&\
+                                  test "${found_swift}" = "yes"])
 
 
 #Enable PocketSphinx plugin
@@ -144,6 +145,20 @@ fi
 AM_CONDITIONAL([POCKETSPHINX_PLUGIN],[test "${enable_pocketsphinx_plugin}" = "yes" &&\
                                       test "${found_pocketsphinx}" = "yes" &&\
                                       test "${found_sphinxbase}" = "yes"])
+
+
+#Enable Flite plugin
+AC_ARG_ENABLE(flite-plugin,
+    [AC_HELP_STRING([--enable-flite-plugin  ],[enable flite plugin])],
+    [enable_flite_plugin="$enableval"],
+    [enable_flite_plugin="no"])
+
+if test "${enable_flite_plugin}" != "no"; then
+    UNIMRCP_CHECK_FLITE
+fi
+
+AM_CONDITIONAL([FLITE_PLUGIN],[test "${enable_flite_plugin}" = "yes" &&\
+                               test "${found_flite}" = "yes"])
 
 
 AM_CONDITIONAL(ISMAC, [test `uname -s` = Darwin])
@@ -166,6 +181,7 @@ AC_CONFIG_FILES([
   plugins/Makefile
   plugins/mrcp-cepstral/Makefile
   plugins/mrcp-pocketsphinx/Makefile
+  plugins/mrcp-flite/Makefile
   plugins/demo-synth/Makefile
   plugins/demo-recog/Makefile
   platforms/Makefile
@@ -199,3 +215,4 @@ AC_MSG_NOTICE([  Demo Synthesizer: $enable_demosynth_plugin])
 AC_MSG_NOTICE([  Demo Recognizer: $enable_demorecog_plugin])
 AC_MSG_NOTICE([  Cepstral: $enable_cepstral_plugin])
 AC_MSG_NOTICE([  PocketSphinx: $enable_pocketsphinx_plugin])
+AC_MSG_NOTICE([  Flite: $enable_flite_plugin])
