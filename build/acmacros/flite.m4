@@ -15,12 +15,27 @@ AC_DEFUN([UNIMRCP_CHECK_FLITE],
     found_flite="no"
     
     dnl TO BE DONE
+    flite_libdir="build/libs"
+    for dir in $flite_path ; do
+        cd $dir && flite_dir=`pwd` && cd - > /dev/null
+        if test -d "$dir/$flite_libdir"; then
+            found_flite="yes"
+            UNIMRCP_FLITE_INCLUDES="-I$flite_dir/include"
+            UNIMRCP_FLITE_LIBS="$dir/$flite_libdir/libflite_cmu_us_awb.a \
+	                        $dir/$flite_libdir/libflite_cmu_us_kal.a \
+                            	$dir/$flite_libdir/libflite_cmu_us_rms.a \
+                         	$dir/$flite_libdir/libflite_cmu_us_slt.a \
+                        	$dir/$flite_libdir/libflite_cmulex.a \
+                        	$dir/$flite_libdir/libflite_usenglish.a \
+                        	$dir/$flite_libdir/libflite.a"
+            break
+        fi
+    done
 
     if test x_$found_flite != x_yes; then
-        AC_MSG_ERROR(Cannot find Flite - looked for flite-config:$flite_config and srcdir:$flite_srcdir in $flite_path)
+        AC_MSG_ERROR(Cannot find Flite - looked for srcdir:$flite_srcdir in $flite_path)
     else
         AC_MSG_RESULT([$found_flite])
-        AC_MSG_RESULT([$flite_version])
 
 case "$host" in
     *darwin*)
