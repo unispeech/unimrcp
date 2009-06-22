@@ -66,7 +66,7 @@ static const struct mrcp_engine_channel_method_vtable_t channel_vtable = {
 	pocketsphinx_recognizer_request_process
 };
 
-/** Methods of recognition stream  */
+/** Methods of audio stream to recognize  */
 static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 
 static const mpf_audio_stream_vtable_t audio_stream_vtable = {
@@ -87,26 +87,38 @@ struct pocketsphinx_engine_t {
 /** Declaration of pocketsphinx channel (recognizer) */
 struct pocketsphinx_recognizer_t {
 	/** Back pointer to engine */
-	pocketsphinx_engine_t *engine;
+	pocketsphinx_engine_t   *engine;
 	/** Engine channel base */
-	mrcp_engine_channel_t *channel;
+	mrcp_engine_channel_t   *channel;
 
 	/** Actual recognizer object */
-	ps_decoder_t          *decoder;
+	ps_decoder_t            *decoder;
 	/** Configuration */
-	cmd_ln_t              *config;
+	cmd_ln_t                *config;
+	/** Timeout elapsed since the last partial result checking */
+	int                      partial_result_timeout;
+	/** Last (partially) recognized result */
+	const char              *last_result;
+
+	/** Voice activity detector */
+	mpf_activity_detector_t *detector;
 
 	/** Thread to run recognition in */
-	apr_thread_t          *thread;
+	apr_thread_t            *thread;
 	/** Conditional wait object */
-	apr_thread_cond_t     *wait_object;
+	apr_thread_cond_t       *wait_object;
 	/** Mutex of the wait object */
-	apr_thread_mutex_t    *mutex;
+	apr_thread_mutex_t      *mutex;
 
-	/** Pending request */
-	mrcp_message_t        *request;
+	/** Pending request from client stack to recognizer */
+	mrcp_message_t          *request;
+	/** Pending event from mpf layer to recognizer */
+	mrcp_message_t          *complete_event;
+	/** In-progress RECOGNIZE request */
+	mrcp_message_t          *inprogress_recog;
 
-	apt_bool_t             recognizing;
+	/** Is recognition channel being closed */
+	apt_bool_t               close_requested;
 };
 
 /** Declare this macro to use log routine of the server, plugin is loaded from */
@@ -118,6 +130,7 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	pocketsphinx_engine_t *engine = apr_palloc(pool,sizeof(pocketsphinx_engine_t));
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create PocketSphinx Engine");
 	
 	/* create resource engine base */
 	engine->base = mrcp_resource_engine_create(
@@ -154,11 +167,16 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 //	recognizer->engine = engine;
 	recognizer->decoder = NULL;
 	recognizer->config = NULL;
+	recognizer->detector = NULL;
 	recognizer->thread = NULL;
 	recognizer->wait_object = NULL;
 	recognizer->mutex = NULL;
 	recognizer->request = NULL;
-	recognizer->recognizing = FALSE;
+	recognizer->complete_event = NULL;
+	recognizer->inprogress_recog = FALSE;
+	recognizer->partial_result_timeout = 0;
+	recognizer->last_result = NULL;
+	recognizer->close_requested = FALSE;
 	
 	/* create engine channel base */
 	channel = mrcp_engine_sink_channel_create(
@@ -173,7 +191,7 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 	return channel;
 }
 
-/** Create pocketsphinx recognizer */
+/** Destroy pocketsphinx recognizer */
 static apt_bool_t pocketsphinx_recognizer_destroy(mrcp_engine_channel_t *channel)
 {
 	return TRUE;
@@ -185,12 +203,15 @@ static apt_bool_t pocketsphinx_recognizer_open(mrcp_engine_channel_t *channel)
 	apr_status_t rv;
 	pocketsphinx_recognizer_t *recognizer = channel->method_obj;
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open PocketSphinx Channel");
+
 	apr_thread_mutex_create(&recognizer->mutex,APR_THREAD_MUTEX_DEFAULT,channel->pool);
 	apr_thread_cond_create(&recognizer->wait_object,channel->pool);
 
 	/* Launch a thread to run recognition in */
 	rv = apr_thread_create(&recognizer->thread,NULL,pocketsphinx_recognizer_run,recognizer,channel->pool);
 	if(rv != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Launch PocketSphinx Thread");
 		apr_thread_mutex_destroy(recognizer->mutex);
 		recognizer->mutex = NULL;
 		apr_thread_cond_destroy(recognizer->wait_object);
@@ -205,17 +226,23 @@ static apt_bool_t pocketsphinx_recognizer_open(mrcp_engine_channel_t *channel)
 static apt_bool_t pocketsphinx_recognizer_close(mrcp_engine_channel_t *channel)
 {
 	pocketsphinx_recognizer_t *recognizer = channel->method_obj;
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close PocketSphinx Channel");
 	if(recognizer->thread) {
 		apr_status_t rv;
 		
 		/* Signal recognition thread to terminate */
-		recognizer->request = NULL;
 		apr_thread_mutex_lock(recognizer->mutex);
+		recognizer->close_requested = TRUE;
 		apr_thread_cond_signal(recognizer->wait_object);
 		apr_thread_mutex_unlock(recognizer->mutex);
 
 		apr_thread_join(&rv,recognizer->thread);
 		recognizer->thread = NULL;
+
+		apr_thread_mutex_destroy(recognizer->mutex);
+		recognizer->mutex = NULL;
+		apr_thread_cond_destroy(recognizer->wait_object);
+		recognizer->wait_object = NULL;
 	}
 
 	return mrcp_engine_channel_close_respond(channel);
@@ -227,8 +254,8 @@ static apt_bool_t pocketsphinx_recognizer_request_process(mrcp_engine_channel_t 
 	pocketsphinx_recognizer_t *recognizer = channel->method_obj;
 
 	/* Store request and signal recognition thread to process the request */
-	recognizer->request = request;
 	apr_thread_mutex_lock(recognizer->mutex);
+	recognizer->request = request;
 	apr_thread_cond_signal(recognizer->wait_object);
 	apr_thread_mutex_unlock(recognizer->mutex);
 	return TRUE;
@@ -237,25 +264,106 @@ static apt_bool_t pocketsphinx_recognizer_request_process(mrcp_engine_channel_t 
 
 
 
+/* Start of input (utterance) */
+static apt_bool_t pocketsphinx_start_of_input(pocketsphinx_recognizer_t *recognizer)
+{
+	/* create START-OF-INPUT event */
+	mrcp_message_t *message = mrcp_event_create(
+						recognizer->inprogress_recog,
+						RECOGNIZER_START_OF_INPUT,
+						recognizer->inprogress_recog->pool);
+	if(!message) {
+		return FALSE;
+	}
 
+	/* set request state */
+	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	/* send asynch event */
+	return mrcp_engine_channel_message_send(recognizer->channel,message);
+}
+
+/* End of input (utterance) */
+static apt_bool_t pocketsphinx_end_of_input(pocketsphinx_recognizer_t *recognizer, mrcp_recog_completion_cause_e cause)
+{
+	mrcp_recog_header_t *recog_header;
+	/* create RECOGNITION-COMPLETE event */
+	mrcp_message_t *message = mrcp_event_create(
+						recognizer->inprogress_recog,
+						RECOGNIZER_RECOGNITION_COMPLETE,
+						recognizer->inprogress_recog->pool);
+	if(!message) {
+		return FALSE;
+	}
+
+	/* get/allocate recognizer header */
+	recog_header = mrcp_resource_header_prepare(message);
+	if(recog_header) {
+		/* set completion cause */
+		recog_header->completion_cause = cause;
+		mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
+	}
+	/* set request state */
+	message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
+
+	/* signal recognition thread first */
+	apr_thread_mutex_lock(recognizer->mutex);
+	recognizer->complete_event = message;
+	apr_thread_cond_signal(recognizer->wait_object);
+	apr_thread_mutex_unlock(recognizer->mutex);
+	return TRUE;
+}
+
+/* Process MPF frame */
 static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
 {
 	pocketsphinx_recognizer_t *recognizer = stream->obj;
 
-	if(recognizer->recognizing == TRUE) {
-		int32 score;
-		const char *utt_id;
-		const char *hyp = ps_get_hyp(recognizer->decoder,&score,&utt_id);
-		if(hyp) {
-//			ps_end_utt(recognizer->decoder);
+	/* check whether recognition has been started and not completed yet */
+	if(recognizer->inprogress_recog && !recognizer->complete_event) {
+		mpf_detector_event_e det_event;
+		if(ps_process_raw(
+					recognizer->decoder, 
+					(const int16 *)frame->codec_frame.buffer, 
+					frame->codec_frame.size / sizeof(int16),
+					FALSE, 
+					FALSE) < 0) {
+
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Process PocketSphinx Raw Data");
 		}
-	
-		ps_process_raw(
-			recognizer->decoder, 
-			(const int16 *)frame->codec_frame.buffer, 
-			frame->codec_frame.size / sizeof(int16),
-			FALSE, 
-			FALSE);
+
+		recognizer->partial_result_timeout += CODEC_FRAME_TIME_BASE;
+		if(recognizer->partial_result_timeout == 100) {
+			int32 score;
+			char const *hyp;
+			char const *uttid;
+
+			recognizer->partial_result_timeout = 0;
+			hyp = ps_get_hyp(recognizer->decoder, &score, &uttid);
+			if(hyp && strlen(hyp) > 0) {
+				if(recognizer->last_result == NULL || 0 != strcmp(recognizer->last_result, hyp)) {
+					recognizer->last_result = apr_pstrdup(recognizer->channel->pool,hyp);
+					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Partial Result [%s] Score [%d]", hyp,score);
+				}
+			}
+		}
+		
+		det_event = mpf_activity_detector_process(recognizer->detector,frame);
+		switch(det_event) {
+			case MPF_DETECTOR_EVENT_ACTIVITY:
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity");
+				pocketsphinx_start_of_input(recognizer);
+				break;
+			case MPF_DETECTOR_EVENT_INACTIVITY:
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity");
+				pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
+				break;
+			case MPF_DETECTOR_EVENT_NOINPUT:
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Noinput");
+				pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT);
+				break;
+			default:
+				break;
+		}
 	}
 
 	return TRUE;
@@ -272,6 +380,7 @@ static apt_bool_t pocketsphinx_decoder_create(pocketsphinx_recognizer_t *recogni
 	const char *grammar = apt_datadir_filepath_get(dir_layout,"pocketsphinx/demo.gram",channel->pool);
 	const char *dictionary = apt_datadir_filepath_get(dir_layout,"pocketsphinx/default.dic",channel->pool);
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Init PocketSphinx Config");
 	recognizer->config = cmd_ln_init(recognizer->config, ps_args(), FALSE,
 							 "-samprate", "8000",
 							 "-hmm", model,
@@ -282,29 +391,96 @@ static apt_bool_t pocketsphinx_decoder_create(pocketsphinx_recognizer_t *recogni
 							 NULL);
 
 	if(!recognizer->config) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Init PocketSphinx Config");
 		return FALSE;
 	}
 	
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Init PocketSphinx Decoder");
 	recognizer->decoder = ps_init(recognizer->config);
 	if(!recognizer->decoder) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Init PocketSphinx Decoder");
 		return FALSE;
 	}
+
+	recognizer->detector = mpf_activity_detector_create(channel->pool);
 	return TRUE;
 }
 
 /** Process RECOGNIZE request */
 static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
 {
-	ps_start_utt(recognizer->decoder, NULL);
-	recognizer->recognizing = TRUE;
+	if(ps_start_utt(recognizer->decoder, NULL) < 0) {
+		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+		return FALSE;
+	}
+	
+	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(recognizer->channel,response);
+	recognizer->inprogress_recog = request;
 	return TRUE;
 }
 
 /** Process STOP request */
 static apt_bool_t pocketsphinx_stop(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
 {
-	recognizer->recognizing = FALSE;
+	if(recognizer->inprogress_recog) {
+		recognizer->inprogress_recog = NULL;
+		ps_end_utt(recognizer->decoder);
+	}
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(recognizer->channel,response);
+	return TRUE;
+}
+
+/** Process RECOGNITION-COMPLETE event */
+static apt_bool_t pocketsphinx_recognition_complete(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *complete_event)
+{
+	int32 score;
+	char const *hyp;
+	char const *uttid;
+
+	if(!recognizer->inprogress_recog) {
+		/* recognition has been already stopped, nothing to do */
+		return FALSE;
+	}
+	
+	recognizer->inprogress_recog = NULL;
 	ps_end_utt(recognizer->decoder);
+
+	hyp = ps_get_hyp(recognizer->decoder, &score, &uttid);
+	if(hyp && strlen(hyp) > 0) {
+		apt_str_t *body = &complete_event->body;
+		recognizer->last_result = apr_pstrdup(recognizer->channel->pool,hyp);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Final Result [%s] Score [%d]", hyp,score);
+
+		body->buf = apr_psprintf(complete_event->pool,
+			"<interpretation grammar=\"%s\" score=\"%d\">\n"
+			"  <result name=\"%s\">%s</result>\n"
+			"  <input>%s</input>\n"
+			"</interpretation>",
+			"demo-id",87,//recognizer->grammar, recognizer->confidence,
+			"match",
+			recognizer->last_result,
+			recognizer->last_result);
+		if(body->buf) {
+			mrcp_generic_header_t *generic_header;
+			generic_header = mrcp_generic_header_prepare(complete_event);
+			if(generic_header) {
+				/* set content type */
+				apt_string_assign(&generic_header->content_type,"application/x-nlsml",complete_event->pool);
+				mrcp_generic_header_property_add(complete_event,GENERIC_HEADER_CONTENT_TYPE);
+			}
+			
+			body->length = strlen(body->buf);
+		}
+	}
+	else {
+		/* no match */
+	}
+
+	/* send asynchronous event */
+	mrcp_engine_channel_message_send(recognizer->channel,complete_event);
 	return TRUE;
 }
 
@@ -313,6 +489,7 @@ static apt_bool_t pocketsphinx_request_dispatch(pocketsphinx_recognizer_t *recog
 {
 	apt_bool_t processed = FALSE;
 	mrcp_message_t *response = mrcp_response_create(request,request->pool);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Dispatch Request %s",request->start_line.method_name.buf);
 	switch(request->start_line.method_id) {
 		case RECOGNIZER_SET_PARAMS:
 			break;
@@ -345,26 +522,36 @@ static apt_bool_t pocketsphinx_request_dispatch(pocketsphinx_recognizer_t *recog
 static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, void *data)
 {
 	pocketsphinx_recognizer_t *recognizer = data;
-	mrcp_message_t *request;
+	apt_bool_t status;
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run PocketSphinx Recognition Thread");
 	/** Create pocketsphinx decoder */
-	apt_bool_t status = pocketsphinx_decoder_create(recognizer);
+	status = pocketsphinx_decoder_create(recognizer);
 	/** Send response to channel_open request */
 	mrcp_engine_channel_open_respond(recognizer->channel,status);
 
 	do {
 		/** Wait for MRCP requests */
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for incoming messages");
 		apr_thread_mutex_lock(recognizer->mutex);
 		apr_thread_cond_wait(recognizer->wait_object,recognizer->mutex);
+		/* store the request message and reset it for recognizer object */
 		apr_thread_mutex_unlock(recognizer->mutex);
-		request = recognizer->request;
-		recognizer->request = NULL;
-		if(request) {
+
+		if(recognizer->request) {
+			/* store request message and further dispatch it */
+			mrcp_message_t *request = recognizer->request;
+			recognizer->request = NULL;
 			pocketsphinx_request_dispatch(recognizer,request);
 		}
+		if(recognizer->complete_event) {
+			/* end of input detected, get recognition result and raise recognition complete event */
+			pocketsphinx_recognition_complete(recognizer,recognizer->complete_event);
+		}
 	}
-	while(request);
+	while(recognizer->close_requested == FALSE);
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Free PocketSphinx Decoder");
 	/** Free pocketsphinx decoder */
 	ps_free(recognizer->decoder);
 	recognizer->decoder = NULL;
