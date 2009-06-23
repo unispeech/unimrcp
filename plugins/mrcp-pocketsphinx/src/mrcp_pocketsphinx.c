@@ -36,6 +36,9 @@
 #include "apt_log.h"
 
 
+#define RECOGNIZER_SIDRES(recognizer) \
+	(recognizer)->channel->id.buf ? (recognizer)->channel->id.buf : "new", "pocketsphinx"
+
 typedef struct pocketsphinx_engine_t pocketsphinx_engine_t;
 typedef struct pocketsphinx_recognizer_t pocketsphinx_recognizer_t;
 
@@ -205,7 +208,7 @@ static apt_bool_t pocketsphinx_recognizer_open(mrcp_engine_channel_t *channel)
 	apr_status_t rv;
 	pocketsphinx_recognizer_t *recognizer = channel->method_obj;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open PocketSphinx Channel");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Channel "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 
 	apr_thread_mutex_create(&recognizer->mutex,APR_THREAD_MUTEX_DEFAULT,channel->pool);
 	apr_thread_cond_create(&recognizer->wait_object,channel->pool);
@@ -213,7 +216,7 @@ static apt_bool_t pocketsphinx_recognizer_open(mrcp_engine_channel_t *channel)
 	/* Launch a thread to run recognition in */
 	rv = apr_thread_create(&recognizer->thread,NULL,pocketsphinx_recognizer_run,recognizer,channel->pool);
 	if(rv != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Launch PocketSphinx Thread");
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Launch Thread "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 		apr_thread_mutex_destroy(recognizer->mutex);
 		recognizer->mutex = NULL;
 		apr_thread_cond_destroy(recognizer->wait_object);
@@ -228,7 +231,7 @@ static apt_bool_t pocketsphinx_recognizer_open(mrcp_engine_channel_t *channel)
 static apt_bool_t pocketsphinx_recognizer_close(mrcp_engine_channel_t *channel)
 {
 	pocketsphinx_recognizer_t *recognizer = channel->method_obj;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close PocketSphinx Channel");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Channel "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 	if(recognizer->thread) {
 		apr_status_t rv;
 		
@@ -338,7 +341,8 @@ static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mp
 					FALSE, 
 					FALSE) < 0) {
 
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Process PocketSphinx Raw Data");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Process Raw Data "APT_SIDRES_FMT,
+				RECOGNIZER_SIDRES(recognizer));
 		}
 
 		recognizer->partial_result_timeout += CODEC_FRAME_TIME_BASE;
@@ -352,7 +356,8 @@ static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mp
 			if(hyp && strlen(hyp) > 0) {
 				if(recognizer->last_result == NULL || 0 != strcmp(recognizer->last_result, hyp)) {
 					recognizer->last_result = apr_pstrdup(recognizer->channel->pool,hyp);
-					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Partial Result [%s] Score [%d]", hyp,score);
+					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Partial Result [%s] Score [%d] "APT_SIDRES_FMT,
+						hyp,score,RECOGNIZER_SIDRES(recognizer));
 				}
 			}
 		}
@@ -360,15 +365,18 @@ static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mp
 		det_event = mpf_activity_detector_process(recognizer->detector,frame);
 		switch(det_event) {
 			case MPF_DETECTOR_EVENT_ACTIVITY:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity "APT_SIDRES_FMT,
+					RECOGNIZER_SIDRES(recognizer));
 				pocketsphinx_start_of_input(recognizer);
 				break;
 			case MPF_DETECTOR_EVENT_INACTIVITY:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity "APT_SIDRES_FMT,
+					RECOGNIZER_SIDRES(recognizer));
 				pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 				break;
 			case MPF_DETECTOR_EVENT_NOINPUT:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Noinput");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Noinput "APT_SIDRES_FMT,
+					RECOGNIZER_SIDRES(recognizer));
 				pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT);
 				break;
 			default:
@@ -390,7 +398,7 @@ static apt_bool_t pocketsphinx_decoder_create(pocketsphinx_recognizer_t *recogni
 	const char *grammar = apt_datadir_filepath_get(dir_layout,"pocketsphinx/demo.gram",channel->pool);
 	const char *dictionary = apt_datadir_filepath_get(dir_layout,"pocketsphinx/default.dic",channel->pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Init PocketSphinx Config");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Init Config "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 	recognizer->config = cmd_ln_init(recognizer->config, ps_args(), FALSE,
 							 "-samprate", "8000",
 							 "-hmm", model,
@@ -401,14 +409,14 @@ static apt_bool_t pocketsphinx_decoder_create(pocketsphinx_recognizer_t *recogni
 							 NULL);
 
 	if(!recognizer->config) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Init PocketSphinx Config");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Init Config "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 		return FALSE;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Init PocketSphinx Decoder");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Init Decoder "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 	recognizer->decoder = ps_init(recognizer->config);
 	if(!recognizer->decoder) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Init PocketSphinx Decoder");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Init Decoder "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 		return FALSE;
 	}
 
@@ -483,7 +491,8 @@ static apt_bool_t pocketsphinx_recognition_complete(pocketsphinx_recognizer_t *r
 		if(hyp && strlen(hyp) > 0) {
 			apt_str_t *body = &complete_event->body;
 			recognizer->last_result = apr_pstrdup(recognizer->channel->pool,hyp);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Final Result [%s] Score [%d]", hyp,score);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Final Result [%s] Score [%d] "APT_SIDRES_FMT,
+				hyp,score,RECOGNIZER_SIDRES(recognizer));
 
 			body->buf = apr_psprintf(complete_event->pool,
 				"<interpretation grammar=\"%s\" score=\"%d\">\n"
@@ -521,7 +530,9 @@ static apt_bool_t pocketsphinx_request_dispatch(pocketsphinx_recognizer_t *recog
 {
 	apt_bool_t processed = FALSE;
 	mrcp_message_t *response = mrcp_response_create(request,request->pool);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Dispatch Request %s",request->start_line.method_name.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Dispatch Request %s "APT_SIDRES_FMT,
+		request->start_line.method_name.buf,
+		RECOGNIZER_SIDRES(recognizer));
 	switch(request->start_line.method_id) {
 		case RECOGNIZER_SET_PARAMS:
 			break;
@@ -556,7 +567,7 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 	pocketsphinx_recognizer_t *recognizer = data;
 	apt_bool_t status;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run PocketSphinx Recognition Thread");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run Recognition Thread "APT_SIDRES_FMT, RECOGNIZER_SIDRES(recognizer));
 	/** Create pocketsphinx decoder */
 	status = pocketsphinx_decoder_create(recognizer);
 	/** Send response to channel_open request */
@@ -564,7 +575,7 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 
 	do {
 		/** Wait for MRCP requests */
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for incoming messages");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for incoming messages "APT_SIDRES_FMT, RECOGNIZER_SIDRES(recognizer));
 		apr_thread_mutex_lock(recognizer->mutex);
 		apr_thread_cond_wait(recognizer->wait_object,recognizer->mutex);
 		apr_thread_mutex_unlock(recognizer->mutex);
@@ -593,7 +604,7 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 		}
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Free PocketSphinx Decoder");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Free Decoder "APT_SIDRES_FMT, RECOGNIZER_SIDRES(recognizer));
 	/** Free pocketsphinx decoder */
 	ps_free(recognizer->decoder);
 	recognizer->decoder = NULL;
