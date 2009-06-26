@@ -348,6 +348,40 @@ static apt_bool_t pocketsphinx_decoder_init(pocketsphinx_recognizer_t *recognize
 	return TRUE;
 }
 
+/** Build pocketsphinx recognized result [RECOG] */
+static apt_bool_t pocketsphinx_result_build(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *message)
+{
+	apt_str_t *body = &message->body;
+	if(!recognizer->last_result || !recognizer->grammar_id) {
+		return FALSE;
+	}
+
+	body->buf = apr_psprintf(message->pool,
+		"<?xml version=\"1.0\"?>\n"
+		"<result grammar=\"%s\">\n"
+		"  <interpretation grammar=\"%s\" confidence=\"%d\">\n"
+		"    <input mode=\"speech\">%s</input>\n"
+		"  </interpretation>\n"
+		"</result>\n",
+		recognizer->grammar_id,
+		recognizer->grammar_id,
+		99,
+		recognizer->last_result,
+		recognizer->last_result);
+	if(body->buf) {
+		mrcp_generic_header_t *generic_header;
+		generic_header = mrcp_generic_header_prepare(message);
+		if(generic_header) {
+			/* set content type */
+			apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
+			mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
+		}
+		
+		body->length = strlen(body->buf);
+	}
+	return TRUE;
+}
+
 /** Clear pocketsphinx grammars [RECOG] */
 static apt_bool_t pocketsphinx_grammars_clear(pocketsphinx_recognizer_t *recognizer)
 {
@@ -377,9 +411,13 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 
 	/* get recognizer header */
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
-	if(!generic_header) {
+	mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(response);
+	if(!generic_header || !recog_header) {
 		return FALSE;
 	}
+
+	recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
+	mrcp_resource_header_property_add(response,RECOGNIZER_HEADER_COMPLETION_CAUSE);
 	
 	/* content-id must be specified */
 	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_ID) == TRUE) {
@@ -388,6 +426,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 	if(!content_id) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Content-Id "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 		response->start_line.status_code = MRCP_STATUS_CODE_MISSING_PARAM;
+		recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
 		return FALSE;
 	}
 
@@ -411,6 +450,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 		if(!content_type) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Content-Type "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 			response->start_line.status_code = MRCP_STATUS_CODE_MISSING_PARAM;
+			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
 			return FALSE;
 		}
 	
@@ -419,6 +459,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Not Supported Content-Type [%s] "APT_SIDRES_FMT,
 				content_type,RECOGNIZER_SIDRES(recognizer));
 			response->start_line.status_code = MRCP_STATUS_CODE_UNSUPPORTED_PARAM_VALUE;
+			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
 			return FALSE;
 		}
 
@@ -432,6 +473,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open Grammar File to Write [%s] "APT_SIDRES_FMT,
 				grammar_file_path,RECOGNIZER_SIDRES(recognizer));
 			response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
 			return FALSE;
 		}
 
@@ -446,6 +488,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 		}
 		else {
 			response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
 			apr_file_remove(grammar_file_path,channel->pool);
 			return FALSE;
 		}
@@ -469,8 +512,17 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 /** Process RECOGNIZE request [RECOG] */
 static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
 {
+	mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(response);
+	if(!recog_header) {
+		return FALSE;
+	}
+
+	recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
+	mrcp_resource_header_property_add(response,RECOGNIZER_HEADER_COMPLETION_CAUSE);
+
 	if(!recognizer->decoder || ps_start_utt(recognizer->decoder, NULL) < 0) {
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+		recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_ERROR;
 		return FALSE;
 	}
 	
@@ -485,6 +537,18 @@ static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, 
 	recognizer->last_result = NULL;
 	recognizer->complete_event = NULL;
 	recognizer->inprogress_recog = request;
+	return TRUE;
+}
+
+/** Process GET-RESULTS request [RECOG] */
+static apt_bool_t pocketsphinx_get_result(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
+{
+	if(pocketsphinx_result_build(recognizer,response) != TRUE) {
+		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+	}
+
+	/* send asynchronous response */
+	mrcp_engine_channel_message_send(recognizer->channel,response);
 	return TRUE;
 }
 
@@ -525,7 +589,8 @@ static apt_bool_t pocketsphinx_recognition_complete(pocketsphinx_recognizer_t *r
 	}
 	
 	recog_header = mrcp_resource_header_get(complete_event);
-	if(recog_header->completion_cause == RECOGNIZER_COMPLETION_CAUSE_SUCCESS) {
+	if(recog_header->completion_cause == RECOGNIZER_COMPLETION_CAUSE_SUCCESS || 
+		recog_header->completion_cause == RECOGNIZER_COMPLETION_CAUSE_RECOGNITION_TIMEOUT) {
 		int32 score;
 		char const *hyp;
 		char const *uttid;
@@ -533,34 +598,12 @@ static apt_bool_t pocketsphinx_recognition_complete(pocketsphinx_recognizer_t *r
 		hyp = ps_get_hyp(recognizer->decoder, &score, &uttid);
 		if(hyp && strlen(hyp) > 0) {
 			int32 prob;
-			apt_str_t *body = &complete_event->body;
 			recognizer->last_result = apr_pstrdup(recognizer->channel->pool,hyp);
 			prob = ps_get_prob(recognizer->decoder, &uttid); 
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Final Result [%s] Prob [%d] Score [%d] "APT_SIDRES_FMT,
 				hyp,prob,score,RECOGNIZER_SIDRES(recognizer));
-
-			body->buf = apr_psprintf(complete_event->pool,
-				"<?xml version=\"1.0\"?>\n"
-				"<result grammar=\"%s\">\n"
-				"  <interpretation grammar=\"%s\" confidence=\"%d\">\n"
-				"    <input mode=\"speech\">%s</input>\n"
-				"  </interpretation>\n"
-				"</result>\n",
-				recognizer->grammar_id,
-				recognizer->grammar_id,
-				99,
-				recognizer->last_result,
-				recognizer->last_result);
-			if(body->buf) {
-				mrcp_generic_header_t *generic_header;
-				generic_header = mrcp_generic_header_prepare(complete_event);
-				if(generic_header) {
-					/* set content type */
-					apt_string_assign(&generic_header->content_type,"application/x-nlsml",complete_event->pool);
-					mrcp_generic_header_property_add(complete_event,GENERIC_HEADER_CONTENT_TYPE);
-				}
-				
-				body->length = strlen(body->buf);
+			if(pocketsphinx_result_build(recognizer,complete_event) != TRUE) {
+				recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_ERROR;
 			}
 		}
 		else {
@@ -593,6 +636,7 @@ static apt_bool_t pocketsphinx_request_dispatch(pocketsphinx_recognizer_t *recog
 			processed = pocketsphinx_recognize(recognizer,request,response);
 			break;
 		case RECOGNIZER_GET_RESULT:
+			processed = pocketsphinx_get_result(recognizer,request,response);
 			break;
 		case RECOGNIZER_START_INPUT_TIMERS:
 			break;
