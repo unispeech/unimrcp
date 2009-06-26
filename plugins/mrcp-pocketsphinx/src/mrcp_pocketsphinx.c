@@ -468,7 +468,8 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Grammar File [%s] "APT_SIDRES_FMT,
 			grammar_file_path,RECOGNIZER_SIDRES(recognizer));
-		rv = apr_file_open(&fd,grammar_file_path,APR_CREATE|APR_WRITE|APR_BINARY,0,channel->pool);
+		rv = apr_file_open(&fd,grammar_file_path,APR_CREATE|APR_TRUNCATE|APR_WRITE|APR_BINARY,
+			APR_OS_DEFAULT,channel->pool);
 		if(rv != APR_SUCCESS) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open Grammar File to Write [%s] "APT_SIDRES_FMT,
 				grammar_file_path,RECOGNIZER_SIDRES(recognizer));
