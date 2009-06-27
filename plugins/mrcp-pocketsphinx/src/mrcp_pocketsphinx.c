@@ -97,6 +97,7 @@ struct pocketsphinx_properties_t {
 	apr_size_t  no_input_timeout;
 	apr_size_t  recognition_timeout;
 	apr_size_t  partial_result_timeout;
+	apt_bool_t  save_waveform;
 };
 
 /** Pocketsphinx channel (recognizer) */
@@ -126,6 +127,8 @@ struct pocketsphinx_recognizer_t {
 	const char               *grammar_id;
 	/** Table of defined grammars (key=content-id, value=grammar-file-path) */
 	apr_table_t              *grammar_table;
+	/** File to write waveform to if save_waveform is on */
+	apr_file_t               *waveform;
 
 	/** Voice activity detector */
 	mpf_activity_detector_t  *detector;
@@ -211,6 +214,7 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 	recognizer->close_requested = FALSE;
 	recognizer->grammar_id = NULL;
 	recognizer->grammar_table = apr_table_make(pool,1);
+	recognizer->waveform = NULL;
 	
 	/* create engine channel base */
 	channel = mrcp_engine_sink_channel_create(
@@ -311,6 +315,7 @@ static apt_bool_t pocketsphinx_properties_load(pocketsphinx_recognizer_t *recogn
 	properties->no_input_timeout = 10000;
 	properties->recognition_timeout = 15000;
 	properties->partial_result_timeout = 100;
+	properties->save_waveform = TRUE;
 
 	return TRUE;
 }
@@ -519,6 +524,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 /** Process RECOGNIZE request [RECOG] */
 static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
 {
+	mrcp_engine_channel_t *channel = recognizer->channel;
 	mrcp_recog_header_t *request_recog_header;
 	mrcp_recog_header_t *response_recog_header = mrcp_resource_header_prepare(response);
 	if(!response_recog_header) {
@@ -547,12 +553,32 @@ static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, 
 		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_RECOGNITION_TIMEOUT) == TRUE) {
 			recognizer->properties.recognition_timeout = request_recog_header->recognition_timeout;
 		}
+		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_SAVE_WAVEFORM) == TRUE) {
+			recognizer->properties.save_waveform = request_recog_header->save_waveform;
+		}
+	}
+
+	/* check if waveform (utterance) should be saved */
+	if(recognizer->properties.save_waveform == TRUE) {
+		apr_status_t rv;
+		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
+		const char *waveform_file_name = apr_psprintf(channel->pool,"pocketsphinx/utter-%s-%d.pcm",
+			channel->id.buf,request->start_line.request_id);
+		const char *waveform_file_path = apt_datadir_filepath_get(dir_layout,waveform_file_name,channel->pool);
+
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Waveform File [%s] "APT_SIDRES_FMT,
+			waveform_file_path,RECOGNIZER_SIDRES(recognizer));
+		rv = apr_file_open(&recognizer->waveform,waveform_file_path,APR_CREATE|APR_TRUNCATE|APR_WRITE|APR_BINARY,
+			APR_OS_DEFAULT,channel->pool);
+		if(rv != APR_SUCCESS) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open Waveform File to Write [%s] "APT_SIDRES_FMT,
+				waveform_file_path,RECOGNIZER_SIDRES(recognizer));
+		}
 	}
 
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	/* send asynchronous response */
-	mrcp_engine_channel_message_send(recognizer->channel,response);
-
+	mrcp_engine_channel_message_send(channel,response);
 
 	/* reset */
 	mpf_activity_detector_reset(recognizer->detector);
@@ -614,6 +640,11 @@ static apt_bool_t pocketsphinx_recognition_complete(pocketsphinx_recognizer_t *r
 
 	recognizer->inprogress_recog = NULL;
 	ps_end_utt(recognizer->decoder);
+
+	if(recognizer->waveform) {
+		apr_file_close(recognizer->waveform);
+		recognizer->waveform = NULL;
+	}
 
 	if(recognizer->stop_response) {
 		/* recognition has been stopped, send STOP response instead */
@@ -815,6 +846,12 @@ static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mp
 			/* recognition has been stopped -> acknowledge with complete-event */
 			pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_SUCCESS);
 			return TRUE;
+		}
+
+		if(recognizer->waveform) {
+			/* write utterance to file */
+			apr_size_t size = frame->codec_frame.size;
+			apr_file_write(recognizer->waveform,frame->codec_frame.buffer,&size);
 		}
 
 		if(ps_process_raw(
