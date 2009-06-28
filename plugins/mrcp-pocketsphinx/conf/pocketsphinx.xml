@@ -1,0 +1,20 @@
+<!-- PocketSphinx Document -->
+<pocketsphinx>
+  <!-- senstitivity level and timeout are used for voice activity (speech) detection 
+       reasonable values: level is in [2..250] range, timeout is in [100..500] msec range
+  -->
+  <sensitivity level="50" timeout="300"/>
+
+  <!-- default values for noinput and recognition timeout
+       these values can be overriden by client's requets
+  -->
+  <timers noinput-timeout="10000" recognition-timeout="15000"/>
+
+
+  <!-- pocketsphinx related model and dictionary data  -->
+  <model dir="" narrowband-model="communicator" wideband-model="wsj1" dictionary="default.dic"/>
+  <!-- <model dir="/usr/local/freeswitch/grammar" narrowband-model="model/communicator" wideband-model="model/wsj1" dictionary="default.dic"/> -->
+
+  <!-- save utterance  -->
+  <save-waveform dir="" enable="0"/>
+</pocketsphinx>

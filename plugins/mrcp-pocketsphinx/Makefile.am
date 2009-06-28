@@ -15,6 +15,7 @@ INCLUDES                    = -Iinclude \
 
 plugin_LTLIBRARIES          = mrcppocketsphinx.la
 
-mrcppocketsphinx_la_SOURCES = src/mrcp_pocketsphinx.c
+mrcppocketsphinx_la_SOURCES = src/mrcp_pocketsphinx.c \
+                              src/pocketsphinx_properties.c
 mrcppocketsphinx_la_LDFLAGS = -module $(PLUGIN_LT_VERSION)
 mrcppocketsphinx_la_LIBADD  = $(UNIMRCP_POCKETSPHINX_LIBS) $(UNIMRCP_SPHINXBASE_LIBS) -lm

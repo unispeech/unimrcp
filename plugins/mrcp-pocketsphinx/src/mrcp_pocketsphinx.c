@@ -35,14 +35,15 @@
 #include "mrcp_generic_header.h"
 #include "mrcp_message.h"
 #include "mpf_activity_detector.h"
+#include "pocketsphinx_properties.h"
 #include "apt_log.h"
 
+#define POCKETSPHINX_CONFFILE_NAME "pocketsphinx.xml"
 
 #define RECOGNIZER_SIDRES(recognizer) (recognizer)->channel->id.buf, "pocketsphinx"
 
 typedef struct pocketsphinx_engine_t pocketsphinx_engine_t;
 typedef struct pocketsphinx_recognizer_t pocketsphinx_recognizer_t;
-typedef struct pocketsphinx_properties_t pocketsphinx_properties_t;
 
 /** Methods of recognition engine */
 static apt_bool_t pocketsphinx_engine_destroy(mrcp_resource_engine_t *engine);
@@ -86,18 +87,10 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 
 /** Pocketsphinx engine (engine is an aggregation of recognizers) */
 struct pocketsphinx_engine_t {
-	mrcp_resource_engine_t *base;
-};
-
-/** Pocketsphinx properties */
-struct pocketsphinx_properties_t {
-	const char *dictionary;
-	const char *model_8k;
-	const char *model_16k;
-	apr_size_t  no_input_timeout;
-	apr_size_t  recognition_timeout;
-	apr_size_t  partial_result_timeout;
-	apt_bool_t  save_waveform;
+	/* Resource engine base */
+	mrcp_resource_engine_t   *base;
+	/** Properties loaded from config file */
+	pocketsphinx_properties_t properties;
 };
 
 /** Pocketsphinx channel (recognizer) */
@@ -111,7 +104,7 @@ struct pocketsphinx_recognizer_t {
 	ps_decoder_t             *decoder;
 	/** Configuration */
 	cmd_ln_t                 *config;
-	/** Properties (to be loaded from config file) */
+	/** Recognizer properties coppied from defualt engine properties */
 	pocketsphinx_properties_t properties;
 	/** Is input timer started */
 	apt_bool_t                is_input_timer_on;
@@ -173,19 +166,27 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 }
 
 /** Destroy pocketsphinx engine */
-static apt_bool_t pocketsphinx_engine_destroy(mrcp_resource_engine_t *engine)
+static apt_bool_t pocketsphinx_engine_destroy(mrcp_resource_engine_t *resource_engine)
 {
 	return TRUE;
 }
 
 /** Open pocketsphinx engine */
-static apt_bool_t pocketsphinx_engine_open(mrcp_resource_engine_t *engine)
+static apt_bool_t pocketsphinx_engine_open(mrcp_resource_engine_t *resource_engine)
 {
+	pocketsphinx_engine_t *engine = resource_engine->obj;
+	const apt_dir_layout_t *dir_layout = resource_engine->dir_layout;
+
+	char *file_path = NULL;
+	apr_filepath_merge(&file_path,dir_layout->conf_dir_path,POCKETSPHINX_CONFFILE_NAME,0,resource_engine->pool);
+
+	/* load properties */
+	pocketsphinx_properties_load(&engine->properties,file_path,dir_layout,resource_engine->pool);
 	return TRUE;
 }
 
 /** Close pocketsphinx engine */
-static apt_bool_t pocketsphinx_engine_close(mrcp_resource_engine_t *engine)
+static apt_bool_t pocketsphinx_engine_close(mrcp_resource_engine_t *resource_engine)
 {
 	return TRUE;
 }
@@ -195,7 +196,7 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 {
 	mrcp_engine_channel_t *channel;
 	pocketsphinx_recognizer_t *recognizer = apr_palloc(pool,sizeof(pocketsphinx_recognizer_t));
-//	recognizer->engine = engine;
+	recognizer->engine = engine->obj;
 	recognizer->decoder = NULL;
 	recognizer->config = NULL;
 	recognizer->is_input_timer_on = FALSE;
@@ -299,34 +300,23 @@ static apt_bool_t pocketsphinx_recognizer_request_process(mrcp_engine_channel_t 
 	return TRUE;
 }
 
-
-
-/** Load pocketsphinx properties [RECOG] */
-static apt_bool_t pocketsphinx_properties_load(pocketsphinx_recognizer_t *recognizer)
-{
-	mrcp_engine_channel_t *channel = recognizer->channel;
-	const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
-	pocketsphinx_properties_t *properties = &recognizer->properties;
-
-	properties->dictionary = apt_datadir_filepath_get(dir_layout,"pocketsphinx/default.dic",channel->pool);
-	properties->model_8k = apt_datadir_filepath_get(dir_layout,"pocketsphinx/communicator",channel->pool);
-	properties->model_16k = apt_datadir_filepath_get(dir_layout,"pocketsphinx/wsj1",channel->pool);
-
-	properties->no_input_timeout = 10000;
-	properties->recognition_timeout = 15000;
-	properties->partial_result_timeout = 100;
-	properties->save_waveform = TRUE;
-
-	return TRUE;
-}
-
 /** Initialize pocketsphinx decoder [RECOG] */
 static apt_bool_t pocketsphinx_decoder_init(pocketsphinx_recognizer_t *recognizer, const char *grammar)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Init Config "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
+	const char *model = recognizer->properties.model_8k;
+	const char *rate = "8000";
+	if(recognizer->properties.preferred_rate == 16000) {
+		model = recognizer->properties.model_16k;
+		rate = "16000";
+	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Init Config rate [%s] dictionary [%s] "APT_SIDRES_FMT,
+		rate,
+		recognizer->properties.dictionary,
+		RECOGNIZER_SIDRES(recognizer));
 	recognizer->config = cmd_ln_init(recognizer->config, ps_args(), FALSE,
-							 "-samprate", "8000",
-							 "-hmm", recognizer->properties.model_8k,
+							 "-samprate", rate,
+							 "-hmm", model,
 							 "-jsgf", grammar,
 							 "-dict", recognizer->properties.dictionary,
 							 "-frate", "50",
@@ -474,7 +464,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 			return FALSE;
 		}
 
-		grammar_file_name = apr_psprintf(channel->pool,"pocketsphinx/%s-%s.gram",channel->id.buf,content_id);
+		grammar_file_name = apr_psprintf(channel->pool,"%s-%s.gram",channel->id.buf,content_id);
 		grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file_name,channel->pool);
 
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Grammar File [%s] "APT_SIDRES_FMT,
@@ -561,10 +551,11 @@ static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, 
 	/* check if waveform (utterance) should be saved */
 	if(recognizer->properties.save_waveform == TRUE) {
 		apr_status_t rv;
-		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
-		const char *waveform_file_name = apr_psprintf(channel->pool,"pocketsphinx/utter-%s-%d.pcm",
+		const char *waveform_file_name = apr_psprintf(channel->pool,"utter-%s-%d.pcm",
 			channel->id.buf,request->start_line.request_id);
-		const char *waveform_file_path = apt_datadir_filepath_get(dir_layout,waveform_file_name,channel->pool);
+		char *waveform_file_path = NULL;
+		apr_filepath_merge(&waveform_file_path,recognizer->properties.save_waveform_dir,
+			waveform_file_name,0,channel->pool);
 
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Waveform File [%s] "APT_SIDRES_FMT,
 			waveform_file_path,RECOGNIZER_SIDRES(recognizer));
@@ -727,13 +718,13 @@ static apt_bool_t pocketsphinx_request_dispatch(pocketsphinx_recognizer_t *recog
 static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, void *data)
 {
 	pocketsphinx_recognizer_t *recognizer = data;
-	apt_bool_t status;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run Recognition Thread "APT_SIDRES_FMT, RECOGNIZER_SIDRES(recognizer));
-	status = pocketsphinx_properties_load(recognizer);
+	/* copy default properties loaded from config */
+	recognizer->properties = recognizer->engine->properties;
 
 	/** Send response to channel_open request */
-	mrcp_engine_channel_open_respond(recognizer->channel,status);
+	mrcp_engine_channel_open_respond(recognizer->channel,TRUE);
 
 	do {
 		/** Wait for MRCP requests */
