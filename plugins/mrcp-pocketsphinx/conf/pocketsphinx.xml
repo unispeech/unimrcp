@@ -12,8 +12,8 @@
 
 
   <!-- pocketsphinx related model and dictionary data  -->
-  <model dir="" narrowband-model="communicator" wideband-model="wsj1" dictionary="default.dic"/>
-  <!-- <model dir="/usr/local/freeswitch/grammar" narrowband-model="model/communicator" wideband-model="model/wsj1" dictionary="default.dic"/> -->
+  <model dir="" narrowband="communicator" wideband="wsj1" dictionary="default.dic" preferred="narrowband"/>
+  <!-- <model dir="/usr/local/freeswitch/grammar" narrowband="model/communicator" wideband="model/wsj1" dictionary="default.dic"/> -->
 
   <!-- save utterance  -->
   <save-waveform dir="" enable="0"/>

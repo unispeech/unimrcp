@@ -92,17 +92,22 @@ static apt_bool_t model_properties_load(pocketsphinx_properties_t *properties, c
 		if(strcasecmp(attr->name,"dir") == 0) {
 			properties->data_dir = apr_pstrdup(pool,attr->value);
 		}
-		else if(strcasecmp(attr->name,"narrowband-model") == 0) {
+		else if(strcasecmp(attr->name,"narrowband") == 0) {
 			properties->model_8k = apr_pstrdup(pool,attr->value);
 		}
-		else if(strcasecmp(attr->name,"wideband-model") == 0) {
+		else if(strcasecmp(attr->name,"wideband") == 0) {
 			properties->model_16k = apr_pstrdup(pool,attr->value);
 		}
 		else if(strcasecmp(attr->name,"dictionary") == 0) {
 			properties->dictionary = apr_pstrdup(pool,attr->value);
 		}
-		else if(strcasecmp(attr->name,"preffered-rate") == 0) {
-			properties->preferred_rate = atol(attr->value);
+		else if(strcasecmp(attr->name,"preferred") == 0) {
+			if(strcasecmp(attr->value,"narrowband") == 0) {
+				properties->preferred_model = POCKETSPHINX_MODEL_NARROWBAND;
+			}
+			else if(strcasecmp(attr->value,"wideband") == 0) {
+				properties->preferred_model = POCKETSPHINX_MODEL_WIDEBAND;
+			}
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
@@ -142,7 +147,7 @@ apt_bool_t pocketsphinx_properties_load(pocketsphinx_properties_t *properties,
 	properties->dictionary = NULL;
 	properties->model_8k = NULL;
 	properties->model_16k = NULL;
-	properties->preferred_rate = 8000;
+	properties->preferred_model = POCKETSPHINX_MODEL_NARROWBAND;
 
 	properties->no_input_timeout = 10000;
 	properties->recognition_timeout = 15000;

@@ -95,8 +95,6 @@ struct pocketsphinx_engine_t {
 
 /** Pocketsphinx channel (recognizer) */
 struct pocketsphinx_recognizer_t {
-	/** Back pointer to engine */
-	pocketsphinx_engine_t    *engine;
 	/** Engine channel base */
 	mrcp_engine_channel_t    *channel;
 
@@ -192,11 +190,12 @@ static apt_bool_t pocketsphinx_engine_close(mrcp_resource_engine_t *resource_eng
 }
 
 /** Create pocketsphinx recognizer */
-static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resource_engine_t *resource_engine, apr_pool_t *pool)
 {
 	mrcp_engine_channel_t *channel;
+	mpf_codec_descriptor_t *codec_descriptor;
+	pocketsphinx_engine_t *engine = resource_engine->obj;
 	pocketsphinx_recognizer_t *recognizer = apr_palloc(pool,sizeof(pocketsphinx_recognizer_t));
-	recognizer->engine = engine->obj;
 	recognizer->decoder = NULL;
 	recognizer->config = NULL;
 	recognizer->is_input_timer_on = FALSE;
@@ -216,10 +215,23 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 	recognizer->grammar_id = NULL;
 	recognizer->grammar_table = apr_table_make(pool,1);
 	recognizer->waveform = NULL;
-	
+
+	/* copy default properties loaded from config */
+	recognizer->properties = engine->properties;
+
+	codec_descriptor = (mpf_codec_descriptor_t *) apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_init(codec_descriptor);
+	codec_descriptor->channel_count = 1;
+	codec_descriptor->payload_type = 96;
+	apt_string_set(&codec_descriptor->name,"LPCM");
+	codec_descriptor->sampling_rate = 8000;
+	if(recognizer->properties.preferred_model == POCKETSPHINX_MODEL_WIDEBAND) {
+		codec_descriptor->sampling_rate = 16000;
+	}
+
 	/* create engine channel base */
 	channel = mrcp_engine_sink_channel_create(
-			engine,               /* resource engine */
+			resource_engine,      /* resource engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
 			&audio_stream_vtable, /* virtual methods table of audio stream */
 			recognizer,           /* object to associate */
@@ -305,7 +317,7 @@ static apt_bool_t pocketsphinx_decoder_init(pocketsphinx_recognizer_t *recognize
 {
 	const char *model = recognizer->properties.model_8k;
 	const char *rate = "8000";
-	if(recognizer->properties.preferred_rate == 16000) {
+	if(recognizer->properties.preferred_model == POCKETSPHINX_MODEL_WIDEBAND) {
 		model = recognizer->properties.model_16k;
 		rate = "16000";
 	}
@@ -720,9 +732,6 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 	pocketsphinx_recognizer_t *recognizer = data;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Run Recognition Thread "APT_SIDRES_FMT, RECOGNIZER_SIDRES(recognizer));
-	/* copy default properties loaded from config */
-	recognizer->properties = recognizer->engine->properties;
-
 	/** Send response to channel_open request */
 	mrcp_engine_channel_open_respond(recognizer->channel,TRUE);
 
