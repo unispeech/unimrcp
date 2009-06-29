@@ -106,8 +106,6 @@ struct flite_synth_engine_t {
 };
 
 // flite stuff
-APT_BEGIN_EXTERN_C
-
 cst_voice *register_cmu_us_awb(void);
 void unregister_cmu_us_awb(cst_voice * v);
 
@@ -119,8 +117,6 @@ void unregister_cmu_us_rms(cst_voice * v);
 
 cst_voice *register_cmu_us_slt(void);
 void unregister_cmu_us_slt(cst_voice * v);
-
-APT_END_EXTERN_C
 
 
 /** Declaration of flite synthesizer channel */
@@ -226,12 +222,12 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 
 	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "flite_synth_engine_channel_create");
 
-//  codec_descriptor = (mpf_codec_descriptor_t *) apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
-//	mpf_codec_descriptor_init(codec_descriptor);
-//	codec_descriptor->channel_count = 1;
-//	codec_descriptor->payload_type = 96;
-//	apt_string_set(&codec_descriptor->name,"L16");
-//	codec_descriptor->sampling_rate = 16000;
+	codec_descriptor = (mpf_codec_descriptor_t *) apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_init(codec_descriptor);
+	codec_descriptor->channel_count = 1;
+	codec_descriptor->payload_type = 96;
+	apt_string_set(&codec_descriptor->name,"LPCM");
+	codec_descriptor->sampling_rate = 16000;
 
 	synth_channel->flite_engine = (flite_synth_engine_t *) engine->obj;
 	synth_channel->speak_request = NULL; // no active speak request in progress
