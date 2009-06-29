@@ -96,7 +96,6 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 /** Declaration of flite synthesizer engine */
 struct flite_synth_engine_t {
 	int					 iChannels;
-	apr_thread_mutex_t	*guard;
 	struct {
 		cst_voice *awb;
 		cst_voice *kal;
@@ -156,13 +155,6 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 
 	flite_engine->iChannels = 0;
 
-	/* create channel mutex */
-	if (apr_thread_mutex_create(&flite_engine->guard,APR_THREAD_MUTEX_DEFAULT,pool) != APR_SUCCESS) 
-	{
-		apt_log(APT_LOG_MARK, APT_PRIO_ERROR, "Failed to create channel guard");
-		return NULL;
-	}
-
 	/* create resource engine base */
 	return mrcp_resource_engine_create(
 					MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
@@ -174,11 +166,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 /** Destroy synthesizer engine */
 static apt_bool_t flite_synth_engine_destroy(mrcp_resource_engine_t *engine)
 {
-	flite_synth_engine_t *flite_engine = (flite_synth_engine_t *) engine->obj;
 	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "flite_synth_engine_destroy");
-
-	// should we kill all channel and speak tasks here ?
-	apr_thread_mutex_destroy(flite_engine->guard);
 	return TRUE;
 }
 
@@ -254,9 +242,7 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 	}
 
 	synth_channel->audio_buffer = mpf_buffer_create(pool);
-	apr_thread_mutex_lock(synth_channel->flite_engine->guard);
 	synth_channel->iId = ++synth_channel->flite_engine->iChannels;
-	apr_thread_mutex_unlock(synth_channel->flite_engine->guard);
 
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_channel_create created channel %d", synth_channel->iId);
 
@@ -282,10 +268,7 @@ static apt_bool_t flite_synth_channel_destroy(mrcp_engine_channel_t *channel)
 	}
 	synth_channel->task = NULL;
 
-	apr_thread_mutex_lock(synth_channel->flite_engine->guard);
 	synth_channel->flite_engine->iChannels--;
-	apr_thread_mutex_unlock(synth_channel->flite_engine->guard);
-
 	return TRUE;
 }
 
