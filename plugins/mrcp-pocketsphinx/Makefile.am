@@ -23,5 +23,7 @@ mrcppocketsphinx_la_LIBADD  = $(UNIMRCP_POCKETSPHINX_LIBS) $(UNIMRCP_SPHINXBASE_
 
 install-data-local:
 	test -d $(confdir) || $(mkinstalldirs) $(confdir)
-	test -f $(confdir)/pocketsphinx.xml || \
-		$(INSTALL) -m 644 conf/pocketsphinx.xml $(confdir);
+	test -f $(confdir)/pocketsphinx.xml || $(INSTALL) -m 644 conf/pocketsphinx.xml $(confdir)
+	test -d $(datadir)/wsj1 || $(mkinstalldirs) $(datadir)/wsj1; \
+			$(INSTALL) -m 644 $(UNIMRCP_POCKETSPHINX_MODELS)/hmm/wsj1/* $(datadir)/wsj1; \
+			$(INSTALL) -m 644 $(UNIMRCP_POCKETSPHINX_MODELS)/lm/cmudict.0.6d $(datadir)/default.dic
