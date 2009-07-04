@@ -220,6 +220,7 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 	synth_channel->audio_buffer = NULL;
 	synth_channel->voice = NULL;
 	synth_channel->iId = 0;
+	synth_channel->task = NULL;
 
 	if (apr_thread_mutex_create(&synth_channel->channel_guard,APR_THREAD_MUTEX_DEFAULT,pool) != APR_SUCCESS) 
 	{
@@ -376,12 +377,47 @@ static apt_bool_t flite_synth_channel_close_t(mrcp_engine_channel_t *channel)
 	return TRUE;
 }
 
+/** Process SPEAK request */
+static apt_bool_t synth_response_construct(mrcp_message_t *response, mrcp_status_code_e status_code, mrcp_synth_completion_cause_e completion_cause)
+{
+	mrcp_synth_header_t *synth_header = mrcp_resource_header_prepare(response);
+	if(!synth_header) {
+		return FALSE;
+	}
+
+	response->start_line.status_code = status_code;
+	synth_header->completion_cause = completion_cause;
+	mrcp_resource_header_property_add(response,SYNTHESIZER_HEADER_COMPLETION_CAUSE);
+	return TRUE;
+}
 
 /** Process SPEAK request */
 static apt_bool_t flite_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
 {
+	mrcp_generic_header_t *generic_header;
+	const char *content_type = NULL;
 	flite_synth_channel_t *synth_channel = (flite_synth_channel_t *) channel->method_obj;
 	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "flite_synth_channel_speak - channel %d", synth_channel->iId);
+
+	generic_header = mrcp_generic_header_get(request);
+	if(generic_header) {
+		/* content-type must be specified */
+		if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_TYPE) == TRUE) {
+			content_type = generic_header->content_type.buf;
+		}
+	}
+	if(!content_type) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Content-Type");
+		synth_response_construct(response,MRCP_STATUS_CODE_MISSING_PARAM,SYNTHESIZER_COMPLETION_CAUSE_ERROR);
+		return FALSE;
+	}
+
+	/* Flite currently supports only text/plain (no SSML) */
+	if(strstr(content_type,"text") == NULL) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Not Supported Content-Type [%s]",content_type);
+		synth_response_construct(response,MRCP_STATUS_CODE_UNSUPPORTED_PARAM_VALUE,SYNTHESIZER_COMPLETION_CAUSE_ERROR);
+		return FALSE;
+	}
 
 	if (!synth_channel->speak_request)
 	{
