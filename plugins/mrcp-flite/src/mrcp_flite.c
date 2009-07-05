@@ -24,6 +24,7 @@
  * 4. Methods (callbacks) of the MPF engine stream MUST not block.
  */
 
+#include "flite_voices.h"
 #include "mrcp_resource_engine.h"
 #include "mrcp_synth_resource.h"
 #include "mrcp_synth_header.h"
@@ -33,7 +34,6 @@
 #include "apr_time.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
-#include "flite.h"
 
 typedef struct flite_synth_engine_t flite_synth_engine_t;
 typedef struct flite_synth_channel_t flite_synth_channel_t;
@@ -92,25 +92,10 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 
 /** Declaration of flite synthesizer engine */
 struct flite_synth_engine_t {
-	int					 iChannels;
-	struct {
-		cst_voice *awb;
-		cst_voice *kal;
-		cst_voice *rms;
-		cst_voice *slt;
-	} voices;
+	/** Table of flite voices */
+	flite_voices_t *voices;
+	int             iChannels;
 };
-
-/** declarations for flite voices **/
-cst_voice *register_cmu_us_awb(void);
-cst_voice *register_cmu_us_kal(void);
-cst_voice *register_cmu_us_rms(void);
-cst_voice *register_cmu_us_slt(void);
-void unregister_cmu_us_awb(cst_voice * v);
-void unregister_cmu_us_kal(cst_voice * v);
-void unregister_cmu_us_rms(cst_voice * v);
-void unregister_cmu_us_slt(cst_voice * v);
-
 
 /** Declaration of flite synthesizer channel */
 struct flite_synth_channel_t {
@@ -121,7 +106,6 @@ struct flite_synth_channel_t {
 	apt_bool_t				 paused;		// Is paused
 	mpf_buffer_t			*audio_buffer;	// Audio buffer
 	int						 iId;			// Synth channel simultaneous reference count
-	cst_voice				*voice;
 	apr_pool_t				*pool;
 	apt_consumer_task_t     *task;
 	apr_thread_mutex_t	    *channel_guard;
@@ -148,6 +132,7 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 	/* create flite engine */
 	flite_synth_engine_t *flite_engine = (flite_synth_engine_t *) apr_palloc(pool,sizeof(flite_synth_engine_t));
 
+
 	flite_engine->iChannels = 0;
 
 	/* create resource engine base */
@@ -172,13 +157,10 @@ static apt_bool_t flite_synth_engine_open(mrcp_resource_engine_t *engine)
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_open");
 
 	flite_init();
-	flite_engine->voices.awb = register_cmu_us_awb();
-	flite_engine->voices.kal = register_cmu_us_kal();
-	flite_engine->voices.rms = register_cmu_us_rms();
-	flite_engine->voices.slt = register_cmu_us_slt();
+
+	flite_engine->voices = flite_voices_load(engine->pool);
 
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite init success");
-
 	return TRUE;
 }
 
@@ -188,10 +170,7 @@ static apt_bool_t flite_synth_engine_close(mrcp_resource_engine_t *engine)
 	flite_synth_engine_t *flite_engine = (flite_synth_engine_t *) engine->obj;
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_close");
 
-	unregister_cmu_us_awb(flite_engine->voices.awb);
-	unregister_cmu_us_kal(flite_engine->voices.kal);
-	unregister_cmu_us_rms(flite_engine->voices.rms);
-	unregister_cmu_us_slt(flite_engine->voices.slt);
+	flite_voices_unload(flite_engine->voices);
 
 	return TRUE;
 }
@@ -218,7 +197,6 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 	synth_channel->paused = FALSE;
 	synth_channel->pool = pool;
 	synth_channel->audio_buffer = NULL;
-	synth_channel->voice = NULL;
 	synth_channel->iId = 0;
 	synth_channel->task = NULL;
 
@@ -284,7 +262,6 @@ static apt_bool_t flite_synth_channel_open(mrcp_engine_channel_t *channel)
 	flite_synth_channel_t *synth_channel = (flite_synth_channel_t *) channel->method_obj;
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_channel_open - channel %d", synth_channel->iId);
 
-	synth_channel->voice = synth_channel->flite_engine->voices.awb;
 	return mrcp_engine_channel_open_respond(channel,TRUE);
 }
 
@@ -494,6 +471,15 @@ static apt_bool_t flite_speak(apt_task_t *task, apt_task_msg_t *msg)
 	start = apr_time_now();	// in microsec
 	if (synth_channel->speak_request->body.length)
 	{
+		cst_wave *wave = NULL;
+		cst_voice *voice = flite_voices_best_match_get(
+								synth_channel->flite_engine->voices,
+								synth_channel->speak_request);
+		if(!voice) {
+			/* error case: no voice found, appropriate respond must be sent */
+			return FALSE;
+		}
+
 		// TODO 
 		// create small units of text from synth_channel->speak_request->body.buf ( , . ? ! but ...
 		// synthesize small unit and store in audio_buffer
@@ -502,8 +488,7 @@ static apt_bool_t flite_speak(apt_task_t *task, apt_task_msg_t *msg)
 		// you can "pause" generating new speech from a unit of text 
 		// by checking the (decreasing) size of the audio_buffer
 		// no need to generate more speech samples than can be listened to...
-		cst_wave *wave = 0;
-		wave = flite_text_to_wave(synth_channel->speak_request->body.buf, synth_channel->voice);
+		wave = flite_text_to_wave(synth_channel->speak_request->body.buf, voice);
 		if (wave && cst_wave_num_samples(wave)) 
 		{
 			int generated = (cst_wave_num_samples(wave)/cst_wave_sample_rate(wave)*1000);
