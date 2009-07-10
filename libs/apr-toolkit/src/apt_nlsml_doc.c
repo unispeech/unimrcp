@@ -89,3 +89,20 @@ APT_DECLARE(apt_bool_t) nlsml_interpret_results_get(const apr_xml_elem *interpre
 	}
 	return TRUE;
 }
+
+/** Get specified atrribute of <input> */
+APT_DECLARE(const char *) nlsml_input_attrib_get(const apr_xml_elem *input, const char *attrib, apt_bool_t recursive)
+{
+	const apr_xml_attr *xml_attr;
+	for(xml_attr = input->attr; xml_attr; xml_attr = xml_attr->next) {
+		if(strcasecmp(xml_attr->name,attrib) == 0) {
+			return xml_attr->value;
+		}
+	}
+
+	if(recursive && input->parent) {
+		return nlsml_input_attrib_get(input->parent,attrib,recursive);
+	}
+
+	return NULL;
+}

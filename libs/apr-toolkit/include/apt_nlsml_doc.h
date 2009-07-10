@@ -39,6 +39,9 @@ APT_DECLARE(apr_xml_elem*) nlsml_next_interpret_get(const apr_xml_elem *interpre
 /** Get <instance> and <input> elements of <interpretation> element */
 APT_DECLARE(apt_bool_t) nlsml_interpret_results_get(const apr_xml_elem *interpret, apr_xml_elem **instance, apr_xml_elem **input);
 
+/** Get specified atrribute of <input> */
+APT_DECLARE(const char *) nlsml_input_attrib_get(const apr_xml_elem *input, const char *attrib, apt_bool_t recursive);
+
 
 APT_END_EXTERN_C
 
