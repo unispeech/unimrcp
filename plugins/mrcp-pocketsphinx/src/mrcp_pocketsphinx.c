@@ -529,12 +529,10 @@ static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, 
 		return FALSE;
 	}
 
-	response_recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
-	mrcp_resource_header_property_add(response,RECOGNIZER_HEADER_COMPLETION_CAUSE);
-
 	if(!recognizer->decoder || ps_start_utt(recognizer->decoder, NULL) < 0) {
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 		response_recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_ERROR;
+		mrcp_resource_header_property_add(response,RECOGNIZER_HEADER_COMPLETION_CAUSE);
 		return FALSE;
 	}
 
