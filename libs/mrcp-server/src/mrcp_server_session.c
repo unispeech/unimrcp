@@ -379,7 +379,7 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 		session->context = mpf_context_create(session,5,session->base.pool);
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Offer "APT_SID_FMT" [c:%d a:%d v:%d]",
-		session->base.id.buf,
+		MRCP_SESSION_SID(&session->base),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts);
@@ -413,7 +413,7 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 	mrcp_channel_t *channel;
 	mrcp_termination_slot_t *slot;
 	int i;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Terminate Request "APT_SID_FMT,session->base.id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Terminate Request "APT_SID_FMT,MRCP_SESSION_SID(&session->base));
 	for(i=0; i<session->channels->nelts; i++) {
 		channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(!channel) continue;
@@ -469,7 +469,7 @@ static apt_bool_t mrcp_server_session_deactivate(mrcp_server_session_t *session)
 {
 	mrcp_channel_t *channel;
 	int i;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Deactivate Session "APT_SID_FMT,session->base.id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Deactivate Session "APT_SID_FMT,MRCP_SESSION_SID(&session->base));
 	for(i=0; i<session->channels->nelts; i++) {
 		channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(!channel || !channel->state_machine) continue;
@@ -736,7 +736,7 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session
 	apt_bool_t status;
 	mrcp_session_descriptor_t *descriptor = session->answer;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Answer "APT_SID_FMT" [c:%d a:%d v:%d] Status %s",
-		session->base.id.buf,
+		MRCP_SESSION_SID(&session->base),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts,
@@ -769,7 +769,7 @@ static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *sess
 			channel->engine_channel = NULL;
 		}
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Terminate Response "APT_SID_FMT,session->base.id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Terminate Response "APT_SID_FMT,MRCP_SESSION_SID(&session->base));
 	mrcp_session_terminate_response(&session->base);
 	return TRUE;
 }
