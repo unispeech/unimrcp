@@ -467,11 +467,14 @@ static apt_bool_t recog_state_deactivate(mrcp_state_machine_t *base)
 	mrcp_recog_state_machine_t *state_machine = (mrcp_recog_state_machine_t*)base;
 	mrcp_message_t *message;
 	mrcp_message_t *source;
-	if(!state_machine->recog) {
+	if(state_machine->state != RECOGNIZER_STATE_RECOGNIZING) {
 		/* no in-progress RECOGNIZE request to deactivate */
 		return FALSE;
 	}
 	source = state_machine->recog;
+	if(!source) {
+		return FALSE;
+	}
 
 	/* create internal STOP request */
 	message = mrcp_request_create(
