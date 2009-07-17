@@ -514,7 +514,7 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 
-//		agent->vtable->on_disconnect(agent,connection);
+		mrcp_connection_disconnect_raise(connection,agent->vtable);
 		return TRUE;
 	}
 	/* calculate actual length of the stream */

@@ -187,6 +187,8 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel, apt_bool_t status);
 /** Process message receive event */
 apt_bool_t mrcp_client_on_message_receive(mrcp_channel_t *channel, mrcp_message_t *message);
+/** Process disconnect event */
+apt_bool_t mrcp_client_on_disconnect(mrcp_channel_t *channel);
 
 APT_END_EXTERN_C
 

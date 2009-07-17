@@ -91,6 +91,8 @@ mrcp_control_channel_t* mrcp_connection_channel_find(mrcp_connection_t *connecti
 /** Remove Control Channel from MRCP connection. */
 apt_bool_t mrcp_connection_channel_remove(mrcp_connection_t *connection, mrcp_control_channel_t *channel);
 
+/** Raise disconnect event for each channel from the specified connection. */
+apt_bool_t mrcp_connection_disconnect_raise(mrcp_connection_t *connection, const mrcp_connection_event_vtable_t *vtable);
 
 APT_END_EXTERN_C
 

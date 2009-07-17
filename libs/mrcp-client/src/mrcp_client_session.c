@@ -303,6 +303,12 @@ apt_bool_t mrcp_client_on_message_receive(mrcp_channel_t *channel, mrcp_message_
 	return mrcp_app_control_message_raise(session,channel,message);
 }
 
+apt_bool_t mrcp_client_on_disconnect(mrcp_channel_t *channel)
+{
+	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
+	return mrcp_client_session_terminate_event_process(session);
+}
+
 mrcp_app_message_t* mrcp_client_app_signaling_request_create(mrcp_sig_command_e command_id, apr_pool_t *pool)
 {
 	mrcp_app_message_t *app_message = apr_palloc(pool,sizeof(mrcp_app_message_t));

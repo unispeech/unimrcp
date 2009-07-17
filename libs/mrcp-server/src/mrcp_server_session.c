@@ -267,6 +267,12 @@ apt_bool_t mrcp_server_on_channel_message(mrcp_channel_t *channel, mrcp_message_
 	return mrcp_server_signaling_message_process(signaling_message);
 }
 
+apt_bool_t mrcp_server_on_disconnect(mrcp_channel_t *channel)
+{
+	/* to be processed */
+	return TRUE;
+}
+
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status)
 {
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;

@@ -112,6 +112,7 @@ typedef enum {
 	CONNECTION_AGENT_TASK_MSG_MODIFY_CHANNEL,
 	CONNECTION_AGENT_TASK_MSG_REMOVE_CHANNEL,
 	CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE,
+	CONNECTION_AGENT_TASK_MSG_DISCONNECT
 } connection_agent_task_msg_type_e ;
 
 typedef struct connection_agent_task_msg_data_t connection_agent_task_msg_data_t;
@@ -126,12 +127,14 @@ static apt_bool_t mrcp_client_channel_add_signal(mrcp_control_channel_t *channel
 static apt_bool_t mrcp_client_channel_modify_signal(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status);
 static apt_bool_t mrcp_client_channel_remove_signal(mrcp_control_channel_t *channel, apt_bool_t status);
 static apt_bool_t mrcp_client_message_signal(mrcp_control_channel_t *channel, mrcp_message_t *message);
+static apt_bool_t mrcp_client_disconnect_signal(mrcp_control_channel_t *channel);
 
 static const mrcp_connection_event_vtable_t connection_method_vtable = {
 	mrcp_client_channel_add_signal,
 	mrcp_client_channel_modify_signal,
 	mrcp_client_channel_remove_signal,
-	mrcp_client_message_signal
+	mrcp_client_message_signal,
+	mrcp_client_disconnect_signal
 };
 
 /* Task interface */
@@ -793,6 +796,9 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				case CONNECTION_AGENT_TASK_MSG_RECEIVE_MESSAGE:
 					mrcp_client_on_message_receive(data->channel,data->message);
 					break;
+				case CONNECTION_AGENT_TASK_MSG_DISCONNECT:
+					mrcp_client_on_disconnect(data->channel);
+					break;
 				default:
 					break;
 			}
@@ -979,5 +985,16 @@ static apt_bool_t mrcp_client_message_signal(mrcp_control_channel_t *channel, mr
 								channel,
 								NULL,
 								mrcp_message,
+								TRUE);
+}
+
+static apt_bool_t mrcp_client_disconnect_signal(mrcp_control_channel_t *channel)
+{
+	return mrcp_client_connection_task_msg_signal(
+								CONNECTION_AGENT_TASK_MSG_DISCONNECT,
+								channel->agent,
+								channel,
+								NULL,
+								NULL,
 								TRUE);
 }

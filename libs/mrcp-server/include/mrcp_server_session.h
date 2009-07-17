@@ -127,6 +127,8 @@ apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel, apt_bool_t status);
 /** Process channel message receive */
 apt_bool_t mrcp_server_on_channel_message(mrcp_channel_t *channel, mrcp_message_t *message);
+/** Process connection disconnect event */
+apt_bool_t mrcp_server_on_disconnect(mrcp_channel_t *channel);
 
 /** Process channel open event */
 apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_t status);
