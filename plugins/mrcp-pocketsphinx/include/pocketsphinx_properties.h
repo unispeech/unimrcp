@@ -26,16 +26,16 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Enumeration of PocketSphinx models */
 typedef enum {
-	POCKETSPHINX_MODEL_NARROWBAND,
-	POCKETSPHINX_MODEL_WIDEBAND
-
+	POCKETSPHINX_MODEL_NARROWBAND, /**< narrowband model */
+	POCKETSPHINX_MODEL_WIDEBAND    /**< wideband model */
 } pocketsphinx_model_e;
 
-/** Declaration of pocketsphinx properties */
+/** Declaration of PocketSphinx properties */
 typedef struct pocketsphinx_properties_t pocketsphinx_properties_t;
 
-/** Pocketsphinx properties */
+/** PocketSphinx properties */
 struct pocketsphinx_properties_t {
 	const char          *data_dir;
 	const char          *dictionary;
@@ -54,6 +54,7 @@ struct pocketsphinx_properties_t {
 	const char          *save_waveform_dir;
 };
 
+/** Load PocketSphinx properties */
 apt_bool_t pocketsphinx_properties_load(pocketsphinx_properties_t *properties, 
 										const char *file_path, 
 										const apt_dir_layout_t *dir_layout,
