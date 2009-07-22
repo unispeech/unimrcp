@@ -13,9 +13,17 @@ Sofia-SIP library is used to implement MRCPv2 specification
 compliant SIP signaling. Sofia-SIP is an open-source SIP User-Agent
 library, compliant with the IETF RFC3261 specification.
 
-Use the link below to download one of known to work and 
-ready to use packages of APR and Sofia-SIP libraries.
-    http://www.unimrcp.org/dependencies/
+The easiest and recommended way is to install an appropriate 
+dependency package from download are, which contains 
+APR, APR-Util and Sofia-SIP libraries UniMRCP uses.
+
+http://unimrcp.googlecode.com/files/unimrcp-deps.tar.gz (Unix)
+http://unimrcp.googlecode.com/files/unimrcp-deps.zip (Win)
+
+Alternatively, original distribution of APR, APR-Util and 
+Sofia-SIP libraries and patches for them can be downloaded from
+http://www.unimrcp.org/dependencies/
+
 
 
 GNU BUILD
@@ -36,9 +44,11 @@ $ make install
 Installed directory layout
 bin      - binaries (unimrcpserver, unimrcpclient)
 conf     - configuration files
+data     - data files
 include  - header files
-libs     - shared (convenient) libraries
-plugins  - run-time loadable modules
+lib      - shared (convenient) libraries
+log      - log files
+plugin   - run-time loadable modules
 
 There are a couple of options to "./configure".
 To specify where to look for the APR and APR-util libraries
@@ -100,4 +110,6 @@ libraries and the default configuration to the output directory.
 Output directory layout
 bin      - binaries (unimrcpserver, unimrcpclient) and all the required dlls
 conf     - configuration files
-plugins  - run-time loadable modules
+data     - data files
+log      - log files
+plugin   - run-time loadable modules
