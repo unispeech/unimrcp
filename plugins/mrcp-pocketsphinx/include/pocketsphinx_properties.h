@@ -37,20 +37,32 @@ typedef struct pocketsphinx_properties_t pocketsphinx_properties_t;
 
 /** PocketSphinx properties */
 struct pocketsphinx_properties_t {
+	/** Data directory */
 	const char          *data_dir;
+	/** Path to dictionary file */
 	const char          *dictionary;
+	/** Path to narrowband model */
 	const char          *model_8k;
+	/** Path to wideband model */
 	const char          *model_16k;
+	/** Preferred (default) model */
 	pocketsphinx_model_e preferred_model;
 
+	/** Sensitivity level */
 	apr_size_t           sensitivity_level;
+	/** Sensitivity timeout */
 	apr_size_t           sensitivity_timeout;
 
+	/** Noinput timeout */
 	apr_size_t           no_input_timeout;
+	/** Recognition timeout */
 	apr_size_t           recognition_timeout;
+	/** Partial result checking timeout */
 	apr_size_t           partial_result_timeout;
 
+	/** Whether to save waveform or not */
 	apt_bool_t           save_waveform;
+	/** Directory to save waveform in */
 	const char          *save_waveform_dir;
 };
 
