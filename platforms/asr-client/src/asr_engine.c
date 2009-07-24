@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "asr_engine.h"
+#include <stdlib.h>
 
 /* APR includes */
 #include <apr_thread_cond.h>
@@ -28,11 +28,12 @@
 /* recognizer includes */
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
-/* NLSML doc include */
+/* APT includes */
 #include "apt_nlsml_doc.h"
-/* logger include */
 #include "apt_log.h"
 #include "apt_pool.h"
+
+#include "asr_engine.h"
 
 
 /** ASR engine on top of UniMRCP client stack */

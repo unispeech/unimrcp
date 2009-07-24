@@ -15,12 +15,8 @@ INCLUDES               = -Iinclude \
 
 bin_PROGRAMS           = asrclient
 asrclient_SOURCES      = src/main.c \
-                         src/demo_framework.c \
-                         src/demo_synth_application.c \
-                         src/demo_recog_application.c \
-                         src/demo_bypass_application.c \
-                         src/demo_discover_application.c \
-                         src/demo_util.c
+                         src/asr_engine.c
+                         
 asrclient_LDADD        = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la
 
 if ISMAC
