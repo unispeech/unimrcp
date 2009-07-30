@@ -1,6 +1,7 @@
 MAINTAINERCLEANFILES   = Makefile.in
 
 INCLUDES               = -Iinclude \
+                         -I$(top_srcdir)/platforms/libasr-client/include \
                          -I$(top_srcdir)/platforms/libunimrcp-client/include \
                          -I$(top_srcdir)/libs/mrcp-client/include \
                          -I$(top_srcdir)/libs/mrcp-signaling/include \
@@ -14,10 +15,9 @@ INCLUDES               = -Iinclude \
                          $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
 
 bin_PROGRAMS           = asrclient
-asrclient_SOURCES      = src/main.c \
-                         src/asr_engine.c
+asrclient_SOURCES      = src/main.c 
                          
-asrclient_LDADD        = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la
+asrclient_LDADD        = $(top_builddir)/platforms/libasr-client/libasrclient.la
 
 if ISMAC
 asrclient_LDFLAGS      = -framework CoreFoundation -framework SystemConfiguration
