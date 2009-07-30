@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <apr_getopt.h>
 #include <apr_file_info.h>
+#include <apr_thread_proc.h>
 #include "asr_engine.h"
 #include "apt_pool.h"
 #include "apt_log.h"
@@ -27,6 +28,77 @@ typedef struct {
 	apt_log_priority_e log_priority;
 	apt_log_output_e   log_output;
 } client_options_t;
+
+typedef struct {
+	asr_engine_t      *engine;
+	const char        *grammar_file;
+	const char        *input_file;
+	const char        *profile;
+	
+	apr_thread_t      *thread;
+	apr_pool_t        *pool;
+} asr_params_t;
+
+/** Thread function to run ASR scenario in */
+static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
+{
+	asr_params_t *params = data;
+	asr_session_t *session = asr_session_create(params->engine,params->profile);
+	if(session) {
+		const char *result = asr_session_recognize(session,params->grammar_file,params->input_file);
+		if(result) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Recog Result [%s]",result);
+		}
+
+		asr_session_destroy(session);
+	}
+
+	/* destroy pool params allocated from */
+	apr_pool_destroy(params->pool);
+	return NULL;
+}
+
+/** Launch demo ASR session */
+static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_file, const char *input_file, const char *profile)
+{
+	apr_pool_t *pool;
+	asr_params_t *params;
+	
+	/* create pool to allocate params from */
+	pool = apt_pool_create();
+	params = apr_palloc(pool,sizeof(asr_params_t));
+	params->pool = pool;
+	params->engine = engine;
+
+	if(grammar_file) {
+		params->grammar_file = apr_pstrdup(pool,grammar_file);
+	}
+	else {
+		params->grammar_file = "grammar.xml";
+	}
+
+	if(input_file) {
+		params->input_file = apr_pstrdup(pool,input_file);
+	}
+	else {
+		params->input_file = "one.pcm";
+	}
+	
+	if(profile) {
+		params->profile = apr_pstrdup(pool,profile);
+	}
+	else {
+		params->profile = "MRCPv2-Default";
+	}
+
+	/* Launch a thread to run demo ASR session in */
+	if(apr_thread_create(&params->thread,NULL,asr_session_run,params,pool) != APR_SUCCESS) {
+		apr_pool_destroy(pool);
+		return FALSE;
+	}
+	
+	return TRUE;
+}
 
 static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 {
@@ -39,15 +111,6 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 		char *grammar = apr_strtok(NULL, " ", &last);
 		char *input = apr_strtok(NULL, " ", &last);
 		char *profile = apr_strtok(NULL, " ", &last);
-		if(!grammar) {
-			grammar = "grammar.xml";
-		}
-		if(!input) {
-			input = "one.pcm";
-		}
-		if(!profile) {
-			profile = "MRCPv2-Default";
-		}
 		asr_session_launch(engine,grammar,input,profile);
 	}
 	else if(strcasecmp(name,"loglevel") == 0) {

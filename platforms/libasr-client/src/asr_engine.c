@@ -49,20 +49,19 @@ struct asr_engine_t {
 
 /** ASR session on top of UniMRCP session/channel */
 struct asr_session_t {
+	/** Back pointer to engine */
+	asr_engine_t       *engine;
 	/** MRCP session */
 	mrcp_session_t     *mrcp_session;
 	/** MRCP channel */
 	mrcp_channel_t     *mrcp_channel;
+	/** RECOGNITION-COMPLETE message  */
+	mrcp_message_t     *recog_complete;
 
-	/** File to read grammar from */
-	FILE               *grammar;
 	/** File to read audio stream from */
 	FILE               *audio_in;
 	/** Streaming is in-progress */
 	apt_bool_t          streaming;
-
-	/** Thread to launch ASR scenario in */
-	apr_thread_t       *thread;
 
 	/** Conditional wait object */
 	apr_thread_cond_t  *wait_object;
@@ -88,7 +87,6 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 };
 
 static apt_bool_t app_message_handler(const mrcp_app_message_t *app_message);
-static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data);
 
 
 /** Create ASR engine */
@@ -143,55 +141,9 @@ apt_bool_t asr_engine_destroy(asr_engine_t *engine)
 }
 
 
-/** Create ASR session */
-static asr_session_t* asr_session_create(asr_engine_t *engine, const char *profile)
-{
-	mpf_termination_t *termination;
-	mrcp_channel_t *channel;
-	mrcp_session_t *session;
-
-	asr_session_t *asr_session = malloc(sizeof(asr_session_t));
-
-	/* create session */
-	session = mrcp_application_session_create(engine->mrcp_app,profile,asr_session);
-	if(!session) {
-		free(asr_session);
-		return FALSE;
-	}
-	
-	termination = mrcp_application_source_termination_create(
-			session,                   /* session, termination belongs to */
-			&audio_stream_vtable,      /* virtual methods table of audio stream */
-			NULL,                      /* codec descriptor of audio stream (NULL by default) */
-			asr_session);              /* object to associate */
-	
-	channel = mrcp_application_channel_create(
-			session,                   /* session, channel belongs to */
-			MRCP_RECOGNIZER_RESOURCE,  /* MRCP resource identifier */
-			termination,               /* media termination, used to terminate audio stream */
-			NULL,                      /* RTP descriptor, used to create RTP termination (NULL by default) */
-			asr_session);              /* object to associate */
-
-	if(!channel) {
-		mrcp_application_session_destroy(session);
-		free(asr_session);
-		return FALSE;
-	}
-	
-	asr_session->mrcp_session = session;
-	asr_session->mrcp_channel = channel;
-	asr_session->streaming = FALSE;
-	asr_session->audio_in = NULL;
-	asr_session->grammar = NULL;
-	asr_session->thread = NULL;
-	asr_session->mutex = NULL;
-	asr_session->wait_object = NULL;
-	asr_session->app_message = NULL;
-	return asr_session;
-}
 
 /** Destroy ASR session */
-static apt_bool_t asr_session_destroy(asr_session_t *asr_session, apt_bool_t terminate)
+static apt_bool_t asr_session_destroy_ex(asr_session_t *asr_session, apt_bool_t terminate)
 {
 	if(terminate == TRUE) {
 		apr_thread_mutex_lock(asr_session->mutex);
@@ -200,11 +152,6 @@ static apt_bool_t asr_session_destroy(asr_session_t *asr_session, apt_bool_t ter
 			/* the response must be checked to be the valid one */
 		}
 		apr_thread_mutex_unlock(asr_session->mutex);
-	}
-
-	if(asr_session->grammar) {
-		fclose(asr_session->grammar);
-		asr_session->grammar = NULL;
 	}
 
 	if(asr_session->audio_in) {
@@ -229,58 +176,25 @@ static apt_bool_t asr_session_destroy(asr_session_t *asr_session, apt_bool_t ter
 }
 
 /** Open audio input file */
-static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const apt_dir_layout_t *dir_layout, const char *input_file)
+static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const char *input_file)
 {
+	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
 	char *input_file_path = apt_datadir_filepath_get(dir_layout,input_file,asr_session->mrcp_session->pool);
 	if(!input_file_path) {
 		return FALSE;
 	}
+	
+	if(asr_session->audio_in) {
+		fclose(asr_session->audio_in);
+		asr_session->audio_in = NULL;
+	}
+
 	asr_session->audio_in = fopen(input_file_path,"rb");
 	if(!asr_session->audio_in) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Cannot Find [%s]",input_file_path);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open [%s]",input_file_path);
 		return FALSE;
 	}
 
-	return TRUE;
-}
-
-/** Open grammar file */
-static apt_bool_t asr_grammar_file_open(asr_session_t *asr_session, const apt_dir_layout_t *dir_layout, const char *grammar_file)
-{
-	char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,asr_session->mrcp_session->pool);
-	if(!grammar_file_path) {
-		return FALSE;
-	}
-	asr_session->grammar = fopen(grammar_file_path,"r");
-	if(!asr_session->grammar) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Cannot Find [%s]",grammar_file_path);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-/** Launch demo ASR session */
-apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_file, const char *input_file, const char *profile)
-{
-	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(engine->mrcp_app);
-	asr_session_t *asr_session = asr_session_create(engine,profile);
-	if(!asr_session) {
-		return FALSE;
-	}
-
-	if(asr_input_file_open(asr_session,dir_layout,input_file) == FALSE ||
-		asr_grammar_file_open(asr_session,dir_layout,grammar_file) == FALSE) {
-		asr_session_destroy(asr_session,FALSE);
-		return FALSE;
-	}
-
-	/* Launch a thread to run demo ASR session in */
-	if(apr_thread_create(&asr_session->thread,NULL,asr_session_run,asr_session,asr_session->mrcp_session->pool) != APR_SUCCESS) {
-		asr_session_destroy(asr_session,FALSE);
-		return FALSE;
-	}
-	
 	return TRUE;
 }
 
@@ -304,7 +218,7 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 }
 
 /** Create DEFINE-GRAMMAR request */
-static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session)
+static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_file)
 {
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(
@@ -313,6 +227,24 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session)
 						RECOGNIZER_DEFINE_GRAMMAR);
 	if(mrcp_message) {
 		mrcp_generic_header_t *generic_header;
+
+		/* set message body */
+		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
+		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,asr_session->mrcp_session->pool);
+		if(grammar_file_path) {
+			char text[1024];
+			apr_size_t size;
+			FILE *grammar = fopen(grammar_file_path,"r");
+			if(!grammar) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open [%s]",grammar_file_path);
+				return NULL;
+			}
+
+			size = fread(text,1,sizeof(text),grammar);
+			apt_string_assign_n(&mrcp_message->body,text,size,mrcp_message->pool);
+			fclose(grammar);
+		}
+
 		/* get/allocate generic header */
 		generic_header = mrcp_generic_header_prepare(mrcp_message);
 		if(generic_header) {
@@ -326,13 +258,6 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session)
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
 			apt_string_assign(&generic_header->content_id,"demo-grammar",mrcp_message->pool);
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
-		}
-		/* set message body */
-		if(asr_session->grammar) {
-			char text[1024];
-			apr_size_t size;
-			size = fread(text,1,sizeof(text),asr_session->grammar);
-			apt_string_assign_n(&mrcp_message->body,text,size,mrcp_message->pool);
 		}
 	}
 	return mrcp_message;
@@ -378,37 +303,33 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
 	}
 	return mrcp_message;
 }
-/** Parse NLSML result */
-static apt_bool_t nlsml_result_parse(mrcp_message_t *message)
+
+/** Get NLSML input result */
+static const char* nlsml_input_get(mrcp_message_t *message)
 {
 	apr_xml_elem *interpret;
 	apr_xml_elem *instance;
 	apr_xml_elem *input;
 	apr_xml_doc *doc = nlsml_doc_load(&message->body,message->pool);
 	if(!doc) {
-		return FALSE;
+		return NULL;
 	}
 	
-	/* walk through interpreted results */
+	/* get interpreted result */
 	interpret = nlsml_first_interpret_get(doc);
-	for(; interpret; interpret = nlsml_next_interpret_get(interpret)) {
-		/* get instance and input */
-		nlsml_interpret_results_get(interpret,&instance,&input);
-		if(instance) {
-			/* process instance */
-			if(instance->first_cdata.first) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Interpreted Instance [%s]",instance->first_cdata.first->text);
-			}
-		}
-		if(input) {
-			/* process input */
-			if(input->first_cdata.first) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Interpreted Input [%s]",input->first_cdata.first->text);
-			}
-		}
+	if(!interpret) {
+		return NULL;
 	}
-	return TRUE;
+	/* get instance and input */
+	nlsml_interpret_results_get(interpret,&instance,&input);
+	if(!input || !input->first_cdata.first) {
+		return NULL;
+	}
+	
+	/* return input */
+	return input->first_cdata.first->text;
 }
+
 
 /** Application message handler */
 static apt_bool_t app_message_handler(const mrcp_app_message_t *app_message)
@@ -466,18 +387,57 @@ static mrcp_message_t* mrcp_event_get(const mrcp_app_message_t *app_message)
 	return mrcp_message;
 }
 
-/** Thread function to run ASR scenario in */
-static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
+/** Create ASR session */
+asr_session_t* asr_session_create(asr_engine_t *engine, const char *profile)
 {
-	asr_session_t *asr_session = data;
+	mpf_termination_t *termination;
+	mrcp_channel_t *channel;
+	mrcp_session_t *session;
 	const mrcp_app_message_t *app_message;
-	mrcp_message_t *mrcp_message;
+
+	asr_session_t *asr_session = malloc(sizeof(asr_session_t));
+
+	/* create session */
+	session = mrcp_application_session_create(engine->mrcp_app,profile,asr_session);
+	if(!session) {
+		free(asr_session);
+		return NULL;
+	}
+	
+	termination = mrcp_application_source_termination_create(
+			session,                   /* session, termination belongs to */
+			&audio_stream_vtable,      /* virtual methods table of audio stream */
+			NULL,                      /* codec descriptor of audio stream (NULL by default) */
+			asr_session);              /* object to associate */
+	
+	channel = mrcp_application_channel_create(
+			session,                   /* session, channel belongs to */
+			MRCP_RECOGNIZER_RESOURCE,  /* MRCP resource identifier */
+			termination,               /* media termination, used to terminate audio stream */
+			NULL,                      /* RTP descriptor, used to create RTP termination (NULL by default) */
+			asr_session);              /* object to associate */
+
+	if(!channel) {
+		mrcp_application_session_destroy(session);
+		free(asr_session);
+		return NULL;
+	}
+	
+	asr_session->engine = engine;
+	asr_session->mrcp_session = session;
+	asr_session->mrcp_channel = channel;
+	asr_session->recog_complete = NULL;
+	asr_session->streaming = FALSE;
+	asr_session->audio_in = NULL;
+	asr_session->mutex = NULL;
+	asr_session->wait_object = NULL;
+	asr_session->app_message = NULL;
 
 	/* Create cond wait object and mutex */
 	apr_thread_mutex_create(&asr_session->mutex,APR_THREAD_MUTEX_DEFAULT,asr_session->mrcp_session->pool);
 	apr_thread_cond_create(&asr_session->wait_object,asr_session->mrcp_session->pool);
 
-	/* 1. Send add channel request and wait for the response */
+	/* Send add channel request and wait for the response */
 	apr_thread_mutex_lock(asr_session->mutex);
 	app_message = NULL;
 	if(mrcp_application_channel_add(asr_session->mrcp_session,asr_session->mrcp_channel) == TRUE) {
@@ -488,72 +448,92 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 	apr_thread_mutex_unlock(asr_session->mutex);
 
 	if(sig_response_check(app_message) == FALSE) {
-		asr_session_destroy(asr_session,TRUE);
+		asr_session_destroy_ex(asr_session,TRUE);
+		return NULL;
+	}
+	return asr_session;
+}
+
+/** Initiate recognition */
+const char* asr_session_recognize(asr_session_t *asr_session, const char *grammar_file, const char *input_file)
+{
+	const mrcp_app_message_t *app_message;
+	mrcp_message_t *mrcp_message;
+
+	app_message = NULL;
+	mrcp_message = define_grammar_message_create(asr_session,grammar_file);
+	if(!mrcp_message) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create DEFINE-GRAMMAR Request");
 		return NULL;
 	}
 
-	/* 2. Send DEFINE-GRAMMAR request and wait for the response */
+	/* Send DEFINE-GRAMMAR request and wait for the response */
 	apr_thread_mutex_lock(asr_session->mutex);
-	app_message = NULL;
-	mrcp_message = define_grammar_message_create(asr_session);
-	if(mrcp_message) {
-		if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
-			apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
-			app_message = asr_session->app_message;
-			asr_session->app_message = NULL;
-		}
+	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
+		apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
+		app_message = asr_session->app_message;
+		asr_session->app_message = NULL;
 	}
 	apr_thread_mutex_unlock(asr_session->mutex);
 
 	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_COMPLETE) == FALSE) {
-		asr_session_destroy(asr_session,TRUE);
 		return NULL;
 	}
 
-	/* 3. Send RECOGNIZE request and wait for the response */
-	apr_thread_mutex_lock(asr_session->mutex);
+	/* Reset prev recog result (if any) */
+	asr_session->recog_complete = NULL;
+
 	app_message = NULL;
 	mrcp_message = recognize_message_create(asr_session);
-	if(mrcp_message) {
-		if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
-			apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
-			app_message = asr_session->app_message;
-			asr_session->app_message = NULL;
-		}
+	if(!mrcp_message) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
+		return NULL;
+	}
+
+	/* Send RECOGNIZE request and wait for the response */
+	apr_thread_mutex_lock(asr_session->mutex);
+	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
+		apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
+		app_message = asr_session->app_message;
+		asr_session->app_message = NULL;
 	}
 	apr_thread_mutex_unlock(asr_session->mutex);
 
 	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_INPROGRESS) == FALSE) {
-		asr_session_destroy(asr_session,TRUE);
 		return NULL;
 	}
 	
-	/* 4. Start streaming */
+	/* Open input file and start streaming */
+	if(asr_input_file_open(asr_session,input_file) == FALSE) {
+		return NULL;
+	}
 	asr_session->streaming = TRUE;
 
-	/* 5. Wait for events either START-OF-INPUT or RECOGNITION-COMPLETE */
+	/* Wait for events either START-OF-INPUT or RECOGNITION-COMPLETE */
 	do {
 		apr_thread_mutex_lock(asr_session->mutex);
 		app_message = NULL;
 		if(apr_thread_cond_timedwait(asr_session->wait_object,asr_session->mutex, 60 * 1000000) != APR_SUCCESS) {
-			mrcp_message = NULL;
 			apr_thread_mutex_unlock(asr_session->mutex);
-			break;
+			return NULL;
 		}
 		app_message = asr_session->app_message;
 		asr_session->app_message = NULL;
 		apr_thread_mutex_unlock(asr_session->mutex);
 
 		mrcp_message = mrcp_event_get(app_message);
+		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
+			asr_session->recog_complete = mrcp_message;
+		}
 	}
-	while(!mrcp_message || mrcp_message->start_line.method_id != RECOGNIZER_RECOGNITION_COMPLETE);
+	while(!asr_session->recog_complete);
 
-	/* 6. Get results */
-	if(mrcp_message) {
-		nlsml_result_parse(mrcp_message);
-	}
+	/* Get results */
+	return nlsml_input_get(asr_session->recog_complete);
+}
 
-	/* 7. Send terminate session request, wait for the response and destroy session */
-	asr_session_destroy(asr_session,TRUE);
-	return NULL;
+/** Destroy ASR session */
+apt_bool_t asr_session_destroy(asr_session_t *asr_session)
+{
+	return asr_session_destroy_ex(asr_session,TRUE);
 }

@@ -19,7 +19,7 @@
 
 /**
  * @file asr_engine.h
- * @brief ASR wrapper, which uses UniMRCP client library
+ * @brief Basic ASR engine on top of UniMRCP client library
  */ 
 
 #include "unimrcp_client.h"
@@ -33,15 +33,42 @@ typedef struct asr_engine_t asr_engine_t;
 typedef struct asr_session_t asr_session_t;
 
 
-/** Create ASR engine */
+/**
+ * Create ASR engine.
+ * @param dir_layout the dir layout structure
+ * @param pool the pool to allocate memory from
+ */
 asr_engine_t* asr_engine_create(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 
-/** Destroy ASR engine */
+/**
+ * Destroy ASR engine.
+ * @param engine the engine to destroy
+ */
 apt_bool_t asr_engine_destroy(asr_engine_t *engine);
 
 
-/** Launch demo ASR session */
-apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_file, const char *input_file, const char *profile);
+
+/**
+ * Create ASR session.
+ * @param engine the engine session belongs to
+ * @param profile the name of UniMRCP profile to use
+ */
+asr_session_t* asr_session_create(asr_engine_t *engine, const char *profile);
+
+/**
+ * Initiate recognition.
+ * @param session the session to run recognition in the scope of
+ * @param grammar_file the name of the grammar file to use (path is relative to data dir)
+ * @param input_file the name of the audio input file to use (path is relative to data dir)
+ * @return the recognition result (input element of NLSML content)
+ */
+const char* asr_session_recognize(asr_session_t *session, const char *grammar_file, const char *input_file);
+
+/**
+ * Destroy ASR session.
+ * @param session the session to destroy
+ */
+apt_bool_t asr_session_destroy(asr_session_t *session);
 
 
 APT_END_EXTERN_C
