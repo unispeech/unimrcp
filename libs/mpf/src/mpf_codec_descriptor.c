@@ -15,12 +15,13 @@
  */
 
 #include "mpf_codec_descriptor.h"
+#include "mpf_rtp_pt.h"
 
 /** Match two codec descriptors */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
 {
 	apt_bool_t match = FALSE;
-	if(descriptor1->payload_type < 96 && descriptor2->payload_type < 96) {
+	if(descriptor1->payload_type < RTP_PT_DYNAMIC && descriptor2->payload_type < RTP_PT_DYNAMIC) {
 		if(descriptor1->payload_type == descriptor2->payload_type) {
 			match = TRUE;
 		}

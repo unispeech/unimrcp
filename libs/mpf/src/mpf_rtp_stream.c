@@ -20,6 +20,7 @@
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_header.h"
 #include "mpf_rtp_defs.h"
+#include "mpf_rtp_pt.h"
 #include "apt_log.h"
 
 
@@ -570,8 +571,8 @@ static apt_bool_t rtp_rx_packet_receive(rtp_receiver_t *receiver, mpf_codec_t *c
 			rtp_rx_failure_threshold_check(receiver);
 		}
 	}
-	else if(header->type == 13 || header->type == 19) {
-		/* CN packet*/
+	else if(header->type == RTP_PT_CN) {
+		/* CN packet */
 		receiver->stat.ignored_packets++;
 	}
 	else {

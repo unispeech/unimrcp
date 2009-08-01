@@ -17,6 +17,7 @@
 #define APR_WANT_BYTEFUNC
 #include <apr_want.h>
 #include "mpf_codec.h"
+#include "mpf_rtp_pt.h"
 
 /* linear 16-bit PCM (host horder) */
 #define LPCM_CODEC_NAME        "LPCM"
@@ -101,7 +102,7 @@ mpf_codec_descriptor_t* mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_r
 {
 	mpf_codec_descriptor_t *descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
 	mpf_codec_descriptor_init(descriptor);
-	descriptor->payload_type = 96;
+	descriptor->payload_type = RTP_PT_DYNAMIC;
 	descriptor->name.buf = LPCM_CODEC_NAME;
 	descriptor->name.length = LPCM_CODEC_NAME_LENGTH;
 	descriptor->sampling_rate = sampling_rate;

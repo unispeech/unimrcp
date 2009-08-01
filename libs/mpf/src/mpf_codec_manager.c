@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include "mpf_codec_manager.h"
+#include "mpf_rtp_pt.h"
 #include "apt_log.h"
 
 
@@ -68,7 +69,7 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
 		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
-		if(descriptor->payload_type < 96) {
+		if(descriptor->payload_type < RTP_PT_DYNAMIC) {
 			if(codec->static_descriptor && codec->static_descriptor->payload_type == descriptor->payload_type) {
 				descriptor->name = codec->static_descriptor->name;
 				descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
@@ -153,7 +154,7 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 			descriptor->channel_count = codec->static_descriptor->channel_count;
 		}
 		else {
-			descriptor->payload_type = 96;
+			descriptor->payload_type = RTP_PT_DYNAMIC;
 			descriptor->sampling_rate = 8000;
 			descriptor->channel_count = 1;
 		}

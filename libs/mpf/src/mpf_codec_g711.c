@@ -15,6 +15,7 @@
  */
 
 #include "mpf_codec.h"
+#include "mpf_rtp_pt.h"
 #include "g711/g711.h"
 
 #define G711u_CODEC_NAME        "PCMU"
@@ -122,7 +123,7 @@ static const mpf_codec_vtable_t g711a_vtable = {
 };
 
 static const mpf_codec_descriptor_t g711u_descriptor = {
-	0,
+	RTP_PT_PCMU,
 	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},
 	8000,
 	1,
@@ -131,7 +132,7 @@ static const mpf_codec_descriptor_t g711u_descriptor = {
 };
 
 static const mpf_codec_descriptor_t g711a_descriptor = {
-	8,
+	RTP_PT_PCMA,
 	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},
 	8000,
 	1,
