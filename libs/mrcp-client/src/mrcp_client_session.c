@@ -56,6 +56,12 @@ static apt_bool_t mrcp_client_mpf_request_send(
 						mpf_termination_t *termination, 
 						void *descriptor);
 
+static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_client_session_t *session)
+{
+	return session->base.signaling_agent->mrcp_version;
+}
+
+
 mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj)
 {
 	apr_pool_t *pool;
@@ -128,7 +134,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 		descriptor->audio_media_arr->nelts,
 		descriptor->video_media_arr->nelts);
 
-	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
 		if(mrcp_client_resource_answer_process(session,descriptor) != TRUE) {
 			status_code = MRCP_SIG_STATUS_CODE_FAILURE;
 		}
@@ -206,7 +212,7 @@ apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *
 		return mrcp_app_sig_response_raise(session,MRCP_SIG_STATUS_CODE_FAILURE,TRUE);
 	}
 
-	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
 		if(descriptor->resource_state == TRUE) {
 			mrcp_control_descriptor_t *control_media;
 			if(!session->answer) {
@@ -640,7 +646,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			return FALSE;
 		}
 	}
-	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
 		session->offer->resource_name = *channel->resource_name;
 		session->offer->resource_state = TRUE;
 	}
@@ -791,7 +797,7 @@ static apt_bool_t mrcp_client_resource_discover(mrcp_client_session_t *session)
 	
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Resource Discovery Request "APT_PTR_FMT, MRCP_SESSION_PTR(&session->base));
 	session->answer = NULL;
-	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
 		const apt_str_t *resource_name;
 		mrcp_resource_id i;
 

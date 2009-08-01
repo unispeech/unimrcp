@@ -113,6 +113,11 @@ mrcp_server_session_t* mrcp_server_session_create()
 	return session;
 }
 
+static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t *session)
+{
+	return session->base.signaling_agent->mrcp_version;
+}
+
 static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name)
 {
 	mrcp_resource_engine_t *resource_engine = apr_hash_get(
@@ -155,7 +160,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 		resource = mrcp_resource_get(session->profile->resource_factory,resource_id);
 		if(resource) {
 			channel->resource = resource;
-			if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_2) {
+			if(mrcp_session_version_get(session) == MRCP_VERSION_2) {
 				channel->control_channel = mrcp_server_control_channel_create(
 									session->profile->connection_agent,
 									channel,
@@ -163,7 +168,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 			}
 			channel->state_machine = resource->create_server_state_machine(
 								channel,
-								session->base.signaling_agent->mrcp_version,
+								mrcp_session_version_get(session),
 								pool);
 			if(channel->state_machine) {
 				channel->state_machine->on_dispatch = state_machine_on_message_dispatch;
@@ -394,7 +399,7 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 	session->offer = descriptor;
 	session->answer = mrcp_session_answer_create(descriptor,session->base.pool);
 
-	if(session->base.signaling_agent->mrcp_version == MRCP_VERSION_1) {
+	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
 		if(mrcp_server_resource_offer_process(session,descriptor) == TRUE) {
 			mrcp_server_av_media_offer_process(session,descriptor);
 		}
