@@ -129,7 +129,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 		return NULL;
 	}
 
-	return resource_engine->method_vtable->create_channel(resource_engine,session->base.pool);
+	return mrcp_engine_channel_virtual_create(resource_engine,session->base.pool);
 }
 
 static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id)
@@ -450,7 +450,7 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 			}
 
 			/* close resource engine channel */
-			if(mrcp_engine_channel_close(channel->engine_channel) == TRUE) {
+			if(mrcp_engine_channel_virtual_close(channel->engine_channel) == TRUE) {
 				session->terminate_flag_count++;
 			}
 		}
@@ -558,7 +558,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 
 		if(channel->engine_channel) {
 			/* open resource engine channel */
-			if(mrcp_engine_channel_open(channel->engine_channel) == TRUE) {
+			if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
 				mpf_termination_t *termination = channel->engine_channel->termination;
 				session->answer_flag_count++;
 
@@ -660,7 +660,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		
 		if(channel->engine_channel) {
 			/* open resource engine channel */
-			if(mrcp_engine_channel_open(channel->engine_channel) == TRUE) {
+			if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
 				mpf_termination_t *termination = channel->engine_channel->termination;
 				session->answer_flag_count++;
 
@@ -776,7 +776,7 @@ static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *sess
 			channel->control_channel = NULL;
 		}
 		if(channel->engine_channel) {
-			mrcp_engine_channel_destroy(channel->engine_channel);
+			mrcp_engine_channel_virtual_destroy(channel->engine_channel);
 			channel->engine_channel = NULL;
 		}
 	}

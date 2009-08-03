@@ -628,7 +628,7 @@ static void mrcp_server_on_start_complete(apt_task_t *task)
 		apr_hash_this(it,NULL,NULL,&val);
 		resource_engine = val;
 		if(resource_engine) {
-			mrcp_resource_engine_open(resource_engine);
+			mrcp_engine_virtual_open(resource_engine);
 		}
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Started");
@@ -648,7 +648,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 		apr_hash_this(it,NULL,NULL,&val);
 		resource_engine = val;
 		if(resource_engine) {
-			mrcp_resource_engine_close(resource_engine);
+			mrcp_engine_virtual_close(resource_engine);
 		}
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unload Plugins");

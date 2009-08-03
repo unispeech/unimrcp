@@ -17,6 +17,26 @@
 #include "mrcp_resource_engine.h"
 #include "mpf_codec_manager.h"
 
+/** Create engine channel */
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+{
+	if(engine->max_simult_channels && engine->cur_simult_channels >= engine->max_simult_channels) {
+		return NULL;
+	}
+	engine->cur_simult_channels++;
+	return engine->method_vtable->create_channel(engine,pool);
+}
+
+/** Destroy engine channel */
+apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel)
+{
+	mrcp_resource_engine_t *engine = channel->engine;
+	if(engine->cur_simult_channels) {
+		engine->cur_simult_channels--;
+	}
+	return channel->method_vtable->destroy(channel);
+}
+
 /** Create resource engine */
 mrcp_resource_engine_t* mrcp_resource_engine_create(
 								mrcp_resource_id resource_id,
@@ -31,6 +51,8 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 	engine->method_vtable =vtable;
 	engine->codec_manager = NULL;
 	engine->dir_layout = NULL;
+	engine->max_simult_channels = 0;
+	engine->cur_simult_channels = 0;
 	engine->pool = pool;
 	return engine;
 }

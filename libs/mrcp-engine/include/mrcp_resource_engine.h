@@ -106,6 +106,12 @@ struct mrcp_resource_engine_t {
 	const mpf_codec_manager_t         *codec_manager;
 	/** Dir layout structure */
 	const apt_dir_layout_t            *dir_layout;
+
+	/** Max number of simultaneous channels */
+	apr_size_t                         max_simult_channels;
+	/** Number of simultaneous channels currently in use */
+	apr_size_t                         cur_simult_channels;
+
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
 };
@@ -118,19 +124,19 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 								apr_pool_t *pool);
 
 /** Destroy resource engine */
-static APR_INLINE apt_bool_t mrcp_resource_engine_destroy(mrcp_resource_engine_t *engine)
+static APR_INLINE apt_bool_t mrcp_engine_virtual_destroy(mrcp_resource_engine_t *engine)
 {
 	return engine->method_vtable->destroy(engine);
 }
 
 /** Open resource engine */
-static APR_INLINE apt_bool_t mrcp_resource_engine_open(mrcp_resource_engine_t *engine)
+static APR_INLINE apt_bool_t mrcp_engine_virtual_open(mrcp_resource_engine_t *engine)
 {
 	return engine->method_vtable->open(engine);
 }
 
 /** Close resource engine */
-static APR_INLINE apt_bool_t mrcp_resource_engine_close(mrcp_resource_engine_t *engine)
+static APR_INLINE apt_bool_t mrcp_engine_virtual_close(mrcp_resource_engine_t *engine)
 {
 	return engine->method_vtable->close(engine);
 }
@@ -161,20 +167,20 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 								mpf_codec_descriptor_t *codec_descriptor,
 								apr_pool_t *pool);
 
+/** Create engine channel */
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
+
 /** Destroy engine channel */
-static APR_INLINE apt_bool_t mrcp_engine_channel_destroy(mrcp_engine_channel_t *channel)
-{
-	return channel->method_vtable->destroy(channel);
-}
+apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel);
 
 /** Open engine channel */
-static APR_INLINE apt_bool_t mrcp_engine_channel_open(mrcp_engine_channel_t *channel)
+static APR_INLINE apt_bool_t mrcp_engine_channel_virtual_open(mrcp_engine_channel_t *channel)
 {
 	return channel->method_vtable->open(channel);
 }
 
 /** Close engine channel */
-static APR_INLINE apt_bool_t mrcp_engine_channel_close(mrcp_engine_channel_t *channel)
+static APR_INLINE apt_bool_t mrcp_engine_channel_virtual_close(mrcp_engine_channel_t *channel)
 {
 	return channel->method_vtable->close(channel);
 }
