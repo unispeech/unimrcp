@@ -74,8 +74,10 @@ struct mrcp_engine_channel_t {
 	mpf_termination_t                         *termination;
 	/** Back pointer to resource engine */
 	mrcp_resource_engine_t                    *engine;
-	/** Unique identifier (useful for traces) */
+	/** Unique identifier to be used in traces */
 	apt_str_t                                  id;
+	/** MRCP version */
+	mrcp_version_e                             mrcp_version;
 	/** Pool to allocate memory from */
 	apr_pool_t                                *pool;
 };
@@ -168,7 +170,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 								apr_pool_t *pool);
 
 /** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool);
 
 /** Destroy engine channel */
 apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel);
@@ -207,6 +209,18 @@ static APR_INLINE apt_bool_t mrcp_engine_channel_close_respond(mrcp_engine_chann
 static APR_INLINE apt_bool_t mrcp_engine_channel_message_send(mrcp_engine_channel_t *channel, mrcp_message_t *message)
 {
 	return channel->event_vtable->on_message(channel,message);
+}
+
+/** Get channel identifier */
+static APR_INLINE const char* mrcp_engine_channel_id_get(mrcp_engine_channel_t *channel)
+{
+	return channel->id.buf;
+}
+
+/** Get MRCP version channel is created in the scope of */
+static APR_INLINE mrcp_version_e mrcp_engine_channel_version_get(mrcp_engine_channel_t *channel)
+{
+	return channel->mrcp_version;
 }
 
 /** Get codec of the audio source stream */

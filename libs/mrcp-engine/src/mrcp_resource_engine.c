@@ -18,13 +18,18 @@
 #include "mpf_codec_manager.h"
 
 /** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
+	mrcp_engine_channel_t *channel;
 	if(engine->max_simult_channels && engine->cur_simult_channels >= engine->max_simult_channels) {
 		return NULL;
 	}
-	engine->cur_simult_channels++;
-	return engine->method_vtable->create_channel(engine,pool);
+	channel = engine->method_vtable->create_channel(engine,pool);
+	if(channel) {
+		channel->mrcp_version = mrcp_version;
+		engine->cur_simult_channels++;
+	}
+	return channel;
 }
 
 /** Destroy engine channel */

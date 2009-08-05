@@ -62,7 +62,7 @@ struct mrcp_termination_slot_t {
 	/** RTP termination */
 	mpf_termination_t *termination;
 	/** media descriptor id */
-	apr_size_t              id;
+	apr_size_t         id;
 	/** waiting state */
 	apt_bool_t         waiting;
 };
@@ -129,7 +129,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 		return NULL;
 	}
 
-	return mrcp_engine_channel_virtual_create(resource_engine,session->base.pool);
+	return mrcp_engine_channel_virtual_create(resource_engine,mrcp_session_version_get(session),session->base.pool);
 }
 
 static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id)
