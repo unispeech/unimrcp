@@ -147,7 +147,7 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 		descriptor = mpf_codec_list_add(codec_list);
 		descriptor->name = name;
 
-		/* set defualt attributes */
+		/* set default attributes */
 		if(codec->static_descriptor) {
 			descriptor->payload_type = codec->static_descriptor->payload_type;
 			descriptor->sampling_rate = codec->static_descriptor->sampling_rate;

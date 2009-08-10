@@ -102,7 +102,7 @@ struct pocketsphinx_recognizer_t {
 	ps_decoder_t             *decoder;
 	/** Configuration */
 	cmd_ln_t                 *config;
-	/** Recognizer properties coppied from defualt engine properties */
+	/** Recognizer properties coppied from default engine properties */
 	pocketsphinx_properties_t properties;
 	/** Is input timer started */
 	apt_bool_t                is_input_timer_on;
