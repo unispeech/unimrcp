@@ -65,9 +65,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
  * Register MRCP resource engine.
  * @param server the MRCP server to set engine for
  * @param engine the resource engine to set
- * @param name the name of the resource engine
+ * @param config the config of the resource engine
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine, mrcp_resource_engine_config_t *config);
 
 /**
  * Register codec manager.
@@ -140,9 +140,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
  * Register resource engine plugin.
  * @param server the MRCP server to set engine for
  * @param path the path to plugin
- * @param name the name of the plugin
+ * @param config the config of the plugin
  */
-MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, mrcp_resource_engine_config_t *config);
 
 /**
  * Get memory pool.

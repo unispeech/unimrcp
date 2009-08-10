@@ -276,18 +276,19 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
 }
 
 /** Register MRCP resource engine */
-MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *server, mrcp_resource_engine_t *engine, mrcp_resource_engine_config_t *config)
 {
-	if(!engine || !name) {
+	if(!engine || !config || !config->name) {
 		return FALSE;
 	}
 	if(!server->resource_engine_msg_pool) {
 		server->resource_engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(resource_engine_task_msg_data_t),server->pool);
 	}
+	engine->config = config;
 	engine->codec_manager = server->codec_manager;
 	engine->dir_layout = server->dir_layout;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Resource Engine [%s]",name);
-	apr_hash_set(server->resource_engine_table,name,APR_HASH_KEY_STRING,engine);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Resource Engine [%s]",config->name);
+	apr_hash_set(server->resource_engine_table,config->name,APR_HASH_KEY_STRING,engine);
 	return TRUE;
 }
 
@@ -520,18 +521,18 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(mrcp_server_t *server, con
 }
 
 /** Register resource engine plugin */
-MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, mrcp_resource_engine_config_t *config)
 {
 	apt_bool_t status = FALSE;
 	apr_dso_handle_t *plugin = NULL;
 	apr_dso_handle_sym_t func_handle = NULL;
 	mrcp_plugin_creator_f plugin_creator = NULL;
-	if(!path || !name) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Plugin: no name");
+	if(!path || !config || !config->name) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Plugin: invalid params");
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,config->name);
 	if(apr_dso_load(&plugin,path,server->pool) == APR_SUCCESS) {
 		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_ENGINE_SYM_NAME) == APR_SUCCESS) {
 			if(func_handle) {
@@ -565,8 +566,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 		if(engine) {
 			if(mrcp_plugin_version_check(&engine->plugin_version)) {
 				status = TRUE;
-				mrcp_server_resource_engine_register(server,engine,name);
-				apr_hash_set(server->plugin_table,name,APR_HASH_KEY_STRING,plugin);
+				mrcp_server_resource_engine_register(server,engine,config);
+				apr_hash_set(server->plugin_table,config->name,APR_HASH_KEY_STRING,plugin);
 			}
 			else {
 				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",

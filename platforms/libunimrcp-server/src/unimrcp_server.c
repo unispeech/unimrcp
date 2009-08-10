@@ -516,15 +516,16 @@ static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const
 /** Load plugin */
 static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	const char *plugin_name = NULL;
+	mrcp_resource_engine_config_t *config;
 	const char *plugin_class = NULL;
 	const char *plugin_ext = NULL;
 	const char *plugin_path = NULL;
 	apt_bool_t plugin_enabled = TRUE;
 	const apr_xml_attr *attr;
+	config = mrcp_resource_engine_config_alloc(pool);
 	for(attr = root->attr; attr; attr = attr->next) {
 		if(strcasecmp(attr->name,"name") == 0) {
-			plugin_name = apr_pstrdup(pool,attr->value);
+			config->name = apr_pstrdup(pool,attr->value);
 		}
 		else if(strcasecmp(attr->name,"class") == 0) {
 			plugin_class = attr->value;
@@ -534,6 +535,9 @@ static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *
 		}
 		else if(strcasecmp(attr->name,"enable") == 0) {
 			plugin_enabled = atoi(attr->value);
+		}
+		else if(strcasecmp(attr->name,"max-channel-count") == 0) {
+			config->max_channel_count = atol(attr->value);
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
@@ -557,7 +561,24 @@ static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *
 		plugin_path = apr_psprintf(pool,"%s/%s.%s",plugin_dir_path,plugin_class,plugin_ext);
 	}
 
-	return mrcp_server_plugin_register(server,plugin_path,plugin_name);
+	/* load optional name/value params */
+	if(root->first_child){
+		const apr_xml_attr *attr_name;
+		const apr_xml_attr *attr_value;
+		const apr_xml_elem *elem;
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Engine Params");
+		config->params = apr_table_make(pool,1);
+		for(elem = root->first_child; elem; elem = elem->next) {
+			if(strcasecmp(elem->name,"param") == 0) {
+				if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+					apr_table_set(config->params,attr_name->value,attr_value->value);
+				}
+			}
+		}
+	}
+
+	return mrcp_server_plugin_register(server,plugin_path,config);
 }
 
 /** Load plugins */

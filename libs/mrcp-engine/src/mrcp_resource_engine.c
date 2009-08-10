@@ -17,31 +17,6 @@
 #include "mrcp_resource_engine.h"
 #include "mpf_codec_manager.h"
 
-/** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
-{
-	mrcp_engine_channel_t *channel;
-	if(engine->max_simult_channels && engine->cur_simult_channels >= engine->max_simult_channels) {
-		return NULL;
-	}
-	channel = engine->method_vtable->create_channel(engine,pool);
-	if(channel) {
-		channel->mrcp_version = mrcp_version;
-		engine->cur_simult_channels++;
-	}
-	return channel;
-}
-
-/** Destroy engine channel */
-apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel)
-{
-	mrcp_resource_engine_t *engine = channel->engine;
-	if(engine->cur_simult_channels) {
-		engine->cur_simult_channels--;
-	}
-	return channel->method_vtable->destroy(channel);
-}
-
 /** Create resource engine */
 mrcp_resource_engine_t* mrcp_resource_engine_create(
 								mrcp_resource_id resource_id,
@@ -54,13 +29,39 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 	engine->resource_id = resource_id;
 	engine->obj = obj;
 	engine->method_vtable =vtable;
+	engine->config = NULL;
 	engine->codec_manager = NULL;
 	engine->dir_layout = NULL;
-	engine->max_simult_channels = 0;
-	engine->cur_simult_channels = 0;
+	engine->cur_channel_count = 0;
 	engine->pool = pool;
 	return engine;
 }
+
+/** Allocate resource engine config */
+mrcp_resource_engine_config_t* mrcp_resource_engine_config_alloc(apr_pool_t *pool)
+{
+	mrcp_resource_engine_config_t *config = apr_palloc(pool,sizeof(mrcp_resource_engine_config_t));
+	config->name = NULL;
+	config->max_channel_count = 0;
+	config->params = NULL;
+	return config;
+}
+
+/** Get engine config */
+mrcp_resource_engine_config_t* mrcp_resource_engine_config_get(mrcp_resource_engine_t *engine)
+{
+	return engine->config;
+}
+
+/** Get engine param by name */
+const char* mrcp_resource_engine_param_get(mrcp_resource_engine_t *engine, const char *name)
+{
+	if(!engine->config || !engine->config->params) {
+		return NULL;
+	}
+	return apr_table_get(engine->config->params,name);
+}
+
 
 /** Create engine channel */
 mrcp_engine_channel_t* mrcp_engine_channel_create(
@@ -80,6 +81,31 @@ mrcp_engine_channel_t* mrcp_engine_channel_create(
 	channel->pool = pool;
 	apt_string_reset(&channel->id);
 	return channel;
+}
+
+/** Create engine channel */
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
+{
+	mrcp_engine_channel_t *channel;
+	if(engine->config->max_channel_count && engine->cur_channel_count >= engine->config->max_channel_count) {
+		return NULL;
+	}
+	channel = engine->method_vtable->create_channel(engine,pool);
+	if(channel) {
+		channel->mrcp_version = mrcp_version;
+		engine->cur_channel_count++;
+	}
+	return channel;
+}
+
+/** Destroy engine channel */
+apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel)
+{
+	mrcp_resource_engine_t *engine = channel->engine;
+	if(engine->cur_channel_count) {
+		engine->cur_channel_count--;
+	}
+	return channel->method_vtable->destroy(channel);
 }
 
 /** Create engine channel and source media termination */

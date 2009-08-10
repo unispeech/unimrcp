@@ -37,6 +37,8 @@ typedef struct mrcp_engine_channel_t mrcp_engine_channel_t;
 typedef struct mrcp_engine_channel_method_vtable_t mrcp_engine_channel_method_vtable_t;
 /** MRCP engine channel virtual event table declaration */
 typedef struct mrcp_engine_channel_event_vtable_t mrcp_engine_channel_event_vtable_t;
+/** MRCP resource engine config declaration */
+typedef struct mrcp_resource_engine_config_t mrcp_resource_engine_config_t;
 
 /** Table of channel virtual methods */
 struct mrcp_engine_channel_method_vtable_t {
@@ -94,6 +96,16 @@ struct mrcp_engine_method_vtable_t {
 	mrcp_engine_channel_t* (*create_channel)(mrcp_resource_engine_t *engine, apr_pool_t *pool);
 };
 
+/** MRCP resource engine config */
+struct mrcp_resource_engine_config_t {
+	/** Name of the engine */
+	const char  *name;
+	/** Max number of simultaneous channels */
+	apr_size_t   max_channel_count;
+	/** Table of name/value string params */
+	apr_table_t *params;
+};
+
 /** MRCP resource engine */
 struct mrcp_resource_engine_t {
 	/** Plugin version */
@@ -108,12 +120,10 @@ struct mrcp_resource_engine_t {
 	const mpf_codec_manager_t         *codec_manager;
 	/** Dir layout structure */
 	const apt_dir_layout_t            *dir_layout;
-
-	/** Max number of simultaneous channels */
-	apr_size_t                         max_simult_channels;
+	/** Config of resource engine */
+	mrcp_resource_engine_config_t     *config;
 	/** Number of simultaneous channels currently in use */
-	apr_size_t                         cur_simult_channels;
-
+	apr_size_t                         cur_channel_count;
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
 };
@@ -124,6 +134,15 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 								void *obj, 
 								const mrcp_engine_method_vtable_t *vtable,
 								apr_pool_t *pool);
+
+/** Allocate resource engine config */
+mrcp_resource_engine_config_t* mrcp_resource_engine_config_alloc(apr_pool_t *pool);
+
+/** Get engine config */
+mrcp_resource_engine_config_t* mrcp_resource_engine_config_get(mrcp_resource_engine_t *engine);
+
+/** Get engine param by name */
+const char* mrcp_resource_engine_param_get(mrcp_resource_engine_t *engine, const char *name);
 
 /** Destroy resource engine */
 static APR_INLINE apt_bool_t mrcp_engine_virtual_destroy(mrcp_resource_engine_t *engine)
