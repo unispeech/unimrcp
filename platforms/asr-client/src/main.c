@@ -20,13 +20,12 @@
 #include <apr_file_info.h>
 #include <apr_thread_proc.h>
 #include "asr_engine.h"
-#include "apt_pool.h"
-#include "apt_log.h"
 
 typedef struct {
 	const char        *root_dir_path;
 	apt_log_priority_e log_priority;
 	apt_log_output_e   log_output;
+	apr_pool_t        *pool;
 } client_options_t;
 
 typedef struct {
@@ -47,7 +46,7 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 	if(session) {
 		const char *result = asr_session_recognize(session,params->grammar_file,params->input_file);
 		if(result) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Recog Result [%s]",result);
+			printf("Recog Result [%s]",result);
 		}
 
 		asr_session_destroy(session);
@@ -65,7 +64,7 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_f
 	asr_params_t *params;
 	
 	/* create pool to allocate params from */
-	pool = apt_pool_create();
+	apr_pool_create(&pool,NULL);
 	params = apr_palloc(pool,sizeof(asr_params_t));
 	params->pool = pool;
 	params->engine = engine;
@@ -116,7 +115,7 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 	else if(strcasecmp(name,"loglevel") == 0) {
 		char *priority = apr_strtok(NULL, " ", &last);
 		if(priority) {
-			apt_log_priority_set(atol(priority));
+			asr_engine_log_priority_set(atol(priority));
 		}
 	}
 	else if(strcasecmp(name,"exit") == 0 || strcmp(name,"quit") == 0) {
@@ -186,12 +185,21 @@ static void usage()
 		"\n");
 }
 
-static apt_bool_t options_load(client_options_t *options, int argc, const char * const *argv, apr_pool_t *pool)
+static void options_destroy(client_options_t *options)
+{
+	if(options->pool) {
+		apr_pool_destroy(options->pool);
+	}
+}
+
+static client_options_t* options_load(int argc, const char * const *argv)
 {
 	apr_status_t rv;
 	apr_getopt_t *opt = NULL;
 	int optch;
 	const char *optarg;
+	apr_pool_t *pool;
+	client_options_t *options;
 
 	const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
@@ -202,9 +210,23 @@ static apt_bool_t options_load(client_options_t *options, int argc, const char *
 		{ NULL, 0, 0, NULL },                               /* end */
 	};
 
+	/* create APR pool to allocate options from */
+	apr_pool_create(&pool,NULL);
+	if(!pool) {
+		return NULL;
+	}
+	options = apr_palloc(pool,sizeof(client_options_t));
+	options->pool = pool;
+	/* set the default options */
+	options->root_dir_path = "../";
+	options->log_priority = APT_PRIO_INFO;
+	options->log_output = APT_LOG_OUTPUT_CONSOLE;
+
+
 	rv = apr_getopt_init(&opt, pool , argc, argv);
 	if(rv != APR_SUCCESS) {
-		return FALSE;
+		options_destroy(options);
+		return NULL;
 	}
 
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
@@ -230,17 +252,16 @@ static apt_bool_t options_load(client_options_t *options, int argc, const char *
 
 	if(rv != APR_EOF) {
 		usage();
-		return FALSE;
+		options_destroy(options);
+		return NULL;
 	}
 
-	return TRUE;
+	return options;
 }
 
 int main(int argc, const char * const *argv)
 {
-	apr_pool_t *pool = NULL;
-	client_options_t options;
-	apt_dir_layout_t *dir_layout;
+	client_options_t *options;
 	asr_engine_t *engine;
 
 	/* APR global initialization */
@@ -249,37 +270,18 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
-	/* create APR pool */
-	pool = apt_pool_create();
-	if(!pool) {
-		apr_terminate();
-		return 0;
-	}
-
-	/* set the default options */
-	options.root_dir_path = "../";
-	options.log_priority = APT_PRIO_INFO;
-	options.log_output = APT_LOG_OUTPUT_CONSOLE;
-
 	/* load options */
-	if(options_load(&options,argc,argv,pool) != TRUE) {
-		apr_pool_destroy(pool);
+	options = options_load(argc,argv);
+	if(!options) {
 		apr_terminate();
 		return 0;
 	}
 
-	/* create the structure of default directories layout */
-	dir_layout = apt_default_dir_layout_create(options.root_dir_path,pool);
-	/* create singleton logger */
-	apt_log_instance_create(options.log_output,options.log_priority,pool);
-
-	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
-		/* open the log file */
-		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,pool);
-	}
-
-	/* create demo framework */
-	engine = asr_engine_create(dir_layout,pool);
+	/* create asr engine */
+	engine = asr_engine_create(
+				options->root_dir_path,
+				options->log_priority,
+				options->log_output);
 	if(engine) {
 		/* run command line  */
 		cmdline_run(engine);
@@ -287,10 +289,9 @@ int main(int argc, const char * const *argv)
 		asr_engine_destroy(engine);
 	}
 
-	/* destroy singleton logger */
-	apt_log_instance_destroy();
-	/* destroy APR pool */
-	apr_pool_destroy(pool);
+	/* destroy options */
+	options_destroy(options);
+
 	/* APR global termination */
 	apr_terminate();
 	return 0;

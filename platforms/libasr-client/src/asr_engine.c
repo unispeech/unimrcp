@@ -21,6 +21,7 @@
 #include <apr_thread_proc.h>
 
 /* common includes */
+#include "unimrcp_client.h"
 #include "mrcp_application.h"
 #include "mrcp_session.h"
 #include "mrcp_message.h"
@@ -90,15 +91,43 @@ static apt_bool_t app_message_handler(const mrcp_app_message_t *app_message);
 
 
 /** Create ASR engine */
-asr_engine_t* asr_engine_create(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
+ASR_CLIENT_DECLARE(asr_engine_t*) asr_engine_create(
+									const char *root_dir_path,
+									apt_log_priority_e log_priority,
+									apt_log_output_e log_output)
 {
+	apr_pool_t *pool = NULL;
+	apt_dir_layout_t *dir_layout;
+	asr_engine_t *engine;
 	mrcp_client_t *mrcp_client;
 	mrcp_application_t *mrcp_app;
-	asr_engine_t *engine = apr_palloc(pool,sizeof(asr_engine_t));
+
+	/* create APR pool */
+	pool = apt_pool_create();
+	if(!pool) {
+		return NULL;
+	}
+
+	/* create the structure of default directories layout */
+	dir_layout = apt_default_dir_layout_create(root_dir_path,pool);
+	/* create singleton logger */
+	apt_log_instance_create(log_output,log_priority,pool);
+
+	if((log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+		/* open the log file */
+		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,pool);
+	}
+
+	engine = apr_palloc(pool,sizeof(asr_engine_t));
+	engine->pool = pool;
+	engine->mrcp_client = NULL;
+	engine->mrcp_app = NULL;
 
 	/* create UniMRCP client stack */
 	mrcp_client = unimrcp_client_create(dir_layout);
 	if(!mrcp_client) {
+		apt_log_instance_destroy();
+		apr_pool_destroy(pool);
 		return NULL;
 	}
 	
@@ -109,6 +138,8 @@ asr_engine_t* asr_engine_create(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 								pool);
 	if(!mrcp_app) {
 		mrcp_client_destroy(mrcp_client);
+		apt_log_instance_destroy();
+		apr_pool_destroy(pool);
 		return NULL;
 	}
 
@@ -118,6 +149,8 @@ asr_engine_t* asr_engine_create(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 	/* start client stack */
 	if(mrcp_client_start(mrcp_client) != TRUE) {
 		mrcp_client_destroy(mrcp_client);
+		apt_log_instance_destroy();
+		apr_pool_destroy(pool);
 		return NULL;
 	}
 
@@ -127,7 +160,7 @@ asr_engine_t* asr_engine_create(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 }
 
 /** Destroy ASR engine */
-apt_bool_t asr_engine_destroy(asr_engine_t *engine)
+ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_destroy(asr_engine_t *engine)
 {
 	if(engine->mrcp_client) {
 		/* shutdown client stack */
@@ -137,6 +170,11 @@ apt_bool_t asr_engine_destroy(asr_engine_t *engine)
 		engine->mrcp_client = NULL;
 		engine->mrcp_app = NULL;
 	}
+
+	/* destroy singleton logger */
+	apt_log_instance_destroy();
+	/* destroy APR pool */
+	apr_pool_destroy(engine->pool);
 	return TRUE;
 }
 
@@ -388,7 +426,7 @@ static mrcp_message_t* mrcp_event_get(const mrcp_app_message_t *app_message)
 }
 
 /** Create ASR session */
-asr_session_t* asr_session_create(asr_engine_t *engine, const char *profile)
+ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, const char *profile)
 {
 	mpf_termination_t *termination;
 	mrcp_channel_t *channel;
@@ -455,7 +493,7 @@ asr_session_t* asr_session_create(asr_engine_t *engine, const char *profile)
 }
 
 /** Initiate recognition */
-const char* asr_session_recognize(asr_session_t *asr_session, const char *grammar_file, const char *input_file)
+ASR_CLIENT_DECLARE(const char*) asr_session_recognize(asr_session_t *asr_session, const char *grammar_file, const char *input_file)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
@@ -533,7 +571,13 @@ const char* asr_session_recognize(asr_session_t *asr_session, const char *gramma
 }
 
 /** Destroy ASR session */
-apt_bool_t asr_session_destroy(asr_session_t *asr_session)
+ASR_CLIENT_DECLARE(apt_bool_t) asr_session_destroy(asr_session_t *asr_session)
 {
 	return asr_session_destroy_ex(asr_session,TRUE);
+}
+
+/** Set log priority */
+ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_log_priority_set(apt_log_priority_e log_priority)
+{
+	return apt_log_priority_set(log_priority);
 }

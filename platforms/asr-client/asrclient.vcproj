@@ -37,6 +37,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="include;&quot;..\libasr-client\include&quot;"
+				RuntimeLibrary="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -49,7 +50,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(UniMRCPClientLibs) libasrclient.lib"
+				AdditionalDependencies="libasrclient.lib libapr-1.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -111,7 +112,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(UniMRCPClientLibs) libasrclient.lib"
+				AdditionalDependencies="libasrclient.lib libapr-1.lib"
 				LinkTimeCodeGeneration="1"
 			/>
 			<Tool
