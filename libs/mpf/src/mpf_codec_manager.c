@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_pt.h"
+#include "mpf_named_event.h"
 #include "apt_log.h"
 
 
@@ -24,8 +25,10 @@ struct mpf_codec_manager_t {
 	/** Memory pool */
 	apr_pool_t   *pool;
 
-	/** Dynamic array of codecs (mpf_codec_t*) */
+	/** Dynamic (resizable) array of codecs (mpf_codec_t*) */
 	apr_array_header_t *codec_arr;
+	/** Default named event descriptor */
+	mpf_codec_descriptor_t *event_descriptor;
 };
 
 
@@ -36,6 +39,7 @@ MPF_DECLARE(mpf_codec_manager_t*) mpf_codec_manager_create(apr_size_t codec_coun
 	mpf_codec_manager_t *codec_manager = apr_palloc(pool,sizeof(mpf_codec_manager_t));
 	codec_manager->pool = pool;
 	codec_manager->codec_arr = apr_array_make(pool,(int)codec_count,sizeof(mpf_codec_t*));
+	codec_manager->event_descriptor = mpf_event_descriptor_create(8000,pool);
 	return codec_manager;
 }
 
@@ -122,6 +126,12 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager
 			}
 		}
 	}
+	if(codec_manager->event_descriptor) {
+		descriptor = mpf_codec_list_add(codec_list);
+		if(descriptor) {
+			*descriptor = *codec_manager->event_descriptor;
+		}
+	}
 	return TRUE;
 }
 
@@ -139,25 +149,34 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 		apt_string_assign(&name,str,pool);
 		/* find codec by name */
 		codec = mpf_codec_manager_codec_find(codec_manager,&name);
-		if(!codec) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Codec [%s]",str);
-			return FALSE;
-		}
+		if(codec) {
+			descriptor = mpf_codec_list_add(codec_list);
+			descriptor->name = name;
 
-		descriptor = mpf_codec_list_add(codec_list);
-		descriptor->name = name;
-
-		/* set default attributes */
-		if(codec->static_descriptor) {
-			descriptor->payload_type = codec->static_descriptor->payload_type;
-			descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
-			descriptor->channel_count = codec->static_descriptor->channel_count;
+			/* set default attributes */
+			if(codec->static_descriptor) {
+				descriptor->payload_type = codec->static_descriptor->payload_type;
+				descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
+				descriptor->channel_count = codec->static_descriptor->channel_count;
+			}
+			else {
+				descriptor->payload_type = RTP_PT_DYNAMIC;
+				descriptor->sampling_rate = 8000;
+				descriptor->channel_count = 1;
+			}
 		}
 		else {
-			descriptor->payload_type = RTP_PT_DYNAMIC;
-			descriptor->sampling_rate = 8000;
-			descriptor->channel_count = 1;
+			mpf_codec_descriptor_t *event_descriptor = codec_manager->event_descriptor;
+			if(event_descriptor && apt_string_compare(&event_descriptor->name,&name) == TRUE) {
+				descriptor = mpf_codec_list_add(codec_list);
+				*descriptor = *event_descriptor;
+			}
+			else {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Codec [%s]",str);
+				return FALSE;
+			}
 		}
+
 
 		/* parse optional payload type */
 		str = apr_strtok(codec_desc_str, separator, &state);

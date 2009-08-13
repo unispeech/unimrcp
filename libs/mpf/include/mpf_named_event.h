@@ -53,6 +53,8 @@ struct mpf_named_event_frame_t {
 	apr_uint32_t duration: 16;
 };
 
+mpf_codec_descriptor_t* mpf_event_descriptor_create(apr_uint16_t sampling_rate, apr_pool_t *pool);
+
 
 APT_END_EXTERN_C
 

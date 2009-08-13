@@ -353,6 +353,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\mpf_named_event.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mpf_rtp_attribs.c"
 				>
 			</File>

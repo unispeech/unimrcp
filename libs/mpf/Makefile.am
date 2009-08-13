@@ -55,6 +55,7 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_codec_manager.c \
                            src/mpf_context.c \
                            src/mpf_engine.c \
+                           src/mpf_named_event.c \
                            src/mpf_termination.c \
                            src/mpf_rtp_termination_factory.c \
                            src/mpf_file_termination_factory.c \
