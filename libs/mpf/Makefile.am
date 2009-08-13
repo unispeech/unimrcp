@@ -22,6 +22,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_frame.h \
                            include/mpf_frame_buffer.h \
                            include/mpf_message.h \
+                           include/mpf_named_event.h \
                            include/mpf_object.h \
                            include/mpf_stream.h \
                            include/mpf_stream_mode.h \

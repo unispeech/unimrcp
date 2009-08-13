@@ -224,6 +224,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_named_event.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_object.h"
 				>
 			</File>
