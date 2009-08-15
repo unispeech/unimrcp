@@ -15,6 +15,7 @@
  */
 
 #include "mpf_codec_descriptor.h"
+#include "mpf_named_event.h"
 #include "mpf_rtp_pt.h"
 
 static apt_bool_t mpf_sampling_rate_check(apr_uint16_t sampling_rate, int mask)
@@ -34,8 +35,23 @@ static apt_bool_t mpf_sampling_rate_check(apr_uint16_t sampling_rate, int mask)
 	return FALSE;
 }
 
+/** Find and return matched descriptor from codec list */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor)
+{
+	int i;
+	mpf_codec_descriptor_t *matched_descriptor;
+	for(i=0; i<codec_list->descriptor_arr->nelts; i++) {
+		matched_descriptor = (mpf_codec_descriptor_t*)codec_list->descriptor_arr->elts + i;
+
+		if(mpf_codec_descriptors_match(descriptor,matched_descriptor) == TRUE) {
+			return matched_descriptor;
+		}
+	}
+	return NULL;
+}
+
 /** Match two codec descriptors */
-MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
+MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
 {
 	apt_bool_t match = FALSE;
 	if(descriptor1->payload_type < RTP_PT_DYNAMIC && descriptor2->payload_type < RTP_PT_DYNAMIC) {
@@ -80,33 +96,68 @@ MPF_DECLARE(apt_bool_t) mpf_codec_capabilities_match(mpf_codec_descriptor_t *des
 MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2)
 {
 	int i;
-	int j;
 	mpf_codec_descriptor_t *descriptor1;
 	mpf_codec_descriptor_t *descriptor2;
-	codec_list1->preffered = NULL;
-	codec_list2->preffered = NULL;
-	/* find only one match, set the matched codec as preffered, disable the others */
+	codec_list1->primary_descriptor = NULL;
+	codec_list1->event_descriptor = NULL;
+	codec_list2->primary_descriptor = NULL;
+	codec_list2->event_descriptor = NULL;
+	/* find only one match for primary and named event descriptors, 
+	set the matched descriptors as preffered, disable the others */
 	for(i=0; i<codec_list1->descriptor_arr->nelts; i++) {
 		descriptor1 = (mpf_codec_descriptor_t*)codec_list1->descriptor_arr->elts + i;
-		if(codec_list1->preffered) {
-			descriptor1->enabled = FALSE;
-			continue;
+
+		/* check whether this is a named event descriptor */
+		if(mpf_event_descriptor_check(descriptor1) == TRUE) {
+			/* named event descriptor */
+			if(codec_list1->event_descriptor) {
+				/* named event descriptor has been already set, disable this one */
+				descriptor1->enabled = FALSE;
+			}
+			else {
+				/* find if there is a match */
+				descriptor2 = mpf_codec_list_descriptor_find(codec_list2,descriptor1);
+				if(descriptor2) {
+					descriptor1->enabled = TRUE;
+					codec_list1->event_descriptor = descriptor1;
+					codec_list2->event_descriptor = descriptor2;
+				}
+				else {
+					/* no match found, disable this descriptor */
+					descriptor1->enabled = FALSE;
+				}
+			}
 		}
-
-		for(j=0; j<codec_list2->descriptor_arr->nelts; j++) {
-			descriptor2 = (mpf_codec_descriptor_t*)codec_list2->descriptor_arr->elts + j;
-
-			descriptor1->enabled = mpf_codec_descriptor_match(descriptor1,descriptor2);
-			if(descriptor1->enabled == TRUE) {
-				codec_list1->preffered = descriptor1;
-				codec_list2->preffered = descriptor2;
-				break;
+		else {
+			/* primary descriptor */
+			if(codec_list1->primary_descriptor) {
+				/* primary descriptor has been already set, disable this one */
+				descriptor1->enabled = FALSE;
+			}
+			else {
+				/* find if there is a match */
+				descriptor2 = mpf_codec_list_descriptor_find(codec_list2,descriptor1);
+				if(descriptor2) {
+					descriptor1->enabled = TRUE;
+					codec_list1->primary_descriptor = descriptor1;
+					codec_list2->primary_descriptor = descriptor2;
+				}
+				else {
+					/* no match found, disable this descriptor */
+					descriptor1->enabled = FALSE;
+				}
 			}
 		}
 	}
-	for(j=0; j<codec_list2->descriptor_arr->nelts; j++) {
-		descriptor2 = (mpf_codec_descriptor_t*)codec_list2->descriptor_arr->elts + j;
-		descriptor2->enabled = (codec_list2->preffered == descriptor2) ? TRUE : FALSE;
+
+	for(i=0; i<codec_list2->descriptor_arr->nelts; i++) {
+		descriptor2 = (mpf_codec_descriptor_t*)codec_list2->descriptor_arr->elts + i;
+		if(descriptor2 == codec_list2->primary_descriptor || descriptor2 == codec_list2->event_descriptor) {
+			descriptor2->enabled = TRUE;
+		}
+		else {
+			descriptor2->enabled = FALSE;
+		}
 	}
 
 	return TRUE;

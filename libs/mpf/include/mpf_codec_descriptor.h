@@ -72,10 +72,12 @@ struct mpf_codec_descriptor_t {
 
 /** List of codec descriptors */
 struct mpf_codec_list_t {
-	/** Dynamic array of mpf_codec_descriptor_t */
+	/** Dynamic array of codec descriptors (mpf_codec_descriptor_t) */
 	apr_array_header_t     *descriptor_arr;
-	/** Preffered codec descriptor */
-	mpf_codec_descriptor_t *preffered;
+	/** Preffered primary (audio/video codec) descriptor from descriptor_arr */
+	mpf_codec_descriptor_t *primary_descriptor;
+	/** Preffered named event (telephone-event) descriptor from descriptor_arr */
+	mpf_codec_descriptor_t *event_descriptor;
 };
 
 /** Codec frame */
@@ -131,7 +133,8 @@ static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t 
 static APR_INLINE void mpf_codec_list_reset(mpf_codec_list_t *codec_list)
 {
 	codec_list->descriptor_arr = NULL;
-	codec_list->preffered = NULL;
+	codec_list->primary_descriptor = NULL;
+	codec_list->event_descriptor = NULL;
 }
 
 /** Initialize list of codec descriptors */
@@ -161,7 +164,7 @@ static APR_INLINE apt_bool_t mpf_codec_list_is_empty(const mpf_codec_list_t *cod
 }
 
 /** Get codec descriptor by index */
-static APR_INLINE mpf_codec_descriptor_t* mpf_codec_get(const mpf_codec_list_t *codec_list, apr_size_t id)
+static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_descriptor_get(const mpf_codec_list_t *codec_list, apr_size_t id)
 {
 	mpf_codec_descriptor_t *descriptor;
 	if(id >= (apr_size_t)codec_list->descriptor_arr->nelts) {
@@ -171,8 +174,11 @@ static APR_INLINE mpf_codec_descriptor_t* mpf_codec_get(const mpf_codec_list_t *
 	return descriptor + id;
 }
 
+/** Find and return matched descriptor from codec list */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor);
+
 /** Match two codec descriptors */
-MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2);
+MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2);
 /** Match codec capabilities */
 MPF_DECLARE(apt_bool_t) mpf_codec_capabilities_match(mpf_codec_descriptor_t *descriptor, const mpf_codec_descriptor_t *static_descriptor, const mpf_codec_attribs_t *attribs);
 /** Intersect two codec lists */

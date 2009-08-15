@@ -204,7 +204,7 @@ static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_t
 		mpf_codec_t *rx_codec = source->rx_codec;
 		mpf_codec_t *tx_codec = sink->tx_codec;
 		if(rx_codec && tx_codec) {
-			if(mpf_codec_descriptor_match(rx_codec->descriptor,tx_codec->descriptor) == TRUE) {
+			if(mpf_codec_descriptors_match(rx_codec->descriptor,tx_codec->descriptor) == TRUE) {
 				object = mpf_null_bridge_create(source,sink,context->pool);
 			}
 			else {

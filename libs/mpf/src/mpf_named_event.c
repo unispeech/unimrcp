@@ -19,7 +19,7 @@
 #define TEL_EVENT_NAME        "telephone-event"
 #define TEL_EVENT_NAME_LENGTH (sizeof(TEL_EVENT_NAME)-1)
 
-mpf_codec_descriptor_t* mpf_event_descriptor_create(apr_uint16_t sampling_rate, apr_pool_t *pool)
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_event_descriptor_create(apr_uint16_t sampling_rate, apr_pool_t *pool)
 {
 	mpf_codec_descriptor_t *descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
 	mpf_codec_descriptor_init(descriptor);
@@ -29,4 +29,12 @@ mpf_codec_descriptor_t* mpf_event_descriptor_create(apr_uint16_t sampling_rate, 
 	descriptor->sampling_rate = sampling_rate;
 	descriptor->channel_count = 1;
 	return descriptor;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_event_descriptor_check(const mpf_codec_descriptor_t *descriptor)
+{
+	apt_str_t name;
+	name.buf = TEL_EVENT_NAME;
+	name.length = TEL_EVENT_NAME_LENGTH;
+	return apt_string_compare(&descriptor->name,&name);
 }

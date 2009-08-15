@@ -53,7 +53,11 @@ struct mpf_named_event_frame_t {
 	apr_uint32_t duration: 16;
 };
 
-mpf_codec_descriptor_t* mpf_event_descriptor_create(apr_uint16_t sampling_rate, apr_pool_t *pool);
+/** Create named event descriptor */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_event_descriptor_create(apr_uint16_t sampling_rate, apr_pool_t *pool);
+
+/** Check whether the specified descriptor is named event one */
+MPF_DECLARE(apt_bool_t) mpf_event_descriptor_check(const mpf_codec_descriptor_t *descriptor);
 
 
 APT_END_EXTERN_C
