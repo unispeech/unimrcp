@@ -65,7 +65,7 @@ struct mpf_codec_descriptor_t {
 	/** Channel count */
 	apr_byte_t   channel_count;
 	/** Codec dependent additional format */
-	const char  *format;
+	apt_str_t    format;
 	/**  Enabled/disabled state */
 	apt_bool_t   enabled;
 };
@@ -106,7 +106,7 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 	apt_string_reset(&descriptor->name);
 	descriptor->sampling_rate = 0;
 	descriptor->channel_count = 0;
-	descriptor->format = NULL;
+	apt_string_reset(&descriptor->format);
 	descriptor->enabled = TRUE;
 }
 

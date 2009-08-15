@@ -53,6 +53,11 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 					codec_descriptor->payload_type,
 					codec_descriptor->name.buf,
 					codec_descriptor->sampling_rate);
+				if(codec_descriptor->format.buf) {
+					offset += snprintf(buffer+offset,size-offset,"a=fmtp:%d %s\r\n",
+						codec_descriptor->payload_type,
+						codec_descriptor->format.buf);
+				}
 			}
 		}
 		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",mode_str ? mode_str->buf : "");

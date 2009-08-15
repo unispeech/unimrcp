@@ -127,7 +127,7 @@ static const mpf_codec_descriptor_t g711u_descriptor = {
 	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},
 	8000,
 	1,
-	NULL,
+	{NULL, 0},
 	TRUE
 };
 
@@ -136,7 +136,7 @@ static const mpf_codec_descriptor_t g711a_descriptor = {
 	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},
 	8000,
 	1,
-	NULL,
+	{NULL,0},
 	TRUE
 };
 
