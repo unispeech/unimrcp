@@ -73,19 +73,8 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
 		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
-		if(descriptor->payload_type < RTP_PT_DYNAMIC) {
-			if(codec->static_descriptor && codec->static_descriptor->payload_type == descriptor->payload_type) {
-				descriptor->name = codec->static_descriptor->name;
-				descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
-				descriptor->channel_count = codec->static_descriptor->channel_count;
-				break;
-			}
-		}
-		else {
-			if(apt_string_compare(&codec->attribs->name,&descriptor->name) == TRUE) {
-				/* sampling rate must be checked as well */
-				break;
-			}
+		if(mpf_codec_capabilities_match(descriptor,codec->static_descriptor,codec->attribs) == TRUE) {
+			break;
 		}
 	}
 

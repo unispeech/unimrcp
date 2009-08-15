@@ -173,6 +173,8 @@ static APR_INLINE mpf_codec_descriptor_t* mpf_codec_get(const mpf_codec_list_t *
 
 /** Match two codec descriptors */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2);
+/** Match codec capabilities */
+MPF_DECLARE(apt_bool_t) mpf_codec_capabilities_match(mpf_codec_descriptor_t *descriptor, const mpf_codec_descriptor_t *static_descriptor, const mpf_codec_attribs_t *attribs);
 /** Intersect two codec lists */
 MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2);
 
