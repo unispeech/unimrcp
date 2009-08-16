@@ -705,31 +705,58 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 		if(frame->type == MEDIA_FRAME_TYPE_NONE) {
 			transmitter->inactivity = 1;
 		}
+		else if(frame->type == MEDIA_FRAME_TYPE_EVENT){
+			rtp_header_prepare(transmitter,transmitter->event_pt);
+		}
 		else {
 			rtp_header_prepare(transmitter,stream->tx_codec->descriptor->payload_type);
 		}
 	}
 	
 	if(!transmitter->inactivity) {
-		memcpy(
-			transmitter->packet_data + transmitter->packet_size,
-			frame->codec_frame.buffer,
-			frame->codec_frame.size);
-		transmitter->packet_size += frame->codec_frame.size;
+		if(frame->type == MEDIA_FRAME_TYPE_AUDIO){
+			memcpy(
+				transmitter->packet_data + transmitter->packet_size,
+				frame->codec_frame.buffer,
+				frame->codec_frame.size);
+			transmitter->packet_size += frame->codec_frame.size;
 
-		if(++transmitter->current_frames == transmitter->packet_frames) {
-			if(apr_socket_sendto(
-								rtp_stream->socket,
-								rtp_stream->remote_sockaddr,
-								0,
-								transmitter->packet_data,
-								&transmitter->packet_size) == APR_SUCCESS) {
-				transmitter->stat.sent_packets++;
+			if(++transmitter->current_frames == transmitter->packet_frames) {
+				if(apr_socket_sendto(
+									rtp_stream->socket,
+									rtp_stream->remote_sockaddr,
+									0,
+									transmitter->packet_data,
+									&transmitter->packet_size) == APR_SUCCESS) {
+					transmitter->stat.sent_packets++;
+				}
+				else {
+					status = FALSE;
+				}
+				transmitter->current_frames = 0;
 			}
-			else {
-				status = FALSE;
+		}
+		else if(frame->type == MEDIA_FRAME_TYPE_EVENT){
+			memcpy(
+				transmitter->packet_data + transmitter->packet_size,
+				&frame->event_frame,
+				sizeof(frame->event_frame));
+			transmitter->packet_size += sizeof(frame->event_frame);
+
+			if(++transmitter->current_frames == transmitter->packet_frames) {
+				if(apr_socket_sendto(
+									rtp_stream->socket,
+									rtp_stream->remote_sockaddr,
+									0,
+									transmitter->packet_data,
+									&transmitter->packet_size) == APR_SUCCESS) {
+					transmitter->stat.sent_packets++;
+				}
+				else {
+					status = FALSE;
+				}
+				transmitter->current_frames = 0;
 			}
-			transmitter->current_frames = 0;
 		}
 	}
 
