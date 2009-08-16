@@ -59,6 +59,12 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_event_descriptor_create(apr_uint16_t sa
 /** Check whether the specified descriptor is named event one */
 MPF_DECLARE(apt_bool_t) mpf_event_descriptor_check(const mpf_codec_descriptor_t *descriptor);
 
+/** Convert DTMF character to event identifier */
+MPF_DECLARE(apr_uint32_t) mpf_dtmf_char_to_event_id(const char dtmf_char);
+
+/** Convert event identifier to DTMF character */
+MPF_DECLARE(char) mpf_event_id_to_dtmf_char(const apr_uint32_t event_id);
+
 
 APT_END_EXTERN_C
 

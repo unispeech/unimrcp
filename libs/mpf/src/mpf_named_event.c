@@ -44,3 +44,31 @@ MPF_DECLARE(apt_bool_t) mpf_event_descriptor_check(const mpf_codec_descriptor_t 
 	name.length = TEL_EVENT_NAME_LENGTH;
 	return apt_string_compare(&descriptor->name,&name);
 }
+
+MPF_DECLARE(apr_uint32_t) mpf_dtmf_char_to_event_id(const char dtmf_char)
+{
+	if ((dtmf_char >= '0') && (dtmf_char <= '9'))
+		return dtmf_char - '0';
+	else if (dtmf_char == '*')
+		return 10;
+	else if (dtmf_char == '#')
+		return 11;
+	else if ((dtmf_char >= 'A') && (dtmf_char <= 'D'))
+		return 12 + dtmf_char - 'A';
+
+	return 255; /* Invalid DTMF event */
+}
+
+MPF_DECLARE(char) mpf_event_id_to_dtmf_char(const apr_uint32_t event_id)
+{
+	if (event_id <= 9)
+		return '0' + (char)event_id;
+	else if (event_id == 10)
+		return '*';
+	else if (event_id == 11)
+		return '#';
+	else if (event_id <= 15)
+		return 'A' + (char)event_id - 12;
+
+	return 0; /* Not a DTMF event */
+}
