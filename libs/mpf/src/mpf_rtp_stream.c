@@ -252,20 +252,28 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 	}
 
 	if((rtp_stream->base->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
+		mpf_codec_list_t *codec_list = &rtp_stream->remote_media->codec_list;
 		rtp_stream->base->tx_codec = mpf_codec_manager_codec_get(
 								rtp_stream->base->termination->codec_manager,
-								rtp_stream->remote_media->codec_list.primary_descriptor,
+								codec_list->primary_descriptor,
 								rtp_stream->pool);
 		if(rtp_stream->base->tx_codec) {
 			rtp_stream->transmitter.samples_per_frame = 
 				(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_codec->descriptor);
 		}
+		if(codec_list->event_descriptor) {
+			rtp_stream->transmitter.event_pt = codec_list->event_descriptor->payload_type;
+		}
 	}
 	if((rtp_stream->base->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE) {
+		mpf_codec_list_t *codec_list = &rtp_stream->local_media->codec_list;
 		rtp_stream->base->rx_codec = mpf_codec_manager_codec_get(
 								rtp_stream->base->termination->codec_manager,
-								rtp_stream->local_media->codec_list.primary_descriptor,
+								codec_list->primary_descriptor,
 								rtp_stream->pool);
+		if(codec_list->event_descriptor) {
+			rtp_stream->receiver.event_pt = codec_list->event_descriptor->payload_type;
+		}
 	}
 
 	if(!descriptor->local) {
