@@ -537,11 +537,6 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
 			ip,
 			ip);
 		
-		response->header.transport.protocol = RTSP_TRANSPORT_RTP;
-		response->header.transport.profile = RTSP_PROFILE_AVP;
-		response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
-		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
-
 		if(offset) {
 			apt_string_assign_n(&response->body,buffer,offset,pool);
 			response->header.content_type = RTSP_CONTENT_TYPE_SDP;
