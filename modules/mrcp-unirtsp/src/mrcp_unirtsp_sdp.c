@@ -530,9 +530,11 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
 			"s=-\r\n"
 			"c=IN IP4 %s\r\n"
 			"t=0 0\r\n"
-			"m=audio 0 RTP/AVP 0 8\r\n"
+			"m=audio 0 RTP/AVP 0 8 96 101\r\n"
 			"a=rtpmap:0 PCMU/8000\r\n"
-			"a=rtpmap:8 PCMA/8000\r\n",
+			"a=rtpmap:8 PCMA/8000\r\n"
+			"a=rtpmap:96 L16/8000\r\n"
+			"a=rtpmap:101 telephone-event/8000\r\n",
 			origin,
 			ip,
 			ip);

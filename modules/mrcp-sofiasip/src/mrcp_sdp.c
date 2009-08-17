@@ -390,9 +390,11 @@ MRCP_DECLARE(apr_size_t) sdp_resource_discovery_string_generate(const char *ip, 
 			"m=application 0 TCP/MRCPv2 1\r\n"
 			"a=resource:speechsynth\r\n"
 			"a=resource:speechrecog\r\n"
-			"m=audio 0 RTP/AVP 0 8\r\n"
+			"m=audio 0 RTP/AVP 0 8 96 101\r\n"
 			"a=rtpmap:0 PCMU/8000\r\n"
-			"a=rtpmap:8 PCMA/8000\r\n",
+			"a=rtpmap:8 PCMA/8000\r\n"
+			"a=rtpmap:96 L16/8000\r\n"
+			"a=rtpmap:101 telephone-event/8000\r\n",
 			origin,
 			ip,
 			ip);
