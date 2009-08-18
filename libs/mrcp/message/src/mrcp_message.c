@@ -302,7 +302,6 @@ static apt_bool_t mrcp_v2_start_line_generate(mrcp_start_line_t *start_line, apt
 		*stream->pos++ = APT_TOKEN_SP;
 
 		mrcp_request_state_generate(start_line->request_state,stream);
-		*stream->pos++ = APT_TOKEN_SP;
 	}
 	else {
 		memcpy(stream->pos,start_line->method_name.buf,start_line->method_name.length);
