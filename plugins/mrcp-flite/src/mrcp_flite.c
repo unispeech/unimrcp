@@ -119,8 +119,8 @@ typedef struct flite_speak_msg_t flite_speak_msg_t;
 /* we have a special task for the actual synthesis - 
    the task is created when a mrcp speak message is received */
 static apt_bool_t flite_speak(apt_task_t *task, apt_task_msg_t *msg);
-static apt_bool_t flite_on_start(apt_task_t *task);
-static apt_bool_t flite_on_terminate(apt_task_t *task);
+static void flite_on_start(apt_task_t *task);
+static void flite_on_terminate(apt_task_t *task);
 
 /** Declare this macro to use log routine of the server where the plugin is loaded from */
 MRCP_PLUGIN_LOGGER_IMPLEMENT
@@ -498,18 +498,18 @@ static APR_INLINE flite_synth_channel_t* flite_synth_channel_get(apt_task_t *tas
 	return apt_consumer_task_object_get(consumer_task);
 }
 
-static apt_bool_t flite_on_start(apt_task_t *task)
+static void flite_on_start(apt_task_t *task)
 {
 	flite_synth_channel_t *synth_channel = flite_synth_channel_get(task);
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "Speak task started - channel %d", synth_channel->iId);
-	return mrcp_engine_channel_open_respond(synth_channel->channel,TRUE);
+	mrcp_engine_channel_open_respond(synth_channel->channel,TRUE);
 }
 
-static apt_bool_t flite_on_terminate(apt_task_t *task)
+static void flite_on_terminate(apt_task_t *task)
 {
 	flite_synth_channel_t *synth_channel = flite_synth_channel_get(task);
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "Speak task terminated - channel %d", synth_channel->iId);
-	return mrcp_engine_channel_close_respond(synth_channel->channel);
+	mrcp_engine_channel_close_respond(synth_channel->channel);
 }
 
 /** Process STOP request */
