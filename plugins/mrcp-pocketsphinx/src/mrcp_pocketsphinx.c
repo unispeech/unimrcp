@@ -375,7 +375,6 @@ static apt_bool_t pocketsphinx_result_build(pocketsphinx_recognizer_t *recognize
 		recognizer->grammar_id,
 		recognizer->grammar_id,
 		99,
-		recognizer->last_result,
 		recognizer->last_result);
 	if(body->buf) {
 		mrcp_generic_header_t *generic_header;
