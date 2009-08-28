@@ -44,8 +44,12 @@ struct mpf_audio_stream_t {
 	mpf_stream_mode_e                mode;
 	/** Receive codec */
 	mpf_codec_t                     *rx_codec;
+	/** Receive event descriptor */
+	mpf_codec_descriptor_t          *rx_event_descriptor;
 	/** Transmit codec */
 	mpf_codec_t                     *tx_codec;
+	/** Transmit event descriptor */
+	mpf_codec_descriptor_t          *tx_event_descriptor;
 };
 
 /** Video stream */
@@ -86,7 +90,9 @@ static APR_INLINE mpf_audio_stream_t* mpf_audio_stream_create(void *obj, const m
 	stream->termination = NULL;
 	stream->mode = mode;
 	stream->rx_codec = NULL;
+	stream->rx_event_descriptor = NULL;
 	stream->tx_codec = NULL;
+	stream->tx_event_descriptor = NULL;
 	return stream;
 }
 

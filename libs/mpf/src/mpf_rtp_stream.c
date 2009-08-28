@@ -262,7 +262,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 				(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_codec->descriptor);
 		}
 		if(codec_list->event_descriptor) {
-			rtp_stream->transmitter.event_pt = codec_list->event_descriptor->payload_type;
+			rtp_stream->base->tx_event_descriptor = codec_list->event_descriptor;
 		}
 	}
 	if((rtp_stream->base->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE) {
@@ -272,7 +272,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 								codec_list->primary_descriptor,
 								rtp_stream->pool);
 		if(codec_list->event_descriptor) {
-			rtp_stream->receiver.event_pt = codec_list->event_descriptor->payload_type;
+			rtp_stream->base->rx_event_descriptor = codec_list->event_descriptor;
 		}
 	}
 
@@ -519,8 +519,10 @@ static APR_INLINE void rtp_rx_failure_threshold_check(rtp_receiver_t *receiver)
 	}
 }
 
-static apt_bool_t rtp_rx_packet_receive(rtp_receiver_t *receiver, mpf_codec_t *codec, void *buffer, apr_size_t size)
+static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buffer, apr_size_t size)
 {
+	rtp_receiver_t *receiver = &rtp_stream->receiver;
+	mpf_codec_t *codec = rtp_stream->base->rx_codec;
 	apr_time_t time;
 	rtp_ssrc_result_e ssrc_result;
 	rtp_header_t *header = rtp_rx_header_skip(&buffer,&size);
@@ -571,7 +573,8 @@ static apt_bool_t rtp_rx_packet_receive(rtp_receiver_t *receiver, mpf_codec_t *c
 			rtp_rx_failure_threshold_check(receiver);
 		}
 	}
-	else if(header->type == receiver->event_pt && receiver->event_pt != 0) {
+	else if(rtp_stream->base->rx_event_descriptor && 
+		header->type == rtp_stream->base->rx_event_descriptor->payload_type) {
 		/* named event */
 		mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t *)buffer;
 		if(mpf_jitter_buffer_write_named_event(receiver->jb,named_event,header->timestamp) != JB_OK) {
@@ -597,7 +600,7 @@ static apt_bool_t rtp_rx_process(mpf_rtp_stream_t *rtp_stream)
 	apr_size_t size = sizeof(buffer);
 	apr_size_t max_count = 5;
 	while(max_count && apr_socket_recvfrom(rtp_stream->remote_sockaddr,rtp_stream->socket,0,buffer,&size) == APR_SUCCESS) {
-		rtp_rx_packet_receive(&rtp_stream->receiver,rtp_stream->base->rx_codec,buffer,size);
+		rtp_rx_packet_receive(rtp_stream,buffer,size);
 
 		size = sizeof(buffer);
 		max_count--;
@@ -706,7 +709,9 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 			transmitter->inactivity = 1;
 		}
 		else if(frame->type == MEDIA_FRAME_TYPE_EVENT){
-			rtp_header_prepare(transmitter,transmitter->event_pt);
+			if(stream->tx_event_descriptor) {
+				rtp_header_prepare(transmitter,stream->tx_event_descriptor->payload_type);
+			}
 		}
 		else {
 			rtp_header_prepare(transmitter,stream->tx_codec->descriptor->payload_type);

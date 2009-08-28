@@ -98,9 +98,6 @@ static APR_INLINE void mpf_rtp_rx_periodic_history_reset(rtp_rx_periodic_history
 
 /** RTP receiver */
 struct rtp_receiver_t {
-	/** Payload type of named-event packets (RFC2833) */
-	apr_byte_t                event_pt;
-
 	/** Jitter buffer */
 	mpf_jitter_buffer_t      *jb;
 
@@ -117,8 +114,6 @@ struct rtp_receiver_t {
 struct rtp_transmitter_t {
 	/** RTP stream ssrc */
 	apr_uint32_t    ssrc;
-	/** Payload type of named-event packets (RFC2833) */
-	apr_byte_t      event_pt;
 	/** Packetization time in msec */
 	apr_uint16_t    ptime;
 
@@ -149,8 +144,6 @@ struct rtp_transmitter_t {
 /** Initialize RTP receiver */
 static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
 {
-	receiver->event_pt = 0;
-
 	receiver->jb = NULL;
 
 	mpf_rtp_rx_stat_reset(&receiver->stat);
@@ -162,7 +155,6 @@ static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
 static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 {
 	transmitter->ssrc = 0;
-	transmitter->event_pt = 0;
 	transmitter->ptime = 0;
 
 	transmitter->packet_frames = 0;
