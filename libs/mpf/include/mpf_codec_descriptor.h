@@ -93,7 +93,7 @@ struct mpf_codec_attribs_t {
 	/** Codec name */
 	apt_str_t  name;
 	/** Bits per sample */
-	apr_byte_t bits_per_samples;
+	apr_byte_t bits_per_sample;
 	/** Supported sampling rates (mpf_sample_rates_e) */
 	int        sample_rates;
 };
@@ -113,7 +113,7 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 /** Calculate encoded frame size in bytes */
 static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(const mpf_codec_descriptor_t *descriptor, const mpf_codec_attribs_t *attribs)
 {
-	return descriptor->channel_count * attribs->bits_per_samples * CODEC_FRAME_TIME_BASE * 
+	return descriptor->channel_count * attribs->bits_per_sample * CODEC_FRAME_TIME_BASE * 
 			descriptor->sampling_rate / 1000 / 8; /* 1000 - msec per sec, 8 - bits per byte */
 }
 
