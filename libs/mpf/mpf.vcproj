@@ -369,6 +369,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\mpf_stream.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\mpf_termination.c"
 				>
 			</File>

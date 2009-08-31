@@ -77,11 +77,16 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 	apr_size_t frame_size;
 	mpf_codec_t *codec;
 	mpf_decoder_t *decoder;
+	mpf_stream_capabilities_t *capabilities;
 	if(!source || !source->rx_codec) {
 		return NULL;
 	}
 	decoder = apr_palloc(pool,sizeof(mpf_decoder_t));
-	decoder->base = mpf_audio_stream_create(decoder,&vtable,STREAM_MODE_RECEIVE,pool);
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_RECEIVE,
+						source->capabilities->named_events,
+						pool);
+	decoder->base = mpf_audio_stream_create(decoder,&vtable,capabilities,pool);
 	decoder->source = source;
 
 	codec = source->rx_codec;

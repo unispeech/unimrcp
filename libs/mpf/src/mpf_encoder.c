@@ -74,11 +74,16 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, ap
 	apr_size_t frame_size;
 	mpf_codec_t *codec;
 	mpf_encoder_t *encoder;
+	mpf_stream_capabilities_t *capabilities;
 	if(!sink || !sink->tx_codec) {
 		return NULL;
 	}
 	encoder = apr_palloc(pool,sizeof(mpf_encoder_t));
-	encoder->base = mpf_audio_stream_create(encoder,&vtable,STREAM_MODE_SEND,pool);
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_SEND,
+						sink->capabilities->named_events,
+						pool);
+	encoder->base = mpf_audio_stream_create(encoder,&vtable,capabilities,pool);
 	encoder->sink = sink;
 
 	codec = sink->tx_codec;

@@ -41,7 +41,10 @@ typedef enum {
 	MPF_SAMPLE_RATE_8000  = 0x01,
 	MPF_SAMPLE_RATE_16000 = 0x02,
 	MPF_SAMPLE_RATE_32000 = 0x04,
-	MPF_SAMPLE_RATE_48000 = 0x08
+	MPF_SAMPLE_RATE_48000 = 0x08,
+
+	MPF_SAMPLE_RATE_SUPPORTED =	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 | 
+								MPF_SAMPLE_RATE_32000 | MPF_SAMPLE_RATE_48000
 } mpf_sample_rates_e;
 
 /** Codec descriptor declaration */
@@ -152,7 +155,7 @@ static APR_INLINE void mpf_codec_list_copy(mpf_codec_list_t *codec_list, const m
 /** Increment number of codec descriptors in the list and return the descriptor to fill */
 static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_add(mpf_codec_list_t *codec_list)
 {
-	mpf_codec_descriptor_t* descriptor = (mpf_codec_descriptor_t*)apr_array_push(codec_list->descriptor_arr);
+	mpf_codec_descriptor_t *descriptor = (mpf_codec_descriptor_t*)apr_array_push(codec_list->descriptor_arr);
 	mpf_codec_descriptor_init(descriptor);
 	return descriptor;
 }
@@ -183,6 +186,9 @@ MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t
 MPF_DECLARE(apt_bool_t) mpf_codec_capabilities_match(mpf_codec_descriptor_t *descriptor, const mpf_codec_descriptor_t *static_descriptor, const mpf_codec_attribs_t *attribs);
 /** Intersect two codec lists */
 MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2);
+
+/** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
+MPF_DECLARE(apt_bool_t) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate);
 
 
 APT_END_EXTERN_C

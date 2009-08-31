@@ -18,21 +18,25 @@
 #include "mpf_named_event.h"
 #include "mpf_rtp_pt.h"
 
-static apt_bool_t mpf_sampling_rate_check(apr_uint16_t sampling_rate, int mask)
+/** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
+MPF_DECLARE(apt_bool_t) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate)
 {
 	switch(sampling_rate) {
 		case 8000:
-			return (mask & MPF_SAMPLE_RATE_8000) ? TRUE : FALSE;
+			return MPF_SAMPLE_RATE_8000;
 		case 16000:
-			return (mask & MPF_SAMPLE_RATE_16000) ? TRUE : FALSE;
+			return MPF_SAMPLE_RATE_16000;
 		case 32000:
-			return (mask & MPF_SAMPLE_RATE_32000) ? TRUE : FALSE;
+			return MPF_SAMPLE_RATE_32000;
 		case 48000:
-			return (mask & MPF_SAMPLE_RATE_48000) ? TRUE : FALSE;
-		default:
-			break;
+			return MPF_SAMPLE_RATE_48000;
 	}
-	return FALSE;
+	return MPF_SAMPLE_RATE_NONE;
+}
+
+static APR_INLINE apt_bool_t mpf_sampling_rate_check(apr_uint16_t sampling_rate, int mask)
+{
+	return (mpf_sample_rate_mask_get(sampling_rate) & mask) ? TRUE : FALSE;
 }
 
 /** Find and return matched descriptor from codec list */

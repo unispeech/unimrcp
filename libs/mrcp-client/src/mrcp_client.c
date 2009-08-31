@@ -653,12 +653,31 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
 										mpf_codec_descriptor_t *codec_descriptor,
 										void *obj)
 {
+	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
+
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_RECEIVE,
+						TRUE,
+						session->pool);
+	if(codec_descriptor) {
+		mpf_stream_capabilities_add(capabilities,
+						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
+						codec_descriptor->name.buf,
+						session->pool);
+	}
+	else {
+		mpf_stream_capabilities_add(capabilities,
+						MPF_SAMPLE_RATE_8000,
+						"LPCM",
+						session->pool);
+	}
+
 	/* create audio stream */
 	audio_stream = mpf_audio_stream_create(
 			obj,                  /* object to associate */
 			stream_vtable,        /* virtual methods table of audio stream */
-			STREAM_MODE_RECEIVE,  /* stream mode/direction */
+			capabilities,         /* stream capabilities */
 			session->pool);       /* memory pool to allocate memory from */
 
 	if(codec_descriptor) {
@@ -680,12 +699,31 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
 										mpf_codec_descriptor_t *codec_descriptor,
 										void *obj)
 {
+	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
+
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_SEND,
+						TRUE,
+						session->pool);
+	if(codec_descriptor) {
+		mpf_stream_capabilities_add(capabilities,
+						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
+						codec_descriptor->name.buf,
+						session->pool);
+	}
+	else {
+		mpf_stream_capabilities_add(capabilities,
+						MPF_SAMPLE_RATE_8000,
+						"LPCM",
+						session->pool);
+	}
+
 	/* create audio stream */
 	audio_stream = mpf_audio_stream_create(
 			obj,                  /* object to associate */
 			stream_vtable,        /* virtual methods table of audio stream */
-			STREAM_MODE_SEND,     /* stream mode/direction */
+			capabilities,         /* stream capabilities */
 			session->pool);       /* memory pool to allocate memory from */
 
 	if(codec_descriptor) {

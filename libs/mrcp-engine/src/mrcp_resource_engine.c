@@ -117,13 +117,32 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 								mpf_codec_descriptor_t *codec_descriptor,
 								apr_pool_t *pool)
 {
+	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
 	mpf_termination_t *termination;
+
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_RECEIVE,
+						TRUE,
+						pool);
+	if(codec_descriptor) {
+		mpf_stream_capabilities_add(capabilities,
+						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
+						codec_descriptor->name.buf,
+						pool);
+	}
+	else {
+		mpf_stream_capabilities_add(capabilities,
+						MPF_SAMPLE_RATE_8000,
+						"LPCM",
+						pool);
+	}
+
 	/* create audio stream */
 	audio_stream = mpf_audio_stream_create(
 			method_obj,           /* object to associate */
 			stream_vtable,        /* virtual methods table of audio stream */
-			STREAM_MODE_RECEIVE,  /* stream mode/direction */
+			capabilities,         /* stream capabilities */
 			pool);                /* pool to allocate memory from */
 
 	if(engine->codec_manager) {
@@ -155,14 +174,32 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 								mpf_codec_descriptor_t *codec_descriptor,
 								apr_pool_t *pool)
 {
+	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
 	mpf_termination_t *termination;
+
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_SEND,
+						TRUE,
+						pool);
+	if(codec_descriptor) {
+		mpf_stream_capabilities_add(capabilities,
+						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
+						codec_descriptor->name.buf,
+						pool);
+	}
+	else {
+		mpf_stream_capabilities_add(capabilities,
+						MPF_SAMPLE_RATE_8000,
+						"LPCM",
+						pool);
+	}
 
 	/* create audio stream */
 	audio_stream = mpf_audio_stream_create(
 			method_obj,             /* object to associate */
 			stream_vtable,          /* virtual methods table of audio stream */
-			STREAM_MODE_SEND,       /* stream mode/direction */
+			capabilities,           /* stream capabilities */
 			pool);                  /* pool to allocate memory from */
 	
 	if(engine->codec_manager) {

@@ -67,6 +67,7 @@ static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, apr_pool_t *pool)
 {
+	mpf_stream_capabilities_t *capabilities;
 	mpf_rtp_stream_t *rtp_stream = apr_palloc(pool,sizeof(mpf_rtp_stream_t));
 	rtp_stream->pool = pool;
 	rtp_stream->config = config;
@@ -75,7 +76,13 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	rtp_stream->socket = NULL;
 	rtp_stream->local_sockaddr = NULL;
 	rtp_stream->remote_sockaddr = NULL;
-	rtp_stream->base = mpf_audio_stream_create(rtp_stream,&vtable,STREAM_MODE_NONE,pool);
+
+	capabilities = mpf_stream_capabilities_create(
+						STREAM_MODE_SEND_RECEIVE,
+						TRUE,
+						pool);
+	rtp_stream->base = mpf_audio_stream_create(rtp_stream,&vtable,capabilities,pool);
+	rtp_stream->base->mode = STREAM_MODE_NONE;
 	rtp_stream->base->termination = termination;
 	rtp_receiver_init(&rtp_stream->receiver);
 	rtp_transmitter_init(&rtp_stream->transmitter);

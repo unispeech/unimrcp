@@ -31,6 +31,18 @@ APT_BEGIN_EXTERN_C
 
 /** Opaque audio stream virtual table declaration */
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
+/** Stream capabilities */
+typedef struct mpf_stream_capabilities_t mpf_stream_capabilities_t;
+
+/** Stream capabilities */
+struct mpf_stream_capabilities_t {
+	/** Supported modes: send, receive or bidirectional stream (bitmask of mpf_stream_mode_e) */
+	int                 supported_modes;
+	/** Supported/allowed codecs (arary of mpf_codec_attribs_t) */
+	apr_array_header_t *supported_codecs;
+	/** Whether stream is capable to carry named events or not */
+	apt_bool_t          named_events;
+};
 
 /** Audio stream */
 struct mpf_audio_stream_t {
@@ -40,8 +52,12 @@ struct mpf_audio_stream_t {
 	const mpf_audio_stream_vtable_t *vtable;
 	/** Back pointer */
 	mpf_termination_t               *termination;
-	/** Stream mode (send/receive) */
-	mpf_stream_mode_e                mode;
+
+	/** Stream capabilities */
+	const mpf_stream_capabilities_t *capabilities;
+
+	/** Stream mode send/receive (bitmask of mpf_stream_mode_e) */
+	int                              mode;
 	/** Receive codec */
 	mpf_codec_t                     *rx_codec;
 	/** Receive event descriptor */
@@ -80,21 +96,14 @@ struct mpf_audio_stream_vtable_t {
 	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 };
 
+/** Create stream capabilities */
+MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_create(int supported_modes, apt_bool_t named_events, apr_pool_t *pool);
+
+/** Add codec capabilities */
+MPF_DECLARE(apt_bool_t) mpf_stream_capabilities_add(mpf_stream_capabilities_t *capabilities, int sample_rates, const char *codec_name, apr_pool_t *pool);
 
 /** Create audio stream */
-static APR_INLINE mpf_audio_stream_t* mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, mpf_stream_mode_e mode, apr_pool_t *pool)
-{
-	mpf_audio_stream_t *stream = (mpf_audio_stream_t*)apr_palloc(pool,sizeof(mpf_audio_stream_t));
-	stream->obj = obj;
-	stream->vtable = vtable;
-	stream->termination = NULL;
-	stream->mode = mode;
-	stream->rx_codec = NULL;
-	stream->rx_event_descriptor = NULL;
-	stream->tx_codec = NULL;
-	stream->tx_event_descriptor = NULL;
-	return stream;
-}
+MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, const mpf_stream_capabilities_t *capabilities, apr_pool_t *pool);
 
 /** Destroy audio stream */
 static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream)
