@@ -65,4 +65,5 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_decoder.c \
                            src/mpf_jitter_buffer.c \
                            src/mpf_rtp_stream.c \
-                           src/mpf_rtp_attribs.c
+                           src/mpf_rtp_attribs.c \
+                           src/mpf_stream.c
