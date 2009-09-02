@@ -27,7 +27,6 @@
 #include "mrcp_message.h"
 #include "mpf_user.h"
 #include "mpf_termination.h"
-#include "mpf_engine.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -86,13 +85,6 @@ static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *sess
 
 static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, const apt_str_t *resource_name);
 
-static apt_bool_t mrcp_server_mpf_request_send(
-						mrcp_server_session_t *session, 
-						mpf_command_type_e command_id, 
-						mpf_context_t *context, 
-						mpf_termination_t *termination, 
-						void *descriptor);
-
 static apt_bool_t state_machine_on_message_dispatch(mrcp_state_machine_t *state_machine, mrcp_message_t *message);
 static apt_bool_t state_machine_on_deactivate(mrcp_state_machine_t *state_machine);
 
@@ -107,6 +99,7 @@ mrcp_server_session_t* mrcp_server_session_create()
 	session->request_queue = apt_list_create(session->base.pool);
 	session->offer = NULL;
 	session->answer = NULL;
+	session->mpf_task_msg = NULL;
 	session->answer_flag_count = 0;
 	session->terminate_flag_count = 0;
 	session->deactivate_flag_count = 0;
@@ -318,32 +311,41 @@ apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_m
 }
 
 
-apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message)
+apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_container)
 {
-	mrcp_server_session_t *session = NULL;
-	if(mpf_message->context) {
-		session = mpf_context_object_get(mpf_message->context);
-	}
-	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
-		switch(mpf_message->command_id) {
-			case MPF_COMMAND_ADD:
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add");
-				mrcp_server_on_termination_modify(session,mpf_message);
-				break;
-			case MPF_COMMAND_MODIFY:
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify");
-				mrcp_server_on_termination_modify(session,mpf_message);
-				break;
-			case MPF_COMMAND_SUBTRACT:
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract");
-				mrcp_server_on_termination_subtract(session,mpf_message);
-				break;
-			default:
-				break;
+	apr_size_t i;
+	mrcp_server_session_t *session;
+	const mpf_message_t *mpf_message;
+	for(i=0; i<mpf_message_container->count; i++) {
+		mpf_message = &mpf_message_container->messages[i];
+		if(mpf_message->context) {
+			session = mpf_context_object_get(mpf_message->context);
 		}
-	}
-	else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
+		else {
+			session = NULL;
+		}
+		
+		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
+			switch(mpf_message->command_id) {
+				case MPF_COMMAND_ADD:
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add");
+					mrcp_server_on_termination_modify(session,mpf_message);
+					break;
+				case MPF_COMMAND_MODIFY:
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify");
+					mrcp_server_on_termination_modify(session,mpf_message);
+					break;
+				case MPF_COMMAND_SUBTRACT:
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract");
+					mrcp_server_on_termination_subtract(session,mpf_message);
+					break;
+				default:
+					break;
+			}
+		}
+		else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
+		}
 	}
 	return TRUE;
 }
@@ -411,7 +413,9 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 		mrcp_server_control_media_offer_process(session,descriptor);
 		mrcp_server_av_media_offer_process(session,descriptor);
 	}
-	
+
+	mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
+
 	if(!session->answer_flag_count) {
 		/* send answer to client */
 		mrcp_server_session_answer_send(session);
@@ -443,7 +447,10 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 			/* send subtract termination request */
 			if(termination) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Channel Termination");
-				if(mrcp_server_mpf_request_send(session,MPF_COMMAND_SUBTRACT,session->context,termination,NULL) == TRUE) {
+				if(mpf_engine_message_add(
+							session->profile->media_engine,
+							MPF_COMMAND_SUBTRACT,session->context,termination,NULL,
+							&session->mpf_task_msg) == TRUE) {
 					channel->waiting_for_termination = TRUE;
 					session->terminate_flag_count++;
 				}
@@ -462,11 +469,17 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 
 		/* send subtract termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract RTP Termination [%d]",i);
-		if(mrcp_server_mpf_request_send(session,MPF_COMMAND_SUBTRACT,session->context,slot->termination,NULL) == TRUE) {
+		if(mpf_engine_message_add(
+							session->profile->media_engine,
+							MPF_COMMAND_SUBTRACT,session->context,slot->termination,NULL,
+							&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->terminate_flag_count++;
 		}
 	}
+
+	mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
+
 	mrcp_server_session_remove(session);
 
 	if(!session->terminate_flag_count) {
@@ -564,7 +577,10 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 
 				if(termination) {
 					/* send add termination request (add to media context) */
-					if(mrcp_server_mpf_request_send(session,MPF_COMMAND_ADD,session->context,termination,NULL) == TRUE) {
+					if(mpf_engine_message_add(
+							session->profile->media_engine,
+							MPF_COMMAND_ADD,session->context,termination,NULL,
+							&session->mpf_task_msg) == TRUE) {
 						channel->waiting_for_termination = TRUE;
 						session->answer_flag_count++;
 					}
@@ -666,7 +682,10 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 
 				if(termination) {
 					/* send add termination request (add to media context) */
-					if(mrcp_server_mpf_request_send(session,MPF_COMMAND_ADD,session->context,termination,NULL) == TRUE) {
+					if(mpf_engine_message_add(
+							session->profile->media_engine,
+							MPF_COMMAND_ADD,session->context,termination,NULL,
+							&session->mpf_task_msg) == TRUE) {
 						channel->waiting_for_termination = TRUE;
 						session->answer_flag_count++;
 					}
@@ -708,7 +727,10 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 
 		/* send modify termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify RTP Termination [%d]",i);
-		if(mrcp_server_mpf_request_send(session,MPF_COMMAND_MODIFY,session->context,slot->termination,rtp_descriptor) == TRUE) {
+		if(mpf_engine_message_add(
+				session->profile->media_engine,
+				MPF_COMMAND_MODIFY,session->context,slot->termination,rtp_descriptor,
+				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->answer_flag_count++;
 		}
@@ -734,7 +756,10 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
 
 		/* send add termination request (add to media context) */
-		if(mrcp_server_mpf_request_send(session,MPF_COMMAND_ADD,session->context,termination,rtp_descriptor) == TRUE) {
+		if(mpf_engine_message_add(
+				session->profile->media_engine,
+				MPF_COMMAND_ADD,session->context,termination,rtp_descriptor,
+				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->answer_flag_count++;
 		}
@@ -962,26 +987,4 @@ static apt_bool_t state_machine_on_deactivate(mrcp_state_machine_t *state_machin
 		}
 	}
 	return TRUE;
-}
-
-static apt_bool_t mrcp_server_mpf_request_send(
-						mrcp_server_session_t *session, 
-						mpf_command_type_e command_id, 
-						mpf_context_t *context, 
-						mpf_termination_t *termination, 
-						void *descriptor)
-{
-	apt_task_t *media_task = mpf_task_get(session->profile->media_engine);
-	apt_task_msg_t *msg;
-	mpf_message_t *mpf_message;
-	msg = apt_task_msg_get(media_task);
-	msg->type = TASK_MSG_USER;
-	mpf_message = (mpf_message_t*) msg->data;
-
-	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
-	mpf_message->command_id = command_id;
-	mpf_message->context = context;
-	mpf_message->termination = termination;
-	mpf_message->descriptor = descriptor;
-	return apt_task_msg_signal(media_task,msg);
 }

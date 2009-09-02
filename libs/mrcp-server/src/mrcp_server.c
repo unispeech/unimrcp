@@ -730,9 +730,9 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		}
 		case MRCP_SERVER_MEDIA_TASK_MSG:
 		{
-			mpf_message_t *mpf_message = (mpf_message_t*) msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Media Task Message [%d]", mpf_message->command_id);
-			mrcp_server_mpf_message_process(mpf_message);
+			mpf_message_container_t *mpf_message_container = (mpf_message_container_t*) msg->data;
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Media Task Message");
+			mrcp_server_mpf_message_process(mpf_message_container);
 			break;
 		}
 		default:

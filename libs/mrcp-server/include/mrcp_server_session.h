@@ -24,7 +24,7 @@
 
 #include <apr_hash.h>
 #include "mrcp_session.h"
-#include "mpf_message.h"
+#include "mpf_engine.h"
 #include "apt_task.h"
 #include "apt_obj_list.h"
 
@@ -89,6 +89,9 @@ struct mrcp_server_session_t {
 	/** In-progres answer */
 	mrcp_session_descriptor_t *answer;
 
+	/** MPF task message, which construction is in progress */
+	mpf_task_msg_t            *mpf_task_msg;
+
 	/** Number of in-progress answer requests (flags) */
 	apr_size_t                 answer_flag_count;
 	/** Number of in-progress terminate requests (flags) */
@@ -119,7 +122,7 @@ mrcp_server_session_t* mrcp_server_session_create();
 /** Process signaling message */
 apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signaling_message);
 /** Process MPF message */
-apt_bool_t mrcp_server_mpf_message_process(mpf_message_t *mpf_message);
+apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_container);
 
 /** Process channel modify event */
 apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *answer, apt_bool_t status);

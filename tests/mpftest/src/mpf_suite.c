@@ -51,8 +51,8 @@ struct mpf_suite_engine_t {
 	/** The main task of the test engine, which sends messages to MPF engine and 
 	 * processes responses and events sent back from MPF engine */
 	apt_consumer_task_t       *consumer_task;
-	/** MPF engine task */
-	apt_task_t                *engine_task;
+	/** MPF engine */
+	mpf_engine_t              *engine;
 	/** RTP termination factory */
 	mpf_termination_factory_t *rtp_termination_factory;
 	/** File termination factory */
@@ -68,7 +68,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 
 static void mpf_suite_on_start_complete(apt_task_t *task);
 static void mpf_suite_on_terminate_complete(apt_task_t *task);
-static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+static apt_bool_t mpf_suite_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_session_t *session);
 static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_session_t *session);
@@ -106,7 +106,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	if(codec_manager) {
 		mpf_engine_codec_manager_register(engine,codec_manager);
 	}
-	suite_engine->engine_task = mpf_task_get(engine);
+	suite_engine->engine = engine;
 
 	config = mpf_rtp_config_create(suite->pool);
 	apt_string_set(&config->ip,"127.0.0.1");
@@ -126,12 +126,12 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	task = apt_consumer_task_base_get(suite_engine->consumer_task);
 	vtable = apt_task_vtable_get(task);
 	if(vtable) {
-		vtable->process_msg = mpf_suite_msg_process;
+		vtable->process_msg = mpf_suite_task_msg_process;
 		vtable->on_start_complete = mpf_suite_on_start_complete;
 		vtable->on_terminate_complete = mpf_suite_on_terminate_complete;
 	}
 
-	apt_task_add(task,suite_engine->engine_task);
+	apt_task_add(task,mpf_task_get(engine));
 
 	apr_thread_mutex_create(&suite_engine->wait_object_mutex,APR_THREAD_MUTEX_UNNESTED,suite->pool);
 	apr_thread_cond_create(&suite_engine->wait_object,suite->pool);
@@ -163,8 +163,8 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	mpf_suite_session_t *session;
 	apt_task_t *consumer_task;
 	mpf_suite_engine_t *suite_engine;
-	apt_task_msg_t *msg;
-	mpf_message_t *mpf_message;
+	mpf_task_msg_t *task_msg = NULL;
+	void *descriptor;
 	apr_pool_t *pool = NULL;
 
 	consumer_task = apt_task_object_get(task);
@@ -186,16 +186,11 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	session->termination1 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Termination [1]");
-	msg = apt_task_msg_get(task);
-	msg->type = TASK_MSG_USER;
-	mpf_message = (mpf_message_t*) msg->data;
-
-	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
-	mpf_message->command_id = MPF_COMMAND_ADD;
-	mpf_message->context = session->context;
-	mpf_message->termination = session->termination1;
-	mpf_message->descriptor = mpf_file_reader_descriptor_create(session);
-	apt_task_msg_signal(suite_engine->engine_task,msg);
+	descriptor = mpf_file_reader_descriptor_create(session);
+	mpf_engine_message_add(
+			suite_engine->engine,
+			MPF_COMMAND_ADD,session->context,session->termination1,descriptor,
+			&task_msg);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Termination [2]");
 	if(session->rtp_mode == TRUE) {
@@ -206,21 +201,20 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Termination [2]");
-	msg = apt_task_msg_get(task);
-	msg->type = TASK_MSG_USER;
-	mpf_message = (mpf_message_t*) msg->data;
-
-	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
-	mpf_message->command_id = MPF_COMMAND_ADD;
-	mpf_message->context = session->context;
-	mpf_message->termination = session->termination2;
+	descriptor = NULL;
 	if(session->rtp_mode == TRUE) {
-		mpf_message->descriptor = mpf_rtp_local_descriptor_create(session);
+		descriptor = mpf_rtp_local_descriptor_create(session);
 	}
 	else {
-		mpf_message->descriptor = mpf_file_writer_descriptor_create(session);
+		descriptor = mpf_file_writer_descriptor_create(session);
 	}
-	apt_task_msg_signal(suite_engine->engine_task,msg);
+
+	mpf_engine_message_add(
+			suite_engine->engine,
+			MPF_COMMAND_ADD,session->context,session->termination2,descriptor,
+			&task_msg);
+
+	mpf_engine_message_send(suite_engine->engine,&task_msg);
 }
 
 /** Execution of MPF test suite scenario is terminated  */
@@ -229,112 +223,95 @@ static void mpf_suite_on_terminate_complete(apt_task_t *task)
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On MPF Suite Terminate");
 }
 
-/** Process task messages  */
-static apt_bool_t mpf_suite_msg_process(apt_task_t *task, apt_task_msg_t *msg)
+/** Process MPF response  */
+static apt_bool_t mpf_suite_response_process(mpf_suite_engine_t *suite_engine, const mpf_message_t *mpf_message)
 {
-	const mpf_message_t *mpf_message = (const mpf_message_t*) msg->data;
-	if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Response");
-		if(mpf_message->command_id == MPF_COMMAND_ADD) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Add Termination");
-			if(mpf_message->termination) {
-				mpf_suite_session_t *session;
-				session = mpf_termination_object_get(mpf_message->termination);
-				if(session->termination2 == mpf_message->termination && session->rtp_mode == TRUE) {
-					apt_task_msg_t *msg;
-					mpf_message_t *request;
-					apt_task_t *consumer_task;
-					mpf_suite_engine_t *suite_engine;
-
-					consumer_task = apt_task_object_get(task);
-					suite_engine = apt_task_object_get(consumer_task);
-
-					msg = apt_task_msg_get(task);
-					msg->type = TASK_MSG_USER;
-					request = (mpf_message_t*) msg->data;
-
-					request->message_type = MPF_MESSAGE_TYPE_REQUEST;
-					request->command_id = MPF_COMMAND_MODIFY;
-					request->context = session->context;
-					request->termination = session->termination2;
-					request->descriptor = mpf_rtp_remote_descriptor_create(session);
-					apt_task_msg_signal(suite_engine->engine_task,msg);
-				}
-			}
-		}
-		else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Subtract Termination");
-			if(mpf_message->termination) {
-				mpf_suite_session_t *session;
-				session = mpf_termination_object_get(mpf_message->termination);
-				if(session->termination1 == mpf_message->termination) {
-					session->termination1 = NULL;
-				}
-				if(session->termination2 == mpf_message->termination) {
-					session->termination2 = NULL;
-				}
-				mpf_termination_destroy(mpf_message->termination);
-
-				if(!session->termination1 && !session->termination2) {
-					apt_task_t *consumer_task;
-					mpf_suite_engine_t *suite_engine;
-
-					mpf_context_destroy(session->context);
-					session->context = NULL;
-					apr_pool_destroy(session->pool);
-
-					consumer_task = apt_task_object_get(task);
-					suite_engine = apt_task_object_get(consumer_task);
-
-					apr_thread_mutex_lock(suite_engine->wait_object_mutex);
-					apr_thread_cond_signal(suite_engine->wait_object);
-					apr_thread_mutex_unlock(suite_engine->wait_object_mutex);
-				}
-			}
-		}
-	}
-	else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
-		apt_task_t *consumer_task;
-		mpf_suite_engine_t *suite_engine;
-		apt_task_msg_t *msg;
-		mpf_message_t *request;
-		mpf_suite_session_t *session;
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
+	mpf_task_msg_t *task_msg = NULL;
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Response");
+	if(mpf_message->command_id == MPF_COMMAND_ADD) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Add Termination");
 		if(mpf_message->termination) {
+			mpf_suite_session_t *session;
 			session = mpf_termination_object_get(mpf_message->termination);
-			if(session->termination1) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [1]");
-				msg = apt_task_msg_get(task);
-				msg->type = TASK_MSG_USER;
-				request = (mpf_message_t*) msg->data;
-
-				request->message_type = MPF_MESSAGE_TYPE_REQUEST;
-				request->command_id = MPF_COMMAND_SUBTRACT;
-				request->context = session->context;
-				request->termination = session->termination1;
-
-				consumer_task = apt_task_object_get(task);
-				suite_engine = apt_task_object_get(consumer_task);
-				apt_task_msg_signal(suite_engine->engine_task,msg);
-			}
-			if(session->termination2) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [2]");
-				msg = apt_task_msg_get(task);
-				msg->type = TASK_MSG_USER;
-				request = (mpf_message_t*) msg->data;
-
-				request->message_type = MPF_MESSAGE_TYPE_REQUEST;
-				request->command_id = MPF_COMMAND_SUBTRACT;
-				request->context = session->context;
-				request->termination = session->termination2;
-
-				consumer_task = apt_task_object_get(task);
-				suite_engine = apt_task_object_get(consumer_task);
-				apt_task_msg_signal(suite_engine->engine_task,msg);
+			if(session->termination2 == mpf_message->termination && session->rtp_mode == TRUE) {
+				void *descriptor = mpf_rtp_remote_descriptor_create(session);
+				mpf_engine_message_add(
+					suite_engine->engine,
+					MPF_COMMAND_MODIFY,session->context,session->termination2,descriptor,
+					&task_msg);
 			}
 		}
 	}
+	else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Subtract Termination");
+		if(mpf_message->termination) {
+			mpf_suite_session_t *session;
+			session = mpf_termination_object_get(mpf_message->termination);
+			if(session->termination1 == mpf_message->termination) {
+				session->termination1 = NULL;
+			}
+			if(session->termination2 == mpf_message->termination) {
+				session->termination2 = NULL;
+			}
+			mpf_termination_destroy(mpf_message->termination);
 
+			if(!session->termination1 && !session->termination2) {
+				mpf_context_destroy(session->context);
+				session->context = NULL;
+				apr_pool_destroy(session->pool);
+
+				apr_thread_mutex_lock(suite_engine->wait_object_mutex);
+				apr_thread_cond_signal(suite_engine->wait_object);
+				apr_thread_mutex_unlock(suite_engine->wait_object_mutex);
+			}
+		}
+	}
+	return mpf_engine_message_send(suite_engine->engine,&task_msg);
+}
+
+/** Process MPF event  */
+static apt_bool_t mpf_suite_event_process(mpf_suite_engine_t *suite_engine, const mpf_message_t *mpf_message)
+{
+	mpf_task_msg_t *task_msg = NULL;
+	mpf_suite_session_t *session;
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
+	if(mpf_message->termination) {
+		session = mpf_termination_object_get(mpf_message->termination);
+		if(session->termination1) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [1]");
+			mpf_engine_message_add(
+				suite_engine->engine,
+				MPF_COMMAND_SUBTRACT,session->context,session->termination1,NULL,
+				&task_msg);
+		}
+		if(session->termination2) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [2]");
+			mpf_engine_message_add(
+				suite_engine->engine,
+				MPF_COMMAND_SUBTRACT,session->context,session->termination2,NULL,
+				&task_msg);
+		}
+	}
+	return mpf_engine_message_send(suite_engine->engine,&task_msg);
+}
+
+/** Process task messages */
+static apt_bool_t mpf_suite_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
+{
+	apr_size_t i;
+	const mpf_message_t *mpf_message;
+	apt_task_t *consumer_task = apt_task_object_get(task);
+	mpf_suite_engine_t *suite_engine = apt_task_object_get(consumer_task);
+	const mpf_message_container_t *container = (const mpf_message_container_t*) msg->data;
+	for(i=0; i<container->count; i++) {
+		mpf_message = &container->messages[i];
+		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
+			mpf_suite_response_process(suite_engine,mpf_message);
+		}
+		else {
+			mpf_suite_event_process(suite_engine,mpf_message);
+		}
+	}
 	return TRUE;
 }
 

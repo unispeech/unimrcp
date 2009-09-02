@@ -25,7 +25,7 @@
 #include "mrcp_client_types.h"
 #include "mrcp_application.h"
 #include "mrcp_session.h"
-#include "mpf_message.h"
+#include "mpf_engine.h"
 #include "apt_task_msg.h"
 #include "apt_obj_list.h"
 
@@ -71,6 +71,9 @@ struct mrcp_client_session_t {
 	const mrcp_app_message_t  *active_request;
 	/** MRCP application request queue */
 	apt_obj_list_t            *request_queue;
+
+	/** MPF task message, which construction is in progress */
+	mpf_task_msg_t            *mpf_task_msg;
 
 	/** Number of in-progress offer requests (flags) */
 	apr_size_t                 offer_flag_count;
@@ -166,7 +169,7 @@ mrcp_app_message_t* mrcp_client_app_response_create(const mrcp_app_message_t *ap
 /** Process application message */
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message);
 /** Process MPF message */
-apt_bool_t mrcp_client_mpf_message_process(mpf_message_t *mpf_message);
+apt_bool_t mrcp_client_mpf_message_process(mpf_message_container_t *mpf_message_container);
 
 /** Process session answer */
 apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mrcp_session_descriptor_t *descriptor);

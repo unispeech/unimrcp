@@ -26,6 +26,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Max number of messages grouped in a container */
+#define MAX_MPF_MESSAGE_COUNT 5
+
 /** Enumeration of MPF message types */
 typedef enum {
 	MPF_MESSAGE_TYPE_REQUEST,  /**< request message */
@@ -50,6 +53,8 @@ typedef enum {
 
 /** MPF message declaration */
 typedef struct mpf_message_t mpf_message_t;
+/** MPF message container declaration */
+typedef struct mpf_message_container_t mpf_message_container_t;
 
 /** MPF message definition */
 struct mpf_message_t {
@@ -66,6 +71,14 @@ struct mpf_message_t {
 	mpf_termination_t *termination;
 	/** Termination type dependent descriptor */
 	void              *descriptor;
+};
+
+/** MPF message container definition */
+struct mpf_message_container_t {
+	/** Number of actual messages */
+	apr_size_t    count;
+	/** Array of messages */
+	mpf_message_t messages[MAX_MPF_MESSAGE_COUNT];
 };
 
 APT_END_EXTERN_C
