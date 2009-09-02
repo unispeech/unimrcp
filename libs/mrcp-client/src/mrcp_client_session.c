@@ -25,7 +25,6 @@
 #include "mrcp_message.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
-#include "mpf_user.h"
 #include "apt_consumer_task.h"
 #include "apt_obj_list.h"
 #include "apt_log.h"
@@ -629,7 +628,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 
 	if(!session->offer) {
 		session->offer = mrcp_session_descriptor_create(pool);
-		session->context = mpf_context_create(session,5,pool);
+		session->context = mpf_engine_context_create(profile->media_engine,session,5,pool);
 	}
 	if(!channel->resource) {
 		channel->resource = mrcp_resource_get(profile->resource_factory,channel->resource_id);
@@ -959,7 +958,7 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_container_t *mpf_message_
 	for(i=0; i<mpf_message_container->count; i++) {
 		mpf_message = &mpf_message_container->messages[i];
 		if(mpf_message->context) {
-			session = mpf_context_object_get(mpf_message->context);
+			session = mpf_engine_context_object_get(mpf_message->context);
 		}
 		else {
 			session = NULL;

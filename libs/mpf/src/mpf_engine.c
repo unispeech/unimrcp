@@ -15,7 +15,6 @@
  */
 
 #include "mpf_engine.h"
-#include "mpf_user.h"
 #include "mpf_context.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
@@ -90,6 +89,25 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	engine->contexts = apt_list_create(engine->pool);
 
 	return engine;
+}
+
+MPF_DECLARE(mpf_context_t*) mpf_engine_context_create(
+								mpf_engine_t *engine, 
+								void *obj, 
+								apr_size_t max_termination_count, 
+								apr_pool_t *pool)
+{
+	return mpf_context_create(obj,max_termination_count,pool);
+}
+
+MPF_DECLARE(apt_bool_t) mpf_engine_context_destroy(mpf_context_t *context)
+{
+	return mpf_context_destroy(context);
+}
+
+MPF_DECLARE(void*) mpf_engine_context_object_get(mpf_context_t *context)
+{
+	return mpf_context_object_get(context);
 }
 
 MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine)

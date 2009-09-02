@@ -47,6 +47,25 @@ struct mpf_context_t {
 	table_item_t      **table;
 };
 
+/**
+ * Create MPF context.
+ * @param obj the external object associated with context
+ * @param max_termination_count the max number of terminations in context
+ * @param pool the pool to allocate memory from
+ */
+MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termination_count, apr_pool_t *pool);
+
+/**
+ * Destroy MPF context.
+ * @param context the context to destroy
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
+
+/**
+ * Get external object associated with MPF context.
+ * @param context the context to get object from
+ */
+MPF_DECLARE(void*) mpf_context_object_get(mpf_context_t *context);
 
 /**
  * Add termination to context.

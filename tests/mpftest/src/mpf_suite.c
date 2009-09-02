@@ -17,7 +17,6 @@
 #include <apr_thread_cond.h>
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
-#include "mpf_user.h"
 #include "mpf_termination.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mpf_file_termination_factory.h"
@@ -180,7 +179,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	session->rtp_mode = TRUE;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create MPF Context");
-	session->context = mpf_context_create(session,2,pool);
+	session->context = mpf_engine_context_create(suite_engine->engine,session,2,pool);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Termination [1]");
 	session->termination1 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
@@ -256,7 +255,7 @@ static apt_bool_t mpf_suite_response_process(mpf_suite_engine_t *suite_engine, c
 			mpf_termination_destroy(mpf_message->termination);
 
 			if(!session->termination1 && !session->termination2) {
-				mpf_context_destroy(session->context);
+				mpf_engine_context_destroy(session->context);
 				session->context = NULL;
 				apr_pool_destroy(session->pool);
 

@@ -25,7 +25,6 @@
 #include "mrcp_control_descriptor.h"
 #include "mrcp_state_machine.h"
 #include "mrcp_message.h"
-#include "mpf_user.h"
 #include "mpf_termination.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
@@ -319,7 +318,7 @@ apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_
 	for(i=0; i<mpf_message_container->count; i++) {
 		mpf_message = &mpf_message_container->messages[i];
 		if(mpf_message->context) {
-			session = mpf_context_object_get(mpf_message->context);
+			session = mpf_engine_context_object_get(mpf_message->context);
 		}
 		else {
 			session = NULL;
@@ -389,7 +388,7 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 		}
 		mrcp_server_session_add(session);
 
-		session->context = mpf_context_create(session,5,session->base.pool);
+		session->context = mpf_engine_context_create(session->profile->media_engine,session,5,session->base.pool);
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Offer "APT_SID_FMT" [c:%d a:%d v:%d]",
 		MRCP_SESSION_SID(&session->base),

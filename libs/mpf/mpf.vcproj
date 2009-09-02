@@ -283,10 +283,6 @@
 				RelativePath=".\include\mpf_types.h"
 				>
 			</File>
-			<File
-				RelativePath=".\include\mpf_user.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="src"
