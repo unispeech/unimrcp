@@ -1223,29 +1223,3 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_messag
 	}
 	return status;
 }
-
-static apt_bool_t mrcp_client_mpf_request_send(
-						mpf_engine_t *engine, 
-						mpf_command_type_e command_id,
-						mpf_context_t *context, 
-						mpf_termination_t *termination, 
-						void *descriptor)
-{
-	apt_task_t *media_task;
-	apt_task_msg_t *msg;
-	mpf_message_t *mpf_message;
-	if(!engine) {
-		return FALSE;
-	}
-	media_task = mpf_task_get(engine);
-	msg = apt_task_msg_get(media_task);
-	msg->type = TASK_MSG_USER;
-	mpf_message = (mpf_message_t*) msg->data;
-
-	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
-	mpf_message->command_id = command_id;
-	mpf_message->context = context;
-	mpf_message->termination = termination;
-	mpf_message->descriptor = descriptor;
-	return apt_task_msg_signal(media_task,msg);
-}
