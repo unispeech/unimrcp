@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
+#ifdef WIN32
+#pragma warning(disable: 4127)
+#endif
+#include <apr_ring.h> 
 #include "mpf_context.h"
+#include "mpf_object.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
 #include "mpf_encoder.h"
@@ -22,15 +27,79 @@
 #include "mpf_bridge.h"
 #include "apt_log.h"
 
+/** Definition of table item used in context */
+typedef void* table_item_t;
+
+/** Media processing context */
+struct mpf_context_t {
+	/** Ring entry */
+	APR_RING_ENTRY(mpf_context_t) link;
+	/** Back pointer to context factory */
+	mpf_context_factory_t        *factory;
+	/** Pool to allocate memory from */
+	apr_pool_t                   *pool;
+	/** External object */
+	void                         *obj;
+
+	/** Max number of terminations */
+	apr_size_t                    max_termination_count;
+	/** Current number of terminations */
+	apr_size_t                    termination_count;
+	/** Table, which holds terminations and topology */
+	table_item_t                **table;
+};
+
+/** Factory of media contexts */
+struct mpf_context_factory_t {
+	/** Ring head */
+	APR_RING_HEAD(mpf_context_head_t, mpf_context_t) head;
+};
+
+
 static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination);
 
-MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termination_count, apr_pool_t *pool)
+MPF_DECLARE(mpf_context_factory_t*) mpf_context_factory_create(apr_pool_t *pool)
+{
+	mpf_context_factory_t *factory = apr_palloc(pool, sizeof(mpf_context_factory_t));
+	APR_RING_INIT(&factory->head, mpf_context_t, link);
+	return factory;
+}
+
+MPF_DECLARE(void) mpf_context_factory_destroy(mpf_context_factory_t *factory)
+{
+	mpf_context_t *context;
+	while(!APR_RING_EMPTY(&factory->head, mpf_context_t, link)) {
+		context = APR_RING_FIRST(&factory->head);
+		mpf_context_destroy(context);
+		APR_RING_REMOVE(context, link);
+	}
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_factory_process(mpf_context_factory_t *factory)
+{
+	mpf_context_t *context;
+	for(context = APR_RING_FIRST(&factory->head);
+			context != APR_RING_SENTINEL(&factory->head, mpf_context_t, link);
+				context = APR_RING_NEXT(context, link)) {
+		
+		mpf_context_process(context);
+	}
+
+	return TRUE;
+}
+
+ 
+MPF_DECLARE(mpf_context_t*) mpf_context_create(
+								mpf_context_factory_t *factory, 
+								void *obj, 
+								apr_size_t max_termination_count, 
+								apr_pool_t *pool)
 {
 	apr_size_t i,j;
 	mpf_context_t *context = apr_palloc(pool,sizeof(mpf_context_t));
+	context->factory = factory;
 	context->obj = obj;
 	context->pool = pool;
-	context->elem = NULL;
 	context->max_termination_count = max_termination_count;
 	context->termination_count = 0;
 	context->table = apr_palloc(pool,sizeof(table_item_t)*max_termination_count);
@@ -72,6 +141,11 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
 	apr_size_t count = context->max_termination_count;
 	for(i=0; i<count; i++) {
 		if(!context->table[i][i]) {
+			if(!context->termination_count) {
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Context");
+				APR_RING_INSERT_TAIL(&context->factory->head,context,mpf_context_t,link);
+			}
+
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Termination");
 			context->table[i][i] = termination;
 			termination->slot = i;
@@ -96,6 +170,10 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context,
 	context->table[i][i] = NULL;
 	termination->slot = (apr_size_t)-1;
 	context->termination_count--;
+	if(!context->termination_count) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Context");
+		APR_RING_REMOVE(context,link);
+	}
 	return TRUE;
 }
 

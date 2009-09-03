@@ -33,7 +33,7 @@ struct mpf_engine_t {
 	apt_task_msg_type_e        task_msg_type;
 	apr_thread_mutex_t        *request_queue_guard;
 	apt_cyclic_queue_t        *request_queue;
-	apt_obj_list_t            *contexts;
+	mpf_context_factory_t     *context_factory;
 	mpf_timer_t               *timer;
 	const mpf_codec_manager_t *codec_manager;
 };
@@ -45,7 +45,6 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
-static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine);
 
 mpf_codec_t* mpf_codec_lpcm_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
@@ -59,7 +58,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	mpf_engine_t *engine = apr_palloc(pool,sizeof(mpf_engine_t));
 	engine->pool = pool;
 	engine->request_queue = NULL;
-	engine->contexts = NULL;
+	engine->context_factory = NULL;
 	engine->codec_manager = NULL;
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_container_t),pool);
@@ -83,10 +82,9 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 
 	engine->task_msg_type = TASK_MSG_USER;
 
+	engine->context_factory = mpf_context_factory_create(engine->pool);
 	engine->request_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
-
-	engine->contexts = apt_list_create(engine->pool);
 
 	return engine;
 }
@@ -97,7 +95,7 @@ MPF_DECLARE(mpf_context_t*) mpf_engine_context_create(
 								apr_size_t max_termination_count, 
 								apr_pool_t *pool)
 {
-	return mpf_context_create(obj,max_termination_count,pool);
+	return mpf_context_create(engine->context_factory,obj,max_termination_count,pool);
 }
 
 MPF_DECLARE(apt_bool_t) mpf_engine_context_destroy(mpf_context_t *context)
@@ -180,8 +178,7 @@ static apt_bool_t mpf_engine_destroy(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	apt_list_destroy(engine->contexts);
-
+	mpf_context_factory_destroy(engine->context_factory);
 	apt_cyclic_queue_destroy(engine->request_queue);
 	apr_thread_mutex_destroy(engine->request_queue_guard);
 	return TRUE;
@@ -201,20 +198,7 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 	mpf_engine_t *engine = apt_task_object_get(task);
 
 	mpf_timer_stop(engine->timer);
-	mpf_engine_contexts_destroy(engine);
 	apt_task_child_terminate(task);
-	return TRUE;
-}
-
-static apt_bool_t mpf_engine_contexts_destroy(mpf_engine_t *engine)
-{
-	mpf_context_t *context;
-	context = apt_list_pop_front(engine->contexts);
-	while(context) {
-		mpf_context_destroy(context);
-		
-		context = apt_list_pop_front(engine->contexts);
-	}
 	return TRUE;
 }
 
@@ -302,10 +286,6 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 					break;
 				}
 				mpf_context_topology_apply(context,termination);
-				if(context->termination_count == 1) {
-					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Context");
-					context->elem = apt_list_push_back(engine->contexts,context,context->pool);
-				}
 				break;
 			}
 			case MPF_COMMAND_SUBTRACT:
@@ -314,11 +294,6 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				if(mpf_context_termination_subtract(context,termination) == FALSE) {
 					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
 					break;
-				}
-				if(context->termination_count == 0) {
-					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Context");
-					apt_list_elem_remove(engine->contexts,context->elem);
-					context->elem = NULL;
 				}
 				break;
 			}
@@ -346,8 +321,6 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 {
 	mpf_engine_t *engine = data;
 	apt_task_msg_t *msg;
-	apt_list_elem_t *elem;
-	mpf_context_t *context;
 
 	/* process request queue */
 	apr_thread_mutex_lock(engine->request_queue_guard);
@@ -360,15 +333,8 @@ static void mpf_engine_main(mpf_timer_t *timer, void *data)
 	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 
-	/* process contexts */
-	elem = apt_list_first_elem_get(engine->contexts);
-	while(elem) {
-		context = apt_list_elem_object_get(elem);
-		if(context) {
-			mpf_context_process(context);
-		}
-		elem = apt_list_next_elem_get(engine->contexts,elem);
-	}
+	/* process factory of media contexts */
+	mpf_context_factory_process(engine->context_factory);
 }
 
 MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *pool)

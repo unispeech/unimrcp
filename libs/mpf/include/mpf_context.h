@@ -22,38 +22,40 @@
  * @brief MPF Context
  */ 
 
-#include "mpf_object.h"
-#include "apt_obj_list.h"
+#include "mpf_types.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Definition of table item used in context */
-typedef void* table_item_t;
+/** Opaque factory of media contexts */
+typedef struct mpf_context_factory_t mpf_context_factory_t;
+ 
+/**
+ * Create factory of media contexts.
+ */
+MPF_DECLARE(mpf_context_factory_t*) mpf_context_factory_create(apr_pool_t *pool); 
 
-/** Media processing context */
-struct mpf_context_t {
-    /** Pool to allocate memory from */
-	apr_pool_t        *pool;
-    /** External object */
-	void              *obj;
-    /** Set when context is addded to the list to ensure quick find on delete */
-	apt_list_elem_t   *elem;
+/**
+ * Destroy factory of media contexts.
+ */
+MPF_DECLARE(void) mpf_context_factory_destroy(mpf_context_factory_t *factory); 
 
-	/** Max number of terminations */
-	apr_size_t          max_termination_count;
-	/** Current number of terminations */
-	apr_size_t          termination_count;
-	/** Table, which holds terminations and topology */
-	table_item_t      **table;
-};
+/**
+ * Process factory of media contexts.
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_factory_process(mpf_context_factory_t *factory);
 
 /**
  * Create MPF context.
+ * @param factory the factory context belongs to
  * @param obj the external object associated with context
  * @param max_termination_count the max number of terminations in context
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_context_t*) mpf_context_create(void *obj, apr_size_t max_termination_count, apr_pool_t *pool);
+MPF_DECLARE(mpf_context_t*) mpf_context_create(
+								mpf_context_factory_t *factory, 
+								void *obj, 
+								apr_size_t max_termination_count, 
+								apr_pool_t *pool);
 
 /**
  * Destroy MPF context.
