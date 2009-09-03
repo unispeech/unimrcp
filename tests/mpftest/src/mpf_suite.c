@@ -186,9 +186,9 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Termination [1]");
 	descriptor = mpf_file_reader_descriptor_create(session);
-	mpf_engine_message_add(
+	mpf_engine_termination_message_add(
 			suite_engine->engine,
-			MPF_COMMAND_ADD,session->context,session->termination1,descriptor,
+			MPF_ADD_TERMINATION,session->context,session->termination1,descriptor,
 			&task_msg);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Termination [2]");
@@ -208,9 +208,9 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 		descriptor = mpf_file_writer_descriptor_create(session);
 	}
 
-	mpf_engine_message_add(
+	mpf_engine_termination_message_add(
 			suite_engine->engine,
-			MPF_COMMAND_ADD,session->context,session->termination2,descriptor,
+			MPF_ADD_TERMINATION,session->context,session->termination2,descriptor,
 			&task_msg);
 
 	mpf_engine_message_send(suite_engine->engine,&task_msg);
@@ -227,21 +227,21 @@ static apt_bool_t mpf_suite_response_process(mpf_suite_engine_t *suite_engine, c
 {
 	mpf_task_msg_t *task_msg = NULL;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Response");
-	if(mpf_message->command_id == MPF_COMMAND_ADD) {
+	if(mpf_message->command_id == MPF_ADD_TERMINATION) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Add Termination");
 		if(mpf_message->termination) {
 			mpf_suite_session_t *session;
 			session = mpf_termination_object_get(mpf_message->termination);
 			if(session->termination2 == mpf_message->termination && session->rtp_mode == TRUE) {
 				void *descriptor = mpf_rtp_remote_descriptor_create(session);
-				mpf_engine_message_add(
+				mpf_engine_termination_message_add(
 					suite_engine->engine,
-					MPF_COMMAND_MODIFY,session->context,session->termination2,descriptor,
+					MPF_MODIFY_TERMINATION,session->context,session->termination2,descriptor,
 					&task_msg);
 			}
 		}
 	}
-	else if(mpf_message->command_id == MPF_COMMAND_SUBTRACT) {
+	else if(mpf_message->command_id == MPF_SUBTRACT_TERMINATION) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Subtract Termination");
 		if(mpf_message->termination) {
 			mpf_suite_session_t *session;
@@ -278,16 +278,16 @@ static apt_bool_t mpf_suite_event_process(mpf_suite_engine_t *suite_engine, cons
 		session = mpf_termination_object_get(mpf_message->termination);
 		if(session->termination1) {
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [1]");
-			mpf_engine_message_add(
+			mpf_engine_termination_message_add(
 				suite_engine->engine,
-				MPF_COMMAND_SUBTRACT,session->context,session->termination1,NULL,
+				MPF_SUBTRACT_TERMINATION,session->context,session->termination1,NULL,
 				&task_msg);
 		}
 		if(session->termination2) {
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Subtract Termination [2]");
-			mpf_engine_message_add(
+			mpf_engine_termination_message_add(
 				suite_engine->engine,
-				MPF_COMMAND_SUBTRACT,session->context,session->termination2,NULL,
+				MPF_SUBTRACT_TERMINATION,session->context,session->termination2,NULL,
 				&task_msg);
 		}
 	}

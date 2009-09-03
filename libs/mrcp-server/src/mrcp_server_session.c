@@ -326,15 +326,15 @@ apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_
 		
 		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 			switch(mpf_message->command_id) {
-				case MPF_COMMAND_ADD:
+				case MPF_ADD_TERMINATION:
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add");
 					mrcp_server_on_termination_modify(session,mpf_message);
 					break;
-				case MPF_COMMAND_MODIFY:
+				case MPF_MODIFY_TERMINATION:
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify");
 					mrcp_server_on_termination_modify(session,mpf_message);
 					break;
-				case MPF_COMMAND_SUBTRACT:
+				case MPF_SUBTRACT_TERMINATION:
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract");
 					mrcp_server_on_termination_subtract(session,mpf_message);
 					break;
@@ -446,9 +446,9 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 			/* send subtract termination request */
 			if(termination) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Channel Termination");
-				if(mpf_engine_message_add(
+				if(mpf_engine_termination_message_add(
 							session->profile->media_engine,
-							MPF_COMMAND_SUBTRACT,session->context,termination,NULL,
+							MPF_SUBTRACT_TERMINATION,session->context,termination,NULL,
 							&session->mpf_task_msg) == TRUE) {
 					channel->waiting_for_termination = TRUE;
 					session->terminate_flag_count++;
@@ -468,10 +468,10 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 
 		/* send subtract termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract RTP Termination [%d]",i);
-		if(mpf_engine_message_add(
-							session->profile->media_engine,
-							MPF_COMMAND_SUBTRACT,session->context,slot->termination,NULL,
-							&session->mpf_task_msg) == TRUE) {
+		if(mpf_engine_termination_message_add(
+				session->profile->media_engine,
+				MPF_SUBTRACT_TERMINATION,session->context,slot->termination,NULL,
+				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->terminate_flag_count++;
 		}
@@ -576,9 +576,9 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 
 				if(termination) {
 					/* send add termination request (add to media context) */
-					if(mpf_engine_message_add(
+					if(mpf_engine_termination_message_add(
 							session->profile->media_engine,
-							MPF_COMMAND_ADD,session->context,termination,NULL,
+							MPF_ADD_TERMINATION,session->context,termination,NULL,
 							&session->mpf_task_msg) == TRUE) {
 						channel->waiting_for_termination = TRUE;
 						session->answer_flag_count++;
@@ -681,9 +681,9 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 
 				if(termination) {
 					/* send add termination request (add to media context) */
-					if(mpf_engine_message_add(
+					if(mpf_engine_termination_message_add(
 							session->profile->media_engine,
-							MPF_COMMAND_ADD,session->context,termination,NULL,
+							MPF_ADD_TERMINATION,session->context,termination,NULL,
 							&session->mpf_task_msg) == TRUE) {
 						channel->waiting_for_termination = TRUE;
 						session->answer_flag_count++;
@@ -726,9 +726,9 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 
 		/* send modify termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify RTP Termination [%d]",i);
-		if(mpf_engine_message_add(
+		if(mpf_engine_termination_message_add(
 				session->profile->media_engine,
-				MPF_COMMAND_MODIFY,session->context,slot->termination,rtp_descriptor,
+				MPF_MODIFY_TERMINATION,session->context,slot->termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->answer_flag_count++;
@@ -755,9 +755,9 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
 
 		/* send add termination request (add to media context) */
-		if(mpf_engine_message_add(
+		if(mpf_engine_termination_message_add(
 				session->profile->media_engine,
-				MPF_COMMAND_ADD,session->context,termination,rtp_descriptor,
+				MPF_ADD_TERMINATION,session->context,termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->answer_flag_count++;

@@ -143,7 +143,7 @@ static mpf_message_t* mpf_engine_message_get(mpf_engine_t *engine, mpf_task_msg_
 }
 
 
-MPF_DECLARE(apt_bool_t) mpf_engine_message_add(
+MPF_DECLARE(apt_bool_t) mpf_engine_termination_message_add(
 							mpf_engine_t *engine,
 							mpf_command_type_e command_id,
 							mpf_context_t *context,
@@ -159,10 +159,50 @@ MPF_DECLARE(apt_bool_t) mpf_engine_message_add(
 	mpf_message->command_id = command_id;
 	mpf_message->context = context;
 	mpf_message->termination = termination;
+	mpf_message->assoc_termination = NULL;
 	mpf_message->descriptor = descriptor;
 	return TRUE;
 }
 
+MPF_DECLARE(apt_bool_t) mpf_engine_assoc_message_add(
+							mpf_engine_t *engine,
+							mpf_command_type_e command_id,
+							mpf_context_t *context,
+							mpf_termination_t *termination,
+							mpf_termination_t *assoc_termination,
+							mpf_task_msg_t **task_msg)
+{
+	mpf_message_t *mpf_message = mpf_engine_message_get(engine,task_msg);
+	if(!mpf_message) {
+		return FALSE;
+	}
+	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
+	mpf_message->command_id = command_id;
+	mpf_message->context = context;
+	mpf_message->termination = termination;
+	mpf_message->assoc_termination = assoc_termination;
+	mpf_message->descriptor = NULL;
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_engine_topology_message_add(
+							mpf_engine_t *engine,
+							mpf_command_type_e command_id,
+							mpf_context_t *context,
+							mpf_task_msg_t **task_msg)
+{
+	mpf_message_t *mpf_message = mpf_engine_message_get(engine,task_msg);
+	if(!mpf_message) {
+		return FALSE;
+	}
+	mpf_message->message_type = MPF_MESSAGE_TYPE_REQUEST;
+	mpf_message->command_id = command_id;
+	mpf_message->context = context;
+	mpf_message->termination = NULL;
+	mpf_message->assoc_termination = NULL;
+	mpf_message->descriptor = NULL;
+	return TRUE;
+}
 
 MPF_DECLARE(apt_bool_t) mpf_engine_message_send(mpf_engine_t *engine, mpf_task_msg_t **task_msg)
 {
@@ -272,7 +312,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		context = mpf_request->context;
 		termination = mpf_request->termination;
 		switch(mpf_request->command_id) {
-			case MPF_COMMAND_ADD:
+			case MPF_ADD_TERMINATION:
 			{
 				termination->event_handler_obj = engine;
 				termination->event_handler = mpf_engine_event_raise;
@@ -288,22 +328,22 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				mpf_context_topology_apply(context,termination);
 				break;
 			}
-			case MPF_COMMAND_SUBTRACT:
-			{
-				mpf_context_topology_destroy(context,termination);
-				if(mpf_context_termination_subtract(context,termination) == FALSE) {
-					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
-					break;
-				}
-				break;
-			}
-			case MPF_COMMAND_MODIFY:
+			case MPF_MODIFY_TERMINATION:
 			{
 				if(mpf_request->descriptor) {
 					mpf_context_topology_destroy(context,termination);
 					mpf_termination_modify(termination,mpf_request->descriptor);
 					mpf_termination_validate(termination);
 					mpf_context_topology_apply(context,termination);
+				}
+				break;
+			}
+			case MPF_SUBTRACT_TERMINATION:
+			{
+				mpf_context_topology_destroy(context,termination);
+				if(mpf_context_termination_subtract(context,termination) == FALSE) {
+					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
+					break;
 				}
 				break;
 			}

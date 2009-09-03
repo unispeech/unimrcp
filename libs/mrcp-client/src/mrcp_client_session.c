@@ -666,9 +666,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	*channel_slot = channel;
 
 	if(channel->termination) {
-		if(mpf_engine_message_add(
+		if(mpf_engine_termination_message_add(
 				profile->media_engine,
-				MPF_COMMAND_ADD,session->context,channel->termination,NULL,
+				MPF_ADD_TERMINATION,session->context,channel->termination,NULL,
 				&session->mpf_task_msg) == TRUE) {
 			channel->waiting_for_termination = TRUE;
 			session->offer_flag_count++;
@@ -709,9 +709,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			rtp_descriptor->audio.local = media;
 		}
 		/* send add termination request (add to media context) */
-		if(mpf_engine_message_add(
+		if(mpf_engine_termination_message_add(
 				profile->media_engine,
-				MPF_COMMAND_ADD,session->context,termination,rtp_descriptor,
+				MPF_ADD_TERMINATION,session->context,termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
 			termination_slot->waiting = TRUE;
 			session->offer_flag_count++;
@@ -766,9 +766,9 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 			/* send subtract termination request */
 			if(channel->termination) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Channel Termination "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
-				if(mpf_engine_message_add(
+				if(mpf_engine_termination_message_add(
 						profile->media_engine,
-						MPF_COMMAND_SUBTRACT,session->context,channel->termination,NULL,
+						MPF_SUBTRACT_TERMINATION,session->context,channel->termination,NULL,
 						&session->mpf_task_msg) == TRUE) {
 					channel->waiting_for_termination = TRUE;
 					session->terminate_flag_count++;
@@ -785,9 +785,9 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 		/* send subtract termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Termination "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
-		if(mpf_engine_message_add(
+		if(mpf_engine_termination_message_add(
 				profile->media_engine,
-				MPF_COMMAND_SUBTRACT,session->context,slot->termination,NULL,
+				MPF_SUBTRACT_TERMINATION,session->context,slot->termination,NULL,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			session->terminate_flag_count++;
@@ -965,15 +965,15 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_container_t *mpf_message_
 		}
 		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 			switch(mpf_message->command_id) {
-				case MPF_COMMAND_ADD:
+				case MPF_ADD_TERMINATION:
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
 					mrcp_client_on_termination_add(session,mpf_message);
 					break;
-				case MPF_COMMAND_MODIFY:
+				case MPF_MODIFY_TERMINATION:
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
 					mrcp_client_on_termination_modify(session,mpf_message);
 					break;
-				case MPF_COMMAND_SUBTRACT:
+				case MPF_SUBTRACT_TERMINATION:
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
 					mrcp_client_on_termination_subtract(session,mpf_message);
 					break;
@@ -1072,9 +1072,9 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 
 			/* send modify termination request */
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify Termination "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
-			if(mpf_engine_message_add(
+			if(mpf_engine_termination_message_add(
 					session->profile->media_engine,
-					MPF_COMMAND_MODIFY,session->context,slot->termination,rtp_descriptor,
+					MPF_MODIFY_TERMINATION,session->context,slot->termination,rtp_descriptor,
 					&session->mpf_task_msg) == TRUE) {
 				slot->waiting = TRUE;
 				session->answer_flag_count++;
