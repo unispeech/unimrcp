@@ -46,8 +46,10 @@ struct mrcp_channel_t {
 	mrcp_engine_channel_t  *engine_channel;
 	/** MRCP resource state machine  */
 	mrcp_state_machine_t   *state_machine;
-	/** media descriptor id */
+	/** media descriptor id (position in SDP message) */
 	apr_size_t              id;
+	/** control media id (used for resource grouping) */
+	apr_size_t              cmid;
 	/** waiting state of control media */
 	apt_bool_t              waiting_for_channel;
 	/** waiting state of media termination */
@@ -58,11 +60,16 @@ typedef struct mrcp_termination_slot_t mrcp_termination_slot_t;
 
 struct mrcp_termination_slot_t {
 	/** RTP termination */
-	mpf_termination_t *termination;
-	/** media descriptor id */
-	apr_size_t         id;
+	mpf_termination_t  *termination;
+	/** media descriptor id (position in SDP message) */
+	apr_size_t          id;
+	/** media id (used for resource grouping) */
+	apr_size_t          mid;
+	/** Array of associated MRCP channels (mrcp_channel_t*) */
+	apr_array_header_t *channels;
+
 	/** waiting state */
-	apt_bool_t         waiting;
+	apt_bool_t          waiting;
 };
 
 extern const mrcp_engine_channel_event_vtable_t engine_channel_vtable;
@@ -76,10 +83,8 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor);
 
-static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *session, const mpf_message_t *mpf_message);
-static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *session, const mpf_message_t *mpf_message);
-
 static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session);
+static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session);
 static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session);
 
 static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, const apt_str_t *resource_name);
@@ -99,9 +104,8 @@ mrcp_server_session_t* mrcp_server_session_create()
 	session->offer = NULL;
 	session->answer = NULL;
 	session->mpf_task_msg = NULL;
-	session->answer_flag_count = 0;
-	session->terminate_flag_count = 0;
-	session->deactivate_flag_count = 0;
+	session->subrequest_count = 0;
+	session->state = SESSION_STATE_NONE;
 	return session;
 }
 
@@ -124,7 +128,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 	return mrcp_engine_channel_virtual_create(resource_engine,mrcp_session_version_get(session),session->base.pool);
 }
 
-static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id)
+static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_size_t cmid)
 {
 	mrcp_channel_t *channel;
 	apr_pool_t *pool = session->base.pool;
@@ -137,6 +141,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	channel->state_machine = NULL;
 	channel->engine_channel = NULL;
 	channel->id = id;
+	channel->cmid = cmid;
 	channel->waiting_for_channel = FALSE;
 	channel->waiting_for_termination = FALSE;
 	apt_string_reset(&channel->resource_name);
@@ -192,6 +197,45 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	return channel;
 }
 
+static APR_INLINE void mrcp_server_session_state_set(mrcp_server_session_t *session, mrcp_server_session_state_e state)
+{
+	if(session->subrequest_count != 0) {
+		/* error case */
+		session->subrequest_count = 0;
+	}
+	session->state = state;
+}
+
+static APR_INLINE void mrcp_server_session_subrequest_add(mrcp_server_session_t *session)
+{
+	session->subrequest_count++;
+}
+
+static void mrcp_server_session_subrequest_remove(mrcp_server_session_t *session)
+{
+	if(!session->subrequest_count) {
+		/* error case */
+		return;
+	}
+	session->subrequest_count--;
+	if(!session->subrequest_count) {
+		switch(session->state) {
+			case SESSION_STATE_ANSWERING:
+				/* send answer to client */
+				mrcp_server_session_answer_send(session);
+				break;
+			case SESSION_STATE_DEACTIVATING:
+				mrcp_server_session_terminate_process(session);
+				break;
+			case SESSION_STATE_TERMINATING:
+				mrcp_server_session_terminate_send(session);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
 mrcp_session_t* mrcp_server_channel_session_get(mrcp_channel_t *channel)
 {
 	return channel->session;
@@ -224,13 +268,7 @@ apt_bool_t mrcp_server_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 	channel->waiting_for_channel = FALSE;
 	answer->session_id = session->base.id;
 	mrcp_session_control_media_set(session->answer,channel->id,answer);
-	if(session->answer_flag_count) {
-		session->answer_flag_count--;
-		if(!session->answer_flag_count) {
-			/* send answer to client */
-			mrcp_server_session_answer_send(session);
-		}
-	}
+	mrcp_server_session_subrequest_remove(session);
 	return TRUE;
 }
 
@@ -242,12 +280,7 @@ apt_bool_t mrcp_server_on_channel_remove(mrcp_channel_t *channel, apt_bool_t sta
 		return FALSE;
 	}
 	channel->waiting_for_channel = FALSE;
-	if(session->terminate_flag_count) {
-		session->terminate_flag_count--;
-		if(!session->terminate_flag_count) {
-			mrcp_server_session_terminate_send(session);
-		}
-	}
+	mrcp_server_session_subrequest_remove(session);
 	return TRUE;
 }
 
@@ -277,13 +310,7 @@ apt_bool_t mrcp_server_on_engine_channel_open(mrcp_channel_t *channel, apt_bool_
 	if(status == FALSE) {
 		session->answer->status = MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE;
 	}
-	if(session->answer_flag_count) {
-		session->answer_flag_count--;
-		if(!session->answer_flag_count) {
-			/* send answer to client */
-			mrcp_server_session_answer_send(session);
-		}
-	}
+	mrcp_server_session_subrequest_remove(session);
 	return TRUE;
 }
 
@@ -291,12 +318,7 @@ apt_bool_t mrcp_server_on_engine_channel_close(mrcp_channel_t *channel)
 {
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Engine Channel Close");
-	if(session->terminate_flag_count) {
-		session->terminate_flag_count--;
-		if(!session->terminate_flag_count) {
-			mrcp_server_session_terminate_send(session);
-		}
-	}
+	mrcp_server_session_subrequest_remove(session);
 	return TRUE;
 }
 
@@ -309,45 +331,6 @@ apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_m
 	return mrcp_state_machine_update(channel->state_machine,message);
 }
 
-
-apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_container)
-{
-	apr_size_t i;
-	mrcp_server_session_t *session;
-	const mpf_message_t *mpf_message;
-	for(i=0; i<mpf_message_container->count; i++) {
-		mpf_message = &mpf_message_container->messages[i];
-		if(mpf_message->context) {
-			session = mpf_engine_context_object_get(mpf_message->context);
-		}
-		else {
-			session = NULL;
-		}
-		
-		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
-			switch(mpf_message->command_id) {
-				case MPF_ADD_TERMINATION:
-					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add");
-					mrcp_server_on_termination_modify(session,mpf_message);
-					break;
-				case MPF_MODIFY_TERMINATION:
-					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify");
-					mrcp_server_on_termination_modify(session,mpf_message);
-					break;
-				case MPF_SUBTRACT_TERMINATION:
-					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract");
-					mrcp_server_on_termination_subtract(session,mpf_message);
-					break;
-				default:
-					break;
-			}
-		}
-		else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
-		}
-	}
-	return TRUE;
-}
 
 static mrcp_session_descriptor_t* mrcp_session_answer_create(mrcp_session_descriptor_t *offer, apr_pool_t *pool)
 {
@@ -400,6 +383,16 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 	session->offer = descriptor;
 	session->answer = mrcp_session_answer_create(descriptor,session->base.pool);
 
+	mrcp_server_session_state_set(session,SESSION_STATE_ANSWERING);
+
+	/* first, reset/destroy existing associations and topology */
+	if(mpf_engine_topology_message_add(
+				session->profile->media_engine,
+				MPF_RESET_ASSOCIATIONS,session->context,
+				&session->mpf_task_msg) == TRUE){
+		mrcp_server_session_subrequest_add(session);
+	}
+
 	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
 		if(mrcp_server_resource_offer_process(session,descriptor) == TRUE) {
 			mrcp_server_av_media_offer_process(session,descriptor);
@@ -413,9 +406,16 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 		mrcp_server_av_media_offer_process(session,descriptor);
 	}
 
+	/* apply topology based on assigned associations */
+	if(mpf_engine_topology_message_add(
+				session->profile->media_engine,
+				MPF_APPLY_TOPOLOGY,session->context,
+				&session->mpf_task_msg) == TRUE) {
+		mrcp_server_session_subrequest_add(session);
+	}
 	mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
 
-	if(!session->answer_flag_count) {
+	if(!session->subrequest_count) {
 		/* send answer to client */
 		mrcp_server_session_answer_send(session);
 	}
@@ -428,6 +428,19 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 	mrcp_termination_slot_t *slot;
 	int i;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Terminate Request "APT_SID_FMT,MRCP_SESSION_SID(&session->base));
+
+	mrcp_server_session_state_set(session,SESSION_STATE_TERMINATING);
+
+	if(session->context) {
+		/* first, destroy existing topology */
+		if(mpf_engine_topology_message_add(
+					session->profile->media_engine,
+					MPF_RESET_ASSOCIATIONS,session->context,
+					&session->mpf_task_msg) == TRUE){
+			mrcp_server_session_subrequest_add(session);
+		}
+	}
+
 	for(i=0; i<session->channels->nelts; i++) {
 		channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(!channel) continue;
@@ -437,7 +450,7 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 		if(channel->control_channel) {
 			if(mrcp_server_control_channel_remove(channel->control_channel) == TRUE) {
 				channel->waiting_for_channel = TRUE;
-				session->terminate_flag_count++;
+				mrcp_server_session_subrequest_add(session);
 			}
 		}
 
@@ -451,13 +464,13 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 							MPF_SUBTRACT_TERMINATION,session->context,termination,NULL,
 							&session->mpf_task_msg) == TRUE) {
 					channel->waiting_for_termination = TRUE;
-					session->terminate_flag_count++;
+					mrcp_server_session_subrequest_add(session);
 				}
 			}
 
 			/* close resource engine channel */
 			if(mrcp_engine_channel_virtual_close(channel->engine_channel) == TRUE) {
-				session->terminate_flag_count++;
+				mrcp_server_session_subrequest_add(session);
 			}
 		}
 	}
@@ -473,15 +486,17 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 				MPF_SUBTRACT_TERMINATION,session->context,slot->termination,NULL,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
-			session->terminate_flag_count++;
+			mrcp_server_session_subrequest_add(session);
 		}
 	}
 
-	mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
+	if(session->context) {
+		mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
+	}
 
 	mrcp_server_session_remove(session);
 
-	if(!session->terminate_flag_count) {
+	if(!session->subrequest_count) {
 		mrcp_server_session_terminate_send(session);
 	}
 
@@ -493,16 +508,17 @@ static apt_bool_t mrcp_server_session_deactivate(mrcp_server_session_t *session)
 	mrcp_channel_t *channel;
 	int i;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Deactivate Session "APT_SID_FMT,MRCP_SESSION_SID(&session->base));
+	mrcp_server_session_state_set(session,SESSION_STATE_DEACTIVATING);
 	for(i=0; i<session->channels->nelts; i++) {
 		channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(!channel || !channel->state_machine) continue;
 
 		if(mrcp_state_machine_deactivate(channel->state_machine) == TRUE) {
-			session->deactivate_flag_count++;
+			mrcp_server_session_subrequest_add(session);
 		}
 	}
 	
-	if(!session->deactivate_flag_count) {
+	if(!session->subrequest_count) {
 		mrcp_server_session_terminate_process(session);
 	}
 
@@ -559,7 +575,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 			return TRUE;
 		}
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count);
+		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count,0);
 		if(!channel || !channel->resource) {
 			return FALSE;
 		}
@@ -572,7 +588,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 			/* open resource engine channel */
 			if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
 				mpf_termination_t *termination = channel->engine_channel->termination;
-				session->answer_flag_count++;
+				mrcp_server_session_subrequest_add(session);
 
 				if(termination) {
 					/* send add termination request (add to media context) */
@@ -581,7 +597,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 							MPF_ADD_TERMINATION,session->context,termination,NULL,
 							&session->mpf_task_msg) == TRUE) {
 						channel->waiting_for_termination = TRUE;
-						session->answer_flag_count++;
+						mrcp_server_session_subrequest_add(session);
 					}
 
 					if(termination->audio_stream) {
@@ -629,7 +645,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 			/* send offer */
 			if(mrcp_server_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
 				channel->waiting_for_channel = TRUE;
-				session->answer_flag_count++;
+				mrcp_server_session_subrequest_add(session);
 			}
 		}
 
@@ -649,9 +665,8 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		if(!control_descriptor) continue;
 
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i);
+		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i,control_descriptor->cmid);
 		if(!channel) continue;
-		/* add to channel array */
 
 		control_descriptor->session_id = session->base.id;
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Control Channel [%d]",i);
@@ -662,7 +677,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 			/* send modify connection request */
 			if(mrcp_server_control_channel_add(channel->control_channel,control_descriptor) == TRUE) {
 				channel->waiting_for_channel = TRUE;
-				session->answer_flag_count++;
+				mrcp_server_session_subrequest_add(session);
 			}
 		}
 
@@ -677,7 +692,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 			/* open resource engine channel */
 			if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
 				mpf_termination_t *termination = channel->engine_channel->termination;
-				session->answer_flag_count++;
+				mrcp_server_session_subrequest_add(session);
 
 				if(termination) {
 					/* send add termination request (add to media context) */
@@ -686,7 +701,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 							MPF_ADD_TERMINATION,session->context,termination,NULL,
 							&session->mpf_task_msg) == TRUE) {
 						channel->waiting_for_termination = TRUE;
-						session->answer_flag_count++;
+						mrcp_server_session_subrequest_add(session);
 					}
 				}
 			}
@@ -696,8 +711,55 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 	return TRUE;
 }
 
+static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_termination_slot_t *slot)
+{
+	int i;
+	mrcp_channel_t *channel;
+	mpf_rtp_termination_descriptor_t *rtp_descriptor;
+	mpf_rtp_media_descriptor_t *media_descriptor = mrcp_session_audio_media_get(descriptor,slot->id);
+	if(!media_descriptor) {
+		return NULL;
+	}
+	/* construct termination descriptor */
+	rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
+	mpf_rtp_termination_descriptor_init(rtp_descriptor);
+	rtp_descriptor->audio.local = NULL;
+	rtp_descriptor->audio.remote = media_descriptor;
+
+	slot->mid = media_descriptor->mid;
+	slot->channels = apr_array_make(session->base.pool,1,sizeof(mrcp_channel_t*));
+	for(i=0; i<session->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		if(!channel) continue;
+
+		if(channel->cmid == slot->mid) {
+			APR_ARRAY_PUSH(slot->channels, mrcp_channel_t*) = channel;
+		}
+	}
+	return rtp_descriptor;
+}
+
+static apt_bool_t mrcp_server_associations_set(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_termination_slot_t *slot)
+{
+	int i;
+	mrcp_channel_t *channel;
+	for(i=0; i<slot->channels->nelts; i++) {
+		channel = ((mrcp_channel_t**)slot->channels->elts)[i];
+		if(!channel || !channel->engine_channel) continue;
+
+		if(mpf_engine_assoc_message_add(
+				session->profile->media_engine,
+				MPF_ADD_ASSOCIATION,session->context,slot->termination,channel->engine_channel->termination,
+				&session->mpf_task_msg) == TRUE) {
+			mrcp_server_session_subrequest_add(session);
+		}
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
+	mpf_rtp_termination_descriptor_t *rtp_descriptor;
 	mrcp_termination_slot_t *slot;
 	int i;
 	int count = session->terminations->nelts;
@@ -713,16 +775,13 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 	
 	/* update existing terminations */
 	for(i=0; i<count; i++) {
-		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		/* get existing termination */
 		slot = &((mrcp_termination_slot_t*)session->terminations->elts)[i];
 		if(!slot || !slot->termination) continue;
 
-		/* construct termination descriptor */
-		rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
-		mpf_rtp_termination_descriptor_init(rtp_descriptor);
-		rtp_descriptor->audio.local = NULL;
-		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
+		/* build associations between specified RTP termination and control channels */
+		rtp_descriptor = mrcp_server_associations_build(session,descriptor,slot);
+		if(!rtp_descriptor) continue;
 
 		/* send modify termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify RTP Termination [%d]",i);
@@ -731,13 +790,15 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 				MPF_MODIFY_TERMINATION,session->context,slot->termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
-			session->answer_flag_count++;
+			mrcp_server_session_subrequest_add(session);
 		}
+
+		/* set built associations */
+		mrcp_server_associations_set(session,descriptor,slot);
 	}
 	
 	/* add new terminations */
 	for(; i<descriptor->audio_media_arr->nelts; i++) {
-		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		mpf_termination_t *termination;
 		/* create new RTP termination instance */
 		termination = mpf_termination_create(session->profile->rtp_termination_factory,session,session->base.pool);
@@ -745,14 +806,14 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add RTP Termination [%d]",i);
 		slot = apr_array_push(session->terminations);
 		slot->id = i;
+		slot->mid = 0;
 		slot->waiting = FALSE;
 		slot->termination = termination;
+		slot->channels = NULL;
 
-		/* construct termination descriptor */
-		rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
-		mpf_rtp_termination_descriptor_init(rtp_descriptor);
-		rtp_descriptor->audio.local = NULL;
-		rtp_descriptor->audio.remote = mrcp_session_audio_media_get(descriptor,i);
+		/* build associations between specified RTP termination and control channels */
+		rtp_descriptor = mrcp_server_associations_build(session,descriptor,slot);
+		if(!rtp_descriptor) continue;
 
 		/* send add termination request (add to media context) */
 		if(mpf_engine_termination_message_add(
@@ -760,8 +821,11 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 				MPF_ADD_TERMINATION,session->context,termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
-			session->answer_flag_count++;
+			mrcp_server_session_subrequest_add(session);
 		}
+
+		/* set built associations */
+		mrcp_server_associations_set(session,descriptor,slot);
 	}
 	return TRUE;
 }
@@ -873,26 +937,14 @@ static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *sessi
 			session->answer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
 			mrcp_session_audio_media_set(session->answer,termination_slot->id,rtp_descriptor->audio.local);
 		}
-		if(session->answer_flag_count) {
-			session->answer_flag_count--;
-			if(!session->answer_flag_count) {
-				/* send answer to client */
-				mrcp_server_session_answer_send(session);
-			}
-		}
+		mrcp_server_session_subrequest_remove(session);
 	}
 	else {
 		/* engine channel termination */
 		mrcp_channel_t *channel = mrcp_server_channel_termination_find(session,mpf_message->termination);
 		if(channel && channel->waiting_for_termination == TRUE) {
 			channel->waiting_for_termination = FALSE;
-			if(session->answer_flag_count) {
-				session->answer_flag_count--;
-				if(!session->answer_flag_count) {
-					/* send answer to client */
-					mrcp_server_session_answer_send(session);
-				}
-			}
+			mrcp_server_session_subrequest_remove(session);
 		}
 	}
 	return TRUE;
@@ -911,24 +963,60 @@ static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *ses
 			return FALSE;
 		}
 		termination_slot->waiting = FALSE;
-		if(session->terminate_flag_count) {
-			session->terminate_flag_count--;
-			if(!session->terminate_flag_count) {
-				mrcp_server_session_terminate_send(session);
-			}
-		}
+		mrcp_server_session_subrequest_remove(session);
 	}
 	else {
 		/* engine channel termination */
 		mrcp_channel_t *channel = mrcp_server_channel_termination_find(session,mpf_message->termination);
 		if(channel && channel->waiting_for_termination == TRUE) {
 			channel->waiting_for_termination = FALSE;
-			if(session->terminate_flag_count) {
-				session->terminate_flag_count--;
-				if(!session->terminate_flag_count) {
-					mrcp_server_session_terminate_send(session);
-				}
+			mrcp_server_session_subrequest_remove(session);
+		}
+	}
+	return TRUE;
+}
+
+apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_container)
+{
+	apr_size_t i;
+	mrcp_server_session_t *session;
+	const mpf_message_t *mpf_message;
+	for(i=0; i<mpf_message_container->count; i++) {
+		mpf_message = &mpf_message_container->messages[i];
+		if(mpf_message->context) {
+			session = mpf_engine_context_object_get(mpf_message->context);
+		}
+		else {
+			session = NULL;
+		}
+		
+		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
+			switch(mpf_message->command_id) {
+				case MPF_ADD_TERMINATION:
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Add");
+					mrcp_server_on_termination_modify(session,mpf_message);
+					break;
+				case MPF_MODIFY_TERMINATION:
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Modify");
+					mrcp_server_on_termination_modify(session,mpf_message);
+					break;
+				case MPF_SUBTRACT_TERMINATION:
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"On Termination Subtract");
+					mrcp_server_on_termination_subtract(session,mpf_message);
+					break;
+				case MPF_ADD_ASSOCIATION:
+				case MPF_REMOVE_ASSOCIATION:
+				case MPF_RESET_ASSOCIATIONS:
+				case MPF_APPLY_TOPOLOGY:
+				case MPF_DESTROY_TOPOLOGY:
+					mrcp_server_session_subrequest_remove(session);
+					break;
+				default:
+					break;
 			}
+		}
+		else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event");
 		}
 	}
 	return TRUE;
@@ -979,11 +1067,6 @@ static apt_bool_t state_machine_on_deactivate(mrcp_state_machine_t *state_machin
 {
 	mrcp_channel_t *channel = state_machine->obj;
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
-	if(session->deactivate_flag_count) {
-		session->deactivate_flag_count --;
-		if(!session->deactivate_flag_count) {
-			mrcp_server_session_terminate_process(session);
-		}
-	}
+	mrcp_server_session_subrequest_remove(session);
 	return TRUE;
 }

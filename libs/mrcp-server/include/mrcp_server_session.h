@@ -61,43 +61,49 @@ struct mrcp_signaling_message_t {
 	mrcp_message_t               *message;
 };
 
+/** Server session states */
+typedef enum {
+	SESSION_STATE_NONE,
+	SESSION_STATE_ANSWERING,
+	SESSION_STATE_DEACTIVATING,
+	SESSION_STATE_TERMINATING
+} mrcp_server_session_state_e;
+
 
 /** MRCP server session */
 struct mrcp_server_session_t {
 	/** Session base */
-	mrcp_session_t             base;
+	mrcp_session_t              base;
 	/** MRCP server */
-	mrcp_server_t             *server;
+	mrcp_server_t              *server;
 	/** MRCP profile */
-	mrcp_profile_t            *profile;
+	mrcp_profile_t             *profile;
 
 	/** Media context */
-	mpf_context_t             *context;
+	mpf_context_t              *context;
 
 	/** Media termination array */
-	apr_array_header_t        *terminations;
+	apr_array_header_t         *terminations;
 	/** MRCP control channel array */
-	apr_array_header_t        *channels;
+	apr_array_header_t         *channels;
 
 	/** In-progress signaling request */
-	mrcp_signaling_message_t  *active_request;
+	mrcp_signaling_message_t   *active_request;
 	/** Signaling request queue */
-	apt_obj_list_t            *request_queue;
+	apt_obj_list_t             *request_queue;
 
 	/** In-progress offer */
-	mrcp_session_descriptor_t *offer;
+	mrcp_session_descriptor_t  *offer;
 	/** In-progres answer */
-	mrcp_session_descriptor_t *answer;
+	mrcp_session_descriptor_t  *answer;
 
 	/** MPF task message, which construction is in progress */
-	mpf_task_msg_t            *mpf_task_msg;
+	mpf_task_msg_t             *mpf_task_msg;
 
-	/** Number of in-progress answer requests (flags) */
-	apr_size_t                 answer_flag_count;
-	/** Number of in-progress terminate requests (flags) */
-	apr_size_t                 terminate_flag_count;
-	/** Number of in-progress deactivare requests (flags) */
-	apr_size_t                 deactivate_flag_count;
+	/** Session state */
+	mrcp_server_session_state_e state;
+	/** Number of in-progress sub requests */
+	apr_size_t                  subrequest_count;
 };
 
 /** MRCP profile */

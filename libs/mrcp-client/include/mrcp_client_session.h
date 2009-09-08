@@ -37,50 +37,59 @@ typedef struct rtp_termination_slot_t rtp_termination_slot_t;
 /** MRCP client session declaration */
 typedef struct mrcp_client_session_t mrcp_client_session_t;
 
+/** Client session states */
+typedef enum {
+	SESSION_STATE_NONE,
+	SESSION_STATE_GENERATING_OFFER,
+	SESSION_STATE_PROCESSING_ANSWER,
+	SESSION_STATE_TERMINATING,
+	SESSION_STATE_DISCOVERING
+} mrcp_client_session_state_e;
+
 /** MRCP client session */
 struct mrcp_client_session_t {
 	/** Session base */
-	mrcp_session_t             base;
+	mrcp_session_t              base;
 	/** Application session belongs to */
-	mrcp_application_t        *application;
+	mrcp_application_t         *application;
 	/** External object associated with session */
-	void                      *app_obj;
+	void                       *app_obj;
 	/** Profile to use */
-	mrcp_profile_t            *profile;
+	mrcp_profile_t             *profile;
 
 	/** Media context */
-	mpf_context_t             *context;
+	mpf_context_t              *context;
 	/** Codec manager */
-	const mpf_codec_manager_t *codec_manager;
+	const mpf_codec_manager_t  *codec_manager;
 
 
 	/** RTP termination array (mrcp_termination_slot_t) */
-	apr_array_header_t        *terminations;
+	apr_array_header_t         *terminations;
 	/** MRCP control channel array (mrcp_channel_t*) */
-	apr_array_header_t        *channels;
+	apr_array_header_t         *channels;
 
 	/** Indicates whether session is already added to session table */
-	apt_bool_t                 registered;
+	apt_bool_t                  registered;
 
 	/** In-progress offer */
-	mrcp_session_descriptor_t *offer;
+	mrcp_session_descriptor_t  *offer;
 	/** In-progress answer */
-	mrcp_session_descriptor_t *answer;
+	mrcp_session_descriptor_t  *answer;
 
 	/** MRCP application active request */
-	const mrcp_app_message_t  *active_request;
+	const mrcp_app_message_t   *active_request;
 	/** MRCP application request queue */
-	apt_obj_list_t            *request_queue;
+	apt_obj_list_t             *request_queue;
 
 	/** MPF task message, which construction is in progress */
-	mpf_task_msg_t            *mpf_task_msg;
+	mpf_task_msg_t             *mpf_task_msg;
 
-	/** Number of in-progress offer requests (flags) */
-	apr_size_t                 offer_flag_count;
-	/** Number of in-progress answer requests (flags) */
-	apr_size_t                 answer_flag_count;
-	/** Number of in-progress terminate requests (flags) */
-	apr_size_t                 terminate_flag_count;
+	/** Session state */
+	mrcp_client_session_state_e state;
+	/** Status code of the app response to be generated */
+	mrcp_sig_status_code_e      status;
+	/** Number of in-progress sub requests */
+	apr_size_t                  subrequest_count;
 };
 
 /** MRCP channel */
@@ -118,6 +127,8 @@ struct rtp_termination_slot_t {
 	mpf_termination_t                *termination;
 	/** RTP termination descriptor */
 	mpf_rtp_termination_descriptor_t *descriptor;
+	/** Associated MRCP channel */
+	mrcp_channel_t                   *channel;
 };
 
 
@@ -163,8 +174,6 @@ mrcp_app_message_t* mrcp_client_app_signaling_request_create(mrcp_sig_command_e 
 mrcp_app_message_t* mrcp_client_app_signaling_event_create(mrcp_sig_event_e event_id, apr_pool_t *pool);
 /** Create control app_message_t */
 mrcp_app_message_t* mrcp_client_app_control_message_create(apr_pool_t *pool);
-/** Create response to app_message_t request */
-mrcp_app_message_t* mrcp_client_app_response_create(const mrcp_app_message_t *app_request, mrcp_sig_status_code_e status, apr_pool_t *pool);
 
 /** Process application message */
 apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message);

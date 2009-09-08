@@ -27,26 +27,41 @@
 #include "mpf_bridge.h"
 #include "apt_log.h"
 
-/** Definition of table item used in context */
-typedef void* table_item_t;
+/** Item of the association matrix */
+typedef struct {
+	char on;
+} matrix_item_t;
+
+/** Item of the association matrix header */
+typedef struct {
+	mpf_termination_t *termination;
+	char               tx_count;
+	char               rx_count;
+} header_item_t;
 
 /** Media processing context */
 struct mpf_context_t {
 	/** Ring entry */
 	APR_RING_ENTRY(mpf_context_t) link;
-	/** Back pointer to context factory */
+	/** Back pointer to the context factory */
 	mpf_context_factory_t        *factory;
 	/** Pool to allocate memory from */
 	apr_pool_t                   *pool;
 	/** External object */
 	void                         *obj;
 
-	/** Max number of terminations */
-	apr_size_t                    max_termination_count;
-	/** Current number of terminations */
-	apr_size_t                    termination_count;
-	/** Table, which holds terminations and topology */
-	table_item_t                **table;
+	/** Max number of terminations in the context */
+	apr_size_t                    capacity;
+	/** Current number of terminations in the context */
+	apr_size_t                    count;
+	/** Header of the association matrix */
+	header_item_t                *header;
+	/** Association matrix, which represents the topology */
+	matrix_item_t                **matrix;
+
+	/** Array of media processing objects constructed while 
+	applying topology based on association matrix */
+	apr_array_header_t           *mpf_objects;
 };
 
 /** Factory of media contexts */
@@ -56,7 +71,9 @@ struct mpf_context_factory_t {
 };
 
 
+static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2);
 static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination);
+
 
 MPF_DECLARE(mpf_context_factory_t*) mpf_context_factory_create(apr_pool_t *pool)
 {
@@ -90,23 +107,32 @@ MPF_DECLARE(apt_bool_t) mpf_context_factory_process(mpf_context_factory_t *facto
 
  
 MPF_DECLARE(mpf_context_t*) mpf_context_create(
-								mpf_context_factory_t *factory, 
-								void *obj, 
-								apr_size_t max_termination_count, 
+								mpf_context_factory_t *factory,
+								void *obj,
+								apr_size_t max_termination_count,
 								apr_pool_t *pool)
 {
 	apr_size_t i,j;
+	matrix_item_t *matrix_item;
+	header_item_t *header_item;
 	mpf_context_t *context = apr_palloc(pool,sizeof(mpf_context_t));
 	context->factory = factory;
 	context->obj = obj;
 	context->pool = pool;
-	context->max_termination_count = max_termination_count;
-	context->termination_count = 0;
-	context->table = apr_palloc(pool,sizeof(table_item_t)*max_termination_count);
-	for(i=0; i<max_termination_count; i++) {
-		context->table[i] = apr_palloc(pool,sizeof(table_item_t)*max_termination_count);
-		for(j=0; j<max_termination_count; j++) {
-			context->table[i][j] = NULL;
+	context->capacity = max_termination_count;
+	context->count = 0;
+	context->mpf_objects = apr_array_make(pool,1,sizeof(mpf_object_t*));
+	context->header = apr_palloc(pool,context->capacity * sizeof(header_item_t));
+	context->matrix = apr_palloc(pool,context->capacity * sizeof(matrix_item_t*));
+	for(i=0; i<context->capacity; i++) {
+		header_item = &context->header[i];
+		header_item->termination = NULL;
+		header_item->tx_count = 0;
+		header_item->rx_count = 0;
+		context->matrix[i] = apr_palloc(pool,context->capacity * sizeof(matrix_item_t));
+		for(j=0; j<context->capacity; j++) {
+			matrix_item = &context->matrix[i][j];
+			matrix_item->on = 0;
 		}
 	}
 
@@ -116,10 +142,9 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(
 MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context)
 {
 	apr_size_t i;
-	apr_size_t count = context->max_termination_count;
 	mpf_termination_t *termination;
-	for(i=0; i<count; i++){
-		termination = context->table[i][i];
+	for(i=0; i<context->capacity; i++){
+		termination = context->header[i].termination;
 		if(termination) {
 			mpf_context_termination_subtract(context,termination);
 			if(termination->audio_stream) {
@@ -138,134 +163,283 @@ MPF_DECLARE(void*) mpf_context_object_get(mpf_context_t *context)
 MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_termination_t *termination)
 {
 	apr_size_t i;
-	apr_size_t count = context->max_termination_count;
-	for(i=0; i<count; i++) {
-		if(!context->table[i][i]) {
-			if(!context->termination_count) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Context");
-				APR_RING_INSERT_TAIL(&context->factory->head,context,mpf_context_t,link);
-			}
-
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Termination");
-			context->table[i][i] = termination;
-			termination->slot = i;
-			context->termination_count++;
-			return TRUE;
+	header_item_t *header_item;
+	for(i=0; i<context->capacity; i++) {
+		header_item = &context->header[i];
+		if(header_item->termination) {
+			continue;
 		}
+		if(!context->count) {
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Context");
+			APR_RING_INSERT_TAIL(&context->factory->head,context,mpf_context_t,link);
+		}
+
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Termination");
+		header_item->termination = termination;
+		header_item->tx_count = 0;
+		header_item->rx_count = 0;
+		
+		termination->slot = i;
+		context->count++;
+		return TRUE;
 	}
 	return FALSE;
 }
 
 MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context, mpf_termination_t *termination)
 {
+	header_item_t *header_item1;
+	header_item_t *header_item2;
+	matrix_item_t *item;
+	apr_size_t j,k;
 	apr_size_t i = termination->slot;
-	if(i >= context->max_termination_count) {
+	if(i >= context->capacity) {
 		return FALSE;
 	}
-	if(context->table[i][i] != termination) {
+	header_item1 = &context->header[i];
+	if(header_item1->termination != termination) {
 		return FALSE;
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Termination");
-	context->table[i][i] = NULL;
+	for(j=0,k=0; j<context->capacity && k<context->count; j++) {
+		header_item2 = &context->header[j];
+		if(!header_item2->termination) {
+			continue;
+		}
+		k++;
+
+		item = &context->matrix[i][j];
+		if(item->on) {
+			item->on = 0;
+			header_item1->tx_count--;
+			header_item2->rx_count--;
+		}
+
+		item = &context->matrix[j][i];
+		if(item->on) {
+			item->on = 0;
+			header_item2->tx_count--;
+			header_item1->rx_count--;
+		}
+	}
+	header_item1->termination = NULL;
+
 	termination->slot = (apr_size_t)-1;
-	context->termination_count--;
-	if(!context->termination_count) {
+	context->count--;
+	if(!context->count) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Context");
 		APR_RING_REMOVE(context,link);
 	}
 	return TRUE;
 }
 
+MPF_DECLARE(apt_bool_t) mpf_context_association_add(mpf_context_t *context, mpf_termination_t *termination1, mpf_termination_t *termination2)
+{
+	header_item_t *header_item1;
+	matrix_item_t *matrix_item1;
+	header_item_t *header_item2;
+	matrix_item_t *matrix_item2;
+	apr_size_t i = termination1->slot;
+	apr_size_t j = termination2->slot;
+	if(i >= context->capacity || j >= context->capacity) {
+		return FALSE;
+	}
+
+	header_item1 = &context->header[i];
+	header_item2 = &context->header[j];
+
+	if(header_item1->termination != termination1 || header_item2->termination != termination2) {
+		return FALSE;
+	}
+
+	matrix_item1 = &context->matrix[i][j];
+	matrix_item2 = &context->matrix[j][i];
+
+	/* 1 -> 2 */
+	if(!matrix_item1->on) {
+		if(stream_mode_compatibility_check(header_item1->termination,header_item2->termination) == TRUE) {
+			matrix_item1->on = 1;
+			header_item1->tx_count ++;
+			header_item2->rx_count ++;
+		}
+	}
+
+	/* 2 -> 1 */
+	if(!matrix_item2->on) {
+		if(stream_mode_compatibility_check(header_item2->termination,header_item1->termination) == TRUE) {
+			matrix_item2->on = 1;
+			header_item2->tx_count ++;
+			header_item1->rx_count ++;
+		}
+	}
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_association_remove(mpf_context_t *context, mpf_termination_t *termination1, mpf_termination_t *termination2)
+{
+	header_item_t *header_item1;
+	matrix_item_t *matrix_item1;
+	header_item_t *header_item2;
+	matrix_item_t *matrix_item2;
+	apr_size_t i = termination1->slot;
+	apr_size_t j = termination2->slot;
+	if(i >= context->capacity || j >= context->capacity) {
+		return FALSE;
+	}
+
+	header_item1 = &context->header[i];
+	header_item2 = &context->header[j];
+
+	if(header_item1->termination != termination1 || header_item2->termination != termination2) {
+		return FALSE;
+	}
+
+	matrix_item1 = &context->matrix[i][j];
+	matrix_item2 = &context->matrix[j][i];
+
+	/* 1 -> 2 */
+	if(matrix_item1->on == 1) {
+		matrix_item1->on = 0;
+		header_item1->tx_count --;
+		header_item2->rx_count --;
+	}
+
+	/* 2 -> 1 */
+	if(matrix_item2->on == 1) {
+		matrix_item2->on = 0;
+		header_item2->tx_count --;
+		header_item1->rx_count --;
+	}
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_associations_reset(mpf_context_t *context)
+{
+	apr_size_t i,j,k;
+	header_item_t *header_item1;
+	header_item_t *header_item2;
+	matrix_item_t *item;
+
+	/* destroy existing topology / if any */
+	mpf_context_topology_destroy(context);
+
+	/* reset assigned associations */
+	for(i=0,k=0; i<context->capacity && k<context->count; i++) {
+		header_item1 = &context->header[i];
+		if(!header_item1->termination) {
+			continue;
+		}
+		k++;
+		
+		if(!header_item1->tx_count && !header_item1->rx_count) {
+			continue;
+		}
+		
+		for(j=i; j<context->capacity; j++) {
+			header_item2 = &context->header[j];
+			if(!header_item2->termination) {
+				continue;
+			}
+			
+			item = &context->matrix[i][j];
+			if(item->on) {
+				item->on = 0;
+				header_item1->tx_count--;
+				header_item2->rx_count--;
+			}
+
+			item = &context->matrix[j][i];
+			if(item->on) {
+				item->on = 0;
+				header_item2->tx_count--;
+				header_item1->rx_count--;
+			}
+		}
+	}
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context)
+{
+	apr_size_t i,j,k;
+	header_item_t *header_item1;
+	header_item_t *header_item2;
+	matrix_item_t *item;
+	mpf_object_t *object;
+	
+	/* first destroy existing topology / if any */
+	mpf_context_topology_destroy(context);
+
+	for(i=0,k=0; i<context->capacity && k<context->count; i++) {
+		header_item1 = &context->header[i];
+		if(!header_item1->termination) {
+			continue;
+		}
+		k++;
+		
+		if(!header_item1->tx_count && !header_item1->rx_count) {
+			continue;
+		}
+		
+		for(j=i; j<context->capacity; j++) {
+			header_item2 = &context->header[j];
+			if(!header_item2->termination) {
+				continue;
+			}
+			item = &context->matrix[i][j];
+			if(item->on) {
+				/* create connection i -> j */
+				object = mpf_context_connection_create(context,header_item1->termination,header_item2->termination);
+				if(object) {
+					APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
+				}
+			}
+			if(i != j) {
+				item = &context->matrix[j][i];
+				if(item->on) {
+					/* create connection j -> i */
+					object = mpf_context_connection_create(context,header_item2->termination,header_item1->termination);
+					if(object) {
+						APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
+					}
+				}
+			}
+		}
+	}
+
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context)
+{
+	if(context->mpf_objects->nelts) {
+		int i;
+		mpf_object_t *object;
+		for(i=0; i<context->mpf_objects->nelts; i++) {
+			object = APR_ARRAY_IDX(context->mpf_objects,i,mpf_object_t*);
+			if(object && object->destroy) {
+				object->destroy(object);
+			}
+		}
+		apr_array_clear(context->mpf_objects);
+	}
+	return TRUE;
+}
+
 MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context)
 {
+	int i;
 	mpf_object_t *object;
-	apr_size_t i,j;
-	for(i=0; i<context->max_termination_count; i++) {
-		for(j=0; j<context->max_termination_count; j++) {
-			if(i==j) continue;
-
-			object = context->table[i][j];
-			if(object && object->process) {
-				object->process(object);
-			}
+	for(i=0; i<context->mpf_objects->nelts; i++) {
+		object = APR_ARRAY_IDX(context->mpf_objects,i,mpf_object_t*);
+		if(object && object->process) {
+			object->process(object);
 		}
 	}
 	return TRUE;
 }
 
-MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context, mpf_termination_t *termination)
-{
-	apr_size_t i,j;
-	mpf_object_t *object;
-	mpf_termination_t *sink_termination;
-	mpf_termination_t *source_termination;
-	if(context->termination_count <= 1) {
-		/* at least 2 terminations are required to apply topology on them */
-		return TRUE;
-	}
-
-	i = termination->slot;
-	for(j=0; j<context->max_termination_count; j++) {
-		if(i == j) continue;
-
-		sink_termination = context->table[j][j];
-		object = mpf_context_connection_create(context,termination,sink_termination);
-		if(object) {
-			context->table[i][j] = object;
-		}
-	}
-
-	j = termination->slot;
-	for(i=0; i<context->max_termination_count; i++) {
-		if(i == j) continue;
-
-		source_termination = context->table[i][i];
-		object = mpf_context_connection_create(context,source_termination,termination);
-		if(object) {
-			context->table[i][j] = object;
-		}
-	}
-
-	return TRUE;
-}
-
-MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context, mpf_termination_t *termination)
-{
-	apr_size_t i,j;
-	mpf_object_t *object;
-	if(context->termination_count <= 1) {
-		/* at least 2 terminations are required to destroy topology */
-		return TRUE;
-	}
-
-	i = termination->slot;
-	for(j=0; j<context->max_termination_count; j++) {
-		if(i == j) continue;
-
-		object = context->table[i][j];
-		if(object) {
-			if(object->destroy) {
-				object->destroy(object);
-			}
-			context->table[i][j] = NULL;
-		}
-	}
-
-	j = termination->slot;
-	for(i=0; i<context->max_termination_count; i++) {
-		if(i == j) continue;
-
-		object = context->table[i][j];
-		if(object) {
-			if(object->destroy) {
-				object->destroy(object);
-			}
-			context->table[i][j] = NULL;
-		}
-	}
-	return TRUE;
-}
 
 static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination)
 {
@@ -307,4 +481,15 @@ static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_t
 		}
 	}
 	return object;
+}
+
+static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2)
+{
+	mpf_audio_stream_t *source = termination1->audio_stream;
+	mpf_audio_stream_t *sink = termination2->audio_stream;
+	if(source && (source->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE &&
+		sink && (sink->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
+		return TRUE;
+	}
+	return FALSE;
 }

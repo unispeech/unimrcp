@@ -325,26 +325,47 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
 					break;
 				}
-				mpf_context_topology_apply(context,termination);
 				break;
 			}
 			case MPF_MODIFY_TERMINATION:
 			{
 				if(mpf_request->descriptor) {
-					mpf_context_topology_destroy(context,termination);
 					mpf_termination_modify(termination,mpf_request->descriptor);
 					mpf_termination_validate(termination);
-					mpf_context_topology_apply(context,termination);
 				}
 				break;
 			}
 			case MPF_SUBTRACT_TERMINATION:
 			{
-				mpf_context_topology_destroy(context,termination);
 				if(mpf_context_termination_subtract(context,termination) == FALSE) {
 					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
 					break;
 				}
+				break;
+			}
+			case MPF_ADD_ASSOCIATION:
+			{
+				mpf_context_association_add(context,termination,mpf_request->assoc_termination);
+				break;
+			}
+			case MPF_REMOVE_ASSOCIATION:
+			{
+				mpf_context_association_remove(context,termination,mpf_request->assoc_termination);
+				break;
+			}
+			case MPF_RESET_ASSOCIATIONS:
+			{
+				mpf_context_associations_reset(context);
+				break;
+			}
+			case MPF_APPLY_TOPOLOGY:
+			{
+				mpf_context_topology_apply(context);
+				break;
+			}
+			case MPF_DESTROY_TOPOLOGY:
+			{
+				mpf_context_topology_destroy(context);
 				break;
 			}
 			default:

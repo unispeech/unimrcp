@@ -84,22 +84,42 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
 MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context, mpf_termination_t *termination);
 
 /**
- * Apply topology.
- * @param context the context which holds the termination
- * @param termination the termination to apply toplogy for
+ * Add association between specified terminations.
+ * @param context the context to add association in the scope of
+ * @param termination1 the first termination to associate
+ * @param termination2 the second termination to associate
  */
-MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context, mpf_termination_t *termination);
+MPF_DECLARE(apt_bool_t) mpf_context_association_add(mpf_context_t *context, mpf_termination_t *termination1, mpf_termination_t *termination2);
+
+/**
+ * Remove association between specified terminations.
+ * @param context the context to remove association in the scope of
+ * @param termination1 the first termination
+ * @param termination2 the second termination
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_association_remove(mpf_context_t *context, mpf_termination_t *termination1, mpf_termination_t *termination2);
+
+/**
+ * Reset assigned associations and destroy applied topology.
+ * @param context the context to reset associations for
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_associations_reset(mpf_context_t *context);
+
+/**
+ * Apply topology.
+ * @param context the context to apply topology for
+ */
+MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context);
 
 /**
  * Destroy topology.
- * @param context the context which holds the termination
- * @param termination the termination to destroy toplogy for
+ * @param context the context to destroy topology for
  */
-MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context, mpf_termination_t *termination);
+MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context);
 
 /**
  * Process context.
- * @param context the context
+ * @param context the context to process
  */
 MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
 
