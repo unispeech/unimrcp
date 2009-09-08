@@ -92,7 +92,7 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_create(apr_pool_t *p
 	offer = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
 	mrcp_control_descriptor_init(offer);
 	offer->proto = MRCP_PROTO_TCP;
-	offer->port = 9;
+	offer->port = TCP_DISCARD_PORT;
 	offer->setup_type = MRCP_SETUP_TYPE_ACTIVE;
 	offer->connection_type = MRCP_CONNECTION_TYPE_EXISTING;
 	return offer;

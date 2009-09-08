@@ -27,6 +27,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** TCP discard port used in offer/answer */
+#define TCP_DISCARD_PORT 9
+
 /** MRCPv2 proto transport */
 typedef enum {
 	MRCP_PROTO_TCP,

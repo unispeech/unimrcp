@@ -624,7 +624,7 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 	if(mrcp_client_channel_find(session,channel,&index) == TRUE) {
 		mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(session->offer,(apr_size_t)index);
 		if(control_media) {
-			control_media->port = (enable == TRUE) ? 9 : 0;
+			control_media->port = (enable == TRUE) ? TCP_DISCARD_PORT : 0;
 			if(channel->termination && channel->termination->audio_stream) {
 				int i = mrcp_client_audio_media_find_by_mid(session->offer,control_media->cmid);
 				if(i >= 0) {
