@@ -535,19 +535,6 @@ static rtp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_sess
 	return NULL;
 }
 
-static int mrcp_client_audio_media_find_by_mid(const mrcp_session_descriptor_t *descriptor, apr_size_t mid)
-{
-	int i;
-	mpf_rtp_media_descriptor_t *media;
-	for(i=0; i<descriptor->audio_media_arr->nelts; i++) {
-		media = ((mpf_rtp_media_descriptor_t**)descriptor->audio_media_arr->elts)[i];
-		if(media->mid == mid) {
-			return i;
-		}
-	}
-	return -1;
-}
-
 static mrcp_channel_t* mrcp_client_channel_termination_find(mrcp_client_session_t *session, mpf_termination_t *termination)
 {
 	int i;
