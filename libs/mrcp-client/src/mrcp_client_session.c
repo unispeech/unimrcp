@@ -137,6 +137,7 @@ mrcp_channel_t* mrcp_client_channel_create(
 		termination_slot->termination = NULL;
 		termination_slot->waiting = FALSE;
 		termination_slot->channel = channel;
+		termination_slot->id = 0;
 		channel->rtp_termination_slot = termination_slot;
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Channel "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(session));
@@ -267,8 +268,7 @@ apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *
 			if(!session->answer) {
 				session->answer = descriptor;
 			}
-			control_media = apr_palloc(session->base.pool,sizeof(mrcp_control_descriptor_t));
-			mrcp_control_descriptor_init(control_media);
+			control_media = mrcp_control_descriptor_create(session->base.pool);
 			control_media->id = mrcp_session_control_media_add(session->answer,control_media);
 			control_media->resource_name = descriptor->resource_name;
 		}
@@ -625,21 +625,21 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(session->offer,(apr_size_t)index);
 		if(control_media) {
 			control_media->port = (enable == TRUE) ? TCP_DISCARD_PORT : 0;
-			if(channel->termination && channel->termination->audio_stream) {
-				int i = mrcp_client_audio_media_find_by_mid(session->offer,control_media->cmid);
-				if(i >= 0) {
-					mpf_stream_mode_e mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
-					mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_get(session->offer,(apr_size_t)i);
-					if(audio_media) {
-						if(enable == TRUE) {
-							audio_media->mode |= mode;
-						}
-						else {
-							audio_media->mode &= ~mode;
-						}
-						audio_media->base.state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
-					}
+		}
+		if(channel->termination && channel->rtp_termination_slot) {
+			mpf_audio_stream_t *audio_stream = channel->termination->audio_stream;
+			mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_get(
+														session->offer,
+														channel->rtp_termination_slot->id);
+			if(audio_media && audio_stream) {
+				mpf_stream_mode_e mode = mpf_stream_mode_negotiate(audio_stream->mode);
+				if(enable == TRUE) {
+					audio_media->mode |= mode;
 				}
+				else {
+					audio_media->mode &= ~mode;
+				}
+				audio_media->base.state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
 			}
 		}
 	}
@@ -688,7 +688,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		}
 		control_media = mrcp_control_offer_create(pool);
 		control_media->id = mrcp_session_control_media_add(session->offer,control_media);
-		control_media->cmid = session->offer->control_media_arr->nelts;
+		mrcp_cmid_add(control_media->cmid_arr,session->offer->control_media_arr->nelts);
 		control_media->resource_name = *channel->resource_name;
 		if(mrcp_client_control_channel_add(channel->control_channel,control_media) == TRUE) {
 			channel->waiting_for_channel = TRUE;
@@ -709,6 +709,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	termination_slot->termination = NULL;
 	termination_slot->descriptor = NULL;
 	termination_slot->channel = channel;
+	termination_slot->id = 0;
 
 	if(channel->termination) {
 		/* media termination mode */
@@ -726,28 +727,16 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			mrcp_client_session_subrequest_add(session);
 		}
 
-		if(channel->rtp_termination_slot) {
-			rtp_descriptor = channel->rtp_termination_slot->descriptor;
-		}
-
-		if(rtp_descriptor) {
-			if(rtp_descriptor->audio.local) {
-				rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
-				rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
-			}
-		}
-		else {
-			/* initialize rtp descriptor */
-			rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
-			mpf_rtp_termination_descriptor_init(rtp_descriptor);
-			if(channel->termination->audio_stream) {
-				mpf_rtp_media_descriptor_t *media;
-				media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
-				media->base.state = MPF_MEDIA_ENABLED;
-				media->mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
-				rtp_descriptor->audio.local = media;
-			}
+		/* initialize rtp descriptor */
+		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
+		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+		if(channel->termination->audio_stream) {
+			mpf_rtp_media_descriptor_t *media;
+			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+			mpf_rtp_media_descriptor_init(media);
+			media->base.state = MPF_MEDIA_ENABLED;
+			media->mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
+			rtp_descriptor->audio.local = media;
 		}
 
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add RTP Termination "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
@@ -775,6 +764,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 					session->offer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
 					rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 					rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
+					termination_slot->id = session->offer->audio_media_arr->nelts - 1;
 				}
 			}
 		}	
@@ -929,6 +919,7 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 			session->offer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
 			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 			rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
+			termination_slot->id = session->offer->audio_media_arr->nelts - 1;
 		}
 		if(mrcp_client_session_subrequest_remove(session) == TRUE) {
 			/* send offer to server */

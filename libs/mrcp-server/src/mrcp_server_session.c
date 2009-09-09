@@ -46,10 +46,10 @@ struct mrcp_channel_t {
 	mrcp_engine_channel_t  *engine_channel;
 	/** MRCP resource state machine  */
 	mrcp_state_machine_t   *state_machine;
-	/** media descriptor id (position in SDP message) */
+	/** media descriptor id (position in session descriptor) */
 	apr_size_t              id;
-	/** control media id (used for resource grouping) */
-	apr_size_t              cmid;
+	/** array of cmid attributes (used for resource grouping) */
+	apr_array_header_t     *cmid_arr;
 	/** waiting state of control media */
 	apt_bool_t              waiting_for_channel;
 	/** waiting state of media termination */
@@ -128,7 +128,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 	return mrcp_engine_channel_virtual_create(resource_engine,mrcp_session_version_get(session),session->base.pool);
 }
 
-static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_size_t cmid)
+static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_array_header_t *cmid_arr)
 {
 	mrcp_channel_t *channel;
 	apr_pool_t *pool = session->base.pool;
@@ -141,7 +141,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	channel->state_machine = NULL;
 	channel->engine_channel = NULL;
 	channel->id = id;
-	channel->cmid = cmid;
+	channel->cmid_arr = cmid_arr;
 	channel->waiting_for_channel = FALSE;
 	channel->waiting_for_termination = FALSE;
 	apt_string_reset(&channel->resource_name);
@@ -665,7 +665,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		if(!control_descriptor) continue;
 
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i,control_descriptor->cmid);
+		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i,control_descriptor->cmid_arr);
 		if(!channel) continue;
 
 		control_descriptor->session_id = session->base.id;
@@ -732,7 +732,7 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 		channel = ((mrcp_channel_t**)session->channels->elts)[i];
 		if(!channel) continue;
 
-		if(channel->cmid == slot->mid) {
+		if(!channel->cmid_arr || mrcp_cmid_find(channel->cmid_arr,slot->mid) == TRUE) {
 			APR_ARRAY_PUSH(slot->channels, mrcp_channel_t*) = channel;
 		}
 	}

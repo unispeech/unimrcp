@@ -120,8 +120,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 			}
 			case sdp_media_application:
 			{
-				mrcp_control_descriptor_t *control_media = apr_palloc(pool,sizeof(mrcp_control_descriptor_t));
-				mrcp_control_descriptor_init(control_media);
+				mrcp_control_descriptor_t *control_media = mrcp_control_descriptor_create(pool);
 				control_media->id = mrcp_session_control_media_add(descriptor,control_media);
 				mrcp_control_media_generate(control_media,sdp_media,&descriptor->ip,pool);
 				break;
@@ -189,6 +188,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 /** Generate SDP media by MRCP control media descriptor */
 static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mrcp_control_descriptor_t *control_media, apt_bool_t offer)
 {
+	int i;
 	apr_size_t offset = 0;
 	const apt_str_t *proto;
 	const apt_str_t *setup_type;
@@ -202,24 +202,21 @@ static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, cons
 				"m=application %d %s 1\r\n"
 				"a=setup:%s\r\n"
 				"a=connection:%s\r\n"
-				"a=resource:%s\r\n"
-				"a=cmid:%d\r\n",
+				"a=resource:%s\r\n",
 				control_media->port,
 				proto ? proto->buf : "",
 				setup_type ? setup_type->buf : "",
 				connection_type ? connection_type->buf : "",
-				control_media->resource_name.buf,
-				control_media->cmid);
+				control_media->resource_name.buf);
+
 		}
 		else {
 			offset += snprintf(buffer+offset,size-offset,
 				"m=application %d %s 1\r\n"
-				"a=resource:%s\r\n"
-				"a=cmid:%d\r\n",
+				"a=resource:%s\r\n",
 				control_media->port,
 				proto ? proto->buf : "",
-				control_media->resource_name.buf,
-				control_media->cmid);
+				control_media->resource_name.buf);
 		}
 	}
 	else { /* answer */
@@ -228,27 +225,30 @@ static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, cons
 				"m=application %d %s 1\r\n"
 				"a=setup:%s\r\n"
 				"a=connection:%s\r\n"
-				"a=channel:%s@%s\r\n"
-				"a=cmid:%d\r\n",
+				"a=channel:%s@%s\r\n",
 				control_media->port,
 				proto ? proto->buf : "",
 				setup_type ? setup_type->buf : "",
 				connection_type ? connection_type->buf : "",
 				control_media->session_id.buf,
-				control_media->resource_name.buf,
-				control_media->cmid);
+				control_media->resource_name.buf);
 		}
 		else {
 			offset += sprintf(buffer+offset,
 				"m=application %d %s 1\r\n"
-				"a=channel:%s@%s\r\n"
-				"a=cmid:%d\r\n",
+				"a=channel:%s@%s\r\n",
 				control_media->port,
 				proto ? proto->buf : "",
 				control_media->session_id.buf,
-				control_media->resource_name.buf,
-				control_media->cmid);
+				control_media->resource_name.buf);
 		}
+	}
+
+	for(i=0; i<control_media->cmid_arr->nelts; i++) {
+		offset += snprintf(buffer+offset,size-offset,
+			"a=cmid:%d\r\n",
+			APR_ARRAY_IDX(control_media->cmid_arr,i,apr_size_t));
+
 	}
 
 	return offset;
@@ -353,7 +353,7 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 				apt_id_resource_parse(&value,'@',&control_media->session_id,&control_media->resource_name,pool);
 				break;
 			case MRCP_ATTRIB_CMID:
-				control_media->cmid = atoi(attrib->a_value);
+				mrcp_cmid_add(control_media->cmid_arr,atoi(attrib->a_value));
 				break;
 			default:
 				break;

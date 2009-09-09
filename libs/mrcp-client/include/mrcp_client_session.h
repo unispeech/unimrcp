@@ -129,6 +129,8 @@ struct rtp_termination_slot_t {
 	mpf_rtp_termination_descriptor_t *descriptor;
 	/** Associated MRCP channel */
 	mrcp_channel_t                   *channel;
+	/** media descriptor id (index of media in session descriptor) */
+	apr_size_t                        id;
 };
 
 
