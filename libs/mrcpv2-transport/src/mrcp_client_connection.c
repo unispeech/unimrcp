@@ -310,7 +310,8 @@ static mrcp_connection_t* mrcp_client_agent_connection_find(mrcp_connection_agen
 		connection = apt_list_elem_object_get(elem);
 		if(connection) {
 			if(apr_sockaddr_info_get(&sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool) == APR_SUCCESS) {
-				if(apr_sockaddr_equal(sockaddr,connection->r_sockaddr) != 0) {
+				if(apr_sockaddr_equal(sockaddr,connection->r_sockaddr) != 0 && 
+					descriptor->port == connection->r_sockaddr->port) {
 					return connection;
 				}
 			}
