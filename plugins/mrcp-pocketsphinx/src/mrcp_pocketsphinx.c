@@ -141,6 +141,8 @@ struct pocketsphinx_recognizer_t {
 	mrcp_message_t           *stop_response;
 	/** Is recognition channel being closed */
 	apt_bool_t                close_requested;
+	/** Flag to prevent race condition when checking if a message is present */
+	apt_bool_t                message_waiting;
 };
 
 /** Declare this macro to use log routine of the server, plugin is loaded from */
@@ -215,6 +217,7 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 	recognizer->grammar_id = NULL;
 	recognizer->grammar_table = apr_table_make(pool,1);
 	recognizer->waveform = NULL;
+	recognizer->message_waiting = FALSE;
 
 	/* copy default properties loaded from config */
 	recognizer->properties = engine->properties;
@@ -290,6 +293,7 @@ static apt_bool_t pocketsphinx_recognizer_close(mrcp_engine_channel_t *channel)
 	/* Signal recognition thread to terminate */
 	apr_thread_mutex_lock(recognizer->mutex);
 	recognizer->close_requested = TRUE;
+	recognizer->message_waiting = TRUE;
 	apr_thread_cond_signal(recognizer->wait_object);
 	apr_thread_mutex_unlock(recognizer->mutex);
 	return TRUE;
@@ -303,6 +307,7 @@ static apt_bool_t pocketsphinx_recognizer_request_process(mrcp_engine_channel_t 
 	/* Store request and signal recognition thread to process the request */
 	apr_thread_mutex_lock(recognizer->mutex);
 	recognizer->request = request;
+	recognizer->message_waiting = TRUE;
 	apr_thread_cond_signal(recognizer->wait_object);
 	apr_thread_mutex_unlock(recognizer->mutex);
 	return TRUE;
@@ -729,11 +734,13 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 	mrcp_engine_channel_open_respond(recognizer->channel,TRUE);
 
 	do {
+		apr_thread_mutex_lock(recognizer->mutex);
 		/** Wait for MRCP requests */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for incoming messages "APT_SIDRES_FMT, RECOGNIZER_SIDRES(recognizer));
-		apr_thread_mutex_lock(recognizer->mutex);
-		apr_thread_cond_wait(recognizer->wait_object,recognizer->mutex);
-		apr_thread_mutex_unlock(recognizer->mutex);
+		if (!recognizer->message_waiting) {
+			apr_thread_cond_wait(recognizer->wait_object,recognizer->mutex);
+		}
+		recognizer->message_waiting = FALSE;
 
 		if(recognizer->request) {
 			/* store request message and further dispatch it */
@@ -745,6 +752,7 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 			/* end of input detected, get recognition result and raise recognition complete event */
 			pocketsphinx_recognition_complete(recognizer,recognizer->complete_event);
 		}
+		apr_thread_mutex_unlock(recognizer->mutex);
 	}
 	while(recognizer->close_requested == FALSE);
 
@@ -813,6 +821,7 @@ static apt_bool_t pocketsphinx_end_of_input(pocketsphinx_recognizer_t *recognize
 	/* signal recognition thread first */
 	apr_thread_mutex_lock(recognizer->mutex);
 	recognizer->complete_event = message;
+	recognizer->message_waiting = TRUE;
 	apr_thread_cond_signal(recognizer->wait_object);
 	apr_thread_mutex_unlock(recognizer->mutex);
 	return TRUE;
