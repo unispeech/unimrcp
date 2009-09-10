@@ -443,44 +443,10 @@ MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context)
 
 static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination)
 {
-	mpf_object_t *object = NULL;
-	mpf_audio_stream_t *source;
-	mpf_audio_stream_t *sink;
 	if(!src_termination || !sink_termination) {
 		return NULL;
 	}
-	source = src_termination->audio_stream;
-	sink = sink_termination->audio_stream;
-	if(source && (source->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE &&
-		sink && (sink->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
-		mpf_codec_t *rx_codec = source->rx_codec;
-		mpf_codec_t *tx_codec = sink->tx_codec;
-		if(rx_codec && tx_codec) {
-			if(mpf_codec_descriptors_match(rx_codec->descriptor,tx_codec->descriptor) == TRUE) {
-				object = mpf_null_bridge_create(source,sink,context->pool);
-			}
-			else {
-				if(rx_codec->descriptor->sampling_rate != tx_codec->descriptor->sampling_rate) {
-					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,
-						"Resampling is not supported now. "
-						"Try to configure and use the same sampling rate on both ends");
-					return NULL;
-				}
-				if(rx_codec->vtable && rx_codec->vtable->decode) {
-					/* set decoder before bridge */
-					mpf_audio_stream_t *decoder = mpf_decoder_create(source,context->pool);
-					source = decoder;
-				}
-				if(tx_codec->vtable && tx_codec->vtable->encode) {
-					/* set encoder after bridge */
-					mpf_audio_stream_t *encoder = mpf_encoder_create(sink,context->pool);
-					sink = encoder;
-				}
-				object = mpf_bridge_create(source,sink,context->pool);
-			}
-		}
-	}
-	return object;
+	return mpf_bridge_create(src_termination->audio_stream,sink_termination->audio_stream,context->pool);
 }
 
 static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2)
