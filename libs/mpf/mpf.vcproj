@@ -232,6 +232,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_resampler.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_attribs.h"
 				>
 			</File>
@@ -350,6 +354,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_named_event.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_resampler.c"
 				>
 			</File>
 			<File

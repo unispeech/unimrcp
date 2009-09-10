@@ -41,6 +41,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_rtp_defs.h \
                            include/mpf_rtp_attribs.h \
                            include/mpf_rtp_pt.h \
+                           include/mpf_resampler.h \
                            include/mpf_media_descriptor.h
 
 libmpf_la_SOURCES        = codecs/g711/g711.c \
@@ -65,4 +66,5 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_jitter_buffer.c \
                            src/mpf_rtp_stream.c \
                            src/mpf_rtp_attribs.c \
+                           src/mpf_resampler.c \
                            src/mpf_stream.c
