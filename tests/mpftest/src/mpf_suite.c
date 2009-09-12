@@ -357,8 +357,8 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_local_descriptor_create(mpf_suite_se
 	descriptor->local = apr_palloc(session->pool,sizeof(mpf_rtp_media_descriptor_t));
 	mpf_rtp_media_descriptor_init(descriptor->local);
 	descriptor->local->mode = STREAM_MODE_NONE;
-	apt_string_set(&descriptor->local->base.ip,"127.0.0.1");
-	descriptor->local->base.port = 5000;
+	apt_string_set(&descriptor->local->ip,"127.0.0.1");
+	descriptor->local->port = 5000;
 	return descriptor;
 }
 
@@ -372,8 +372,8 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_remote_descriptor_create(mpf_suite_s
 	descriptor->remote = apr_palloc(session->pool,sizeof(mpf_rtp_media_descriptor_t));
 	mpf_rtp_media_descriptor_init(descriptor->remote);
 	descriptor->remote->mode = STREAM_MODE_SEND_RECEIVE;
-	apt_string_set(&descriptor->remote->base.ip,"127.0.0.1");
-	descriptor->remote->base.port = 5002;
+	apt_string_set(&descriptor->remote->ip,"127.0.0.1");
+	descriptor->remote->port = 5002;
 	codec_list = &descriptor->remote->codec_list;
 	mpf_codec_list_init(codec_list,2,session->pool);
 	codec_descriptor = mpf_codec_list_add(codec_list);

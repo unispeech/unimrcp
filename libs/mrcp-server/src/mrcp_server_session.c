@@ -933,8 +933,8 @@ static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *sessi
 		termination_slot->waiting = FALSE;
 		rtp_descriptor = mpf_message->descriptor;
 		if(rtp_descriptor->audio.local) {
-			session->answer->ip = rtp_descriptor->audio.local->base.ip;
-			session->answer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
+			session->answer->ip = rtp_descriptor->audio.local->ip;
+			session->answer->ext_ip = rtp_descriptor->audio.local->ext_ip;
 			mrcp_session_audio_media_set(session->answer,termination_slot->id,rtp_descriptor->audio.local);
 		}
 		mrcp_server_session_subrequest_remove(session);

@@ -163,10 +163,10 @@ static apt_bool_t demo_application_on_channel_add(mrcp_application_t *applicatio
 			mpf_rtp_media_descriptor_t *remote_media = rtp_descriptor->audio.remote;
 			if(local_media && remote_media) {
 				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Media Attributes: L[%s/%d] R[%s/%d]",
-					local_media->base.ip.buf,
-					local_media->base.port,
-					remote_media->base.ip.buf,
-					remote_media->base.port);
+					local_media->ip.buf,
+					local_media->port,
+					remote_media->ip.buf,
+					remote_media->port);
 			}
 		}
 	}

@@ -22,7 +22,6 @@
  * @brief RTP Attributes (SDP)
  */ 
 
-#include "mpf_media_descriptor.h"
 #include "mpf_stream_mode.h"
 
 APT_BEGIN_EXTERN_C

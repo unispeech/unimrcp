@@ -43,8 +43,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_rtp_defs.h \
                            include/mpf_rtp_attribs.h \
                            include/mpf_rtp_pt.h \
-                           include/mpf_resampler.h \
-                           include/mpf_media_descriptor.h
+                           include/mpf_resampler.h
 
 libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_activity_detector.c \

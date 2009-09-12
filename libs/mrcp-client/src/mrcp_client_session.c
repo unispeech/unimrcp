@@ -626,7 +626,7 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 				else {
 					audio_media->mode &= ~mode;
 				}
-				audio_media->base.state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
+				audio_media->state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
 			}
 		}
 	}
@@ -721,7 +721,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			mpf_rtp_media_descriptor_t *media;
 			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 			mpf_rtp_media_descriptor_init(media);
-			media->base.state = MPF_MEDIA_ENABLED;
+			media->state = MPF_MEDIA_ENABLED;
 			media->mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
 			rtp_descriptor->audio.local = media;
 		}
@@ -747,9 +747,9 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			rtp_descriptor = channel->rtp_termination_slot->descriptor;
 			if(rtp_descriptor) {
 				if(rtp_descriptor->audio.local) {
-					session->offer->ip = rtp_descriptor->audio.local->base.ip;
-					session->offer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
-					rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
+					session->offer->ip = rtp_descriptor->audio.local->ip;
+					session->offer->ext_ip = rtp_descriptor->audio.local->ext_ip;
+					rtp_descriptor->audio.local->id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 					rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
 					termination_slot->id = session->offer->audio_media_arr->nelts - 1;
 				}
@@ -902,9 +902,9 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 		termination_slot->waiting = FALSE;
 		rtp_descriptor = mpf_message->descriptor;
 		if(rtp_descriptor->audio.local) {
-			session->offer->ip = rtp_descriptor->audio.local->base.ip;
-			session->offer->ext_ip = rtp_descriptor->audio.local->base.ext_ip;
-			rtp_descriptor->audio.local->base.id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
+			session->offer->ip = rtp_descriptor->audio.local->ip;
+			session->offer->ext_ip = rtp_descriptor->audio.local->ext_ip;
+			rtp_descriptor->audio.local->id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 			rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
 			termination_slot->id = session->offer->audio_media_arr->nelts - 1;
 		}

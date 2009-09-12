@@ -36,7 +36,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 	}
 	offset += snprintf(buffer+offset,size-offset,
 		"m=audio %d RTP/AVP", 
-		audio_media->base.state == MPF_MEDIA_ENABLED ? audio_media->base.port : 0);
+		audio_media->state == MPF_MEDIA_ENABLED ? audio_media->port : 0);
 	for(i=0; i<descriptor_arr->nelts; i++) {
 		codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
 		if(codec_descriptor->enabled == TRUE) {
@@ -44,7 +44,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		}
 	}
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
-	if(audio_media->base.state == MPF_MEDIA_ENABLED) {
+	if(audio_media->state == MPF_MEDIA_ENABLED) {
 		const apt_str_t *mode_str = mpf_stream_mode_str_get(audio_media->mode);
 		for(i=0; i<descriptor_arr->nelts; i++) {
 			codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
@@ -117,17 +117,17 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 	}
 
 	if(sdp_media->m_connections) {
-		apt_string_assign(&rtp_media->base.ip,sdp_media->m_connections->c_address,pool);
+		apt_string_assign(&rtp_media->ip,sdp_media->m_connections->c_address,pool);
 	}
 	else {
-		rtp_media->base.ip = *ip;
+		rtp_media->ip = *ip;
 	}
 	if(sdp_media->m_port) {
-		rtp_media->base.port = (apr_port_t)sdp_media->m_port;
-		rtp_media->base.state = MPF_MEDIA_ENABLED;
+		rtp_media->port = (apr_port_t)sdp_media->m_port;
+		rtp_media->state = MPF_MEDIA_ENABLED;
 	}
 	else {
-		rtp_media->base.state = MPF_MEDIA_DISABLED;
+		rtp_media->state = MPF_MEDIA_DISABLED;
 	}
 	return TRUE;
 }
@@ -150,7 +150,7 @@ static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(mrcp_s
 			{
 				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 				mpf_rtp_media_descriptor_init(media);
-				media->base.id = mrcp_session_audio_media_add(descriptor,media);
+				media->id = mrcp_session_audio_media_add(descriptor,media);
 				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
@@ -158,7 +158,7 @@ static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(mrcp_s
 			{
 				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 				mpf_rtp_media_descriptor_init(media);
-				media->base.id = mrcp_session_video_media_add(descriptor,media);
+				media->id = mrcp_session_video_media_add(descriptor,media);
 				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
@@ -212,11 +212,11 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			descriptor = mrcp_session_descriptor_create(pool);
 			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 			mpf_rtp_media_descriptor_init(media);
-			media->base.state = MPF_MEDIA_ENABLED;
-			media->base.id = mrcp_session_audio_media_add(descriptor,media);
+			media->state = MPF_MEDIA_ENABLED;
+			media->id = mrcp_session_audio_media_add(descriptor,media);
 			if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
-				media->base.port = request->header.transport.client_port_range.min;
-				media->base.ip = request->header.transport.destination;
+				media->port = request->header.transport.client_port_range.min;
+				media->ip = request->header.transport.destination;
 			}
 		}
 
@@ -326,16 +326,16 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 	count = mrcp_session_media_count_get(descriptor);
 	for(i=0; i<count; i++) {
 		audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
-		if(audio_media && audio_media->base.id == i) {
+		if(audio_media && audio_media->id == i) {
 			/* generate audio media */
 			audio_index++;
 			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
-			request->header.transport.client_port_range.min = audio_media->base.port;
-			request->header.transport.client_port_range.max = audio_media->base.port+1;
+			request->header.transport.client_port_range.min = audio_media->port;
+			request->header.transport.client_port_range.max = audio_media->port+1;
 			continue;
 		}
 		video_media = mrcp_session_video_media_get(descriptor,video_index);
-		if(video_media && video_media->base.id == i) {
+		if(video_media && video_media->id == i) {
 			/* generate video media */
 			video_index++;
 			offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);
@@ -408,17 +408,19 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		count = mrcp_session_media_count_get(descriptor);
 		for(i=0; i<count; i++) {
 			audio_media = mrcp_session_audio_media_get(descriptor,audio_index);
-			if(audio_media && audio_media->base.id == i) {
+			if(audio_media && audio_media->id == i) {
 				/* generate audio media */
+				rtsp_transport_t *transport;
 				audio_index++;
 				offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,audio_media);
-				response->header.transport.server_port_range.min = audio_media->base.port;
-				response->header.transport.server_port_range.max = audio_media->base.port+1;
-				response->header.transport.client_port_range = request->header.transport.client_port_range;
+				transport = &response->header.transport;
+				transport->server_port_range.min = audio_media->port;
+				transport->server_port_range.max = audio_media->port+1;
+				transport->client_port_range = request->header.transport.client_port_range;
 				continue;
 			}
 			video_media = mrcp_session_video_media_get(descriptor,video_index);
-			if(video_media && video_media->base.id == i) {
+			if(video_media && video_media->id == i) {
 				/* generate video media */
 				video_index++;
 				offset += sdp_rtp_media_generate(buffer+offset,size-offset,descriptor,video_media);

@@ -183,9 +183,9 @@ mpf_rtp_termination_descriptor_t* demo_rtp_descriptor_create(apr_pool_t *pool)
 	/* create rtp local media */
 	media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 	mpf_rtp_media_descriptor_init(media);
-	apt_string_assign(&media->base.ip,"127.0.0.1",pool);
-	media->base.port = 6000;
-	media->base.state = MPF_MEDIA_ENABLED;
+	apt_string_assign(&media->ip,"127.0.0.1",pool);
+	media->port = 6000;
+	media->state = MPF_MEDIA_ENABLED;
 	media->mode = STREAM_MODE_RECEIVE;
 
 	/* initialize codec list */

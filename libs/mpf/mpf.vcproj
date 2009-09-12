@@ -216,10 +216,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mpf_media_descriptor.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\mpf_message.h"
 				>
 			</File>
