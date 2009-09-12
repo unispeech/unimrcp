@@ -36,14 +36,14 @@ static apt_bool_t g711_close(mpf_codec_t *codec)
 
 static apt_bool_t g711u_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
-	const short *decode_buf;
+	const apr_int16_t *decode_buf;
 	unsigned char *encode_buf;
-	apr_uint32_t i;
+	apr_size_t i;
 
 	decode_buf = frame_in->buffer;
 	encode_buf = frame_out->buffer;
 
-	frame_out->size = frame_in->size / sizeof(short);
+	frame_out->size = frame_in->size / sizeof(apr_int16_t);
 
 	for(i=0; i<frame_out->size; i++) {
 		encode_buf[i] = linear_to_ulaw(decode_buf[i]);
@@ -54,14 +54,14 @@ static apt_bool_t g711u_encode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 
 static apt_bool_t g711u_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
-	short *decode_buf;
+	apr_int16_t *decode_buf;
 	const unsigned char *encode_buf;
-	apr_uint32_t i;
+	apr_size_t i;
 
 	decode_buf = frame_out->buffer;
 	encode_buf = frame_in->buffer;
 
-	frame_out->size = frame_in->size * sizeof(short);
+	frame_out->size = frame_in->size * sizeof(apr_int16_t);
 
 	for(i=0; i<frame_in->size; i++) {
 		decode_buf[i] = ulaw_to_linear(encode_buf[i]);
@@ -72,14 +72,14 @@ static apt_bool_t g711u_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 
 static apt_bool_t g711a_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
-	const short *decode_buf;
+	const apr_int16_t *decode_buf;
 	unsigned char *encode_buf;
-	apr_uint32_t i;
+	apr_size_t i;
 
 	decode_buf = frame_in->buffer;
 	encode_buf = frame_out->buffer;
 
-	frame_out->size = frame_in->size / sizeof(short);
+	frame_out->size = frame_in->size / sizeof(apr_int16_t);
 
 	for(i=0; i<frame_out->size; i++) {
 		encode_buf[i] = linear_to_alaw(decode_buf[i]);
@@ -90,14 +90,14 @@ static apt_bool_t g711a_encode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 
 static apt_bool_t g711a_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
-	short *decode_buf;
+	apr_int16_t *decode_buf;
 	const unsigned char *encode_buf;
-	apr_uint32_t i;
+	apr_size_t i;
 
 	decode_buf = frame_out->buffer;
 	encode_buf = frame_in->buffer;
 
-	frame_out->size = frame_in->size * sizeof(short);
+	frame_out->size = frame_in->size * sizeof(apr_int16_t);
 
 	for(i=0; i<frame_in->size; i++) {
 		decode_buf[i] = alaw_to_linear(encode_buf[i]);

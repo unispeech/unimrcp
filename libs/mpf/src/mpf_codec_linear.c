@@ -41,9 +41,9 @@ static apt_bool_t l16_close(mpf_codec_t *codec)
 static apt_bool_t l16_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	apr_uint32_t i;
-	const short *buf_in = frame_in->buffer;
-	short *buf_out = frame_out->buffer;
-	apr_size_t samples = frame_in->size / sizeof(short);
+	const apr_int16_t *buf_in = frame_in->buffer;
+	apr_int16_t *buf_out = frame_out->buffer;
+	apr_size_t samples = frame_in->size / sizeof(apr_int16_t);
 
 	frame_out->size = frame_in->size;
 
@@ -57,9 +57,9 @@ static apt_bool_t l16_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_
 static apt_bool_t l16_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	apr_uint32_t i;
-	const short *buf_in = frame_in->buffer;
-	short *buf_out = frame_out->buffer;
-	apr_size_t samples = frame_in->size / sizeof(short);
+	const apr_int16_t *buf_in = frame_in->buffer;
+	apr_int16_t *buf_out = frame_out->buffer;
+	apr_size_t samples = frame_in->size / sizeof(apr_int16_t);
 
 	frame_out->size = frame_in->size;
 

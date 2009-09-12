@@ -42,9 +42,9 @@ struct mpf_mixer_t {
 static apt_bool_t mpf_frames_mix(mpf_frame_t *mix_frame, const mpf_frame_t *frame)
 {
 	apr_size_t i;
-	short *mix_buf = mix_frame->codec_frame.buffer;
-	const short *buf = frame->codec_frame.buffer;
-	apr_size_t samples = frame->codec_frame.size / sizeof(short);
+	apr_int16_t *mix_buf = mix_frame->codec_frame.buffer;
+	const apr_int16_t *buf = frame->codec_frame.buffer;
+	apr_size_t samples = frame->codec_frame.size / sizeof(apr_int16_t);
 
 	if(mix_frame->codec_frame.size != frame->codec_frame.size) {
 		return FALSE;
