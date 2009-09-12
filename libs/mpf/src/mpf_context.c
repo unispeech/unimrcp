@@ -28,14 +28,14 @@
 
 /** Item of the association matrix */
 typedef struct {
-	char on;
+	unsigned char on;
 } matrix_item_t;
 
 /** Item of the association matrix header */
 typedef struct {
 	mpf_termination_t *termination;
-	char               tx_count;
-	char               rx_count;
+	unsigned char      tx_count;
+	unsigned char      rx_count;
 } header_item_t;
 
 /** Media processing context */
@@ -469,8 +469,7 @@ static mpf_object_t* mpf_context_multiplier_create(mpf_context_t *context, apr_s
 	header_item_t *header_item1 = &context->header[i];
 	header_item_t *header_item2;
 	matrix_item_t *item;
-	apr_size_t j;
-	char k;
+	apr_size_t j,k;
 	sink_arr = apr_palloc(context->pool,header_item1->tx_count * sizeof(mpf_audio_stream_t*));
 	for(j=0,k=0; j<context->capacity && k<header_item1->tx_count; j++) {
 		header_item2 = &context->header[j];
@@ -497,8 +496,7 @@ static mpf_object_t* mpf_context_mixer_create(mpf_context_t *context, apr_size_t
 	header_item_t *header_item1 = &context->header[j];
 	header_item_t *header_item2;
 	matrix_item_t *item;
-	apr_size_t i;
-	char k;
+	apr_size_t i,k;
 	source_arr = apr_palloc(context->pool,header_item1->rx_count * sizeof(mpf_audio_stream_t*));
 	for(i=0,k=0; i<context->capacity && k<header_item1->rx_count; i++) {
 		header_item2 = &context->header[i];
