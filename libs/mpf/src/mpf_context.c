@@ -19,12 +19,11 @@
 #endif
 #include <apr_ring.h> 
 #include "mpf_context.h"
-#include "mpf_object.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
-#include "mpf_encoder.h"
-#include "mpf_decoder.h"
 #include "mpf_bridge.h"
+#include "mpf_multiplier.h"
+#include "mpf_mixer.h"
 #include "apt_log.h"
 
 /** Item of the association matrix */
@@ -72,7 +71,9 @@ struct mpf_context_factory_t {
 
 
 static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2);
-static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination);
+static mpf_object_t* mpf_context_bridge_create(mpf_context_t *context, apr_size_t i);
+static mpf_object_t* mpf_context_multiplier_create(mpf_context_t *context, apr_size_t i);
+static mpf_object_t* mpf_context_mixer_create(mpf_context_t *context, apr_size_t j);
 
 
 MPF_DECLARE(mpf_context_factory_t*) mpf_context_factory_create(apr_pool_t *pool)
@@ -362,48 +363,37 @@ MPF_DECLARE(apt_bool_t) mpf_context_associations_reset(mpf_context_t *context)
 
 MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context)
 {
-	apr_size_t i,j,k;
-	header_item_t *header_item1;
-	header_item_t *header_item2;
-	matrix_item_t *item;
+	apr_size_t i,k;
+	header_item_t *header_item;
 	mpf_object_t *object;
 	
 	/* first destroy existing topology / if any */
 	mpf_context_topology_destroy(context);
 
 	for(i=0,k=0; i<context->capacity && k<context->count; i++) {
-		header_item1 = &context->header[i];
-		if(!header_item1->termination) {
+		header_item = &context->header[i];
+		if(!header_item->termination) {
 			continue;
 		}
 		k++;
 		
-		if(!header_item1->tx_count && !header_item1->rx_count) {
-			continue;
+		if(header_item->tx_count > 0) {
+			object = NULL;
+			if(header_item->tx_count == 1) {
+				object = mpf_context_bridge_create(context,i);
+			}
+			else { /* tx_count > 1 */
+				object = mpf_context_multiplier_create(context,i);
+			}
+
+			if(object) {
+				APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
+			}
 		}
-		
-		for(j=i; j<context->capacity; j++) {
-			header_item2 = &context->header[j];
-			if(!header_item2->termination) {
-				continue;
-			}
-			item = &context->matrix[i][j];
-			if(item->on) {
-				/* create connection i -> j */
-				object = mpf_context_connection_create(context,header_item1->termination,header_item2->termination);
-				if(object) {
-					APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
-				}
-			}
-			if(i != j) {
-				item = &context->matrix[j][i];
-				if(item->on) {
-					/* create connection j -> i */
-					object = mpf_context_connection_create(context,header_item2->termination,header_item1->termination);
-					if(object) {
-						APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
-					}
-				}
+		if(header_item->rx_count > 1) {
+			object = mpf_context_mixer_create(context,i);
+			if(object) {
+				APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
 			}
 		}
 	}
@@ -441,12 +431,92 @@ MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context)
 }
 
 
-static mpf_object_t* mpf_context_connection_create(mpf_context_t *context, mpf_termination_t *src_termination, mpf_termination_t *sink_termination)
+static mpf_object_t* mpf_context_bridge_create(mpf_context_t *context, apr_size_t i)
 {
-	if(!src_termination || !sink_termination) {
-		return NULL;
+	header_item_t *header_item1 = &context->header[i];
+	header_item_t *header_item2;
+	matrix_item_t *item;
+	apr_size_t j;
+	for(j=0; j<context->capacity; j++) {
+		header_item2 = &context->header[j];
+		if(!header_item2->termination) {
+			continue;
+		}
+		item = &context->matrix[i][j];
+		if(!item->on) {
+			continue;
+		}
+
+		if(header_item2->rx_count > 1) {
+			/* mixer will be created instead */
+			return NULL;
+		}
+		
+		/* create bridge i -> j */
+		if(header_item1->termination && header_item2->termination) {
+			return mpf_bridge_create(
+				header_item1->termination->audio_stream,
+				header_item2->termination->audio_stream,
+				context->pool);
+		}
 	}
-	return mpf_bridge_create(src_termination->audio_stream,sink_termination->audio_stream,context->pool);
+	return NULL;
+}
+
+static mpf_object_t* mpf_context_multiplier_create(mpf_context_t *context, apr_size_t i)
+{
+	mpf_audio_stream_t **sink_arr;
+	header_item_t *header_item1 = &context->header[i];
+	header_item_t *header_item2;
+	matrix_item_t *item;
+	apr_size_t j;
+	char k;
+	sink_arr = apr_palloc(context->pool,header_item1->tx_count * sizeof(mpf_audio_stream_t*));
+	for(j=0,k=0; j<context->capacity && k<header_item1->tx_count; j++) {
+		header_item2 = &context->header[j];
+		if(!header_item2->termination) {
+			continue;
+		}
+		item = &context->matrix[i][j];
+		if(!item->on) {
+			continue;
+		}
+		sink_arr[k] = header_item2->termination->audio_stream;
+		k++;
+	}
+	return mpf_multiplier_create(
+				header_item1->termination->audio_stream,
+				sink_arr,
+				header_item1->tx_count,
+				context->pool);
+}
+
+static mpf_object_t* mpf_context_mixer_create(mpf_context_t *context, apr_size_t j)
+{
+	mpf_audio_stream_t **source_arr;
+	header_item_t *header_item1 = &context->header[j];
+	header_item_t *header_item2;
+	matrix_item_t *item;
+	apr_size_t i;
+	char k;
+	source_arr = apr_palloc(context->pool,header_item1->rx_count * sizeof(mpf_audio_stream_t*));
+	for(i=0,k=0; i<context->capacity && k<header_item1->rx_count; i++) {
+		header_item2 = &context->header[i];
+		if(!header_item2->termination) {
+			continue;
+		}
+		item = &context->matrix[i][j];
+		if(!item->on) {
+			continue;
+		}
+		source_arr[k] = header_item2->termination->audio_stream;
+		k++;
+	}
+	return mpf_mixer_create(
+				source_arr,
+				header_item1->rx_count,
+				header_item1->termination->audio_stream,
+				context->pool);
 }
 
 static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2)

@@ -22,6 +22,8 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_frame.h \
                            include/mpf_frame_buffer.h \
                            include/mpf_message.h \
+                           include/mpf_mixer.h \
+                           include/mpf_multiplier.h \
                            include/mpf_named_event.h \
                            include/mpf_object.h \
                            include/mpf_stream.h \
@@ -55,6 +57,8 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_codec_manager.c \
                            src/mpf_context.c \
                            src/mpf_engine.c \
+                           src/mpf_mixer.c \
+                           src/mpf_multiplier.c \
                            src/mpf_named_event.c \
                            src/mpf_termination.c \
                            src/mpf_rtp_termination_factory.c \
