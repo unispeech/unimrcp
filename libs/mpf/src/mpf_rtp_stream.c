@@ -313,7 +313,7 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream)
 						stream->rx_codec,
 						rtp_stream->pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Receive %s:%hu <- %s:%hu playout [%d ms]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Receiver %s:%hu <- %s:%hu playout [%d ms]",
 			rtp_stream->local_media->ip.buf,
 			rtp_stream->local_media->port,
 			rtp_stream->remote_media->ip.buf,
@@ -336,7 +336,7 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 	}
 
 	mpf_jitter_buffer_destroy(receiver->jb);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receive %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu]",
 			rtp_stream->local_media->ip.buf,
 			rtp_stream->local_media->port,
 			rtp_stream->remote_media->ip.buf,
@@ -655,7 +655,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 							sizeof(rtp_header_t) + transmitter->packet_frames * frame_size);
 	
 	transmitter->inactivity = 1;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Transmit %s:%hu -> %s:%hu",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Transmitter %s:%hu -> %s:%hu",
 			rtp_stream->local_media->ip.buf,
 			rtp_stream->local_media->port,
 			rtp_stream->remote_media->ip.buf,
@@ -666,7 +666,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmit %s:%hu -> %s:%hu [s:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmitter %s:%hu -> %s:%hu [s:%lu]",
 			rtp_stream->local_media->ip.buf,
 			rtp_stream->local_media->port,
 			rtp_stream->remote_media->ip.buf,

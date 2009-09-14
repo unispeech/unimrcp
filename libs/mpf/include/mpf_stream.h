@@ -116,7 +116,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream
 	return TRUE;
 }
 
-/** Open audio stream receive */
+/** Open audio stream receiver */
 static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->open_rx)
@@ -124,7 +124,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream
 	return TRUE;
 }
 
-/** Close audio stream receive */
+/** Close audio stream receiver */
 static APR_INLINE apt_bool_t mpf_audio_stream_rx_close(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->close_rx)
@@ -140,7 +140,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_frame_read(mpf_audio_stream_t *str
 	return TRUE;
 }
 
-/** Open audio stream transmit */
+/** Open audio stream transmitter */
 static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->open_tx)
@@ -148,7 +148,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream
 	return TRUE;
 }
 
-/** Close audio stream transmit */
+/** Close audio stream transmitter */
 static APR_INLINE apt_bool_t mpf_audio_stream_tx_close(mpf_audio_stream_t *stream)
 {
 	if(stream->vtable->close_tx)
