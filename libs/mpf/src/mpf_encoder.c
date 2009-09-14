@@ -58,6 +58,26 @@ static apt_bool_t mpf_encoder_process(mpf_audio_stream_t *stream, const mpf_fram
 	return mpf_audio_stream_frame_write(encoder->sink,&encoder->frame_out);
 }
 
+static void mpf_encoder_trace(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apt_text_stream_t *output)
+{
+	apr_size_t offset;
+	mpf_codec_t *codec;
+	mpf_encoder_t *encoder = stream->obj;
+	if(!encoder->sink || !encoder->sink->tx_codec) {
+		return;
+	}
+	codec = encoder->sink->tx_codec;
+
+	offset = output->pos - output->text.buf;
+	output->pos += apr_snprintf(output->pos, output->text.length - offset,
+		"[%s/%d/%d]->Encoder->",
+		"LPCM",
+		codec->descriptor->sampling_rate,
+		codec->descriptor->channel_count);
+
+	mpf_audio_stream_trace(encoder->sink,mode,output);
+}
+
 
 static const mpf_audio_stream_vtable_t vtable = {
 	mpf_encoder_destroy,
@@ -66,7 +86,8 @@ static const mpf_audio_stream_vtable_t vtable = {
 	NULL,
 	mpf_encoder_open,
 	mpf_encoder_close,
-	mpf_encoder_process
+	mpf_encoder_process,
+	mpf_encoder_trace
 };
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, apr_pool_t *pool)

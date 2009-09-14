@@ -361,6 +361,19 @@ MPF_DECLARE(apt_bool_t) mpf_context_associations_reset(mpf_context_t *context)
 	return TRUE;
 }
 
+static apt_bool_t mpf_context_object_add(mpf_context_t *context, mpf_object_t *object)
+{
+	if(!object) {
+		return FALSE;
+	}
+	
+	APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
+#if 1
+	mpf_object_trace(object);
+#endif
+	return TRUE;
+}
+
 MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context)
 {
 	apr_size_t i,k;
@@ -386,15 +399,11 @@ MPF_DECLARE(apt_bool_t) mpf_context_topology_apply(mpf_context_t *context)
 				object = mpf_context_multiplier_create(context,i);
 			}
 
-			if(object) {
-				APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
-			}
+			mpf_context_object_add(context,object);
 		}
 		if(header_item->rx_count > 1) {
 			object = mpf_context_mixer_create(context,i);
-			if(object) {
-				APR_ARRAY_PUSH(context->mpf_objects, mpf_object_t*) = object;
-			}
+			mpf_context_object_add(context,object);
 		}
 	}
 

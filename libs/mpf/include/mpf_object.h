@@ -23,7 +23,6 @@
  */ 
 
 #include "mpf_types.h"
-#include "mpf_frame.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -32,11 +31,35 @@ typedef struct mpf_object_t mpf_object_t;
 
 /** Media processing objects base */
 struct mpf_object_t {
-	/** Virtual process */
-	apt_bool_t (*process)(mpf_object_t *object);
 	/** Virtual destroy */
 	apt_bool_t (*destroy)(mpf_object_t *object);
+	/** Virtual process */
+	apt_bool_t (*process)(mpf_object_t *object);
+	/** Virtual trace of media path */
+	void (*trace)(mpf_object_t *object);
 };
+
+/** Destroy object */
+static APR_INLINE void mpf_object_destroy(mpf_object_t *object)
+{
+	if(object->destroy)
+		object->destroy(object);
+}
+
+/** Process object */
+static APR_INLINE void mpf_object_process(mpf_object_t *object)
+{
+	if(object->process)
+		object->process(object);
+}
+
+/** Trace media path */
+static APR_INLINE void mpf_object_trace(mpf_object_t *object)
+{
+	if(object->trace)
+		object->trace(object);
+}
+
 
 
 APT_END_EXTERN_C

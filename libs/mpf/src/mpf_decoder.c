@@ -61,6 +61,26 @@ static apt_bool_t mpf_decoder_process(mpf_audio_stream_t *stream, mpf_frame_t *f
 	return TRUE;
 }
 
+static void mpf_decoder_trace(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apt_text_stream_t *output)
+{
+	apr_size_t offset;
+	mpf_codec_t *codec;
+	mpf_decoder_t *decoder = stream->obj;
+
+	mpf_audio_stream_trace(decoder->source,mode,output);
+
+	if(!decoder->source || !decoder->source->rx_codec) {
+		return;
+	}
+	codec = decoder->source->rx_codec;
+
+	offset = output->pos - output->text.buf;
+	output->pos += apr_snprintf(output->pos, output->text.length - offset,
+		"->Decoder->[%s/%d/%d]",
+		"LPCM",
+		codec->descriptor->sampling_rate,
+		codec->descriptor->channel_count);
+}
 
 static const mpf_audio_stream_vtable_t vtable = {
 	mpf_decoder_destroy,
@@ -69,7 +89,8 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_decoder_process,
 	NULL,
 	NULL,
-	NULL
+	NULL,
+	mpf_decoder_trace
 };
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, apr_pool_t *pool)

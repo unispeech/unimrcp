@@ -60,6 +60,27 @@ static apt_bool_t mpf_null_bridge_process(mpf_object_t *object)
 	return TRUE;
 }
 
+static void mpf_bridge_trace(mpf_object_t *object)
+{
+	mpf_bridge_t *bridge = (mpf_bridge_t*) object;
+	char buf[1024];
+	apr_size_t offset;
+
+	apt_text_stream_t output;
+	apt_text_stream_init(&output,buf,sizeof(buf)-1);
+
+	mpf_audio_stream_trace(bridge->source,STREAM_MODE_RECEIVE,&output);
+	
+	offset = output.pos - output.text.buf;
+	output.pos += apr_snprintf(output.pos, output.text.length - offset,
+		"->Bridge->");
+
+	mpf_audio_stream_trace(bridge->sink,STREAM_MODE_SEND,&output);
+
+	output.pos = "\0";
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,output.text.buf);
+}
+
 
 static apt_bool_t mpf_bridge_destroy(mpf_object_t *object)
 {
@@ -80,8 +101,9 @@ static mpf_bridge_t* mpf_bridge_base_create(mpf_audio_stream_t *source, mpf_audi
 	bridge = apr_palloc(pool,sizeof(mpf_bridge_t));
 	bridge->source = source;
 	bridge->sink = sink;
-	bridge->base.process = mpf_bridge_process;
 	bridge->base.destroy = mpf_bridge_destroy;
+	bridge->base.process = mpf_bridge_process;
+	bridge->base.trace = mpf_bridge_trace;
 
 	if(mpf_audio_stream_rx_open(source) == FALSE) {
 		return NULL;
