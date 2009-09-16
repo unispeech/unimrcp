@@ -164,10 +164,10 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 
 	mrcp_client_session_state_set(session,SESSION_STATE_PROCESSING_ANSWER);
 	if(session->context) {
-		/* first destroy existing topology */
+		/* first, reset/destroy existing associations and topology */
 		if(mpf_engine_topology_message_add(
 					session->profile->media_engine,
-					MPF_DESTROY_TOPOLOGY,session->context,
+					MPF_RESET_ASSOCIATIONS,session->context,
 					&session->mpf_task_msg) == TRUE){
 			mrcp_client_session_subrequest_add(session);
 		}
