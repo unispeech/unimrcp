@@ -124,6 +124,8 @@ struct mrcp_resource_engine_t {
 	mrcp_resource_engine_config_t     *config;
 	/** Number of simultaneous channels currently in use */
 	apr_size_t                         cur_channel_count;
+	/** Is engine successfully opened */
+	apt_bool_t                         is_open;
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
 };
@@ -153,13 +155,21 @@ static APR_INLINE apt_bool_t mrcp_engine_virtual_destroy(mrcp_resource_engine_t 
 /** Open resource engine */
 static APR_INLINE apt_bool_t mrcp_engine_virtual_open(mrcp_resource_engine_t *engine)
 {
-	return engine->method_vtable->open(engine);
+	if(engine->is_open == FALSE) {
+		engine->is_open = engine->method_vtable->open(engine);
+		return engine->is_open;
+	}
+	return FALSE;
 }
 
 /** Close resource engine */
 static APR_INLINE apt_bool_t mrcp_engine_virtual_close(mrcp_resource_engine_t *engine)
 {
-	return engine->method_vtable->close(engine);
+	if(engine->is_open == TRUE) {
+		engine->is_open = FALSE;
+		return engine->method_vtable->close(engine);
+	}
+	return FALSE;
 }
 
 /** Create engine channel */

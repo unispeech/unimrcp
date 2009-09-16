@@ -33,6 +33,7 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 	engine->codec_manager = NULL;
 	engine->dir_layout = NULL;
 	engine->cur_channel_count = 0;
+	engine->is_open = FALSE;
 	engine->pool = pool;
 	return engine;
 }
@@ -87,6 +88,9 @@ mrcp_engine_channel_t* mrcp_engine_channel_create(
 mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
 	mrcp_engine_channel_t *channel;
+	if(engine->is_open != TRUE) {
+		return NULL;
+	}
 	if(engine->config->max_channel_count && engine->cur_channel_count >= engine->config->max_channel_count) {
 		return NULL;
 	}
