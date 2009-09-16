@@ -151,13 +151,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server);
 
 /**
- * Get resource engine by name.
- * @param server the MRCP server to get resource engine from
- * @param name the name of the resource engine to lookup
- */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_server_resource_engine_get(mrcp_server_t *server, const char *name);
-
-/**
  * Get media engine by name.
  * @param server the MRCP server to get media engine from
  * @param name the name of the media engine to lookup
