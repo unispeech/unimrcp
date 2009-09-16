@@ -151,6 +151,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *signaling_agent);
+static void mrcp_server_plugins_unregister(mrcp_server_t *server);
 
 
 /** Create MRCP server instance */
@@ -257,6 +258,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
 		return FALSE;
 	}
+
+	mrcp_server_plugins_unregister(server);
+
 	task = apt_consumer_task_base_get(server->task);
 	apt_task_destroy(task);
 
@@ -590,6 +594,24 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 	return status;
 }
 
+static void mrcp_server_plugins_unregister(mrcp_server_t *server)
+{
+	apr_hash_index_t *it;
+	void *val;
+	apr_dso_handle_t *plugin;
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unload Plugins");
+	it=apr_hash_first(server->pool,server->plugin_table);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		plugin = val;
+		if(plugin) {
+			apr_dso_unload(plugin);
+		}
+	}
+	apr_hash_clear(server->plugin_table);
+}
+
+
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server)
 {
 	return server->pool;
@@ -640,7 +662,6 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
 	mrcp_resource_engine_t *resource_engine;
-	apr_dso_handle_t *plugin;
 	apr_hash_index_t *it;
 	void *val;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Resource Engines");
@@ -650,15 +671,6 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 		resource_engine = val;
 		if(resource_engine) {
 			mrcp_engine_virtual_close(resource_engine);
-		}
-	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unload Plugins");
-	it=apr_hash_first(server->pool,server->plugin_table);
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		plugin = val;
-		if(plugin) {
-			apr_dso_unload(plugin);
 		}
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Terminated");
