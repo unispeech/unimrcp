@@ -58,7 +58,7 @@ static apt_bool_t mpf_encoder_process(mpf_audio_stream_t *stream, const mpf_fram
 	return mpf_audio_stream_frame_write(encoder->sink,&encoder->frame_out);
 }
 
-static void mpf_encoder_trace(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apt_text_stream_t *output)
+static void mpf_encoder_trace(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output)
 {
 	apr_size_t offset;
 	mpf_codec_t *codec;
@@ -75,7 +75,7 @@ static void mpf_encoder_trace(mpf_audio_stream_t *stream, mpf_stream_mode_e mode
 		codec->descriptor->sampling_rate,
 		codec->descriptor->channel_count);
 
-	mpf_audio_stream_trace(encoder->sink,mode,output);
+	mpf_audio_stream_trace(encoder->sink,direction,output);
 }
 
 
@@ -101,7 +101,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, ap
 	}
 	encoder = apr_palloc(pool,sizeof(mpf_encoder_t));
 	capabilities = mpf_stream_capabilities_create(
-						STREAM_MODE_SEND,
+						STREAM_DIRECTION_SEND,
 						sink->capabilities->named_events,
 						pool);
 	encoder->base = mpf_audio_stream_create(encoder,&vtable,capabilities,pool);

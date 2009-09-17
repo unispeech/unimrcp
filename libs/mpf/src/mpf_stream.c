@@ -17,10 +17,10 @@
 #include "mpf_stream.h"
 
 /** Create stream capabilities */
-MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_create(int supported_modes, apt_bool_t named_events, apr_pool_t *pool)
+MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_create(mpf_stream_direction_e supported_directions, apt_bool_t named_events, apr_pool_t *pool)
 {
 	mpf_stream_capabilities_t *capabilities = (mpf_stream_capabilities_t*)apr_palloc(pool,sizeof(mpf_stream_capabilities_t));
-	capabilities->supported_modes = supported_modes;
+	capabilities->supported_directions = supported_directions;
 	capabilities->named_events = named_events;
 	capabilities->supported_codecs = apr_array_make(pool,1,sizeof(mpf_codec_attribs_t));
 	return capabilities;
@@ -45,7 +45,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_au
 	stream->vtable = vtable;
 	stream->termination = NULL;
 	stream->capabilities = capabilities;
-	stream->mode = capabilities ? capabilities->supported_modes : STREAM_MODE_NONE;
+	stream->direction = capabilities ? capabilities->supported_directions : STREAM_DIRECTION_NONE;
 	stream->rx_codec = NULL;
 	stream->rx_event_descriptor = NULL;
 	stream->tx_codec = NULL;

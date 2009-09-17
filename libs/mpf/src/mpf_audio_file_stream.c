@@ -117,7 +117,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termi
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
 	mpf_stream_capabilities_t *capabilities = mpf_stream_capabilities_create(
-												STREAM_MODE_SEND_RECEIVE,
+												STREAM_DIRECTION_DUPLEX,
 												FALSE,
 												pool);
 	file_stream->audio_stream = mpf_audio_stream_create(file_stream,&vtable,capabilities,pool);
@@ -140,7 +140,7 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 		}
 		file_stream->read_handle = descriptor->read_handle;
 		file_stream->eof = FALSE;
-		stream->mode |= FILE_READER;
+		stream->direction |= FILE_READER;
 
 		stream->rx_codec = mpf_codec_manager_codec_get(
 								stream->termination->codec_manager,
@@ -154,7 +154,7 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 		file_stream->write_handle = descriptor->write_handle;
 		file_stream->max_write_size = descriptor->max_write_size;
 		file_stream->cur_write_size = 0;
-		stream->mode |= FILE_WRITER;
+		stream->direction |= FILE_WRITER;
 
 		stream->tx_codec = mpf_codec_manager_codec_get(
 								stream->termination->codec_manager,

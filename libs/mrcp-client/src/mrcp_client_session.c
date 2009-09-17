@@ -619,14 +619,14 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 														session->offer,
 														channel->rtp_termination_slot->id);
 			if(audio_media && audio_stream) {
-				mpf_stream_mode_e mode = mpf_stream_mode_negotiate(audio_stream->mode);
+				mpf_stream_direction_e direction = mpf_stream_reverse_direction_get(audio_stream->direction);
 				if(enable == TRUE) {
-					audio_media->mode |= mode;
+					audio_media->direction |= direction;
 				}
 				else {
-					audio_media->mode &= ~mode;
+					audio_media->direction &= ~direction;
 				}
-				audio_media->state = (audio_media->mode != STREAM_MODE_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
+				audio_media->state = (audio_media->direction != STREAM_DIRECTION_NONE) ? MPF_MEDIA_ENABLED : MPF_MEDIA_DISABLED;
 			}
 		}
 	}
@@ -718,11 +718,12 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
 		mpf_rtp_termination_descriptor_init(rtp_descriptor);
 		if(channel->termination->audio_stream) {
+			mpf_audio_stream_t *stream = channel->termination->audio_stream;
 			mpf_rtp_media_descriptor_t *media;
 			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 			mpf_rtp_media_descriptor_init(media);
 			media->state = MPF_MEDIA_ENABLED;
-			media->mode = mpf_stream_mode_negotiate(channel->termination->audio_stream->mode);
+			media->direction = mpf_stream_reverse_direction_get(stream->direction);
 			rtp_descriptor->audio.local = media;
 		}
 

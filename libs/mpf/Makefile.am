@@ -27,7 +27,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_named_event.h \
                            include/mpf_object.h \
                            include/mpf_stream.h \
-                           include/mpf_stream_mode.h \
+                           include/mpf_stream_descriptor.h \
                            include/mpf_termination.h \
                            include/mpf_rtp_termination_factory.h \
                            include/mpf_file_termination_factory.h \

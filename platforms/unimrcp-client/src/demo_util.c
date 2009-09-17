@@ -186,7 +186,7 @@ mpf_rtp_termination_descriptor_t* demo_rtp_descriptor_create(apr_pool_t *pool)
 	apt_string_assign(&media->ip,"127.0.0.1",pool);
 	media->port = 6000;
 	media->state = MPF_MEDIA_ENABLED;
-	media->mode = STREAM_MODE_RECEIVE;
+	media->direction = STREAM_DIRECTION_RECEIVE;
 
 	/* initialize codec list */
 	mpf_codec_list_init(&media->codec_list,2,pool);

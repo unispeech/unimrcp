@@ -126,7 +126,7 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 	mpf_termination_t *termination;
 
 	capabilities = mpf_stream_capabilities_create(
-						STREAM_MODE_RECEIVE,
+						STREAM_DIRECTION_RECEIVE,
 						TRUE,
 						pool);
 	if(codec_descriptor) {
@@ -183,7 +183,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 	mpf_termination_t *termination;
 
 	capabilities = mpf_stream_capabilities_create(
-						STREAM_MODE_SEND,
+						STREAM_DIRECTION_SEND,
 						TRUE,
 						pool);
 	if(codec_descriptor) {

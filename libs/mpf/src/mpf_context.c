@@ -70,7 +70,7 @@ struct mpf_context_factory_t {
 };
 
 
-static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2);
+static APR_INLINE apt_bool_t stream_direction_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2);
 static mpf_object_t* mpf_context_bridge_create(mpf_context_t *context, apr_size_t i);
 static mpf_object_t* mpf_context_multiplier_create(mpf_context_t *context, apr_size_t i);
 static mpf_object_t* mpf_context_mixer_create(mpf_context_t *context, apr_size_t j);
@@ -259,7 +259,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_association_add(mpf_context_t *context, mpf_
 
 	/* 1 -> 2 */
 	if(!matrix_item1->on) {
-		if(stream_mode_compatibility_check(header_item1->termination,header_item2->termination) == TRUE) {
+		if(stream_direction_compatibility_check(header_item1->termination,header_item2->termination) == TRUE) {
 			matrix_item1->on = 1;
 			header_item1->tx_count ++;
 			header_item2->rx_count ++;
@@ -268,7 +268,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_association_add(mpf_context_t *context, mpf_
 
 	/* 2 -> 1 */
 	if(!matrix_item2->on) {
-		if(stream_mode_compatibility_check(header_item2->termination,header_item1->termination) == TRUE) {
+		if(stream_direction_compatibility_check(header_item2->termination,header_item1->termination) == TRUE) {
 			matrix_item2->on = 1;
 			header_item2->tx_count ++;
 			header_item1->rx_count ++;
@@ -526,12 +526,12 @@ static mpf_object_t* mpf_context_mixer_create(mpf_context_t *context, apr_size_t
 				context->pool);
 }
 
-static APR_INLINE apt_bool_t stream_mode_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2)
+static APR_INLINE apt_bool_t stream_direction_compatibility_check(mpf_termination_t *termination1, mpf_termination_t *termination2)
 {
 	mpf_audio_stream_t *source = termination1->audio_stream;
 	mpf_audio_stream_t *sink = termination2->audio_stream;
-	if(source && (source->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE &&
-		sink && (sink->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
+	if(source && (source->direction & STREAM_DIRECTION_RECEIVE) == STREAM_DIRECTION_RECEIVE &&
+		sink && (sink->direction & STREAM_DIRECTION_SEND) == STREAM_DIRECTION_SEND) {
 		return TRUE;
 	}
 	return FALSE;

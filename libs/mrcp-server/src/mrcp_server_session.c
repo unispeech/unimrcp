@@ -603,8 +603,8 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 					if(termination->audio_stream) {
 						mpf_rtp_media_descriptor_t *rtp_media_descriptor = mrcp_session_audio_media_get(descriptor,0);
 						if(rtp_media_descriptor) {
-							mpf_stream_mode_e mode = termination->audio_stream->mode;
-							rtp_media_descriptor->mode |= mode;
+							mpf_stream_direction_e direction = termination->audio_stream->direction;
+							rtp_media_descriptor->direction |= direction;
 						}
 					}
 				}

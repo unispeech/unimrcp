@@ -45,7 +45,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 	}
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
 	if(audio_media->state == MPF_MEDIA_ENABLED) {
-		const apt_str_t *mode_str = mpf_stream_mode_str_get(audio_media->mode);
+		const apt_str_t *direction_str = mpf_rtp_direction_str_get(audio_media->direction);
 		for(i=0; i<descriptor_arr->nelts; i++) {
 			codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
 			if(codec_descriptor->enabled == TRUE && codec_descriptor->name.buf) {
@@ -60,7 +60,9 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 				}
 			}
 		}
-		offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",mode_str ? mode_str->buf : "");
+		if(direction_str) {
+			offset += snprintf(buffer+offset,size-offset,"a=%s\r\n",direction_str->buf);
+		}
 		
 		if(audio_media->ptime) {
 			offset += snprintf(buffer+offset,size-offset,"a=ptime:%hu\r\n",
@@ -103,16 +105,16 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 
 	switch(sdp_media->m_mode) {
 		case sdp_inactive:
-			rtp_media->mode = STREAM_MODE_NONE;
+			rtp_media->direction = STREAM_DIRECTION_NONE;
 			break;
 		case sdp_sendonly:
-			rtp_media->mode = STREAM_MODE_SEND;
+			rtp_media->direction = STREAM_DIRECTION_SEND;
 			break;
 		case sdp_recvonly:
-			rtp_media->mode = STREAM_MODE_RECEIVE;
+			rtp_media->direction = STREAM_DIRECTION_RECEIVE;
 			break;
 		case sdp_sendrecv:
-			rtp_media->mode = STREAM_MODE_SEND_RECEIVE;
+			rtp_media->direction = STREAM_DIRECTION_DUPLEX;
 			break;
 	}
 

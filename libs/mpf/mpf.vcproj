@@ -276,7 +276,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mpf_stream_mode.h"
+				RelativePath=".\include\mpf_stream_descriptor.h"
 				>
 			</File>
 			<File

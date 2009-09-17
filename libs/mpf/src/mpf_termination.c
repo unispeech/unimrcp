@@ -78,14 +78,14 @@ MPF_DECLARE(apt_bool_t) mpf_termination_validate(mpf_termination_t *termination)
 		if(!audio_stream->vtable) {
 			return FALSE;
 		}
-		if((audio_stream->mode & STREAM_MODE_RECEIVE) == STREAM_MODE_RECEIVE) {
+		if((audio_stream->direction & STREAM_DIRECTION_RECEIVE) == STREAM_DIRECTION_RECEIVE) {
 			if(!audio_stream->rx_codec) {
 				audio_stream->rx_codec = mpf_codec_manager_default_codec_get(
 											termination->codec_manager,
 											termination->pool);
 			}
 		}
-		if((audio_stream->mode & STREAM_MODE_SEND) == STREAM_MODE_SEND) {
+		if((audio_stream->direction & STREAM_DIRECTION_SEND) == STREAM_DIRECTION_SEND) {
 			if(!audio_stream->tx_codec) {
 				audio_stream->tx_codec = mpf_codec_manager_default_codec_get(
 											termination->codec_manager,

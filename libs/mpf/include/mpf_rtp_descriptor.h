@@ -24,8 +24,7 @@
 
 #include <apr_network_io.h>
 #include "apt_string.h"
-#include "mpf_stream_mode.h"
-#include "mpf_codec_descriptor.h"
+#include "mpf_stream_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -46,27 +45,26 @@ typedef enum {
 	MPF_MEDIA_ENABLED   /**< enabled media */
 } mpf_media_state_e;
 
-
 /** RTP media (local/remote) descriptor */
 struct mpf_rtp_media_descriptor_t {
 	/** Media state (disabled/enabled)*/
-	mpf_media_state_e state;
+	mpf_media_state_e      state;
 	/** Ip address */
-	apt_str_t         ip;
+	apt_str_t              ip;
 	/** External (NAT) Ip address */
-	apt_str_t         ext_ip;
+	apt_str_t              ext_ip;
 	/** Port */
-	apr_port_t        port;
+	apr_port_t             port;
 	/** Stream mode (send/receive) */
-	mpf_stream_mode_e mode;
+	mpf_stream_direction_e direction;
 	/** Packetization time */
-	apr_uint16_t      ptime;
+	apr_uint16_t           ptime;
 	/** Codec list */
-	mpf_codec_list_t  codec_list;
+	mpf_codec_list_t       codec_list;
 	/** Media identifier */
-	apr_size_t        mid;
+	apr_size_t             mid;
 	/** Position, order in SDP message (0,1,...) */
-	apr_size_t        id;
+	apr_size_t             id;
 };
 
 /** RTP stream descriptor */
@@ -126,7 +124,7 @@ static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t 
 	apt_string_reset(&media->ip);
 	apt_string_reset(&media->ext_ip);
 	media->port = 0;
-	media->mode = STREAM_MODE_NONE;
+	media->direction = STREAM_DIRECTION_NONE;
 	media->ptime = 0;
 	mpf_codec_list_reset(&media->codec_list);
 	media->mid = 0;

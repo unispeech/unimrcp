@@ -61,13 +61,13 @@ static apt_bool_t mpf_decoder_process(mpf_audio_stream_t *stream, mpf_frame_t *f
 	return TRUE;
 }
 
-static void mpf_decoder_trace(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apt_text_stream_t *output)
+static void mpf_decoder_trace(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output)
 {
 	apr_size_t offset;
 	mpf_codec_t *codec;
 	mpf_decoder_t *decoder = stream->obj;
 
-	mpf_audio_stream_trace(decoder->source,mode,output);
+	mpf_audio_stream_trace(decoder->source,direction,output);
 
 	if(!decoder->source || !decoder->source->rx_codec) {
 		return;
@@ -104,7 +104,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 	}
 	decoder = apr_palloc(pool,sizeof(mpf_decoder_t));
 	capabilities = mpf_stream_capabilities_create(
-						STREAM_MODE_RECEIVE,
+						STREAM_DIRECTION_RECEIVE,
 						source->capabilities->named_events,
 						pool);
 	decoder->base = mpf_audio_stream_create(decoder,&vtable,capabilities,pool);

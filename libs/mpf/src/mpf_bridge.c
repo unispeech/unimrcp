@@ -69,13 +69,13 @@ static void mpf_bridge_trace(mpf_object_t *object)
 	apt_text_stream_t output;
 	apt_text_stream_init(&output,buf,sizeof(buf)-1);
 
-	mpf_audio_stream_trace(bridge->source,STREAM_MODE_RECEIVE,&output);
+	mpf_audio_stream_trace(bridge->source,STREAM_DIRECTION_RECEIVE,&output);
 	
 	offset = output.pos - output.text.buf;
 	output.pos += apr_snprintf(output.pos, output.text.length - offset,
 		"->Bridge->");
 
-	mpf_audio_stream_trace(bridge->sink,STREAM_MODE_SEND,&output);
+	mpf_audio_stream_trace(bridge->sink,STREAM_DIRECTION_SEND,&output);
 
 	output.pos = "\0";
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,output.text.buf);

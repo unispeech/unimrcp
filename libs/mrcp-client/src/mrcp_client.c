@@ -657,7 +657,7 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
 	mpf_audio_stream_t *audio_stream;
 
 	capabilities = mpf_stream_capabilities_create(
-						STREAM_MODE_RECEIVE,
+						STREAM_DIRECTION_RECEIVE,
 						TRUE,
 						session->pool);
 	if(codec_descriptor) {
@@ -703,7 +703,7 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
 	mpf_audio_stream_t *audio_stream;
 
 	capabilities = mpf_stream_capabilities_create(
-						STREAM_MODE_SEND,
+						STREAM_DIRECTION_SEND,
 						TRUE,
 						session->pool);
 	if(codec_descriptor) {

@@ -23,27 +23,15 @@
  */ 
 
 #include "mpf_types.h"
-#include "mpf_stream_mode.h"
 #include "mpf_frame.h"
+#include "mpf_stream_descriptor.h"
 #include "mpf_codec.h"
 #include "apt_text_stream.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque audio stream virtual table declaration */
+/** Declaration of virtual table of audio stream */
 typedef struct mpf_audio_stream_vtable_t mpf_audio_stream_vtable_t;
-/** Stream capabilities */
-typedef struct mpf_stream_capabilities_t mpf_stream_capabilities_t;
-
-/** Stream capabilities */
-struct mpf_stream_capabilities_t {
-	/** Supported modes: send, receive or bidirectional stream (bitmask of mpf_stream_mode_e) */
-	int                 supported_modes;
-	/** Supported/allowed codecs (arary of mpf_codec_attribs_t) */
-	apr_array_header_t *supported_codecs;
-	/** Whether stream is capable to carry named events or not */
-	apt_bool_t          named_events;
-};
 
 /** Audio stream */
 struct mpf_audio_stream_t {
@@ -57,8 +45,8 @@ struct mpf_audio_stream_t {
 	/** Stream capabilities */
 	const mpf_stream_capabilities_t *capabilities;
 
-	/** Stream mode send/receive (bitmask of mpf_stream_mode_e) */
-	int                              mode;
+	/** Stream direction send/receive (bitmask of mpf_stream_direction_e) */
+	mpf_stream_direction_e           direction;
 	/** Receive codec */
 	mpf_codec_t                     *rx_codec;
 	/** Receive event descriptor */
@@ -73,8 +61,8 @@ struct mpf_audio_stream_t {
 struct mpf_video_stream_t {
 	/** Back pointer */
 	mpf_termination_t               *termination;
-	/** Stream mode (send/receive) */
-	mpf_stream_mode_e                mode;
+	/** Stream direction send/receive (bitmask of mpf_stream_direction_e) */
+	mpf_stream_direction_e           direction;
 };
 
 /** Table of audio stream virtual methods */
@@ -96,14 +84,8 @@ struct mpf_audio_stream_vtable_t {
 	/** Virtual write frame method */
 	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 
-	void (*trace)(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apt_text_stream_t *output);
+	void (*trace)(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output);
 };
-
-/** Create stream capabilities */
-MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_create(int supported_modes, apt_bool_t named_events, apr_pool_t *pool);
-
-/** Add codec capabilities */
-MPF_DECLARE(apt_bool_t) mpf_stream_capabilities_add(mpf_stream_capabilities_t *capabilities, int sample_rates, const char *codec_name, apr_pool_t *pool);
 
 /** Create audio stream */
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, const mpf_stream_capabilities_t *capabilities, apr_pool_t *pool);
@@ -165,15 +147,14 @@ static APR_INLINE apt_bool_t mpf_audio_stream_frame_write(mpf_audio_stream_t *st
 }
 
 /** Trace media path */
-static APR_INLINE void mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_stream_mode_e mode, apt_text_stream_t *output)
+static APR_INLINE void mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output)
 {
 	if(stream->vtable->trace) {
-		stream->vtable->trace(stream,mode,output);
+		stream->vtable->trace(stream,direction,output);
 		return;
 	}
 
-
-	if(mode & STREAM_MODE_SEND) {
+	if(direction & STREAM_DIRECTION_SEND) {
 		mpf_codec_t *codec = stream->tx_codec;
 		if(codec) {
 			apr_size_t offset = output->pos - output->text.buf;
@@ -184,7 +165,7 @@ static APR_INLINE void mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_st
 				codec->descriptor->channel_count);
 		}
 	}
-	if(mode & STREAM_MODE_RECEIVE) {
+	if(direction & STREAM_DIRECTION_RECEIVE) {
 		mpf_codec_t *codec = stream->rx_codec;
 		if(codec) {
 			apr_size_t offset = output->pos - output->text.buf;
