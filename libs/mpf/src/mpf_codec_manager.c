@@ -23,10 +23,10 @@
 
 struct mpf_codec_manager_t {
 	/** Memory pool */
-	apr_pool_t   *pool;
+	apr_pool_t             *pool;
 
 	/** Dynamic (resizable) array of codecs (mpf_codec_t*) */
-	apr_array_header_t *codec_arr;
+	apr_array_header_t     *codec_arr;
 	/** Default named event descriptor */
 	mpf_codec_descriptor_t *event_descriptor;
 };
@@ -50,15 +50,13 @@ MPF_DECLARE(void) mpf_codec_manager_destroy(mpf_codec_manager_t *codec_manager)
 
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *codec_manager, mpf_codec_t *codec)
 {
-	mpf_codec_t **slot;
 	if(!codec || !codec->attribs || !codec->attribs->name.buf) {
 		return FALSE;
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Codec [%s]",codec->attribs->name.buf);
 
-	slot = apr_array_push(codec_manager->codec_arr);
-	*slot = codec;
+	APR_ARRAY_PUSH(codec_manager->codec_arr,mpf_codec_t*) = codec;
 	return TRUE;
 }
 
@@ -72,7 +70,7 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 	}
 
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
-		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
+		codec = APR_ARRAY_IDX(codec_manager->codec_arr,i,mpf_codec_t*);
 		if(mpf_codec_capabilities_match(descriptor,codec->static_descriptor,codec->attribs) == TRUE) {
 			break;
 		}
@@ -106,7 +104,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager
 
 	mpf_codec_list_init(codec_list,codec_manager->codec_arr->nelts,pool);
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
-		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
+		codec = APR_ARRAY_IDX(codec_manager->codec_arr,i,mpf_codec_t*);
 		static_descriptor = codec->static_descriptor;
 		if(static_descriptor) {
 			descriptor = mpf_codec_list_add(codec_list);
@@ -209,7 +207,7 @@ MPF_DECLARE(const mpf_codec_t*) mpf_codec_manager_codec_find(const mpf_codec_man
 	int i;
 	mpf_codec_t *codec;
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
-		codec = ((mpf_codec_t**)codec_manager->codec_arr->elts)[i];
+		codec = APR_ARRAY_IDX(codec_manager->codec_arr,i,mpf_codec_t*);
 		if(apt_string_compare(&codec->attribs->name,codec_name) == TRUE) {
 			return codec;
 		}

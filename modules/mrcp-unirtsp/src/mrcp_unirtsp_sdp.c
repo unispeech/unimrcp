@@ -38,7 +38,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		"m=audio %d RTP/AVP", 
 		audio_media->state == MPF_MEDIA_ENABLED ? audio_media->port : 0);
 	for(i=0; i<descriptor_arr->nelts; i++) {
-		codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
+		codec_descriptor = &APR_ARRAY_IDX(descriptor_arr,i,mpf_codec_descriptor_t);
 		if(codec_descriptor->enabled == TRUE) {
 			offset += snprintf(buffer+offset,size-offset," %d", codec_descriptor->payload_type);
 		}
@@ -47,7 +47,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 	if(audio_media->state == MPF_MEDIA_ENABLED) {
 		const apt_str_t *direction_str = mpf_rtp_direction_str_get(audio_media->direction);
 		for(i=0; i<descriptor_arr->nelts; i++) {
-			codec_descriptor = (mpf_codec_descriptor_t*)descriptor_arr->elts + i;
+			codec_descriptor = &APR_ARRAY_IDX(descriptor_arr,i,mpf_codec_descriptor_t);
 			if(codec_descriptor->enabled == TRUE && codec_descriptor->name.buf) {
 				offset += snprintf(buffer+offset,size-offset,"a=rtpmap:%d %s/%d\r\n",
 					codec_descriptor->payload_type,

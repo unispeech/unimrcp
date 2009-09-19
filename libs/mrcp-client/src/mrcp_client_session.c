@@ -415,7 +415,7 @@ static apt_bool_t mrcp_app_session_terminate_raise(mrcp_client_session_t *sessio
 	int i;
 	mrcp_channel_t *channel;
 	for(i=0; i<session->channels->nelts; i++) {
-		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
 		if(channel->control_channel) {
@@ -510,8 +510,9 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 static apt_bool_t mrcp_client_channel_find(mrcp_client_session_t *session, mrcp_channel_t *channel, int *index)
 {
 	int i;
+	mrcp_channel_t *existing_channel;
 	for(i=0; i<session->channels->nelts; i++) {
-		mrcp_channel_t *existing_channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		existing_channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(existing_channel == channel) {
 			if(index) {
 				*index = i;
@@ -527,7 +528,7 @@ static rtp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_sess
 	int i;
 	rtp_termination_slot_t *slot;
 	for(i=0; i<session->terminations->nelts; i++) {
-		slot = &((rtp_termination_slot_t*)session->terminations->elts)[i];
+		slot = &APR_ARRAY_IDX(session->terminations,i,rtp_termination_slot_t);
 		if(slot && slot->termination == termination) {
 			return slot;
 		}
@@ -540,7 +541,7 @@ static mrcp_channel_t* mrcp_client_channel_termination_find(mrcp_client_session_
 	int i;
 	mrcp_channel_t *channel;
 	for(i=0; i<session->channels->nelts; i++) {
-		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
 		if(channel->termination == termination) {
@@ -555,7 +556,7 @@ static mrcp_channel_t* mrcp_client_channel_find_by_name(mrcp_client_session_t *s
 	int i;
 	mrcp_channel_t *channel;
 	for(i=0; i<session->channels->nelts; i++) {
-		channel = ((mrcp_channel_t**)session->channels->elts)[i];
+		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
 		if(apt_string_compare(channel->resource_name,resource_name) == TRUE) {
@@ -638,9 +639,8 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 
 static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_channel_t *channel)
 {
-	mrcp_channel_t **channel_slot;
 	mpf_rtp_termination_descriptor_t *rtp_descriptor = NULL;
-	rtp_termination_slot_t *termination_slot;
+	rtp_termination_slot_t *slot;
 	apr_pool_t *pool = session->base.pool;
 	mrcp_profile_t *profile = session->profile;
 	if(mrcp_client_channel_find(session,channel,NULL) == TRUE) {
@@ -687,16 +687,15 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 					MRCP_SESSION_PTRSID(&session->base),
 					channel->resource_name->buf);
 	/* add control channel */
-	channel_slot = apr_array_push(session->channels);
-	*channel_slot = channel;
+	APR_ARRAY_PUSH(session->channels,mrcp_channel_t*) = channel;
 
 	/* add rtp termination slot */
-	termination_slot = apr_array_push(session->terminations);
-	termination_slot->waiting = FALSE;
-	termination_slot->termination = NULL;
-	termination_slot->descriptor = NULL;
-	termination_slot->channel = channel;
-	termination_slot->id = 0;
+	slot = apr_array_push(session->terminations);
+	slot->waiting = FALSE;
+	slot->termination = NULL;
+	slot->descriptor = NULL;
+	slot->channel = channel;
+	slot->id = 0;
 
 	if(channel->termination) {
 		/* media termination mode */
@@ -730,14 +729,14 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add RTP Termination "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
 		/* create rtp termination */
 		termination = mpf_termination_create(profile->rtp_termination_factory,session,pool);
-		termination_slot->termination = termination;
+		slot->termination = termination;
 
 		/* send add termination request (add to media context) */
 		if(mpf_engine_termination_message_add(
 				profile->media_engine,
 				MPF_ADD_TERMINATION,session->context,termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
-			termination_slot->waiting = TRUE;
+			slot->waiting = TRUE;
 			mrcp_client_session_subrequest_add(session);
 		}
 		mpf_engine_message_send(profile->media_engine,&session->mpf_task_msg);
@@ -752,14 +751,14 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 					session->offer->ext_ip = rtp_descriptor->audio.local->ext_ip;
 					rtp_descriptor->audio.local->id = mrcp_session_audio_media_add(session->offer,rtp_descriptor->audio.local);
 					rtp_descriptor->audio.local->mid = session->offer->audio_media_arr->nelts;
-					termination_slot->id = session->offer->audio_media_arr->nelts - 1;
+					slot->id = session->offer->audio_media_arr->nelts - 1;
 				}
 			}
 		}	
 	}
 
-	termination_slot->descriptor = rtp_descriptor;
-	channel->rtp_termination_slot = termination_slot;
+	slot->descriptor = rtp_descriptor;
+	channel->rtp_termination_slot = slot;
 
 	if(!session->subrequest_count) {
 		/* send offer to server */
@@ -800,7 +799,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	/* remove existing control channels */
 	for(i=0; i<session->channels->nelts; i++) {
 		/* get existing channel */
-		channel = *((mrcp_channel_t**)session->channels->elts + i);
+		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
 		if(channel->control_channel) {
@@ -829,7 +828,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 		/* subtract existing terminations */
 		for(i=0; i<session->terminations->nelts; i++) {
 			/* get existing termination */
-			slot = &((rtp_termination_slot_t*)session->terminations->elts)[i];
+			slot = &APR_ARRAY_IDX(session->terminations,i,rtp_termination_slot_t);
 			if(!slot || !slot->termination) continue;
 
 			/* send subtract termination request */
@@ -1079,7 +1078,7 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 	/* update existing control channels */
 	for(i=0; i<count; i++) {
 		/* get existing channel */
-		channel = *((mrcp_channel_t**)session->channels->elts + i);
+		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
 		/* get control descriptor */
@@ -1110,7 +1109,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 		mpf_rtp_media_descriptor_t *remote_media;
 		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		/* get existing termination */
-		slot = &((rtp_termination_slot_t*)session->terminations->elts)[i];
+		slot = &APR_ARRAY_IDX(session->terminations,i,rtp_termination_slot_t);
 		if(!slot) continue;
 
 		remote_media = mrcp_session_audio_media_get(descriptor,i);
