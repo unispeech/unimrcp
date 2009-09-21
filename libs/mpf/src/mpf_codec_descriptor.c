@@ -45,8 +45,7 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_co
 	int i;
 	mpf_codec_descriptor_t *matched_descriptor;
 	for(i=0; i<codec_list->descriptor_arr->nelts; i++) {
-		matched_descriptor = (mpf_codec_descriptor_t*)codec_list->descriptor_arr->elts + i;
-
+		matched_descriptor = &APR_ARRAY_IDX(codec_list->descriptor_arr,i,mpf_codec_descriptor_t);
 		if(mpf_codec_descriptors_match(descriptor,matched_descriptor) == TRUE) {
 			return matched_descriptor;
 		}
@@ -109,7 +108,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, 
 	/* find only one match for primary and named event descriptors, 
 	set the matched descriptors as preffered, disable the others */
 	for(i=0; i<codec_list1->descriptor_arr->nelts; i++) {
-		descriptor1 = (mpf_codec_descriptor_t*)codec_list1->descriptor_arr->elts + i;
+		descriptor1 = &APR_ARRAY_IDX(codec_list1->descriptor_arr,i,mpf_codec_descriptor_t);
 
 		/* check whether this is a named event descriptor */
 		if(mpf_event_descriptor_check(descriptor1) == TRUE) {
@@ -155,7 +154,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, 
 	}
 
 	for(i=0; i<codec_list2->descriptor_arr->nelts; i++) {
-		descriptor2 = (mpf_codec_descriptor_t*)codec_list2->descriptor_arr->elts + i;
+		descriptor2 = &APR_ARRAY_IDX(codec_list2->descriptor_arr,i,mpf_codec_descriptor_t);
 		if(descriptor2 == codec_list2->primary_descriptor || descriptor2 == codec_list2->event_descriptor) {
 			descriptor2->enabled = TRUE;
 		}

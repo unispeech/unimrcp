@@ -49,12 +49,14 @@ typedef enum {
 
 /** Codec descriptor declaration */
 typedef struct mpf_codec_descriptor_t mpf_codec_descriptor_t;
-/** Codec list declaration */
-typedef struct mpf_codec_list_t mpf_codec_list_t;
-/** Codec frame declaration */
-typedef struct mpf_codec_frame_t mpf_codec_frame_t;
 /** Codec attributes declaration */
 typedef struct mpf_codec_attribs_t mpf_codec_attribs_t;
+/** Codec list declaration */
+typedef struct mpf_codec_list_t mpf_codec_list_t;
+/** Codec capabilities declaration */
+typedef struct mpf_codec_capabilities_t mpf_codec_capabilities_t;
+/** Codec frame declaration */
+typedef struct mpf_codec_frame_t mpf_codec_frame_t;
 
 
 /** Codec descriptor */
@@ -83,14 +85,6 @@ struct mpf_codec_list_t {
 	mpf_codec_descriptor_t *event_descriptor;
 };
 
-/** Codec frame */
-struct mpf_codec_frame_t {
-	/** Raw buffer, which may contain encoded or decoded data */
-	void      *buffer;
-	/** Buffer size */
-	apr_size_t size;
-};
-
 /** Codec attributes */
 struct mpf_codec_attribs_t {
 	/** Codec name */
@@ -99,6 +93,22 @@ struct mpf_codec_attribs_t {
 	apr_byte_t bits_per_sample;
 	/** Supported sampling rates (mpf_sample_rates_e) */
 	int        sample_rates;
+};
+
+/** List of codec attributes (capabilities) */
+struct mpf_codec_capabilities_t {
+	/** Dynamic array of codec attributes (mpf_codec_attrribs_t) */
+	apr_array_header_t *attrib_arr;
+	/** Allow/support named events */
+	apt_bool_t          allow_named_events;
+};
+
+/** Codec frame */
+struct mpf_codec_frame_t {
+	/** Raw buffer, which may contain encoded or decoded data */
+	void      *buffer;
+	/** Buffer size */
+	apr_size_t size;
 };
 
 
@@ -144,6 +154,8 @@ static APR_INLINE void mpf_codec_list_reset(mpf_codec_list_t *codec_list)
 static APR_INLINE void mpf_codec_list_init(mpf_codec_list_t *codec_list, apr_size_t initial_count, apr_pool_t *pool)
 {
 	codec_list->descriptor_arr = apr_array_make(pool,(int)initial_count, sizeof(mpf_codec_descriptor_t));
+	codec_list->primary_descriptor = NULL;
+	codec_list->event_descriptor = NULL;
 }
 
 /** Copy list of codec descriptors */
@@ -169,21 +181,56 @@ static APR_INLINE apt_bool_t mpf_codec_list_is_empty(const mpf_codec_list_t *cod
 /** Get codec descriptor by index */
 static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_descriptor_get(const mpf_codec_list_t *codec_list, apr_size_t id)
 {
-	mpf_codec_descriptor_t *descriptor;
 	if(id >= (apr_size_t)codec_list->descriptor_arr->nelts) {
 		return NULL;
 	}
-	descriptor = (mpf_codec_descriptor_t*)codec_list->descriptor_arr->elts;
-	return descriptor + id;
+	return &APR_ARRAY_IDX(codec_list->descriptor_arr,id,mpf_codec_descriptor_t);
 }
 
-/** Find and return matched descriptor from codec list */
-MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor);
+/** Initialize codec capabilities */
+static APR_INLINE void mpf_codec_capabilities_init(mpf_codec_capabilities_t *capabilities, apr_size_t initial_count, apr_pool_t *pool)
+{
+	capabilities->attrib_arr = apr_array_make(pool,(int)initial_count, sizeof(mpf_codec_attribs_t));
+	capabilities->allow_named_events = TRUE;
+}
+
+/** Clone codec capabilities */
+static APR_INLINE void mpf_codec_capabilities_clone(mpf_codec_capabilities_t *capabilities, const mpf_codec_capabilities_t *src_capabilities, apr_pool_t *pool)
+{
+	capabilities->attrib_arr = apr_array_copy(pool,src_capabilities->attrib_arr);
+	capabilities->allow_named_events = src_capabilities->allow_named_events;
+}
+
+/** Merge codec capabilities */
+static APR_INLINE apt_bool_t mpf_codec_capabilities_merge(mpf_codec_capabilities_t *capabilities, const mpf_codec_capabilities_t *src_capabilities, apr_pool_t *pool)
+{
+	if(capabilities->allow_named_events == FALSE && src_capabilities->allow_named_events == TRUE) {
+		capabilities->allow_named_events = src_capabilities->allow_named_events;
+	}
+	capabilities->attrib_arr = apr_array_append(pool,capabilities->attrib_arr,src_capabilities->attrib_arr);
+	return TRUE;
+}
+
+/** Add codec capabilities */
+static APR_INLINE apt_bool_t mpf_codec_capabilities_add(mpf_codec_capabilities_t *capabilities, int sample_rates, const char *codec_name)
+{
+	mpf_codec_attribs_t *attribs = (mpf_codec_attribs_t*)apr_array_push(capabilities->attrib_arr);
+	apt_string_set(&attribs->name,codec_name);
+	attribs->sample_rates = sample_rates;
+	attribs->bits_per_sample = 0;
+	return TRUE;
+}
+
+
+
 
 /** Match two codec descriptors */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2);
 /** Match codec capabilities */
 MPF_DECLARE(apt_bool_t) mpf_codec_capabilities_match(mpf_codec_descriptor_t *descriptor, const mpf_codec_descriptor_t *static_descriptor, const mpf_codec_attribs_t *attribs);
+
+/** Find and return matched descriptor from codec list */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor);
 /** Intersect two codec lists */
 MPF_DECLARE(apt_bool_t) mpf_codec_list_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2);
 

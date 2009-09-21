@@ -42,18 +42,31 @@ typedef enum {
 /** Stream capabilities */
 struct mpf_stream_capabilities_t {
 	/** Supported directions either send, receive or bidirectional stream (bitmask of mpf_stream_direction_e) */
-	mpf_stream_direction_e supported_directions;
-	/** Supported/allowed codecs (arary of mpf_codec_attribs_t) */
-	apr_array_header_t    *supported_codecs;
-	/** Whether stream is capable to carry named events or not */
-	apt_bool_t             named_events;
+	mpf_stream_direction_e   direction;
+	/** Codec capabilities (supported codecs and named events) */
+	mpf_codec_capabilities_t codecs;
 };
 
 /** Create stream capabilities */
-MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_create(mpf_stream_direction_e supported_directions, apt_bool_t named_events, apr_pool_t *pool);
+MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_create(mpf_stream_direction_e directions, apr_pool_t *pool);
 
-/** Add codec capabilities */
-MPF_DECLARE(apt_bool_t) mpf_stream_capabilities_add(mpf_stream_capabilities_t *capabilities, int sample_rates, const char *codec_name, apr_pool_t *pool);
+/** Create source stream capabilities */
+static APR_INLINE mpf_stream_capabilities_t* mpf_source_stream_capabilities_create(apr_pool_t *pool)
+{
+	return mpf_stream_capabilities_create(STREAM_DIRECTION_RECEIVE,pool);
+}
+
+/** Create sink stream capabilities */
+static APR_INLINE mpf_stream_capabilities_t* mpf_sink_stream_capabilities_create(apr_pool_t *pool)
+{
+	return mpf_stream_capabilities_create(STREAM_DIRECTION_SEND,pool);
+}
+
+/** Clone stream capabilities */
+MPF_DECLARE(mpf_stream_capabilities_t*) mpf_stream_capabilities_clone(const mpf_stream_capabilities_t *src_capabilities, apr_pool_t *pool);
+
+/** Merge stream capabilities */
+MPF_DECLARE(apt_bool_t) mpf_stream_capabilities_merge(mpf_stream_capabilities_t *capabilities, const mpf_stream_capabilities_t *src_capabilities, apr_pool_t *pool);
 
 
 /** Get reverse direction */

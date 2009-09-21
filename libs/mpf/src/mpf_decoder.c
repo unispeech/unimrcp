@@ -103,10 +103,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 		return NULL;
 	}
 	decoder = apr_palloc(pool,sizeof(mpf_decoder_t));
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_RECEIVE,
-						source->capabilities->named_events,
-						pool);
+	capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_RECEIVE,pool);
 	decoder->base = mpf_audio_stream_create(decoder,&vtable,capabilities,pool);
 	decoder->source = source;
 

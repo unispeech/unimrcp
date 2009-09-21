@@ -125,21 +125,18 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 	mpf_audio_stream_t *audio_stream;
 	mpf_termination_t *termination;
 
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_RECEIVE,
-						TRUE,
-						pool);
+	capabilities = mpf_source_stream_capabilities_create(pool);
 	if(codec_descriptor) {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
-						codec_descriptor->name.buf,
-						pool);
+						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						MPF_SAMPLE_RATE_8000,
-						"LPCM",
-						pool);
+						"LPCM");
 	}
 
 	/* create audio stream */
@@ -182,21 +179,18 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 	mpf_audio_stream_t *audio_stream;
 	mpf_termination_t *termination;
 
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_SEND,
-						TRUE,
-						pool);
+	capabilities = mpf_sink_stream_capabilities_create(pool);
 	if(codec_descriptor) {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
-						codec_descriptor->name.buf,
-						pool);
+						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						MPF_SAMPLE_RATE_8000,
-						"LPCM",
-						pool);
+						"LPCM");
 	}
 
 	/* create audio stream */

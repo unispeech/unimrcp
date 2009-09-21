@@ -100,10 +100,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, ap
 		return NULL;
 	}
 	encoder = apr_palloc(pool,sizeof(mpf_encoder_t));
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_SEND,
-						sink->capabilities->named_events,
-						pool);
+	capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_SEND,pool);
 	encoder->base = mpf_audio_stream_create(encoder,&vtable,capabilities,pool);
 	encoder->sink = sink;
 

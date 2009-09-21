@@ -77,10 +77,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	rtp_stream->local_sockaddr = NULL;
 	rtp_stream->remote_sockaddr = NULL;
 
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_DUPLEX,
-						TRUE,
-						pool);
+	capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_DUPLEX,pool);
 	rtp_stream->base = mpf_audio_stream_create(rtp_stream,&vtable,capabilities,pool);
 	rtp_stream->base->direction = STREAM_DIRECTION_NONE;
 	rtp_stream->base->termination = termination;
@@ -201,7 +198,7 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 	return status;
 }
 
-static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
+static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream, mpf_stream_capabilities_t *capabilities)
 {
 	if(!rtp_stream->local_media || !rtp_stream->remote_media) {
 		return FALSE;
@@ -255,7 +252,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		mpf_rtp_stream_remote_media_update(rtp_stream,descriptor->remote);
 
 		/* negotiate local and remote media */
-		mpf_rtp_stream_media_negotiate(rtp_stream);
+		mpf_rtp_stream_media_negotiate(rtp_stream,descriptor->capabilities);
 	}
 
 	if((rtp_stream->base->direction & STREAM_DIRECTION_SEND) == STREAM_DIRECTION_SEND) {

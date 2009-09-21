@@ -656,21 +656,18 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
 	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
 
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_RECEIVE,
-						TRUE,
-						session->pool);
+	capabilities = mpf_source_stream_capabilities_create(session->pool);
 	if(codec_descriptor) {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
-						codec_descriptor->name.buf,
-						session->pool);
+						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						MPF_SAMPLE_RATE_8000,
-						"LPCM",
-						session->pool);
+						"LPCM");
 	}
 
 	/* create audio stream */
@@ -702,21 +699,18 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
 	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
 
-	capabilities = mpf_stream_capabilities_create(
-						STREAM_DIRECTION_SEND,
-						TRUE,
-						session->pool);
+	capabilities = mpf_sink_stream_capabilities_create(session->pool);
 	if(codec_descriptor) {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
-						codec_descriptor->name.buf,
-						session->pool);
+						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_stream_capabilities_add(capabilities,
+		mpf_codec_capabilities_add(
+						&capabilities->codecs,
 						MPF_SAMPLE_RATE_8000,
-						"LPCM",
-						session->pool);
+						"LPCM");
 	}
 
 	/* create audio stream */

@@ -69,6 +69,8 @@ struct mpf_rtp_media_descriptor_t {
 
 /** RTP stream descriptor */
 struct mpf_rtp_stream_descriptor_t {
+	/** Stream capabilities */
+	mpf_stream_capabilities_t  *capabilities;
 	/** Local media descriptor */
 	mpf_rtp_media_descriptor_t *local;
 	/** Remote media descriptor */
@@ -132,10 +134,11 @@ static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t 
 }
 
 /** Initialize stream descriptor */
-static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_t *stream)
+static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_t *descriptor)
 {
-	stream->local = NULL;
-	stream->remote = NULL;
+	descriptor->capabilities = NULL;
+	descriptor->local = NULL;
+	descriptor->remote = NULL;
 }
 
 /** Initialize RTP termination descriptor */

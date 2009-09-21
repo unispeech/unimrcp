@@ -116,10 +116,7 @@ static const mpf_audio_stream_vtable_t vtable = {
 MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termination, apr_pool_t *pool)
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
-	mpf_stream_capabilities_t *capabilities = mpf_stream_capabilities_create(
-												STREAM_DIRECTION_DUPLEX,
-												FALSE,
-												pool);
+	mpf_stream_capabilities_t *capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_DUPLEX,pool);
 	file_stream->audio_stream = mpf_audio_stream_create(file_stream,&vtable,capabilities,pool);
 	file_stream->audio_stream->termination = termination;
 
