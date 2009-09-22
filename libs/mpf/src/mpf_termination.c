@@ -96,8 +96,7 @@ MPF_DECLARE(apt_bool_t) mpf_termination_validate(mpf_termination_t *termination)
 	return TRUE;
 }
 
-
-/** Create MPF termination by termination factory */
+/** Create MPF termination from termination factory */
 MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 										mpf_termination_factory_t *termination_factory,
 										void *obj,

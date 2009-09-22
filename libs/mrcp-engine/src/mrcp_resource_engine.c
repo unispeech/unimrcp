@@ -133,10 +133,7 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_codec_capabilities_add(
-						&capabilities->codecs,
-						MPF_SAMPLE_RATE_8000,
-						"LPCM");
+		mpf_codec_default_capabilities_add(&capabilities->codecs);
 	}
 
 	/* create audio stream */
@@ -187,10 +184,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_codec_capabilities_add(
-						&capabilities->codecs,
-						MPF_SAMPLE_RATE_8000,
-						"LPCM");
+		mpf_codec_default_capabilities_add(&capabilities->codecs);
 	}
 
 	/* create audio stream */

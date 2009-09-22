@@ -71,7 +71,7 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 
 	for(i=0; i<codec_manager->codec_arr->nelts; i++) {
 		codec = APR_ARRAY_IDX(codec_manager->codec_arr,i,mpf_codec_t*);
-		if(mpf_codec_capabilities_match(descriptor,codec->static_descriptor,codec->attribs) == TRUE) {
+		if(mpf_codec_descriptor_match_by_attribs(descriptor,codec->static_descriptor,codec->attribs) == TRUE) {
 			break;
 		}
 	}

@@ -107,7 +107,7 @@ MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination);
 
 
 /**
- * Create MPF termination by termination factory.
+ * Create MPF termination from termination factory.
  * @param termination_factory the termination factory to create termination from
  * @param obj the external object associated with termination
  * @param pool the pool to allocate memory from

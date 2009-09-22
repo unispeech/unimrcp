@@ -664,10 +664,7 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
 						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_codec_capabilities_add(
-						&capabilities->codecs,
-						MPF_SAMPLE_RATE_8000,
-						"LPCM");
+		mpf_codec_default_capabilities_add(&capabilities->codecs);
 	}
 
 	/* create audio stream */
@@ -707,10 +704,7 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
 						codec_descriptor->name.buf);
 	}
 	else {
-		mpf_codec_capabilities_add(
-						&capabilities->codecs,
-						MPF_SAMPLE_RATE_8000,
-						"LPCM");
+		mpf_codec_default_capabilities_add(&capabilities->codecs);
 	}
 
 	/* create audio stream */
