@@ -1147,6 +1147,15 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 
 static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, const mrcp_app_message_t *app_message)
 {
+	if(session->state == SESSION_STATE_TERMINATING) {
+		/* no more requests are allowed, as session is being terminated!
+		   just return, it is horribly wrong and can crush anytime here */
+		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Inappropriate Application Request "APT_PTRSID_FMT" [%d]",
+			MRCP_SESSION_PTRSID(&session->base),
+			app_message->sig_message.command_id);
+		return FALSE;
+	}
+	
 	if(session->registered == FALSE) {
 		session->base.signaling_agent = session->profile->signaling_agent;
 		session->base.signaling_agent->create_client_session(&session->base);
