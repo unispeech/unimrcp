@@ -47,16 +47,6 @@ typedef struct mpf_audio_stream_t mpf_audio_stream_t;
 /** Opaque MPF video stream declaration */
 typedef struct mpf_video_stream_t mpf_video_stream_t;
 
-/** Termination vtable declaration */
-typedef struct mpf_termination_vtable_t mpf_termination_vtable_t;
-
-/** Table of termination virtual methods */
-struct mpf_termination_vtable_t {
-	/** Virtual termination destroy method */
-	apt_bool_t (*destroy)(mpf_termination_t *termination);
-	/** Virtual termination modify method */
-	apt_bool_t (*modify)(mpf_termination_t *termination, void *descriptor);
-};
 
 APT_END_EXTERN_C
 

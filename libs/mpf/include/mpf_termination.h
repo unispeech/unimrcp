@@ -29,6 +29,18 @@ APT_BEGIN_EXTERN_C
 /** Prototype of termination event handler */
 typedef apt_bool_t (*mpf_termination_event_handler_f)(mpf_termination_t *termination, int event_id, void *descriptor);
 
+/** Termination vtable declaration */
+typedef struct mpf_termination_vtable_t mpf_termination_vtable_t;
+
+/** Table of termination virtual methods */
+struct mpf_termination_vtable_t {
+	/** Virtual termination destroy method */
+	apt_bool_t (*destroy)(mpf_termination_t *termination);
+	/** Virtual termination modify method */
+	apt_bool_t (*modify)(mpf_termination_t *termination, void *descriptor);
+};
+
+
 /** MPF Termination */
 struct mpf_termination_t {
 	/** Pool to allocate memory from */

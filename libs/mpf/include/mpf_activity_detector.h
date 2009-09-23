@@ -23,7 +23,7 @@
  */ 
 
 #include "mpf_frame.h"
-#include "mpf_codec.h"
+#include "mpf_codec_descriptor.h"
 
 APT_BEGIN_EXTERN_C
 
