@@ -674,10 +674,7 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
 			capabilities,         /* stream capabilities */
 			session->pool);       /* memory pool to allocate memory from */
 
-	if(codec_descriptor) {
-		mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-		audio_stream->rx_codec = mpf_codec_manager_codec_get(client_session->codec_manager,codec_descriptor,session->pool);
-	}
+	audio_stream->rx_descriptor = codec_descriptor;
 
 	/* create raw termination */
 	return mpf_raw_termination_create(
@@ -714,10 +711,7 @@ MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
 			capabilities,         /* stream capabilities */
 			session->pool);       /* memory pool to allocate memory from */
 
-	if(codec_descriptor) {
-		mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-		audio_stream->tx_codec = mpf_codec_manager_codec_get(client_session->codec_manager,codec_descriptor,session->pool);
-	}
+	audio_stream->tx_descriptor = codec_descriptor;
 
 	/* create raw termination */
 	return mpf_raw_termination_create(

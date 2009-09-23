@@ -18,6 +18,7 @@
 
 struct mpf_jitter_buffer_t {
 	mpf_jb_config_t *config;
+	mpf_codec_t     *codec;
 
 	apr_byte_t      *raw_data;
 	mpf_frame_t     *frames;
@@ -37,7 +38,7 @@ struct mpf_jitter_buffer_t {
 };
 
 
-mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_t *codec, apr_pool_t *pool)
+mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_descriptor_t *descriptor, mpf_codec_t *codec, apr_pool_t *pool)
 {
 	size_t i;
 	mpf_jitter_buffer_t *jb = apr_palloc(pool,sizeof(mpf_jitter_buffer_t));
@@ -62,9 +63,10 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 		}
 	}
 	jb->config = jb_config;
+	jb->codec = codec;
 
-	jb->frame_ts = mpf_codec_frame_samples_calculate(codec->descriptor);
-	jb->frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
+	jb->frame_ts = mpf_codec_frame_samples_calculate(descriptor);
+	jb->frame_size = mpf_codec_frame_size_calculate(descriptor,codec->attribs);
 	jb->frame_count = jb->config->max_playout_delay / CODEC_FRAME_TIME_BASE;
 	jb->raw_data = apr_palloc(pool,jb->frame_size*jb->frame_count);
 	jb->frames = apr_palloc(pool,sizeof(mpf_frame_t)*jb->frame_count);
@@ -74,7 +76,7 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 	}
 
 	jb->playout_delay_ts = jb->config->initial_playout_delay *
-		codec->descriptor->channel_count * codec->descriptor->sampling_rate / 1000;
+		descriptor->channel_count * descriptor->sampling_rate / 1000;
 
 	jb->write_sync = 1;
 	jb->write_ts_offset = 0;
@@ -135,7 +137,7 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 	return result;
 }
 
-jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, mpf_codec_t *codec, void *buffer, apr_size_t size, apr_uint32_t ts)
+jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts)
 {
 	mpf_frame_t *media_frame;
 	apr_size_t write_ts;
@@ -148,7 +150,7 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, mpf_codec_t *codec,
 	while(available_frame_count && size) {
 		media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
 		media_frame->codec_frame.size = jb->frame_size;
-		if(mpf_codec_dissect(codec,&buffer,&size,&media_frame->codec_frame) == FALSE) {
+		if(mpf_codec_dissect(jb->codec,&buffer,&size,&media_frame->codec_frame) == FALSE) {
 			break;
 		}
 

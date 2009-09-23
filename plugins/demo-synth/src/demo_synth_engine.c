@@ -67,7 +67,7 @@ static const struct mrcp_engine_channel_method_vtable_t channel_vtable = {
 
 /** Declaration of synthesizer audio stream methods */
 static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream);
-static apt_bool_t demo_synth_stream_open(mpf_audio_stream_t *stream);
+static apt_bool_t demo_synth_stream_open(mpf_audio_stream_t *stream, mpf_codec_t *codec);
 static apt_bool_t demo_synth_stream_close(mpf_audio_stream_t *stream);
 static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame);
 
@@ -394,7 +394,7 @@ static apt_bool_t demo_synth_stream_destroy(mpf_audio_stream_t *stream)
 }
 
 /** Callback is called from MPF engine context to perform any action before open */
-static apt_bool_t demo_synth_stream_open(mpf_audio_stream_t *stream)
+static apt_bool_t demo_synth_stream_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	return TRUE;
 }

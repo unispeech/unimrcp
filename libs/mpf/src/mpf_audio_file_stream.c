@@ -50,7 +50,7 @@ static apt_bool_t mpf_audio_file_destroy(mpf_audio_stream_t *stream)
 	return TRUE;
 }
 
-static apt_bool_t mpf_audio_file_reader_open(mpf_audio_stream_t *stream)
+static apt_bool_t mpf_audio_file_reader_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	return TRUE;
 }
@@ -76,7 +76,7 @@ static apt_bool_t mpf_audio_file_frame_read(mpf_audio_stream_t *stream, mpf_fram
 }
 
 
-static apt_bool_t mpf_audio_file_writer_open(mpf_audio_stream_t *stream)
+static apt_bool_t mpf_audio_file_writer_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	return TRUE;
 }
@@ -139,10 +139,7 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 		file_stream->eof = FALSE;
 		stream->direction |= FILE_READER;
 
-		stream->rx_codec = mpf_codec_manager_codec_get(
-								stream->termination->codec_manager,
-								&descriptor->codec_descriptor,
-								stream->termination->pool);
+		stream->rx_descriptor = descriptor->codec_descriptor;
 	}
 	if(descriptor->mask & FILE_WRITER) {
 		if(file_stream->write_handle) {
@@ -153,10 +150,7 @@ MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_a
 		file_stream->cur_write_size = 0;
 		stream->direction |= FILE_WRITER;
 
-		stream->tx_codec = mpf_codec_manager_codec_get(
-								stream->termination->codec_manager,
-								&descriptor->codec_descriptor,
-								stream->termination->pool);
+		stream->tx_descriptor = descriptor->codec_descriptor;
 	}
 	return TRUE;
 }

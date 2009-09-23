@@ -36,6 +36,7 @@ typedef enum {
 	RTP_PT_DYNAMIC     =  96, /**< Start of dynamic payload types */
 	RTP_PT_DYNAMIC_MAX = 127, /**< End of dynamic payload types  */
 
+	RTP_PT_UNKNOWN     = 128  /**< Unknown (invalid) payload type */
 } mpf_rtp_pt_e;
 
 APT_END_EXTERN_C

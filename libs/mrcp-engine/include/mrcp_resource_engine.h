@@ -252,11 +252,11 @@ static APR_INLINE mrcp_version_e mrcp_engine_channel_version_get(mrcp_engine_cha
 	return channel->mrcp_version;
 }
 
-/** Get codec of the audio source stream */
-mpf_codec_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
+/** Get codec descriptor of the audio source stream */
+mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
 
-/** Get codec of the audio sink stream */
-mpf_codec_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
+/** Get codec descriptor of the audio sink stream */
+mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
 
 
 APT_END_EXTERN_C

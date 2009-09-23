@@ -52,9 +52,39 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_au
 	stream->termination = NULL;
 	stream->capabilities = capabilities;
 	stream->direction = capabilities ? capabilities->direction : STREAM_DIRECTION_NONE;
-	stream->rx_codec = NULL;
+	stream->rx_descriptor = NULL;
 	stream->rx_event_descriptor = NULL;
-	stream->tx_codec = NULL;
+	stream->tx_descriptor = NULL;
 	stream->tx_event_descriptor = NULL;
 	return stream;
+}
+
+/** Validate audio stream receiver */
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_rx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
+{
+	if(!stream->capabilities) {
+		return FALSE;
+	}
+
+	if(stream->rx_descriptor) {
+		return TRUE;
+	}
+
+	stream->rx_descriptor = mpf_codec_descriptor_create_by_capabilities(&stream->capabilities->codecs,descriptor,pool);
+	return stream->rx_descriptor ? TRUE : FALSE;
+}
+
+/** Validate audio stream transmitter */
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
+{
+	if(!stream->capabilities) {
+		return FALSE;
+	}
+
+	if(stream->tx_descriptor) {
+		return TRUE;
+	}
+
+	stream->tx_descriptor = mpf_codec_descriptor_create_by_capabilities(&stream->capabilities->codecs,descriptor,pool);
+	return stream->tx_descriptor ? TRUE : FALSE;
 }

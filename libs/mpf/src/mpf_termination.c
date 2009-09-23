@@ -67,35 +67,6 @@ MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, v
 	return TRUE;
 }
 
-MPF_DECLARE(apt_bool_t) mpf_termination_validate(mpf_termination_t *termination)
-{
-	mpf_audio_stream_t *audio_stream;
-	if(!termination) {
-		return FALSE;
-	}
-	audio_stream = termination->audio_stream;
-	if(audio_stream) {
-		if(!audio_stream->vtable) {
-			return FALSE;
-		}
-		if((audio_stream->direction & STREAM_DIRECTION_RECEIVE) == STREAM_DIRECTION_RECEIVE) {
-			if(!audio_stream->rx_codec) {
-				audio_stream->rx_codec = mpf_codec_manager_default_codec_get(
-											termination->codec_manager,
-											termination->pool);
-			}
-		}
-		if((audio_stream->direction & STREAM_DIRECTION_SEND) == STREAM_DIRECTION_SEND) {
-			if(!audio_stream->tx_codec) {
-				audio_stream->tx_codec = mpf_codec_manager_default_codec_get(
-											termination->codec_manager,
-											termination->pool);
-			}
-		}
-	}
-	return TRUE;
-}
-
 /** Create MPF termination from termination factory */
 MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 										mpf_termination_factory_t *termination_factory,

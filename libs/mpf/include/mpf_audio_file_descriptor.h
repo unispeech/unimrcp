@@ -38,15 +38,15 @@ typedef struct mpf_audio_file_descriptor_t mpf_audio_file_descriptor_t;
 /** Audio file descriptor */
 struct mpf_audio_file_descriptor_t {
 	/** Indicate descriptor type (reader and/or writer) */
-	mpf_stream_direction_e mask;
+	mpf_stream_direction_e  mask;
 	/** Codec descriptor to use for audio file read/write */
-	mpf_codec_descriptor_t codec_descriptor;
+	mpf_codec_descriptor_t *codec_descriptor;
 	/** File handle to read audio stream */
-	FILE                  *read_handle;
+	FILE                   *read_handle;
 	/** File handle to write audio stream */
-	FILE                  *write_handle;
+	FILE                   *write_handle;
 	/** Max size of file  */
-	apr_size_t             max_write_size;
+	apr_size_t              max_write_size;
 };
 
 APT_END_EXTERN_C

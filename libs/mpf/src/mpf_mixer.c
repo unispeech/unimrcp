@@ -18,6 +18,7 @@
 #include "mpf_encoder.h"
 #include "mpf_decoder.h"
 #include "mpf_resampler.h"
+#include "mpf_codec_manager.h"
 #include "apt_log.h"
 
 typedef struct mpf_mixer_t mpf_mixer_t;
@@ -97,7 +98,12 @@ static apt_bool_t mpf_mixer_destroy(mpf_object_t *object)
 	return TRUE;
 }
 
-MPF_DECLARE(mpf_object_t*) mpf_mixer_create(mpf_audio_stream_t **source_arr, apr_size_t source_count, mpf_audio_stream_t *sink, apr_pool_t *pool)
+MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
+								mpf_audio_stream_t **source_arr, 
+								apr_size_t source_count, 
+								mpf_audio_stream_t *sink, 
+								const mpf_codec_manager_t *codec_manager, 
+								apr_pool_t *pool)
 {
 	apr_size_t i;
 	apr_size_t frame_size;
@@ -119,34 +125,34 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(mpf_audio_stream_t **source_arr, apr
 		source = source_arr[i];
 		if(!source) continue;
 		
-		if(mpf_audio_stream_rx_open(source) == TRUE) {
-			mpf_codec_t *rx_codec = source->rx_codec;
-			if(rx_codec) {
-				if(rx_codec->vtable && rx_codec->vtable->decode) {
-					/* set decoder before mixer */
-					mpf_audio_stream_t *decoder = mpf_decoder_create(source,pool);
-					source = decoder;
-				}
+		descriptor = source->rx_descriptor;
+		if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
+			mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
+			if(codec) {
+				/* set decoder before mixer */
+				mpf_audio_stream_t *decoder = mpf_decoder_create(source,codec,pool);
+				source = decoder;
 			}
 		}
 		source_arr[i] = source;
+		mpf_audio_stream_rx_open(source,NULL);
 	}
 	mixer->source_arr = source_arr;
 	mixer->source_count = source_count;
 
-	if(mpf_audio_stream_tx_open(sink) == TRUE) {
-		mpf_codec_t *tx_codec = sink->tx_codec;
-		if(tx_codec) {
-			if(tx_codec->vtable && tx_codec->vtable->encode) {
-				/* set encoder after mixer */
-				mpf_audio_stream_t *encoder = mpf_encoder_create(sink,pool);
-				sink = encoder;
-			}
+	descriptor = sink->tx_descriptor;
+	if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
+		mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
+		if(codec) {
+			/* set encoder after mixer */
+			mpf_audio_stream_t *encoder = mpf_encoder_create(sink,codec,pool);
+			sink = encoder;
 		}
 	}
 	mixer->sink = sink;
+	mpf_audio_stream_tx_open(sink,NULL);
 
-	descriptor = sink->tx_codec->descriptor;
+	descriptor = sink->tx_descriptor;
 	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);
 	mixer->frame.codec_frame.size = frame_size;
 	mixer->frame.codec_frame.buffer = apr_palloc(pool,frame_size);

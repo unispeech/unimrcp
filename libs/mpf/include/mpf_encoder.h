@@ -31,7 +31,7 @@ APT_BEGIN_EXTERN_C
  * @param sink the sink to write encoded stream to
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, apr_pool_t *pool);
+MPF_DECLARE(mpf_audio_stream_t*) mpf_encoder_create(mpf_audio_stream_t *sink, mpf_codec_t *codec, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

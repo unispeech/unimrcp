@@ -143,9 +143,7 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 			capabilities,         /* stream capabilities */
 			pool);                /* pool to allocate memory from */
 
-	if(engine->codec_manager) {
-		audio_stream->rx_codec = mpf_codec_manager_codec_get(engine->codec_manager,codec_descriptor,pool);
-	}
+	audio_stream->rx_descriptor = codec_descriptor;
 	
 	/* create media termination */
 	termination = mpf_raw_termination_create(
@@ -194,9 +192,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 			capabilities,           /* stream capabilities */
 			pool);                  /* pool to allocate memory from */
 	
-	if(engine->codec_manager) {
-		audio_stream->tx_codec = mpf_codec_manager_codec_get(engine->codec_manager,codec_descriptor,pool);
-	}
+	audio_stream->tx_descriptor = codec_descriptor;
 	
 	/* create media termination */
 	termination = mpf_raw_termination_create(
@@ -214,20 +210,20 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 			pool);           /* pool to allocate memory from */
 }
 
-/** Get codec of the audio source stream */
-mpf_codec_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel)
+/** Get codec descriptor of the audio source stream */
+mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel)
 {
 	if(channel && channel->termination && channel->termination->audio_stream) {
-		return channel->termination->audio_stream->rx_codec;
+		return channel->termination->audio_stream->rx_descriptor;
 	}
 	return NULL;
 }
 
-/** Get codec of the audio sink stream */
-mpf_codec_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel)
+/** Get codec descriptor of the audio sink stream */
+mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel)
 {
 	if(channel && channel->termination && channel->termination->audio_stream) {
-		return channel->termination->audio_stream->tx_codec;
+		return channel->termination->audio_stream->tx_descriptor;
 	}
 	return NULL;
 }

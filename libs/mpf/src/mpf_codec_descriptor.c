@@ -18,6 +18,22 @@
 #include "mpf_named_event.h"
 #include "mpf_rtp_pt.h"
 
+/* linear PCM (host horder) */
+#define LPCM_CODEC_NAME        "LPCM"
+#define LPCM_CODEC_NAME_LENGTH (sizeof(LPCM_CODEC_NAME)-1)
+
+/* linear PCM atrributes */
+static const mpf_codec_attribs_t lpcm_attribs = {
+	{LPCM_CODEC_NAME, LPCM_CODEC_NAME_LENGTH},    /* codec name */
+	16,                                           /* bits per sample */
+	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 |
+	MPF_SAMPLE_RATE_32000 | MPF_SAMPLE_RATE_48000 /* supported sampling rates */
+};
+
+/** Find matched attribs in codec capabilities by descriptor specified */
+static mpf_codec_attribs_t* mpf_codec_capabilities_attribs_find(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *descriptor);
+
+
 /** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
 MPF_DECLARE(apt_bool_t) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate)
 {
@@ -39,6 +55,39 @@ static APR_INLINE apt_bool_t mpf_sampling_rate_check(apr_uint16_t sampling_rate,
 	return (mpf_sample_rate_mask_get(sampling_rate) & mask) ? TRUE : FALSE;
 }
 
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_pool_t *pool)
+{
+	mpf_codec_descriptor_t *descriptor = mpf_codec_descriptor_create(pool);
+	descriptor->payload_type = RTP_PT_UNKNOWN;
+	descriptor->name = lpcm_attribs.name;
+	descriptor->sampling_rate = sampling_rate;
+	descriptor->channel_count = channel_count;
+	return descriptor;
+}
+
+/** Create codec descriptor by capabilities */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_descriptor_create_by_capabilities(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *peer, apr_pool_t *pool)
+{
+	mpf_codec_descriptor_t *descriptor;
+	mpf_codec_attribs_t *attribs = NULL;
+	if(capabilities && peer) {
+		attribs = mpf_codec_capabilities_attribs_find(capabilities,peer);
+	}
+	
+	if(!attribs) {
+		return mpf_codec_lpcm_descriptor_create(8000,1,pool);
+	}
+
+	descriptor = mpf_codec_descriptor_create(pool);
+	*descriptor = *peer;
+	if(apt_string_compare(&peer->name,&attribs->name) == FALSE) {
+		descriptor->payload_type = RTP_PT_UNKNOWN;
+		descriptor->name = attribs->name;
+	}
+	return descriptor;
+}
+
+
 /** Match two codec descriptors */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
 {
@@ -57,6 +106,18 @@ MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t
 		}
 	}
 	return match;
+}
+
+/** Match specified codec descriptor and the default lpcm one */
+MPF_DECLARE(apt_bool_t) mpf_codec_lpcm_descriptor_match(const mpf_codec_descriptor_t *descriptor)
+{
+	return apt_string_compare(&descriptor->name,&lpcm_attribs.name);
+}
+
+/** Add default (liear PCM) capabilities */
+MPF_DECLARE(apt_bool_t) mpf_codec_default_capabilities_add(mpf_codec_capabilities_t *capabilities)
+{
+	return mpf_codec_capabilities_add(capabilities,MPF_SAMPLE_RATE_8000,lpcm_attribs.name.buf);
 }
 
 /** Match codec descriptors by attribs specified */
@@ -96,14 +157,10 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_co
 }
 
 /** Find matched attribs in codec capabilities by descriptor specified */
-MPF_DECLARE(mpf_codec_attribs_t*) mpf_codec_capabilities_attribs_find(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *descriptor)
+static mpf_codec_attribs_t* mpf_codec_capabilities_attribs_find(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *descriptor)
 {
 	int i;
 	mpf_codec_attribs_t *attribs;
-	if(!capabilities) {
-		return NULL;
-	}
-
 	for(i=0; i<capabilities->attrib_arr->nelts; i++) {
 		attribs = &APR_ARRAY_IDX(capabilities->attrib_arr,i,mpf_codec_attribs_t);
 		if(mpf_sampling_rate_check(descriptor->sampling_rate,attribs->sample_rates) == TRUE) {

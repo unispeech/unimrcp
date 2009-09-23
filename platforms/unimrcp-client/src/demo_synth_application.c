@@ -68,7 +68,7 @@ static const mrcp_app_message_dispatcher_t synth_application_dispatcher = {
 
 /** Declaration of synthesizer audio stream methods */
 static apt_bool_t synth_app_stream_destroy(mpf_audio_stream_t *stream);
-static apt_bool_t synth_app_stream_open(mpf_audio_stream_t *stream);
+static apt_bool_t synth_app_stream_open(mpf_audio_stream_t *stream, mpf_codec_t *codec);
 static apt_bool_t synth_app_stream_close(mpf_audio_stream_t *stream);
 static apt_bool_t synth_app_stream_write(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 
@@ -266,7 +266,7 @@ static apt_bool_t synth_app_stream_destroy(mpf_audio_stream_t *stream)
 }
 
 /** Callback is called from MPF engine context to perform application stream specific action before open */
-static apt_bool_t synth_app_stream_open(mpf_audio_stream_t *stream)
+static apt_bool_t synth_app_stream_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	return TRUE;
 }

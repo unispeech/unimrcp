@@ -33,7 +33,12 @@ APT_BEGIN_EXTERN_C
  * @param sink the audio sink
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_object_t*) mpf_mixer_create(mpf_audio_stream_t **source_arr, apr_size_t source_count, mpf_audio_stream_t *sink, apr_pool_t *pool);
+MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
+								mpf_audio_stream_t **source_arr, 
+								apr_size_t source_count, 
+								mpf_audio_stream_t *sink, 
+								const mpf_codec_manager_t *codec_manager,
+								apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

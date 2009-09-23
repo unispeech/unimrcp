@@ -46,7 +46,6 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 
-mpf_codec_t* mpf_codec_lpcm_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
@@ -320,7 +319,6 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				if(mpf_request->descriptor) {
 					mpf_termination_modify(termination,mpf_request->descriptor);
 				}
-				mpf_termination_validate(termination);
 				if(mpf_context_termination_add(context,termination) == FALSE) {
 					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
 					break;
@@ -331,7 +329,6 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			{
 				if(mpf_request->descriptor) {
 					mpf_termination_modify(termination,mpf_request->descriptor);
-					mpf_termination_validate(termination);
 				}
 				break;
 			}
@@ -403,8 +400,6 @@ MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *po
 	mpf_codec_manager_t *codec_manager = mpf_codec_manager_create(4,pool);
 	if(codec_manager) {
 		mpf_codec_t *codec;
-		codec = mpf_codec_lpcm_create(pool);
-		mpf_codec_manager_codec_register(codec_manager,codec);
 
 		codec = mpf_codec_g711u_create(pool);
 		mpf_codec_manager_codec_register(codec_manager,codec);

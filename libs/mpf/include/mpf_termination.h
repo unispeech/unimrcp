@@ -88,12 +88,6 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, void *descriptor);
 
 /**
- * Validate MPF termination.
- * @param termination the termination to validate
- */
-MPF_DECLARE(apt_bool_t) mpf_termination_validate(mpf_termination_t *termination);
-
-/**
  * Destroy MPF termination.
  * @param termination the termination to destroy
  */

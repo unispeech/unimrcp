@@ -33,7 +33,12 @@ APT_BEGIN_EXTERN_C
  * @param sink_count the number of audio sinks
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(mpf_audio_stream_t *source, mpf_audio_stream_t **sink_arr, apr_size_t sink_count, apr_pool_t *pool);
+MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
+								mpf_audio_stream_t *source,
+								mpf_audio_stream_t **sink_arr,
+								apr_size_t sink_count,
+								const mpf_codec_manager_t *codec_manager,
+								apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

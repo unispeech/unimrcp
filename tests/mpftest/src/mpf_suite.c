@@ -317,35 +317,23 @@ static apt_bool_t mpf_suite_task_msg_process(apt_task_t *task, apt_task_msg_t *m
 /** Create sample file reader descriptor */
 static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(mpf_suite_session_t *session)
 {
-	mpf_codec_descriptor_t *codec_descriptor;
 	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
 	descriptor->mask = FILE_READER;
 	descriptor->read_handle = fopen("demo.pcm","rb");
 	descriptor->write_handle = NULL;
-
-	codec_descriptor = &descriptor->codec_descriptor;
-	codec_descriptor->payload_type = 96;
-	apt_string_set(&codec_descriptor->name,"LPCM");
-	codec_descriptor->sampling_rate = 8000;
-	codec_descriptor->channel_count = 1;
+	descriptor->codec_descriptor = mpf_codec_lpcm_descriptor_create(8000,1,session->pool);
 	return descriptor;
 }
 
 /** Create sample file writer descriptor */
 static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(mpf_suite_session_t *session)
 {
-	mpf_codec_descriptor_t *codec_descriptor;
 	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
 	descriptor->mask = FILE_WRITER;
 	descriptor->max_write_size = 500000; /* 500Kb */
 	descriptor->write_handle = fopen("demo_out.pcm","wb");
 	descriptor->read_handle = NULL;
-
-	codec_descriptor = &descriptor->codec_descriptor;
-	codec_descriptor->payload_type = 96;
-	apt_string_set(&codec_descriptor->name,"LPCM");
-	codec_descriptor->sampling_rate = 8000;
-	codec_descriptor->channel_count = 1;
+	descriptor->codec_descriptor = mpf_codec_lpcm_descriptor_create(8000,1,session->pool);
 	return descriptor;
 }
 

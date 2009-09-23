@@ -466,6 +466,7 @@ static mpf_object_t* mpf_context_bridge_create(mpf_context_t *context, apr_size_
 			return mpf_bridge_create(
 				header_item1->termination->audio_stream,
 				header_item2->termination->audio_stream,
+				header_item1->termination->codec_manager,
 				context->pool);
 		}
 	}
@@ -496,6 +497,7 @@ static mpf_object_t* mpf_context_multiplier_create(mpf_context_t *context, apr_s
 				header_item1->termination->audio_stream,
 				sink_arr,
 				header_item1->tx_count,
+				header_item1->termination->codec_manager,
 				context->pool);
 }
 
@@ -523,6 +525,7 @@ static mpf_object_t* mpf_context_mixer_create(mpf_context_t *context, apr_size_t
 				source_arr,
 				header_item1->rx_count,
 				header_item1->termination->audio_stream,
+				header_item1->termination->codec_manager,
 				context->pool);
 }
 

@@ -47,13 +47,13 @@ struct mpf_audio_stream_t {
 
 	/** Stream direction send/receive (bitmask of mpf_stream_direction_e) */
 	mpf_stream_direction_e           direction;
-	/** Receive codec */
-	mpf_codec_t                     *rx_codec;
-	/** Receive event descriptor */
+	/** Rx codec descriptor */
+	mpf_codec_descriptor_t          *rx_descriptor;
+	/** Rx event descriptor */
 	mpf_codec_descriptor_t          *rx_event_descriptor;
-	/** Transmit codec */
-	mpf_codec_t                     *tx_codec;
-	/** Transmit event descriptor */
+	/** Tx codec descriptor */
+	mpf_codec_descriptor_t          *tx_descriptor;
+	/** Tx event descriptor */
 	mpf_codec_descriptor_t          *tx_event_descriptor;
 };
 
@@ -71,14 +71,14 @@ struct mpf_audio_stream_vtable_t {
 	apt_bool_t (*destroy)(mpf_audio_stream_t *stream);
 
 	/** Virtual open receiver method */
-	apt_bool_t (*open_rx)(mpf_audio_stream_t *stream);
+	apt_bool_t (*open_rx)(mpf_audio_stream_t *stream, mpf_codec_t *codec);
 	/** Virtual close receiver method */
 	apt_bool_t (*close_rx)(mpf_audio_stream_t *stream);
 	/** Virtual read frame method */
 	apt_bool_t (*read_frame)(mpf_audio_stream_t *stream, mpf_frame_t *frame);
 
 	/** Virtual open transmitter method */
-	apt_bool_t (*open_tx)(mpf_audio_stream_t *stream);
+	apt_bool_t (*open_tx)(mpf_audio_stream_t *stream, mpf_codec_t *codec);
 	/** Virtual close transmitter method */
 	apt_bool_t (*close_tx)(mpf_audio_stream_t *stream);
 	/** Virtual write frame method */
@@ -90,6 +90,12 @@ struct mpf_audio_stream_vtable_t {
 /** Create audio stream */
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, const mpf_stream_capabilities_t *capabilities, apr_pool_t *pool);
 
+/** Validate audio stream receiver */
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_rx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool);
+
+/** Validate audio stream transmitter */
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool);
+
 /** Destroy audio stream */
 static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream)
 {
@@ -99,10 +105,10 @@ static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream
 }
 
 /** Open audio stream receiver */
-static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream)
+static APR_INLINE apt_bool_t mpf_audio_stream_rx_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	if(stream->vtable->open_rx)
-		return stream->vtable->open_rx(stream);
+		return stream->vtable->open_rx(stream,codec);
 	return TRUE;
 }
 
@@ -123,10 +129,10 @@ static APR_INLINE apt_bool_t mpf_audio_stream_frame_read(mpf_audio_stream_t *str
 }
 
 /** Open audio stream transmitter */
-static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream)
+static APR_INLINE apt_bool_t mpf_audio_stream_tx_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	if(stream->vtable->open_tx)
-		return stream->vtable->open_tx(stream);
+		return stream->vtable->open_tx(stream,codec);
 	return TRUE;
 }
 
@@ -155,25 +161,25 @@ static APR_INLINE void mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_st
 	}
 
 	if(direction & STREAM_DIRECTION_SEND) {
-		mpf_codec_t *codec = stream->tx_codec;
-		if(codec) {
+		mpf_codec_descriptor_t *descriptor = stream->tx_descriptor;
+		if(descriptor) {
 			apr_size_t offset = output->pos - output->text.buf;
 			output->pos += apr_snprintf(output->pos, output->text.length - offset,
 				"[%s/%d/%d]->Sink",
-				codec->descriptor->name.buf,
-				codec->descriptor->sampling_rate,
-				codec->descriptor->channel_count);
+				descriptor->name.buf,
+				descriptor->sampling_rate,
+				descriptor->channel_count);
 		}
 	}
 	if(direction & STREAM_DIRECTION_RECEIVE) {
-		mpf_codec_t *codec = stream->rx_codec;
-		if(codec) {
+		mpf_codec_descriptor_t *descriptor = stream->rx_descriptor;
+		if(descriptor) {
 			apr_size_t offset = output->pos - output->text.buf;
 			output->pos += apr_snprintf(output->pos, output->text.length - offset,
 				"Source->[%s/%d/%d]",
-				codec->descriptor->name.buf,
-				codec->descriptor->sampling_rate,
-				codec->descriptor->channel_count);
+				descriptor->name.buf,
+				descriptor->sampling_rate,
+				descriptor->channel_count);
 		}
 	}
 }

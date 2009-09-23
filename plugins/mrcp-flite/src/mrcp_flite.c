@@ -224,12 +224,7 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 	}
 
 #if 0
-	codec_descriptor = (mpf_codec_descriptor_t *) apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
-	mpf_codec_descriptor_init(codec_descriptor);
-	codec_descriptor->channel_count = 1;
-	codec_descriptor->payload_type = 96;
-	apt_string_set(&codec_descriptor->name,"LPCM");
-	codec_descriptor->sampling_rate = 16000;
+	codec_descriptor = mpf_codec_lpcm_descriptor_create(16000,1,pool);
 #endif
 
 	/* create engine channel base */
@@ -423,8 +418,11 @@ static apt_bool_t flite_speak(apt_task_t *task, apt_task_msg_t *msg)
 	apt_str_t *body;
 	mrcp_message_t *response;
 
-	mpf_codec_t * codec = mrcp_engine_source_stream_codec_get(synth_channel->channel);
-	apr_uint16_t rate = codec->descriptor->sampling_rate;
+	apr_uint16_t rate = 8000;
+	mpf_codec_descriptor_t * descriptor = mrcp_engine_source_stream_codec_get(synth_channel->channel);
+	if(descriptor) {
+		rate = descriptor->sampling_rate;
+	}
 	body = &synth_channel->speak_request->body;
 
 	response = synth_channel->speak_response;

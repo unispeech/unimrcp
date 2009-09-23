@@ -123,6 +123,14 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 	descriptor->enabled = TRUE;
 }
 
+/** Initialize codec descriptor */
+static APR_INLINE  mpf_codec_descriptor_t* mpf_codec_descriptor_create(apr_pool_t *pool)
+{
+	mpf_codec_descriptor_t *descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_init(descriptor);
+	return descriptor;
+}
+
 /** Calculate encoded frame size in bytes */
 static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(const mpf_codec_descriptor_t *descriptor, const mpf_codec_attribs_t *attribs)
 {
@@ -189,8 +197,17 @@ static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_descriptor_get(const mp
 	return &APR_ARRAY_IDX(codec_list->descriptor_arr,id,mpf_codec_descriptor_t);
 }
 
+/** Create linear PCM descriptor */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_pool_t *pool);
+
+/** Create codec descriptor by capabilities */
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_descriptor_create_by_capabilities(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *peer, apr_pool_t *pool);
+
 /** Match two codec descriptors */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2);
+
+/** Match specified codec descriptor and the default lpcm one */
+MPF_DECLARE(apt_bool_t) mpf_codec_lpcm_descriptor_match(const mpf_codec_descriptor_t *descriptor);
 
 /** Match codec descriptor by attribs specified */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match_by_attribs(mpf_codec_descriptor_t *descriptor, const mpf_codec_descriptor_t *static_descriptor, const mpf_codec_attribs_t *attribs);
@@ -231,18 +248,11 @@ static APR_INLINE apt_bool_t mpf_codec_capabilities_add(mpf_codec_capabilities_t
 	return TRUE;
 }
 
-/** Add default codec capabilities */
-static APR_INLINE apt_bool_t mpf_codec_default_capabilities_add(mpf_codec_capabilities_t *capabilities)
-{
-	return mpf_codec_capabilities_add(capabilities,MPF_SAMPLE_RATE_8000,"LPCM");
-}
-
+/** Add default (liear PCM) capabilities */
+MPF_DECLARE(apt_bool_t) mpf_codec_default_capabilities_add(mpf_codec_capabilities_t *capabilities);
 
 /** Find matched descriptor in codec list */
 MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor);
-
-/** Find matched attribs in codec capabilities by descriptor specified */
-MPF_DECLARE(mpf_codec_attribs_t*) mpf_codec_capabilities_attribs_find(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *descriptor);
 
 /** Modify codec list according to capabilities specified */
 MPF_DECLARE(apt_bool_t) mpf_codec_list_modify(mpf_codec_list_t *codec_list, const mpf_codec_capabilities_t *capabilities);

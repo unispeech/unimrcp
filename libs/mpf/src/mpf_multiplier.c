@@ -18,6 +18,7 @@
 #include "mpf_encoder.h"
 #include "mpf_decoder.h"
 #include "mpf_resampler.h"
+#include "mpf_codec_manager.h"
 #include "apt_log.h"
 
 typedef struct mpf_multiplier_t mpf_multiplier_t;
@@ -77,7 +78,12 @@ static apt_bool_t mpf_multiplier_destroy(mpf_object_t *object)
 	return TRUE;
 }
 
-MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(mpf_audio_stream_t *source, mpf_audio_stream_t **sink_arr, apr_size_t sink_count, apr_pool_t *pool)
+MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
+								mpf_audio_stream_t *source,
+								mpf_audio_stream_t **sink_arr,
+								apr_size_t sink_count,
+								const mpf_codec_manager_t *codec_manager,
+								apr_pool_t *pool)
 {
 	apr_size_t i;
 	apr_size_t frame_size;
@@ -95,38 +101,38 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(mpf_audio_stream_t *source, mpf
 	multiplier->base.process = mpf_multiplier_process;
 	multiplier->base.destroy = mpf_multiplier_destroy;
 
-	if(mpf_audio_stream_rx_open(source) == TRUE) {
-		mpf_codec_t *rx_codec = source->rx_codec;
-		if(rx_codec) {
-			if(rx_codec->vtable && rx_codec->vtable->decode) {
-				/* set decoder before bridge */
-				mpf_audio_stream_t *decoder = mpf_decoder_create(source,pool);
-				source = decoder;
-			}
+	descriptor = source->rx_descriptor;
+	if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
+		mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
+		if(codec) {
+			/* set decoder before bridge */
+			mpf_audio_stream_t *decoder = mpf_decoder_create(source,codec,pool);
+			source = decoder;
 		}
 	}
 	multiplier->source = source;
+	mpf_audio_stream_rx_open(source,NULL);
 	
 	for(i=0; i<sink_count; i++)	{
 		sink = sink_arr[i];
 		if(!sink) continue;
 		
-		if(mpf_audio_stream_tx_open(sink) == TRUE) {
-			mpf_codec_t *tx_codec = sink->tx_codec;
-			if(tx_codec) {
-				if(tx_codec->vtable && tx_codec->vtable->encode) {
-					/* set encoder after bridge */
-					mpf_audio_stream_t *encoder = mpf_encoder_create(sink,pool);
-					sink = encoder;
-				}
+		descriptor = sink->tx_descriptor;
+		if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
+			mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
+			if(codec) {
+				/* set encoder after bridge */
+				mpf_audio_stream_t *encoder = mpf_encoder_create(sink,codec,pool);
+				sink = encoder;
 			}
 		}
 		sink_arr[i] = sink;
+		mpf_audio_stream_tx_open(sink,NULL);
 	}
 	multiplier->sink_arr = sink_arr;
 	multiplier->sink_count = sink_count;
 	
-	descriptor = source->rx_codec->descriptor;
+	descriptor = source->rx_descriptor;
 	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);
 	multiplier->frame.codec_frame.size = frame_size;
 	multiplier->frame.codec_frame.buffer = apr_palloc(pool,frame_size);

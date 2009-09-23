@@ -18,6 +18,7 @@
 #include "mpf_encoder.h"
 #include "mpf_decoder.h"
 #include "mpf_resampler.h"
+#include "mpf_codec_manager.h"
 #include "apt_log.h"
 
 typedef struct mpf_bridge_t mpf_bridge_t;
@@ -104,84 +105,100 @@ static mpf_bridge_t* mpf_bridge_base_create(mpf_audio_stream_t *source, mpf_audi
 	bridge->base.destroy = mpf_bridge_destroy;
 	bridge->base.process = mpf_bridge_process;
 	bridge->base.trace = mpf_bridge_trace;
-
-	if(mpf_audio_stream_rx_open(source) == FALSE) {
-		return NULL;
-	}
-	if(mpf_audio_stream_tx_open(sink) == FALSE) {
-		mpf_audio_stream_rx_close(source);
-		return NULL;
-	}
 	return bridge;
 }
 
-static mpf_object_t* mpf_linear_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
+static mpf_object_t* mpf_linear_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, const mpf_codec_manager_t *codec_manager, apr_pool_t *pool)
 {
 	mpf_codec_descriptor_t *descriptor;
 	apr_size_t frame_size;
 	mpf_bridge_t *bridge;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Audio Bridge");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Linear Audio Bridge");
 	bridge = mpf_bridge_base_create(source,sink,pool);
 	if(!bridge) {
 		return NULL;
 	}
 
-	descriptor = source->rx_codec->descriptor;
+	descriptor = source->rx_descriptor;
 	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);
 	bridge->frame.codec_frame.size = frame_size;
 	bridge->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
+	
+	if(mpf_audio_stream_rx_open(source,NULL) == FALSE) {
+		return NULL;
+	}
+	if(mpf_audio_stream_tx_open(sink,NULL) == FALSE) {
+		mpf_audio_stream_rx_close(source);
+		return NULL;
+	}
 	return &bridge->base;
 }
 
-static mpf_object_t* mpf_null_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
+static mpf_object_t* mpf_null_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, const mpf_codec_manager_t *codec_manager, apr_pool_t *pool)
 {
 	mpf_codec_t *codec;
 	apr_size_t frame_size;
 	mpf_bridge_t *bridge;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Audio Null Bridge");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Null Audio Bridge");
 	bridge = mpf_bridge_base_create(source,sink,pool);
 	if(!bridge) {
 		return NULL;
 	}
 	bridge->base.process = mpf_null_bridge_process;
 
-	codec = source->rx_codec;
-	frame_size = mpf_codec_frame_size_calculate(codec->descriptor,codec->attribs);
+	codec = mpf_codec_manager_codec_get(codec_manager,source->rx_descriptor,pool);
+	if(!codec) {
+		return NULL;
+	}
+
+	frame_size = mpf_codec_frame_size_calculate(source->rx_descriptor,codec->attribs);
 	bridge->frame.codec_frame.size = frame_size;
 	bridge->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
+
+	if(mpf_audio_stream_rx_open(source,codec) == FALSE) {
+		return NULL;
+	}
+	if(mpf_audio_stream_tx_open(sink,codec) == FALSE) {
+		mpf_audio_stream_rx_close(source);
+		return NULL;
+	}
 	return &bridge->base;
 }
 
-MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
+MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, const mpf_codec_manager_t *codec_manager, apr_pool_t *pool)
 {
-	mpf_codec_t *rx_codec;
-	mpf_codec_t *tx_codec;
 	if(!source || !sink) {
 		return NULL;
 	}
 
-	rx_codec = source->rx_codec;
-	tx_codec = sink->tx_codec;
-	if(!rx_codec || !tx_codec) {
+	if(mpf_audio_stream_rx_validate(source,sink->tx_descriptor,pool) == FALSE ||
+		mpf_audio_stream_tx_validate(sink,source->rx_descriptor,pool) == FALSE) {
 		return NULL;
 	}
 
-	if(mpf_codec_descriptors_match(rx_codec->descriptor,tx_codec->descriptor) == TRUE) {
-		return mpf_null_bridge_create(source,sink,pool);
+	if(mpf_codec_descriptors_match(source->rx_descriptor,sink->tx_descriptor) == TRUE) {
+		return mpf_null_bridge_create(source,sink,codec_manager,pool);
 	}
 
-	if(rx_codec->vtable && rx_codec->vtable->decode) {
-		/* set decoder before bridge */
-		mpf_audio_stream_t *decoder = mpf_decoder_create(source,pool);
-		source = decoder;
-	}
-	if(tx_codec->vtable && tx_codec->vtable->encode) {
-		/* set encoder after bridge */
-		mpf_audio_stream_t *encoder = mpf_encoder_create(sink,pool);
-		sink = encoder;
+	if(mpf_codec_lpcm_descriptor_match(source->rx_descriptor) == FALSE) {
+		mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,source->rx_descriptor,pool);
+		if(codec) {
+			/* set decoder before bridge */
+			mpf_audio_stream_t *decoder = mpf_decoder_create(source,codec,pool);
+			source = decoder;
+		}
 	}
 
-	if(rx_codec->descriptor->sampling_rate != tx_codec->descriptor->sampling_rate) {
+	if(mpf_codec_lpcm_descriptor_match(sink->tx_descriptor) == FALSE) {
+		mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,sink->tx_descriptor,pool);
+		if(codec) {
+			/* set encoder after bridge */
+			mpf_audio_stream_t *encoder = mpf_encoder_create(sink,codec,pool);
+			sink = encoder;
+		}
+	}
+
+	if(source->rx_descriptor->sampling_rate != sink->tx_descriptor->sampling_rate) {
 		/* set resampler before bridge */
 		mpf_audio_stream_t *resampler = mpf_resampler_create(source,sink,pool);
 		if(!resampler) {
@@ -190,5 +207,5 @@ MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_aud
 		source = resampler;
 	}
 
-	return mpf_linear_bridge_create(source,sink,pool);
+	return mpf_linear_bridge_create(source,sink,codec_manager,pool);
 }
