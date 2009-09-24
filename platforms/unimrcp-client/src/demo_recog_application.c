@@ -39,8 +39,6 @@
 #include "mrcp_recog_resource.h"
 #include "apt_log.h"
 
-#define DEMO_SPEECH_SOURCE_FILE "one.pcm"
-
 typedef struct recog_app_channel_t recog_app_channel_t;
 
 /** Declaration of recognizer application channel */
@@ -108,7 +106,7 @@ static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
 {
 	mrcp_channel_t *channel;
 	mpf_termination_t *termination;
-	mpf_codec_descriptor_t *codec_descriptor = NULL;
+	mpf_stream_capabilities_t *capabilities;
 
 	/* create channel */
 	recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
@@ -116,19 +114,27 @@ static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
 	recog_channel->audio_in = NULL;
 	recog_channel->time_to_complete = 0;
 
-#if 0 /* in case your audio source isn't in linear PCM, create appropriate codec descriptor below */
-	codec_descriptor = apr_palloc(session->pool,sizeof(mpf_codec_descriptor_t));
-	mpf_codec_descriptor_init(codec_descriptor);
-	codec_descriptor->channel_count = 1;
-	codec_descriptor->payload_type = 0;
-	apt_string_set(&codec_descriptor->name,"PCMU");
-	codec_descriptor->sampling_rate = 8000;
+	/* create source stream capabilities */
+	capabilities = mpf_source_stream_capabilities_create(session->pool);
+
+	/* add codec capabilities (Linear PCM) */
+	mpf_codec_capabilities_add(
+			&capabilities->codecs,
+			MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000,
+			"LPCM");
+
+#if 0
+	/* more capabilities can be added or replaced */
+	mpf_codec_capabilities_add(
+			&capabilities->codecs,
+			MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000,
+			"PCMU");
 #endif
 
-	termination = mrcp_application_source_termination_create(
+	termination = mrcp_application_audio_termination_create(
 			session,                   /* session, termination belongs to */
 			&audio_stream_vtable,      /* virtual methods table of audio stream */
-			codec_descriptor,          /* codec descriptor of audio stream (NULL by default) */
+			capabilities,              /* capabilities of audio stream */
 			recog_channel);            /* object to associate */
 	
 	channel = mrcp_application_channel_create(
@@ -241,7 +247,10 @@ static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *applic
 		mrcp_application_message_send(session,channel,mrcp_message);
 	}
 	if(recog_channel) {
-		char *file_path = apt_datadir_filepath_get(dir_layout,DEMO_SPEECH_SOURCE_FILE,session->pool);
+		const mpf_codec_descriptor_t *descriptor = mrcp_application_source_descriptor_get(channel);
+		char *file_name = apr_psprintf(session->pool,"one-%dkHz.pcm",
+			descriptor ? descriptor->sampling_rate/1000 : 8);
+		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,session->pool);
 		if(file_path) {
 			recog_channel->audio_in = fopen(file_path,"rb");
 			if(recog_channel->audio_in) {

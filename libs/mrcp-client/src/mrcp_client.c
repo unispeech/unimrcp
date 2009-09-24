@@ -584,10 +584,39 @@ MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel)
 MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(mrcp_channel_t *channel)
 {
 	if(!channel || !channel->rtp_termination_slot) {
-		return FALSE;
+		return NULL;
 	}
 	return channel->rtp_termination_slot->descriptor;
 }
+
+/** Get codec descriptor of source stream */
+MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_get(mrcp_channel_t *channel)
+{
+	mpf_audio_stream_t *audio_stream;
+	if(!channel || !channel->termination) {
+		return NULL;
+	}
+	audio_stream = channel->termination->audio_stream;
+	if(!audio_stream) {
+		return NULL;
+	}
+	return audio_stream->rx_descriptor;
+}
+
+/** Get codec descriptor of sink stream */
+MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(mrcp_channel_t *channel)
+{
+	mpf_audio_stream_t *audio_stream;
+	if(!channel || !channel->termination) {
+		return NULL;
+	}
+	audio_stream = channel->termination->audio_stream;
+	if(!audio_stream) {
+		return NULL;
+	}
+	return audio_stream->tx_descriptor;
+}
+
 
 /** Send channel add request */
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel)
@@ -644,6 +673,44 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, 
 		return FALSE;
 	}
 	return mrcp_app_control_task_msg_signal(session,channel,message);
+}
+
+/** 
+ * Create audio termination
+ * @param session the session to create termination for
+ * @param stream_vtable the virtual table of audio stream
+ * @param capabilities the capabilities of the stream
+ * @param obj the external object
+ */
+MRCP_DECLARE(mpf_termination_t*) mrcp_application_audio_termination_create(
+										mrcp_session_t *session,
+										const mpf_audio_stream_vtable_t *stream_vtable,
+										mpf_stream_capabilities_t *capabilities,
+										void *obj)
+{
+	mpf_audio_stream_t *audio_stream;
+
+	if(!capabilities) {
+		return NULL;
+	}
+
+	if(mpf_codec_capabilities_validate(&capabilities->codecs) == FALSE) {
+		return NULL;
+	}
+
+	/* create audio stream */
+	audio_stream = mpf_audio_stream_create(
+			obj,                  /* object to associate */
+			stream_vtable,        /* virtual methods table of audio stream */
+			capabilities,         /* stream capabilities */
+			session->pool);       /* memory pool to allocate memory from */
+
+	/* create raw termination */
+	return mpf_raw_termination_create(
+			NULL,                 /* no object to associate */
+			audio_stream,         /* audio stream */
+			NULL,                 /* no video stream */
+			session->pool);       /* memory pool to allocate memory from */
 }
 
 /** Create source media termination */
