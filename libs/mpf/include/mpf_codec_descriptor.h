@@ -251,6 +251,17 @@ static APR_INLINE apt_bool_t mpf_codec_capabilities_add(mpf_codec_capabilities_t
 /** Add default (liear PCM) capabilities */
 MPF_DECLARE(apt_bool_t) mpf_codec_default_capabilities_add(mpf_codec_capabilities_t *capabilities);
 
+/** Validate codec capabilities */
+static APR_INLINE apt_bool_t mpf_codec_capabilities_validate(mpf_codec_capabilities_t *capabilities)
+{
+	if(apr_is_empty_array(capabilities->attrib_arr) == TRUE) {
+		mpf_codec_default_capabilities_add(capabilities);
+	}
+	return TRUE;
+}
+
+
+
 /** Find matched descriptor in codec list */
 MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor);
 

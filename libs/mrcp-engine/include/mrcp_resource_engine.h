@@ -180,7 +180,16 @@ mrcp_engine_channel_t* mrcp_engine_channel_create(
 								mpf_termination_t *termination,
 								apr_pool_t *pool);
 
-/** Create engine channel and source media termination */
+/** Create audio termination */
+mpf_termination_t* mrcp_engine_audio_termination_create(
+								void *obj,
+								const mpf_audio_stream_vtable_t *stream_vtable,
+								mpf_stream_capabilities_t *capabilities,
+								apr_pool_t *pool);
+
+/** Create engine channel and source media termination 
+ * @deprecated @see mrcp_engine_channel_create() and mrcp_engine_audio_termination_create()
+ */
 mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 								mrcp_resource_engine_t *engine,
 								const mrcp_engine_channel_method_vtable_t *channel_vtable,
@@ -189,7 +198,9 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 								mpf_codec_descriptor_t *codec_descriptor,
 								apr_pool_t *pool);
 
-/** Create engine channel and sink media termination */
+/** Create engine channel and sink media termination 
+ * @deprecated @see mrcp_engine_channel_create() and mrcp_engine_audio_termination_create()
+ */
 mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 								mrcp_resource_engine_t *engine,
 								const mrcp_engine_channel_method_vtable_t *channel_vtable,
@@ -253,10 +264,10 @@ static APR_INLINE mrcp_version_e mrcp_engine_channel_version_get(mrcp_engine_cha
 }
 
 /** Get codec descriptor of the audio source stream */
-mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
+const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
 
 /** Get codec descriptor of the audio sink stream */
-mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
+const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
 
 
 APT_END_EXTERN_C

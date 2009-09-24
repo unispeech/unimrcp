@@ -63,27 +63,6 @@ const char* mrcp_resource_engine_param_get(mrcp_resource_engine_t *engine, const
 	return apr_table_get(engine->config->params,name);
 }
 
-
-/** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_create(
-								mrcp_resource_engine_t *engine, 
-								const mrcp_engine_channel_method_vtable_t *method_vtable,
-								void *method_obj,
-								mpf_termination_t *termination,
-								apr_pool_t *pool)
-{
-	mrcp_engine_channel_t *channel = apr_palloc(pool,sizeof(mrcp_engine_channel_t));
-	channel->method_vtable = method_vtable;
-	channel->method_obj = method_obj;
-	channel->event_vtable = NULL;
-	channel->event_obj = NULL;
-	channel->termination = termination;
-	channel->engine = engine;
-	channel->pool = pool;
-	apt_string_reset(&channel->id);
-	return channel;
-}
-
 /** Create engine channel */
 mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
@@ -111,6 +90,59 @@ apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel)
 	}
 	return channel->method_vtable->destroy(channel);
 }
+
+
+/** Create engine channel */
+mrcp_engine_channel_t* mrcp_engine_channel_create(
+								mrcp_resource_engine_t *engine, 
+								const mrcp_engine_channel_method_vtable_t *method_vtable,
+								void *method_obj,
+								mpf_termination_t *termination,
+								apr_pool_t *pool)
+{
+	mrcp_engine_channel_t *channel = apr_palloc(pool,sizeof(mrcp_engine_channel_t));
+	channel->method_vtable = method_vtable;
+	channel->method_obj = method_obj;
+	channel->event_vtable = NULL;
+	channel->event_obj = NULL;
+	channel->termination = termination;
+	channel->engine = engine;
+	channel->pool = pool;
+	apt_string_reset(&channel->id);
+	return channel;
+}
+
+/** Create audio termination */
+mpf_termination_t* mrcp_engine_audio_termination_create(
+								void *obj,
+								const mpf_audio_stream_vtable_t *stream_vtable,
+								mpf_stream_capabilities_t *capabilities,
+								apr_pool_t *pool)
+{
+	mpf_audio_stream_t *audio_stream;
+	if(!capabilities) {
+		return NULL;
+	}
+
+	if(mpf_codec_capabilities_validate(&capabilities->codecs) == FALSE) {
+		return NULL;
+	}
+
+	/* create audio stream */
+	audio_stream = mpf_audio_stream_create(
+			obj,                  /* object to associate */
+			stream_vtable,        /* virtual methods table of audio stream */
+			capabilities,         /* stream capabilities */
+			pool);                /* pool to allocate memory from */
+
+	/* create media termination */
+	return mpf_raw_termination_create(
+			NULL,                 /* no object to associate */
+			audio_stream,         /* audio stream */
+			NULL,                 /* no video stream */
+			pool);                /* pool to allocate memory from */
+}
+
 
 /** Create engine channel and source media termination */
 mrcp_engine_channel_t* mrcp_engine_source_channel_create(
@@ -211,7 +243,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 }
 
 /** Get codec descriptor of the audio source stream */
-mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel)
+const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel)
 {
 	if(channel && channel->termination && channel->termination->audio_stream) {
 		return channel->termination->audio_stream->rx_descriptor;
@@ -220,7 +252,7 @@ mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_
 }
 
 /** Get codec descriptor of the audio sink stream */
-mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel)
+const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel)
 {
 	if(channel && channel->termination && channel->termination->audio_stream) {
 		return channel->termination->audio_stream->tx_descriptor;
