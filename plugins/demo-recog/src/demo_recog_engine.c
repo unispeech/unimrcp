@@ -261,7 +261,10 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 
 	if(!recog_channel->audio_out) {
 		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
-		char *file_name = apr_pstrcat(channel->pool,"utter-",request->channel_id.session_id.buf,".pcm",NULL);
+		const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(channel);
+		char *file_name = apr_psprintf(channel->pool,"utter-%dkHz-%s.pcm",
+			descriptor ? descriptor->sampling_rate/1000 : 8,
+			request->channel_id.session_id.buf);
 		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
 		if(file_path) {
 			recog_channel->audio_out = fopen(file_path,"wb");

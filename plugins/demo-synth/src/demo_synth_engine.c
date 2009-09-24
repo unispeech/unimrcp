@@ -119,7 +119,6 @@ struct demo_synth_msg_t {
 };
 
 
-#define DEMO_SPEECH_SOURCE_FILE "demo.pcm"
 static apt_bool_t demo_synth_msg_signal(demo_synth_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request);
 static apt_bool_t demo_synth_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
@@ -244,7 +243,10 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	demo_synth_channel_t *synth_channel = channel->method_obj;
 	synth_channel->time_to_complete = 0;
 	if(channel->engine) {
-		file_path = apt_datadir_filepath_get(channel->engine->dir_layout,DEMO_SPEECH_SOURCE_FILE,channel->pool);
+		const mpf_codec_descriptor_t *descriptor = mrcp_engine_source_stream_codec_get(channel);
+		char *file_name = apr_psprintf(channel->pool,"demo-%dkHz.pcm",
+			descriptor ? descriptor->sampling_rate/1000 : 8);
+		file_path = apt_datadir_filepath_get(channel->engine->dir_layout,file_name,channel->pool);
 	}
 	if(file_path) {
 		synth_channel->audio_file = fopen(file_path,"rb");
