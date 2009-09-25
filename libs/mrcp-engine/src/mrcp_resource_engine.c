@@ -107,6 +107,7 @@ mrcp_engine_channel_t* mrcp_engine_channel_create(
 	channel->event_obj = NULL;
 	channel->termination = termination;
 	channel->engine = engine;
+	channel->is_open = FALSE;
 	channel->pool = pool;
 	apt_string_reset(&channel->id);
 	return channel;

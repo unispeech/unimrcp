@@ -80,6 +80,8 @@ struct mrcp_engine_channel_t {
 	apt_str_t                                  id;
 	/** MRCP version */
 	mrcp_version_e                             mrcp_version;
+	/** Is channel successfully opened */
+	apt_bool_t                                is_open;
 	/** Pool to allocate memory from */
 	apr_pool_t                                *pool;
 };
@@ -218,13 +220,21 @@ apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel);
 /** Open engine channel */
 static APR_INLINE apt_bool_t mrcp_engine_channel_virtual_open(mrcp_engine_channel_t *channel)
 {
-	return channel->method_vtable->open(channel);
+	if(channel->is_open == FALSE) {
+		channel->is_open = channel->method_vtable->open(channel);
+		return channel->is_open;
+	}
+	return FALSE;
 }
 
 /** Close engine channel */
 static APR_INLINE apt_bool_t mrcp_engine_channel_virtual_close(mrcp_engine_channel_t *channel)
 {
-	return channel->method_vtable->close(channel);
+	if(channel->is_open == TRUE) {
+		channel->is_open = FALSE;
+		return channel->method_vtable->close(channel);
+	}
+	return FALSE;
 }
 
 /** Process request */
