@@ -202,9 +202,10 @@ static apt_bool_t flite_synth_task_create(flite_synth_channel_t *synth_channel)
 /** Create flite synthesizer channel derived from engine channel base */
 static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
-	/* create flite synth channel */
 	mpf_stream_capabilities_t *capabilities;
 	mpf_termination_t *termination; 
+
+	/* create flite synth channel */
 	flite_synth_channel_t *synth_channel = (flite_synth_channel_t *) apr_palloc(pool,sizeof(flite_synth_channel_t));
 
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_channel_create");
@@ -236,11 +237,6 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 			&audio_stream_vtable, /* virtual methods table of audio stream */
 			capabilities,         /* stream capabilities */
 			pool);                /* pool to allocate memory from */
-	if(!termination) {
-		apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "flite_synth_engine_termination_create failed");
-		apt_task_destroy(synth_channel->task);
-		return NULL;
-	}
 
 	/* create engine channel base */
 	synth_channel->channel = mrcp_engine_channel_create(
@@ -252,7 +248,6 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
  	
  	if(!synth_channel->channel) {
  		apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "flite_synth_engine_channel_create failed");
-		mpf_termination_destroy(termination);
  		apt_task_destroy(synth_channel->task);
  		return NULL;		
  	} 

@@ -192,6 +192,9 @@ static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
 /** Create demo synthesizer channel derived from engine channel base */
 static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
+	mpf_stream_capabilities_t *capabilities;
+	mpf_termination_t *termination; 
+
 	/* create demo synth channel */
 	demo_synth_channel_t *synth_channel = apr_palloc(pool,sizeof(demo_synth_channel_t));
 	synth_channel->demo_engine = engine->obj;
@@ -200,14 +203,28 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 	synth_channel->time_to_complete = 0;
 	synth_channel->paused = FALSE;
 	synth_channel->audio_file = NULL;
+	
+	capabilities = mpf_source_stream_capabilities_create(pool);
+	mpf_codec_capabilities_add(
+			&capabilities->codecs,
+			MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000,
+			"LPCM");
+
+	/* create media termination */
+	termination = mrcp_engine_audio_termination_create(
+			synth_channel,        /* object to associate */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			capabilities,         /* stream capabilities */
+			pool);                /* pool to allocate memory from */
+
 	/* create engine channel base */
-	synth_channel->channel = mrcp_engine_source_channel_create(
+	synth_channel->channel = mrcp_engine_channel_create(
 			engine,               /* resource engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
 			synth_channel,        /* object to associate */
-			NULL,                 /* codec descriptor might be NULL by default */
+			termination,          /* associated media termination */
 			pool);                /* pool to allocate memory from */
+
 	return synth_channel->channel;
 }
 

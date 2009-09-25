@@ -194,9 +194,12 @@ static apt_bool_t pocketsphinx_engine_close(mrcp_resource_engine_t *resource_eng
 /** Create pocketsphinx recognizer */
 static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resource_engine_t *resource_engine, apr_pool_t *pool)
 {
+	mpf_stream_capabilities_t *capabilities;
+	mpf_termination_t *termination; 
 	mrcp_engine_channel_t *channel;
-	mpf_codec_descriptor_t *codec_descriptor;
 	pocketsphinx_engine_t *engine = resource_engine->obj;
+
+	/* create pocketsphinx recognizer */
 	pocketsphinx_recognizer_t *recognizer = apr_palloc(pool,sizeof(pocketsphinx_recognizer_t));
 	recognizer->decoder = NULL;
 	recognizer->config = NULL;
@@ -222,18 +225,25 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 	/* copy default properties loaded from config */
 	recognizer->properties = engine->properties;
 
-	codec_descriptor = mpf_codec_lpcm_descriptor_create(8000,1,pool);
-	if(recognizer->properties.preferred_model == POCKETSPHINX_MODEL_WIDEBAND) {
-		codec_descriptor->sampling_rate = 16000;
-	}
+	capabilities = mpf_sink_stream_capabilities_create(pool);
+	mpf_codec_capabilities_add(
+			&capabilities->codecs,
+			MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000,
+			"LPCM");
+
+	/* create media termination */
+	termination = mrcp_engine_audio_termination_create(
+			recognizer,           /* object to associate */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			capabilities,         /* stream capabilities */
+			pool);                /* pool to allocate memory from */
 
 	/* create engine channel base */
-	channel = mrcp_engine_sink_channel_create(
+	channel = mrcp_engine_channel_create(
 			resource_engine,      /* resource engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
 			recognizer,           /* object to associate */
-			NULL,                 /* codec descriptor might be NULL by default */
+			termination,          /* associated media termination */
 			pool);                /* pool to allocate memory from */
 
 	apr_thread_mutex_create(&recognizer->mutex,APR_THREAD_MUTEX_DEFAULT,channel->pool);
@@ -311,9 +321,10 @@ static apt_bool_t pocketsphinx_recognizer_request_process(mrcp_engine_channel_t 
 /** Initialize pocketsphinx decoder [RECOG] */
 static apt_bool_t pocketsphinx_decoder_init(pocketsphinx_recognizer_t *recognizer, const char *grammar)
 {
+	const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(recognizer->channel);
 	const char *model = recognizer->properties.model_8k;
 	const char *rate = "8000";
-	if(recognizer->properties.preferred_model == POCKETSPHINX_MODEL_WIDEBAND) {
+	if(descriptor && descriptor->sampling_rate == 16000) {
 		model = recognizer->properties.model_16k;
 		rate = "16000";
 	}

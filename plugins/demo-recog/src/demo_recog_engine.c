@@ -189,6 +189,9 @@ static apt_bool_t demo_recog_engine_close(mrcp_resource_engine_t *engine)
 
 static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
 {
+	mpf_stream_capabilities_t *capabilities;
+	mpf_termination_t *termination; 
+
 	/* create demo recog channel */
 	demo_recog_channel_t *recog_channel = apr_palloc(pool,sizeof(demo_recog_channel_t));
 	recog_channel->demo_engine = engine->obj;
@@ -196,26 +199,35 @@ static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_resource_eng
 	recog_channel->stop_response = NULL;
 	recog_channel->detector = mpf_activity_detector_create(pool);
 	recog_channel->audio_out = NULL;
+
+	capabilities = mpf_sink_stream_capabilities_create(pool);
+	mpf_codec_capabilities_add(
+			&capabilities->codecs,
+			MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000,
+			"LPCM");
+
+	/* create media termination */
+	termination = mrcp_engine_audio_termination_create(
+			recog_channel,        /* object to associate */
+			&audio_stream_vtable, /* virtual methods table of audio stream */
+			capabilities,         /* stream capabilities */
+			pool);                /* pool to allocate memory from */
+
 	/* create engine channel base */
-	recog_channel->channel = mrcp_engine_sink_channel_create(
+	recog_channel->channel = mrcp_engine_channel_create(
 			engine,               /* resource engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
-			&audio_stream_vtable, /* virtual methods table of audio stream */
 			recog_channel,        /* object to associate */
-			NULL,                 /* codec descriptor might be NULL by default */
+			termination,          /* associated media termination */
 			pool);                /* pool to allocate memory from */
+
 	return recog_channel->channel;
 }
 
 /** Destroy engine channel */
 static apt_bool_t demo_recog_channel_destroy(mrcp_engine_channel_t *channel)
 {
-	demo_recog_channel_t *recog_channel = channel->method_obj;
-	if(recog_channel->audio_out) {
-		fclose(recog_channel->audio_out);
-		recog_channel->audio_out = NULL;
-	}
-
+	/* nothing to destrtoy */
 	return TRUE;
 }
 
@@ -498,9 +510,17 @@ static apt_bool_t demo_recog_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			mrcp_engine_channel_open_respond(demo_msg->channel,TRUE);
 			break;
 		case DEMO_RECOG_MSG_CLOSE_CHANNEL:
+		{
 			/* close channel, make sure there is no activity and send asynch response */
+			demo_recog_channel_t *recog_channel = demo_msg->channel->method_obj;
+			if(recog_channel->audio_out) {
+				fclose(recog_channel->audio_out);
+				recog_channel->audio_out = NULL;
+			}
+
 			mrcp_engine_channel_close_respond(demo_msg->channel);
 			break;
+		}
 		case DEMO_RECOG_MSG_REQUEST_PROCESS:
 			demo_recog_channel_request_dispatch(demo_msg->channel,demo_msg->request);
 			break;
