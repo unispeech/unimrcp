@@ -63,10 +63,11 @@ struct mrcp_signaling_message_t {
 
 /** Server session states */
 typedef enum {
-	SESSION_STATE_NONE,
-	SESSION_STATE_ANSWERING,
-	SESSION_STATE_DEACTIVATING,
-	SESSION_STATE_TERMINATING
+	SESSION_STATE_NONE,              /**< initial state */
+	SESSION_STATE_GENERATING_ANSWER, /**< received offer, generating answer now */
+	SESSION_STATE_INITIALIZING,      /**< answer is ready, finally initializing channels now */
+	SESSION_STATE_DEACTIVATING,      /**< received session termination request, deinitializing channels now */
+	SESSION_STATE_TERMINATING        /**< finally terminating session */
 } mrcp_server_session_state_e;
 
 

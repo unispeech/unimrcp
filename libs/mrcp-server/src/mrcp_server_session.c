@@ -83,6 +83,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor);
 
+static apt_bool_t mrcp_server_engine_channels_update(mrcp_server_session_t *session);
 static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session);
 static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *session);
 static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session);
@@ -220,7 +221,10 @@ static void mrcp_server_session_subrequest_remove(mrcp_server_session_t *session
 	session->subrequest_count--;
 	if(!session->subrequest_count) {
 		switch(session->state) {
-			case SESSION_STATE_ANSWERING:
+			case SESSION_STATE_GENERATING_ANSWER:
+				mrcp_server_engine_channels_update(session);
+				break;
+			case SESSION_STATE_INITIALIZING:
 				/* send answer to client */
 				mrcp_server_session_answer_send(session);
 				break;
@@ -378,7 +382,7 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 	session->offer = descriptor;
 	session->answer = mrcp_session_answer_create(descriptor,session->base.pool);
 
-	mrcp_server_session_state_set(session,SESSION_STATE_ANSWERING);
+	mrcp_server_session_state_set(session,SESSION_STATE_GENERATING_ANSWER);
 
 	/* first, reset/destroy existing associations and topology */
 	if(mpf_engine_topology_message_add(
@@ -557,6 +561,58 @@ static apt_bool_t mrcp_server_signaling_message_dispatch(mrcp_server_session_t *
 	return TRUE;
 }
 
+static apt_bool_t mrcp_server_engine_channels_update(mrcp_server_session_t *session)
+{
+	mrcp_channel_t *channel;
+	mrcp_session_descriptor_t *descriptor = session->offer;
+	if(!descriptor) {
+		return FALSE;
+	}
+	
+	mrcp_server_session_state_set(session,SESSION_STATE_INITIALIZING);
+
+	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
+		if(session->offer) {
+			channel = mrcp_server_channel_find(session,&descriptor->resource_name);
+			if(channel && channel->engine_channel) {
+				/* open resource engine channel */
+				if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
+					mrcp_server_session_subrequest_add(session);
+				}
+			}
+		}
+	}
+	else {
+		int i;
+		mrcp_control_descriptor_t *control_descriptor;
+		for(i=0; i<session->channels->nelts; i++) {
+			channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
+			if(!channel || !channel->engine_channel) continue;
+
+			control_descriptor = mrcp_session_control_media_get(descriptor,i);
+			if(!control_descriptor) continue;
+
+			if(control_descriptor->port) {
+				/* open resource engine channel */
+				if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
+					mrcp_server_session_subrequest_add(session);
+				}
+			}
+			else {
+				/* close resource engine channel */
+				if(mrcp_engine_channel_virtual_close(channel->engine_channel) == TRUE) {
+					mrcp_server_session_subrequest_add(session);
+				}
+			}
+		}
+	}
+
+	if(!session->subrequest_count) {
+		mrcp_server_session_answer_send(session);
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	if(descriptor->resource_state == TRUE) {
@@ -569,36 +625,29 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 			return TRUE;
 		}
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count,0);
+		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count,NULL);
 		if(!channel || !channel->resource) {
 			return FALSE;
 		}
 		/* add to channel array */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Control Channel [%d]",count);
 		APR_ARRAY_PUSH(session->channels,mrcp_channel_t*) = channel;
-		if(channel->engine_channel) {
-			/* open resource engine channel */
-			if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
-				mpf_termination_t *termination = channel->engine_channel->termination;
+		if(channel->engine_channel && channel->engine_channel->termination) {
+			mpf_termination_t *termination = channel->engine_channel->termination;
+			/* send add termination request (add to media context) */
+			if(mpf_engine_termination_message_add(
+					session->profile->media_engine,
+					MPF_ADD_TERMINATION,session->context,termination,NULL,
+					&session->mpf_task_msg) == TRUE) {
+				channel->waiting_for_termination = TRUE;
 				mrcp_server_session_subrequest_add(session);
+			}
 
-				if(termination) {
-					/* send add termination request (add to media context) */
-					if(mpf_engine_termination_message_add(
-							session->profile->media_engine,
-							MPF_ADD_TERMINATION,session->context,termination,NULL,
-							&session->mpf_task_msg) == TRUE) {
-						channel->waiting_for_termination = TRUE;
-						mrcp_server_session_subrequest_add(session);
-					}
-
-					if(termination->audio_stream) {
-						mpf_rtp_media_descriptor_t *rtp_media_descriptor = mrcp_session_audio_media_get(descriptor,0);
-						if(rtp_media_descriptor) {
-							mpf_stream_direction_e direction = termination->audio_stream->direction;
-							rtp_media_descriptor->direction |= direction;
-						}
-					}
+			if(termination->audio_stream) {
+				mpf_rtp_media_descriptor_t *rtp_media_descriptor = mrcp_session_audio_media_get(descriptor,0);
+				if(rtp_media_descriptor) {
+					mpf_stream_direction_e direction = termination->audio_stream->direction;
+					rtp_media_descriptor->direction |= direction;
 				}
 			}
 		}
@@ -677,22 +726,15 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 			mrcp_session_control_media_set(session->answer,channel->id,answer);
 		}
 		
-		if(channel->engine_channel) {
-			/* open resource engine channel */
-			if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
-				mpf_termination_t *termination = channel->engine_channel->termination;
+		if(channel->engine_channel && channel->engine_channel->termination) {
+			mpf_termination_t *termination = channel->engine_channel->termination;
+			/* send add termination request (add to media context) */
+			if(mpf_engine_termination_message_add(
+					session->profile->media_engine,
+					MPF_ADD_TERMINATION,session->context,termination,NULL,
+					&session->mpf_task_msg) == TRUE) {
+				channel->waiting_for_termination = TRUE;
 				mrcp_server_session_subrequest_add(session);
-
-				if(termination) {
-					/* send add termination request (add to media context) */
-					if(mpf_engine_termination_message_add(
-							session->profile->media_engine,
-							MPF_ADD_TERMINATION,session->context,termination,NULL,
-							&session->mpf_task_msg) == TRUE) {
-						channel->waiting_for_termination = TRUE;
-						mrcp_server_session_subrequest_add(session);
-					}
-				}
 			}
 		}
 	}
