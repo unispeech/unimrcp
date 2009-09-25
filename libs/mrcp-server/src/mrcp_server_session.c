@@ -704,6 +704,8 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 {
 	int i;
 	mrcp_channel_t *channel;
+	mpf_termination_t *termination;
+	mpf_stream_capabilities_t *capabilities = NULL;
 	mpf_rtp_termination_descriptor_t *rtp_descriptor;
 	mpf_rtp_media_descriptor_t *media_descriptor = mrcp_session_audio_media_get(descriptor,slot->id);
 	if(!media_descriptor) {
@@ -723,7 +725,30 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 
 		if(!channel->cmid_arr || mrcp_cmid_find(channel->cmid_arr,slot->mid) == TRUE) {
 			APR_ARRAY_PUSH(slot->channels, mrcp_channel_t*) = channel;
+
+			if(channel->engine_channel && channel->engine_channel->termination) {
+				termination = channel->engine_channel->termination;
+				if(termination->audio_stream && termination->audio_stream->capabilities) {
+					/* set descriptor according to media termination(s) 
+					of associated control channel(s) */
+					if(capabilities) {
+						mpf_stream_capabilities_merge(
+							capabilities,
+							termination->audio_stream->capabilities,
+							session->base.pool);
+						}
+					else {
+						capabilities = mpf_stream_capabilities_clone(
+							termination->audio_stream->capabilities,
+							session->base.pool);
+					}
+				}
+			}
 		}
+	}
+	if(capabilities) {
+		capabilities->direction = mpf_stream_reverse_direction_get(capabilities->direction);
+		rtp_descriptor->audio.capabilities = capabilities;
 	}
 	return rtp_descriptor;
 }
