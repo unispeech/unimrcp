@@ -24,6 +24,7 @@
  * 4. Methods (callbacks) of the MPF engine stream MUST not block.
  */
 
+#include <stdlib.h>
 #include <swift.h>
 #include "mrcp_resource_engine.h"
 #include "mrcp_synth_resource.h"
