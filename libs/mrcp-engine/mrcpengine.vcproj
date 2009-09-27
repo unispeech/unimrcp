@@ -134,6 +134,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_engine_loader.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_resource_engine.h"
 				>
 			</File>
@@ -148,6 +152,10 @@
 			>
 			<File
 				RelativePath=".\src\mrcp_engine_factory.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_engine_loader.c"
 				>
 			</File>
 			<File

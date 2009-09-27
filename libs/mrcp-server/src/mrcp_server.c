@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <apr_dso.h>
 #include "mrcp_server.h"
 #include "mrcp_server_session.h"
 #include "mrcp_message.h"
 #include "mrcp_resource_factory.h"
 #include "mrcp_engine_factory.h"
+#include "mrcp_engine_loader.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_server_connection.h"
 #include "mpf_engine.h"
@@ -39,6 +39,9 @@ struct mrcp_server_t {
 	mrcp_resource_factory_t *resource_factory;
 	/** MRCP engine factory */
 	mrcp_engine_factory_t   *engine_factory;
+	/** Loader of plugins for MRCP engines */
+	mrcp_engine_loader_t    *engine_loader;
+
 	/** Codec manager */
 	mpf_codec_manager_t     *codec_manager;
 	/** Table of media processing engines (mpf_engine_t*) */
@@ -51,8 +54,6 @@ struct mrcp_server_t {
 	apr_hash_t              *cnt_agent_table;
 	/** Table of profiles (mrcp_profile_t*) */
 	apr_hash_t              *profile_table;
-	/** Table of plugins (apr_dso_handle_t*) */
-	apr_hash_t              *plugin_table;
 
 	/** Table of sessions */
 	apr_hash_t              *session_table;
@@ -152,7 +153,6 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *signaling_agent);
-static void mrcp_server_plugins_unregister(mrcp_server_t *server);
 
 
 /** Create MRCP server instance */
@@ -175,12 +175,12 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	server->dir_layout = dir_layout;
 	server->resource_factory = NULL;
 	server->engine_factory = NULL;
+	server->engine_loader = NULL;
 	server->media_engine_table = NULL;
 	server->rtp_factory_table = NULL;
 	server->sig_agent_table = NULL;
 	server->cnt_agent_table = NULL;
 	server->profile_table = NULL;
-	server->plugin_table = NULL;
 	server->session_table = NULL;
 	server->connection_msg_pool = NULL;
 	server->resource_engine_msg_pool = NULL;
@@ -202,6 +202,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	}
 
 	server->engine_factory = mrcp_engine_factory_create(server->pool);
+	server->engine_loader = mrcp_engine_loader_create(server->pool);
 
 	server->media_engine_table = apr_hash_make(server->pool);
 	server->rtp_factory_table = apr_hash_make(server->pool);
@@ -209,7 +210,6 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	server->cnt_agent_table = apr_hash_make(server->pool);
 
 	server->profile_table = apr_hash_make(server->pool);
-	server->plugin_table = apr_hash_make(server->pool);
 	
 	server->session_table = apr_hash_make(server->pool);
 	return server;
@@ -262,7 +262,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 	}
 
 	mrcp_engine_factory_destroy(server->engine_factory);
-	mrcp_server_plugins_unregister(server);
+	mrcp_engine_loader_destroy(server->engine_loader);
 
 	task = apt_consumer_task_base_get(server->task);
 	apt_task_destroy(task);
@@ -512,71 +512,24 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(mrcp_server_t *server, con
 /** Register resource engine plugin */
 MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, mrcp_resource_engine_config_t *config)
 {
-	apt_bool_t status = FALSE;
-	apr_dso_handle_t *plugin = NULL;
-	apr_dso_handle_sym_t func_handle = NULL;
-	mrcp_plugin_creator_f plugin_creator = NULL;
-	if(!path || !config || !config->name) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Plugin: invalid params");
+	mrcp_resource_engine_t *engine;
+	if(!config) {
+		return FALSE;
+	}
+	
+	engine = mrcp_engine_loader_plugin_load(server->engine_loader,path,config->name);
+	if(!engine) {
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Plugin [%s] [%s]",path,config->name);
-	if(apr_dso_load(&plugin,path,server->pool) == APR_SUCCESS) {
-		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_ENGINE_SYM_NAME) == APR_SUCCESS) {
-			if(func_handle) {
-				plugin_creator = (mrcp_plugin_creator_f)(intptr_t)func_handle;
-			}
-		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO Symbol: "MRCP_PLUGIN_ENGINE_SYM_NAME);
-			apr_dso_unload(plugin);
-			return FALSE;
-		}
-		
-		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_LOGGER_SYM_NAME) == APR_SUCCESS) {
-			if(func_handle) {
-				apt_logger_t *logger = apt_log_instance_get();
-				mrcp_plugin_log_accessor_f log_accessor;
-				log_accessor = (mrcp_plugin_log_accessor_f)(intptr_t)func_handle;
-				log_accessor(logger);
-			}
-		}
+	if(!server->resource_engine_msg_pool) {
+		server->resource_engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(resource_engine_task_msg_data_t),server->pool);
 	}
-	else {
-		char derr[512] = "";
-		apr_dso_error(plugin,derr,sizeof(derr));
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO: %s", derr);
-		return FALSE;
-	}
-
-	if(plugin_creator) {
-		mrcp_resource_engine_t *engine = plugin_creator(server->pool);
-		if(engine) {
-			if(mrcp_plugin_version_check(&engine->plugin_version)) {
-				status = TRUE;
-				mrcp_server_resource_engine_register(server,engine,config);
-				apr_hash_set(server->plugin_table,config->name,APR_HASH_KEY_STRING,plugin);
-			}
-			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
-					engine->plugin_version.major,
-					engine->plugin_version.minor,
-					engine->plugin_version.patch);
-			}
-		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine");
-		}
-	}
-	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Entry Point Found for Plugin");
-	}
-
-	if(status == FALSE) {
-		apr_dso_unload(plugin);
-	}
-	return status;
+	engine->config = config;
+	engine->codec_manager = server->codec_manager;
+	engine->dir_layout = server->dir_layout;
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Resource Engine [%s]",config->name);
+	return mrcp_engine_factory_engine_register(server->engine_factory,engine,config->name);
 }
 
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server)
@@ -603,23 +556,6 @@ void mrcp_server_session_remove(mrcp_server_session_t *session)
 static APR_INLINE mrcp_server_session_t* mrcp_server_session_find(mrcp_server_t *server, const apt_str_t *session_id)
 {
 	return apr_hash_get(server->session_table,session_id->buf,session_id->length);
-}
-
-static void mrcp_server_plugins_unregister(mrcp_server_t *server)
-{
-	apr_hash_index_t *it;
-	void *val;
-	apr_dso_handle_t *plugin;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unload Plugins");
-	it=apr_hash_first(server->pool,server->plugin_table);
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		plugin = val;
-		if(plugin) {
-			apr_dso_unload(plugin);
-		}
-	}
-	apr_hash_clear(server->plugin_table);
 }
 
 
