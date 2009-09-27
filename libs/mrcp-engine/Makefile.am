@@ -12,6 +12,8 @@ INCLUDES                    = -I$(top_srcdir)/libs/mrcp-engine/include \
 noinst_LTLIBRARIES          = libmrcpengine.la
 
 include_HEADERS             = include/mrcp_resource_plugin.h \
-                              include/mrcp_resource_engine.h
+                              include/mrcp_resource_engine.h \
+                              include/mrcp_engine_factory.h
 
-libmrcpengine_la_SOURCES    = src/mrcp_resource_engine.c
+libmrcpengine_la_SOURCES    = src/mrcp_resource_engine.c \
+                              src/mrcp_engine_factory.c

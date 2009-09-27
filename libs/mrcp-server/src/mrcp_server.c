@@ -19,6 +19,7 @@
 #include "mrcp_server_session.h"
 #include "mrcp_message.h"
 #include "mrcp_resource_factory.h"
+#include "mrcp_engine_factory.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_server_connection.h"
 #include "mpf_engine.h"
@@ -36,10 +37,10 @@ struct mrcp_server_t {
 
 	/** MRCP resource factory */
 	mrcp_resource_factory_t *resource_factory;
+	/** MRCP engine factory */
+	mrcp_engine_factory_t   *engine_factory;
 	/** Codec manager */
 	mpf_codec_manager_t     *codec_manager;
-	/** Table of resource engines (mrcp_resource_engine_t*) */
-	apr_hash_t              *resource_engine_table;
 	/** Table of media processing engines (mpf_engine_t*) */
 	apr_hash_t              *media_engine_table;
 	/** Table of RTP termination factories (mpf_termination_factory_t*) */
@@ -151,8 +152,6 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *signaling_agent);
-
-static void mrcp_server_resource_engines_destroy(mrcp_server_t *server);
 static void mrcp_server_plugins_unregister(mrcp_server_t *server);
 
 
@@ -175,7 +174,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	server->pool = pool;
 	server->dir_layout = dir_layout;
 	server->resource_factory = NULL;
-	server->resource_engine_table = NULL;
+	server->engine_factory = NULL;
 	server->media_engine_table = NULL;
 	server->rtp_factory_table = NULL;
 	server->sig_agent_table = NULL;
@@ -202,7 +201,8 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 		vtable->on_terminate_complete = mrcp_server_on_terminate_complete;
 	}
 
-	server->resource_engine_table = apr_hash_make(server->pool);
+	server->engine_factory = mrcp_engine_factory_create(server->pool);
+
 	server->media_engine_table = apr_hash_make(server->pool);
 	server->rtp_factory_table = apr_hash_make(server->pool);
 	server->sig_agent_table = apr_hash_make(server->pool);
@@ -261,7 +261,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 		return FALSE;
 	}
 
-	mrcp_server_resource_engines_destroy(server);
+	mrcp_engine_factory_destroy(server->engine_factory);
 	mrcp_server_plugins_unregister(server);
 
 	task = apt_consumer_task_base_get(server->task);
@@ -295,8 +295,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_engine_register(mrcp_server_t *ser
 	engine->codec_manager = server->codec_manager;
 	engine->dir_layout = server->dir_layout;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Resource Engine [%s]",config->name);
-	apr_hash_set(server->resource_engine_table,config->name,APR_HASH_KEY_STRING,engine);
-	return TRUE;
+	return mrcp_engine_factory_engine_register(server->engine_factory,engine,config->name);
 }
 
 /** Register codec manager */
@@ -425,29 +424,6 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 	return profile;
 }
 
-/** Get resource engine by name */
-static APR_INLINE mrcp_resource_engine_t* mrcp_server_resource_engine_get(mrcp_server_t *server, const char *name)
-{
-	return apr_hash_get(server->resource_engine_table,name,APR_HASH_KEY_STRING);
-}
-
-/** Find a resource engine by resource id */
-static mrcp_resource_engine_t* mrcp_server_resource_engine_find(mrcp_server_t *server, mrcp_resource_id resource_id)
-{
-	mrcp_resource_engine_t *engine;
-	void *val;
-	apr_hash_index_t *it = apr_hash_first(server->pool,server->resource_engine_table);
-	/* walk through the list of engines */
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		engine = val;
-		if(engine && engine->resource_id == resource_id) {
-			return engine;
-		}
-	}
-	return NULL;
-}
-
 static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_profile_t *profile, apr_table_t *plugin_map)
 {
 	int i;
@@ -465,13 +441,13 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_prof
 		if(plugin_map) {
 			plugin_name = apr_table_get(plugin_map,resource_name->buf);
 			if(plugin_name) {
-				resource_engine = mrcp_server_resource_engine_get(server,plugin_name);
+				resource_engine = mrcp_engine_factory_engine_get(server->engine_factory,plugin_name);
 			}
 		}
 
 		/* next, if no engine found or specified, try to find the first available one */
 		if(!resource_engine) {
-			resource_engine = mrcp_server_resource_engine_find(server,i);
+			resource_engine = mrcp_engine_factory_engine_find(server->engine_factory,i);
 		}
 		
 		if(resource_engine) {
@@ -629,57 +605,6 @@ static APR_INLINE mrcp_server_session_t* mrcp_server_session_find(mrcp_server_t 
 	return apr_hash_get(server->session_table,session_id->buf,session_id->length);
 }
 
-static apt_bool_t mrcp_server_resource_engines_open(mrcp_server_t *server)
-{
-	mrcp_resource_engine_t *resource_engine;
-	apr_hash_index_t *it;
-	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Resource Engines");
-	it = apr_hash_first(server->pool,server->resource_engine_table);
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine) {
-			mrcp_engine_virtual_open(resource_engine);
-		}
-	}
-	return TRUE;
-}
-
-static apt_bool_t mrcp_server_resource_engines_close(mrcp_server_t *server)
-{
-	mrcp_resource_engine_t *resource_engine;
-	apr_hash_index_t *it;
-	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Resource Engines");
-	it=apr_hash_first(server->pool,server->resource_engine_table);
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine) {
-			mrcp_engine_virtual_close(resource_engine);
-		}
-	}
-	return TRUE;
-}
-
-static void mrcp_server_resource_engines_destroy(mrcp_server_t *server)
-{
-	mrcp_resource_engine_t *resource_engine;
-	apr_hash_index_t *it;
-	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy Resource Engines");
-	it=apr_hash_first(server->pool,server->resource_engine_table);
-	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine) {
-			mrcp_engine_virtual_destroy(resource_engine);
-		}
-	}
-	apr_hash_clear(server->resource_engine_table);
-}
-
 static void mrcp_server_plugins_unregister(mrcp_server_t *server)
 {
 	apr_hash_index_t *it;
@@ -703,7 +628,7 @@ static void mrcp_server_on_start_complete(apt_task_t *task)
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
 
-	mrcp_server_resource_engines_open(server);
+	mrcp_engine_factory_open(server->engine_factory);
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Started");
 }
 
@@ -712,7 +637,7 @@ static void mrcp_server_on_terminate_complete(apt_task_t *task)
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
 
-	mrcp_server_resource_engines_close(server);
+	mrcp_engine_factory_close(server->engine_factory);
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Terminated");
 }
 
