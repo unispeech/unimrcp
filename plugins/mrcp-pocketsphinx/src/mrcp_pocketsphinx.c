@@ -145,10 +145,13 @@ struct pocketsphinx_recognizer_t {
 	apt_bool_t                message_waiting;
 };
 
+static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, void *data);
+
+/** Declare this macro to set plugin version */
+MRCP_PLUGIN_VERSION_DECLARE
+
 /** Declare this macro to use log routine of the server, plugin is loaded from */
 MRCP_PLUGIN_LOGGER_IMPLEMENT
-
-static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, void *data);
 
 /** Create pocketsphinx engine (engine is an aggregation of recognizers) */
 MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)

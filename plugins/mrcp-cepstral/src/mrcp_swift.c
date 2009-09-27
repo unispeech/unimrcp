@@ -138,6 +138,9 @@ static swift_result_t mrcp_swift_write_audio(swift_event *event, swift_event_t t
 static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message);
 static apt_bool_t mrcp_swift_channel_params_set(mrcp_swift_channel_t *synth_channel, mrcp_message_t *message);
 
+/** Declare this macro to set plugin version */
+MRCP_PLUGIN_VERSION_DECLARE
+
 /** Declare this macro to use log routine of the server, plugin is loaded from */
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 

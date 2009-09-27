@@ -122,6 +122,9 @@ static apt_bool_t flite_speak(apt_task_t *task, apt_task_msg_t *msg);
 static void flite_on_start(apt_task_t *task);
 static void flite_on_terminate(apt_task_t *task);
 
+/** Declare this macro to set plugin version */
+MRCP_PLUGIN_VERSION_DECLARE
+
 /** Declare this macro to use log routine of the server where the plugin is loaded from */
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 

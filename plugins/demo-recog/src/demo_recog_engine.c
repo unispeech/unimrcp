@@ -122,6 +122,9 @@ struct demo_recog_msg_t {
 static apt_bool_t demo_recog_msg_signal(demo_recog_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request);
 static apt_bool_t demo_recog_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
+/** Declare this macro to set plugin version */
+MRCP_PLUGIN_VERSION_DECLARE
+
 /** Declare this macro to use log routine of the server, plugin is loaded from */
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 
