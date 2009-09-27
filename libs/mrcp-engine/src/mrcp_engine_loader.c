@@ -17,6 +17,8 @@
 #include <apr_dso.h>
 #include <apr_hash.h>
 #include "mrcp_engine_loader.h"
+#include "mrcp_engine_plugin.h"
+#include "apt_log.h"
 
 /** Engine loader declaration */
 struct mrcp_engine_loader_t {
@@ -60,72 +62,103 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_loader_plugins_unload(mrcp_engine_loader_t 
 	return TRUE;
 }
 
-/** Load engine plugin */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t *loader, const char *path, const char *name)
+static apt_bool_t plugin_version_load(apr_dso_handle_t *plugin)
 {
-	apt_bool_t status = FALSE;
-	apr_dso_handle_t *plugin = NULL;
+	apr_dso_handle_sym_t version_handle = NULL;
+	if(apr_dso_sym(&version_handle,plugin,MRCP_PLUGIN_VERSION_SYM_NAME) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Version Info Found: %s", MRCP_PLUGIN_VERSION_SYM_NAME);
+		return FALSE;
+	}
+	
+	if(version_handle) {
+		mrcp_plugin_version_t *version = (mrcp_plugin_version_t*)version_handle;
+		if(mrcp_plugin_version_check(version)) {
+			return TRUE;
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version Found [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
+				version->major,
+				version->minor,
+				version->patch);
+		}
+	}
+	return FALSE;
+}
+
+static mrcp_plugin_creator_f plugin_creator_load(apr_dso_handle_t *plugin)
+{
 	apr_dso_handle_sym_t func_handle = NULL;
 	mrcp_plugin_creator_f plugin_creator = NULL;
-	mrcp_resource_engine_t *engine = NULL;
+	
+	if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_ENGINE_SYM_NAME) == APR_SUCCESS) {
+		if(func_handle) {
+			plugin_creator = (mrcp_plugin_creator_f)(intptr_t)func_handle;
+		}
+	}
+	else {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO Symbol: "MRCP_PLUGIN_ENGINE_SYM_NAME);
+		return NULL;
+	}
+
+	return plugin_creator;
+}
+
+static apt_bool_t plugin_logger_load(apr_dso_handle_t *plugin)
+{
+	apr_dso_handle_sym_t func_handle = NULL;
+	if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_LOGGER_SYM_NAME) != APR_SUCCESS) {
+		return FALSE;
+	}
+
+	if(func_handle) {
+		apt_logger_t *logger = apt_log_instance_get();
+		mrcp_plugin_log_accessor_f log_accessor;
+		log_accessor = (mrcp_plugin_log_accessor_f)(intptr_t)func_handle;
+		log_accessor(logger);
+	}
+	return TRUE;
+}
+
+
+/** Load engine plugin */
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t *loader, const char *path, const char *name)
+{
+	apr_dso_handle_t *plugin = NULL;
+	mrcp_plugin_creator_f plugin_creator = NULL;
+	mrcp_engine_t *engine = NULL;
 	if(!path || !name) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load Plugin: invalid params");
 		return NULL;
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Load Plugin [%s] [%s]",path,name);
-	if(apr_dso_load(&plugin,path,loader->pool) == APR_SUCCESS) {
-		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_ENGINE_SYM_NAME) == APR_SUCCESS) {
-			if(func_handle) {
-				plugin_creator = (mrcp_plugin_creator_f)(intptr_t)func_handle;
-			}
-		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO Symbol: "MRCP_PLUGIN_ENGINE_SYM_NAME);
-			apr_dso_unload(plugin);
-			return NULL;
-		}
-		
-		if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_LOGGER_SYM_NAME) == APR_SUCCESS) {
-			if(func_handle) {
-				apt_logger_t *logger = apt_log_instance_get();
-				mrcp_plugin_log_accessor_f log_accessor;
-				log_accessor = (mrcp_plugin_log_accessor_f)(intptr_t)func_handle;
-				log_accessor(logger);
-			}
-		}
-	}
-	else {
+	if(apr_dso_load(&plugin,path,loader->pool) != APR_SUCCESS) {
 		char derr[512] = "";
 		apr_dso_error(plugin,derr,sizeof(derr));
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load DSO: %s", derr);
 		return NULL;
 	}
 
-	if(plugin_creator) {
-		engine = plugin_creator(loader->pool);
-		if(engine) {
-			if(mrcp_plugin_version_check(&engine->plugin_version)) {
-				status = TRUE;
-				apr_hash_set(loader->plugins,name,APR_HASH_KEY_STRING,plugin);
-			}
-			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Incompatible Plugin Version [%d.%d.%d] < ["PLUGIN_VERSION_STRING"]",
-					engine->plugin_version.major,
-					engine->plugin_version.minor,
-					engine->plugin_version.patch);
-			}
-		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine");
-		}
-	}
-	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Entry Point Found for Plugin");
+	if(plugin_version_load(plugin) != TRUE) {
+		apr_dso_unload(plugin);
+		return NULL;
 	}
 
-	if(status == FALSE) {
+	plugin_creator = plugin_creator_load(plugin);
+	if(!plugin_creator) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Entry Point Found for Plugin");
 		apr_dso_unload(plugin);
+		return NULL;
 	}
+
+	plugin_logger_load(plugin);
+
+	apr_hash_set(loader->plugins,name,APR_HASH_KEY_STRING,plugin);
+
+	engine = plugin_creator(loader->pool);
+	if(!engine) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create MRCP Engine");
+	}
+
 	return engine;
 }

@@ -24,6 +24,7 @@
 
 #include "apr_version.h"
 #include "apt_log.h"
+#include "mrcp_engine_types.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -34,23 +35,28 @@ APT_BEGIN_EXTERN_C
 #define MRCP_PLUGIN_DECLARE(type) type
 #endif
 
-/** Symbol name of the main entry point in plugin DSO */
+/** [REQUIRED] Symbol name of the main entry point in plugin DSO */
 #define MRCP_PLUGIN_ENGINE_SYM_NAME "mrcp_plugin_create"
-/** Symbol name of the log accessor entry point in plugin DSO */
+/** [REQUIRED] Symbol name of the vesrion number entry point in plugin DSO */
+#define MRCP_PLUGIN_VERSION_SYM_NAME "mrcp_plugin_version"
+/** [IMPLIED] Symbol name of the log accessor entry point in plugin DSO */
 #define MRCP_PLUGIN_LOGGER_SYM_NAME "mrcp_plugin_logger_set"
 
-/** MRCP resource engine declaration */
-typedef struct mrcp_resource_engine_t mrcp_resource_engine_t;
 /** Prototype of resource engine creator (entry point of plugin DSO) */
-typedef mrcp_resource_engine_t* (*mrcp_plugin_creator_f)(apr_pool_t *pool);
+typedef mrcp_engine_t* (*mrcp_plugin_creator_f)(apr_pool_t *pool);
 
-/** Prototype of resource engine creator (entry point of plugin DSO) */
+/** Prototype of log accessor (entry point of plugin DSO) */
 typedef apt_bool_t (*mrcp_plugin_log_accessor_f)(apt_logger_t *logger);
 
 /** Declare this macro in plugins to use log routine of the server */
 #define MRCP_PLUGIN_LOGGER_IMPLEMENT \
 	MRCP_PLUGIN_DECLARE(apt_bool_t) mrcp_plugin_logger_set(apt_logger_t *logger) \
 		{ return apt_log_instance_set(logger); }
+
+/** Declare this macro in plugins to set plugin version */
+#define MRCP_PLUGIN_VERSION_DECLARE \
+	MRCP_PLUGIN_DECLARE(mrcp_plugin_version_t) mrcp_plugin_version =  \
+		{PLUGIN_MAJOR_VERSION, PLUGIN_MINOR_VERSION, PLUGIN_PATCH_VERSION};
 
 
 /** major version 

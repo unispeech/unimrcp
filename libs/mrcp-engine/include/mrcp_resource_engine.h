@@ -19,266 +19,30 @@
 
 /**
  * @file mrcp_resource_engine.h
- * @brief MRCP Resource Engine Interface
+ * @brief Legacy MRCP Resource Engine
+ * @deprecated @see mrcp_engine_plugin.h and mrcp_engine_impl.h
  */ 
 
-#include "mrcp_types.h"
-#include "mpf_termination.h"
-#include "mpf_stream.h"
-#include "mrcp_resource_plugin.h"
+#include "mrcp_engine_plugin.h"
+#include "mrcp_engine_impl.h"
 
 APT_BEGIN_EXTERN_C
 
-/** MRCP resource engine vtable declaration */
-typedef struct mrcp_engine_method_vtable_t mrcp_engine_method_vtable_t;
-/** MRCP engine channel declaration */
-typedef struct mrcp_engine_channel_t mrcp_engine_channel_t;
-/** MRCP engine channel virtual method table declaration */
-typedef struct mrcp_engine_channel_method_vtable_t mrcp_engine_channel_method_vtable_t;
-/** MRCP engine channel virtual event table declaration */
-typedef struct mrcp_engine_channel_event_vtable_t mrcp_engine_channel_event_vtable_t;
-/** MRCP resource engine config declaration */
-typedef struct mrcp_resource_engine_config_t mrcp_resource_engine_config_t;
+/** Termorary define legacy mrcp_resource_engine_t as mrcp_engine_t */
+typedef mrcp_engine_t mrcp_resource_engine_t;
 
-/** Table of channel virtual methods */
-struct mrcp_engine_channel_method_vtable_t {
-	/** Virtual destroy */
-	apt_bool_t (*destroy)(mrcp_engine_channel_t *channel);
-	/** Virtual open */
-	apt_bool_t (*open)(mrcp_engine_channel_t *channel);
-	/** Virtual close */
-	apt_bool_t (*close)(mrcp_engine_channel_t *channel);
-	/** Virtual process_request */
-	apt_bool_t (*process_request)(mrcp_engine_channel_t *channel, mrcp_message_t *request);
-};
-
-/** Table of channel virtual event handlers */
-struct mrcp_engine_channel_event_vtable_t {
-	/** Open event handler */
-	apt_bool_t (*on_open)(mrcp_engine_channel_t *channel, apt_bool_t status);
-	/** Close event handler */
-	apt_bool_t (*on_close)(mrcp_engine_channel_t *channel);
-	/** Message event handler */
-	apt_bool_t (*on_message)(mrcp_engine_channel_t *channel, mrcp_message_t *message);
-};
-
-/** MRCP engine channel declaration */
-struct mrcp_engine_channel_t {
-	/** Table of virtual methods */
-	const mrcp_engine_channel_method_vtable_t *method_vtable;
-	/** External object used with virtual methods */
-	void                                      *method_obj;
-	/** Table of virtual event handlers */
-	const mrcp_engine_channel_event_vtable_t  *event_vtable;
-	/** External object used with event handlers */
-	void                                      *event_obj;
-	/** Media termination */
-	mpf_termination_t                         *termination;
-	/** Back pointer to resource engine */
-	mrcp_resource_engine_t                    *engine;
-	/** Unique identifier to be used in traces */
-	apt_str_t                                  id;
-	/** MRCP version */
-	mrcp_version_e                             mrcp_version;
-	/** Is channel successfully opened */
-	apt_bool_t                                is_open;
-	/** Pool to allocate memory from */
-	apr_pool_t                                *pool;
-};
-
-/** Table of MRCP engine virtual methods */
-struct mrcp_engine_method_vtable_t {
-	/** Virtual destroy */
-	apt_bool_t (*destroy)(mrcp_resource_engine_t *engine);
-	/** Virtual open */
-	apt_bool_t (*open)(mrcp_resource_engine_t *engine);
-	/** Virtual close */
-	apt_bool_t (*close)(mrcp_resource_engine_t *engine);
-	/** Virtual channel create */
-	mrcp_engine_channel_t* (*create_channel)(mrcp_resource_engine_t *engine, apr_pool_t *pool);
-};
-
-/** MRCP resource engine config */
-struct mrcp_resource_engine_config_t {
-	/** Name of the engine */
-	const char  *name;
-	/** Max number of simultaneous channels */
-	apr_size_t   max_channel_count;
-	/** Table of name/value string params */
-	apr_table_t *params;
-};
-
-/** MRCP resource engine */
-struct mrcp_resource_engine_t {
-	/** Plugin version */
-	mrcp_plugin_version_t              plugin_version;
-	/** Resource identifier */
-	mrcp_resource_id                   resource_id;
-	/** External object associated with engine */
-	void                              *obj;
-	/** Table of virtual methods */
-	const mrcp_engine_method_vtable_t *method_vtable;
-	/** Codec manager */
-	const mpf_codec_manager_t         *codec_manager;
-	/** Dir layout structure */
-	const apt_dir_layout_t            *dir_layout;
-	/** Config of resource engine */
-	mrcp_resource_engine_config_t     *config;
-	/** Number of simultaneous channels currently in use */
-	apr_size_t                         cur_channel_count;
-	/** Is engine successfully opened */
-	apt_bool_t                         is_open;
-	/** Pool to allocate memory from */
-	apr_pool_t                        *pool;
-};
-
-/** Create resource engine */
-mrcp_resource_engine_t* mrcp_resource_engine_create(
-								mrcp_resource_id resource_id,
-								void *obj, 
-								const mrcp_engine_method_vtable_t *vtable,
-								apr_pool_t *pool);
-
-/** Allocate resource engine config */
-mrcp_resource_engine_config_t* mrcp_resource_engine_config_alloc(apr_pool_t *pool);
-
-/** Get engine config */
-mrcp_resource_engine_config_t* mrcp_resource_engine_config_get(mrcp_resource_engine_t *engine);
-
-/** Get engine param by name */
-const char* mrcp_resource_engine_param_get(mrcp_resource_engine_t *engine, const char *name);
-
-/** Destroy resource engine */
-static APR_INLINE apt_bool_t mrcp_engine_virtual_destroy(mrcp_resource_engine_t *engine)
-{
-	return engine->method_vtable->destroy(engine);
-}
-
-/** Open resource engine */
-static APR_INLINE apt_bool_t mrcp_engine_virtual_open(mrcp_resource_engine_t *engine)
-{
-	if(engine->is_open == FALSE) {
-		engine->is_open = engine->method_vtable->open(engine);
-		return engine->is_open;
-	}
-	return FALSE;
-}
-
-/** Close resource engine */
-static APR_INLINE apt_bool_t mrcp_engine_virtual_close(mrcp_resource_engine_t *engine)
-{
-	if(engine->is_open == TRUE) {
-		engine->is_open = FALSE;
-		return engine->method_vtable->close(engine);
-	}
-	return FALSE;
-}
-
-/** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_create(
-								mrcp_resource_engine_t *engine,
-								const mrcp_engine_channel_method_vtable_t *method_vtable,
-								void *method_obj,
-								mpf_termination_t *termination,
-								apr_pool_t *pool);
-
-/** Create audio termination */
-mpf_termination_t* mrcp_engine_audio_termination_create(
-								void *obj,
-								const mpf_audio_stream_vtable_t *stream_vtable,
-								mpf_stream_capabilities_t *capabilities,
-								apr_pool_t *pool);
-
-/** Create engine channel and source media termination 
- * @deprecated @see mrcp_engine_channel_create() and mrcp_engine_audio_termination_create()
+/** 
+ * Create resource engine
+ * @deprecated @see mrcp_engine_create
  */
-mrcp_engine_channel_t* mrcp_engine_source_channel_create(
-								mrcp_resource_engine_t *engine,
-								const mrcp_engine_channel_method_vtable_t *channel_vtable,
-								const mpf_audio_stream_vtable_t *stream_vtable,
-								void *method_obj,
-								mpf_codec_descriptor_t *codec_descriptor,
-								apr_pool_t *pool);
-
-/** Create engine channel and sink media termination 
- * @deprecated @see mrcp_engine_channel_create() and mrcp_engine_audio_termination_create()
- */
-mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
-								mrcp_resource_engine_t *engine,
-								const mrcp_engine_channel_method_vtable_t *channel_vtable,
-								const mpf_audio_stream_vtable_t *stream_vtable,
-								void *method_obj,
-								mpf_codec_descriptor_t *codec_descriptor,
-								apr_pool_t *pool);
-
-/** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool);
-
-/** Destroy engine channel */
-apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel);
-
-/** Open engine channel */
-static APR_INLINE apt_bool_t mrcp_engine_channel_virtual_open(mrcp_engine_channel_t *channel)
+static APR_INLINE mrcp_engine_t* mrcp_resource_engine_create(
+					mrcp_resource_id resource_id,
+					void *obj, 
+					const mrcp_engine_method_vtable_t *vtable,
+					apr_pool_t *pool)
 {
-	if(channel->is_open == FALSE) {
-		channel->is_open = channel->method_vtable->open(channel);
-		return channel->is_open;
-	}
-	return FALSE;
+	return mrcp_engine_create(resource_id,obj,vtable,pool);
 }
-
-/** Close engine channel */
-static APR_INLINE apt_bool_t mrcp_engine_channel_virtual_close(mrcp_engine_channel_t *channel)
-{
-	if(channel->is_open == TRUE) {
-		channel->is_open = FALSE;
-		return channel->method_vtable->close(channel);
-	}
-	return FALSE;
-}
-
-/** Process request */
-static APR_INLINE apt_bool_t mrcp_engine_channel_request_process(mrcp_engine_channel_t *channel, mrcp_message_t *message)
-{
-	return channel->method_vtable->process_request(channel,message);
-}
-
-/** Send channel open response */
-static APR_INLINE apt_bool_t mrcp_engine_channel_open_respond(mrcp_engine_channel_t *channel, apt_bool_t status)
-{
-	return channel->event_vtable->on_open(channel,status);
-}
-
-/** Send channel close response */
-static APR_INLINE apt_bool_t mrcp_engine_channel_close_respond(mrcp_engine_channel_t *channel)
-{
-	return channel->event_vtable->on_close(channel);
-}
-
-/** Send response/event message */
-static APR_INLINE apt_bool_t mrcp_engine_channel_message_send(mrcp_engine_channel_t *channel, mrcp_message_t *message)
-{
-	return channel->event_vtable->on_message(channel,message);
-}
-
-/** Get channel identifier */
-static APR_INLINE const char* mrcp_engine_channel_id_get(mrcp_engine_channel_t *channel)
-{
-	return channel->id.buf;
-}
-
-/** Get MRCP version channel is created in the scope of */
-static APR_INLINE mrcp_version_e mrcp_engine_channel_version_get(mrcp_engine_channel_t *channel)
-{
-	return channel->mrcp_version;
-}
-
-/** Get codec descriptor of the audio source stream */
-const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
-
-/** Get codec descriptor of the audio sink stream */
-const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
-
 
 APT_END_EXTERN_C
 

@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-#include "mrcp_resource_engine.h"
-#include "mpf_codec_manager.h"
+#include "mrcp_engine_impl.h"
 
-/** Create resource engine */
-mrcp_resource_engine_t* mrcp_resource_engine_create(
-								mrcp_resource_id resource_id,
-								void *obj, 
-								const mrcp_engine_method_vtable_t *vtable,
-								apr_pool_t *pool)
+/** Create engine */
+mrcp_engine_t* mrcp_engine_create(
+					mrcp_resource_id resource_id,
+					void *obj, 
+					const mrcp_engine_method_vtable_t *vtable,
+					apr_pool_t *pool)
 {
-	mrcp_resource_engine_t *engine = apr_palloc(pool,sizeof(mrcp_resource_engine_t));
-	mrcp_plugin_version_get(&engine->plugin_version);
+	mrcp_engine_t *engine = apr_palloc(pool,sizeof(mrcp_engine_t));
 	engine->resource_id = resource_id;
 	engine->obj = obj;
 	engine->method_vtable =vtable;
@@ -38,24 +36,14 @@ mrcp_resource_engine_t* mrcp_resource_engine_create(
 	return engine;
 }
 
-/** Allocate resource engine config */
-mrcp_resource_engine_config_t* mrcp_resource_engine_config_alloc(apr_pool_t *pool)
-{
-	mrcp_resource_engine_config_t *config = apr_palloc(pool,sizeof(mrcp_resource_engine_config_t));
-	config->name = NULL;
-	config->max_channel_count = 0;
-	config->params = NULL;
-	return config;
-}
-
 /** Get engine config */
-mrcp_resource_engine_config_t* mrcp_resource_engine_config_get(mrcp_resource_engine_t *engine)
+const mrcp_engine_config_t* mrcp_engine_config_get(const mrcp_engine_t *engine)
 {
 	return engine->config;
 }
 
 /** Get engine param by name */
-const char* mrcp_resource_engine_param_get(mrcp_resource_engine_t *engine, const char *name)
+const char* mrcp_engine_param_get(const mrcp_engine_t *engine, const char *name)
 {
 	if(!engine->config || !engine->config->params) {
 		return NULL;
@@ -64,41 +52,12 @@ const char* mrcp_resource_engine_param_get(mrcp_resource_engine_t *engine, const
 }
 
 /** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_resource_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
-{
-	mrcp_engine_channel_t *channel;
-	if(engine->is_open != TRUE) {
-		return NULL;
-	}
-	if(engine->config->max_channel_count && engine->cur_channel_count >= engine->config->max_channel_count) {
-		return NULL;
-	}
-	channel = engine->method_vtable->create_channel(engine,pool);
-	if(channel) {
-		channel->mrcp_version = mrcp_version;
-		engine->cur_channel_count++;
-	}
-	return channel;
-}
-
-/** Destroy engine channel */
-apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel)
-{
-	mrcp_resource_engine_t *engine = channel->engine;
-	if(engine->cur_channel_count) {
-		engine->cur_channel_count--;
-	}
-	return channel->method_vtable->destroy(channel);
-}
-
-
-/** Create engine channel */
 mrcp_engine_channel_t* mrcp_engine_channel_create(
-								mrcp_resource_engine_t *engine, 
-								const mrcp_engine_channel_method_vtable_t *method_vtable,
-								void *method_obj,
-								mpf_termination_t *termination,
-								apr_pool_t *pool)
+							mrcp_engine_t *engine, 
+							const mrcp_engine_channel_method_vtable_t *method_vtable,
+							void *method_obj,
+							mpf_termination_t *termination,
+							apr_pool_t *pool)
 {
 	mrcp_engine_channel_t *channel = apr_palloc(pool,sizeof(mrcp_engine_channel_t));
 	channel->method_vtable = method_vtable;
@@ -147,12 +106,12 @@ mpf_termination_t* mrcp_engine_audio_termination_create(
 
 /** Create engine channel and source media termination */
 mrcp_engine_channel_t* mrcp_engine_source_channel_create(
-								mrcp_resource_engine_t *engine,
-								const mrcp_engine_channel_method_vtable_t *channel_vtable,
-								const mpf_audio_stream_vtable_t *stream_vtable,
-								void *method_obj,
-								mpf_codec_descriptor_t *codec_descriptor,
-								apr_pool_t *pool)
+							mrcp_engine_t *engine,
+							const mrcp_engine_channel_method_vtable_t *channel_vtable,
+							const mpf_audio_stream_vtable_t *stream_vtable,
+							void *method_obj,
+							mpf_codec_descriptor_t *codec_descriptor,
+							apr_pool_t *pool)
 {
 	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
@@ -187,7 +146,7 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 
 	/* create engine channel base */
 	return mrcp_engine_channel_create(
-			engine,          /* resource engine */
+			engine,          /* engine */
 			channel_vtable,  /* virtual methods table of engine channel */
 			method_obj,      /* object to associate */
 			termination,     /* media termination, used to terminate audio stream */
@@ -196,12 +155,12 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 
 /** Create engine channel and sink media termination */
 mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
-								mrcp_resource_engine_t *engine,
-								const mrcp_engine_channel_method_vtable_t *channel_vtable,
-								const mpf_audio_stream_vtable_t *stream_vtable,
-								void *method_obj,
-								mpf_codec_descriptor_t *codec_descriptor,
-								apr_pool_t *pool)
+							mrcp_engine_t *engine,
+							const mrcp_engine_channel_method_vtable_t *channel_vtable,
+							const mpf_audio_stream_vtable_t *stream_vtable,
+							void *method_obj,
+							mpf_codec_descriptor_t *codec_descriptor,
+							apr_pool_t *pool)
 {
 	mpf_stream_capabilities_t *capabilities;
 	mpf_audio_stream_t *audio_stream;
@@ -236,7 +195,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 
 	/* create engine channel base */
 	return mrcp_engine_channel_create(
-			engine,          /* resource engine */
+			engine,          /* engine */
 			channel_vtable,  /* virtual methods table of engine channel */
 			method_obj,      /* object to associate */
 			termination,     /* media termination, used to terminate audio stream */

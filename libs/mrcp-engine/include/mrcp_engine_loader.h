@@ -22,7 +22,7 @@
  * @brief Loader of plugins for MRCP engines
  */ 
 
-#include "mrcp_resource_engine.h"
+#include "mrcp_engine_iface.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -40,9 +40,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_loader_plugins_unload(mrcp_engine_loader_t 
 
 
 /** Load engine plugin */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t *loader, const char *path, const char *name);
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t *loader, const char *path, const char *name);
 
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_ENGINE_FACTORY_H__*/
+#endif /*__MRCP_ENGINE_LOADER_H__*/

@@ -109,7 +109,7 @@ struct mrcp_server_session_t {
 
 /** MRCP profile */
 struct mrcp_profile_t {
-	/** Table of resource engines (mrcp_resource_engine_t*) */
+	/** Table of engines (mrcp_engine_t*) */
 	apr_hash_t                *engine_table;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;

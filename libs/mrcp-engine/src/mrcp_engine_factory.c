@@ -16,6 +16,7 @@
 
 #include <apr_hash.h>
 #include "mrcp_engine_factory.h"
+#include "apt_log.h"
 
 /** Engine factory declaration */
 struct mrcp_engine_factory_t {
@@ -35,16 +36,16 @@ MRCP_DECLARE(mrcp_engine_factory_t*) mrcp_engine_factory_create(apr_pool_t *pool
 /** Destroy registered engines and the factory */
 MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_destroy(mrcp_engine_factory_t *factory)
 {
-	mrcp_resource_engine_t *resource_engine;
+	mrcp_engine_t *engine;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy Resource Engines");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy MRCP Engines");
 	it=apr_hash_first(factory->pool,factory->engines);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine) {
-			mrcp_engine_virtual_destroy(resource_engine);
+		engine = val;
+		if(engine) {
+			mrcp_engine_virtual_destroy(engine);
 		}
 	}
 	apr_hash_clear(factory->engines);
@@ -54,16 +55,16 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_destroy(mrcp_engine_factory_t *fact
 /** Open registered engines */
 MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_open(mrcp_engine_factory_t *factory)
 {
-	mrcp_resource_engine_t *resource_engine;
+	mrcp_engine_t *engine;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Resource Engines");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open MRCP Engines");
 	it = apr_hash_first(factory->pool,factory->engines);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine) {
-			mrcp_engine_virtual_open(resource_engine);
+		engine = val;
+		if(engine) {
+			mrcp_engine_virtual_open(engine);
 		}
 	}
 	return TRUE;
@@ -72,23 +73,23 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_open(mrcp_engine_factory_t *factory
 /** Close registered engines */
 MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_close(mrcp_engine_factory_t *factory)
 {
-	mrcp_resource_engine_t *resource_engine;
+	mrcp_engine_t *engine;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Resource Engines");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close MRCP Engines");
 	it=apr_hash_first(factory->pool,factory->engines);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
-		resource_engine = val;
-		if(resource_engine) {
-			mrcp_engine_virtual_close(resource_engine);
+		engine = val;
+		if(engine) {
+			mrcp_engine_virtual_close(engine);
 		}
 	}
 	return TRUE;
 }
 
 /** Register new engine */
-MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_resource_engine_t *engine, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine, const char *name)
 {
 	if(!engine || !name) {
 		return FALSE;
@@ -98,7 +99,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory
 }
 
 /** Get engine by name */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name)
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name)
 {
 	if(!name) {
 		return NULL;
@@ -107,9 +108,9 @@ MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine
 }
 
 /** Find engine by resource identifier */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id)
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id)
 {
-	mrcp_resource_engine_t *engine;
+	mrcp_engine_t *engine;
 	void *val;
 	apr_hash_index_t *it = apr_hash_first(factory->pool,factory->engines);
 	/* walk through the engines */

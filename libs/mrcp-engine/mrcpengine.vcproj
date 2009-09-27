@@ -134,15 +134,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_engine_iface.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mrcp_engine_impl.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_engine_loader.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\mrcp_resource_engine.h"
+				RelativePath=".\include\mrcp_engine_types.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\mrcp_resource_plugin.h"
+				RelativePath=".\include\mrcp_resource_engine.h"
 				>
 			</File>
 		</Filter>
@@ -155,11 +163,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\mrcp_engine_loader.c"
+				RelativePath=".\src\mrcp_engine_iface.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\mrcp_resource_engine.c"
+				RelativePath=".\src\mrcp_engine_impl.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_engine_loader.c"
 				>
 			</File>
 		</Filter>

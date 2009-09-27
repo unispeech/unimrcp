@@ -19,10 +19,10 @@
 
 /**
  * @file mrcp_engine_factory.h
- * @brief Factory of MRCP Resource Engines
+ * @brief Factory of MRCP Engines
  */ 
 
-#include "mrcp_resource_engine.h"
+#include "mrcp_engine_iface.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -43,13 +43,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_close(mrcp_engine_factory_t *factor
 
 
 /** Register engine */
-MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_resource_engine_t *engine, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine, const char *name);
 
 /** Get engine by name */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name);
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name);
 
 /** Find engine by resource identifier */
-MRCP_DECLARE(mrcp_resource_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id);
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id);
 
 
 APT_END_EXTERN_C

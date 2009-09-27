@@ -516,13 +516,13 @@ static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const
 /** Load plugin */
 static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_elem *root, apr_pool_t *pool)
 {
-	mrcp_resource_engine_config_t *config;
+	mrcp_engine_config_t *config;
 	const char *plugin_class = NULL;
 	const char *plugin_ext = NULL;
 	const char *plugin_path = NULL;
 	apt_bool_t plugin_enabled = TRUE;
 	const apr_xml_attr *attr;
-	config = mrcp_resource_engine_config_alloc(pool);
+	config = mrcp_engine_config_alloc(pool);
 	for(attr = root->attr; attr; attr = attr->next) {
 		if(strcasecmp(attr->name,"name") == 0) {
 			config->name = apr_pstrdup(pool,attr->value);
@@ -585,7 +585,7 @@ static apt_bool_t unimrcp_server_plugin_load(mrcp_server_t *server, const char *
 static apt_bool_t unimrcp_server_plugins_load(mrcp_server_t *server, const char *plugin_dir_path, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Plugins (Resource Engines)");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Engine Plugins");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"engine") == 0) {
 			unimrcp_server_plugin_load(server,plugin_dir_path,elem,pool);

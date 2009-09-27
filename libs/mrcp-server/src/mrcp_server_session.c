@@ -18,7 +18,7 @@
 #include "mrcp_server_session.h"
 #include "mrcp_resource.h"
 #include "mrcp_resource_factory.h"
-#include "mrcp_resource_engine.h"
+#include "mrcp_engine_iface.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_server_connection.h"
 #include "mrcp_session_descriptor.h"
@@ -26,6 +26,7 @@
 #include "mrcp_state_machine.h"
 #include "mrcp_message.h"
 #include "mpf_termination.h"
+#include "mpf_stream.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
@@ -42,7 +43,7 @@ struct mrcp_channel_t {
 	mrcp_session_t         *session;
 	/** MRCP control channel */
 	mrcp_control_channel_t *control_channel;
-	/** MRCP resource engine channel */
+	/** MRCP engine channel */
 	mrcp_engine_channel_t  *engine_channel;
 	/** MRCP resource state machine  */
 	mrcp_state_machine_t   *state_machine;
@@ -117,16 +118,16 @@ static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t 
 
 static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name)
 {
-	mrcp_resource_engine_t *resource_engine = apr_hash_get(
-												session->profile->engine_table,
-												resource_name->buf,
-												resource_name->length);
-	if(!resource_engine) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Resource Engine [%s]",resource_name->buf);
+	mrcp_engine_t *engine = apr_hash_get(
+									session->profile->engine_table,
+									resource_name->buf,
+									resource_name->length);
+	if(!engine) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find MRCP Engine [%s]",resource_name->buf);
 		return NULL;
 	}
 
-	return mrcp_engine_channel_virtual_create(resource_engine,mrcp_session_version_get(session),session->base.pool);
+	return mrcp_engine_channel_virtual_create(engine,mrcp_session_version_get(session),session->base.pool);
 }
 
 static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_array_header_t *cmid_arr)
@@ -181,7 +182,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 				channel->engine_channel = engine_channel;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Resource Engine Channel [%s]",resource_name->buf);
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Engine Channel [%s]",resource_name->buf);
 				session->answer->status = MRCP_SESSION_STATUS_UNACCEPTABLE_RESOURCE;
 			}
 		}
@@ -467,7 +468,7 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 				}
 			}
 
-			/* close resource engine channel */
+			/* close engine channel */
 			if(mrcp_engine_channel_virtual_close(channel->engine_channel) == TRUE) {
 				mrcp_server_session_subrequest_add(session);
 			}
@@ -575,7 +576,7 @@ static apt_bool_t mrcp_server_engine_channels_update(mrcp_server_session_t *sess
 		if(session->offer) {
 			channel = mrcp_server_channel_find(session,&descriptor->resource_name);
 			if(channel && channel->engine_channel) {
-				/* open resource engine channel */
+				/* open engine channel */
 				if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
 					mrcp_server_session_subrequest_add(session);
 				}
@@ -593,13 +594,13 @@ static apt_bool_t mrcp_server_engine_channels_update(mrcp_server_session_t *sess
 			if(!control_descriptor) continue;
 
 			if(control_descriptor->port) {
-				/* open resource engine channel */
+				/* open engine channel */
 				if(mrcp_engine_channel_virtual_open(channel->engine_channel) == TRUE) {
 					mrcp_server_session_subrequest_add(session);
 				}
 			}
 			else {
-				/* close resource engine channel */
+				/* close engine channel */
 				if(mrcp_engine_channel_virtual_close(channel->engine_channel) == TRUE) {
 					mrcp_server_session_subrequest_add(session);
 				}
@@ -1083,7 +1084,7 @@ static apt_bool_t state_machine_on_message_dispatch(mrcp_state_machine_t *state_
 	mrcp_channel_t *channel = state_machine->obj;
 
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
-		/* send request message to resource engine for actual processing */
+		/* send request message to engine for actual processing */
 		if(channel->engine_channel) {
 			mrcp_engine_channel_request_process(channel->engine_channel,message);
 		}
