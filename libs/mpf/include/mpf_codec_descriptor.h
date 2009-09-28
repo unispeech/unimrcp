@@ -126,7 +126,7 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 /** Initialize codec descriptor */
 static APR_INLINE  mpf_codec_descriptor_t* mpf_codec_descriptor_create(apr_pool_t *pool)
 {
-	mpf_codec_descriptor_t *descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+	mpf_codec_descriptor_t *descriptor = (mpf_codec_descriptor_t*) apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
 	mpf_codec_descriptor_init(descriptor);
 	return descriptor;
 }
