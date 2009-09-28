@@ -146,6 +146,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_engine_plugin.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_engine_types.h"
 				>
 			</File>

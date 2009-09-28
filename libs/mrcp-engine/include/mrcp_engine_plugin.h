@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef __MRCP_RESOURCE_PLUGIN_H__
-#define __MRCP_RESOURCE_PLUGIN_H__
+#ifndef __MRCP_ENGINE_PLUGIN_H__
+#define __MRCP_ENGINE_PLUGIN_H__
 
 /**
- * @file mrcp_resource_plugin.h
- * @brief MRCP Resource Engine Plugin
+ * @file mrcp_engine_plugin.h
+ * @brief MRCP Engine Plugin
  */ 
 
 #include "apr_version.h"
@@ -42,7 +42,7 @@ APT_BEGIN_EXTERN_C
 /** [IMPLIED] Symbol name of the log accessor entry point in plugin DSO */
 #define MRCP_PLUGIN_LOGGER_SYM_NAME "mrcp_plugin_logger_set"
 
-/** Prototype of resource engine creator (entry point of plugin DSO) */
+/** Prototype of engine creator (entry point of plugin DSO) */
 typedef mrcp_engine_t* (*mrcp_plugin_creator_f)(apr_pool_t *pool);
 
 /** Prototype of log accessor (entry point of plugin DSO) */
@@ -113,4 +113,4 @@ static APR_INLINE int mrcp_plugin_version_check(mrcp_plugin_version_t *version)
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_RESOURCE_PLUGIN_H__*/
+#endif /*__MRCP_ENGINE_PLUGIN_H__*/
