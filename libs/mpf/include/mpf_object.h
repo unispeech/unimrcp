@@ -39,6 +39,14 @@ struct mpf_object_t {
 	void (*trace)(mpf_object_t *object);
 };
 
+/** Initialize object */
+static APR_INLINE void mpf_object_init(mpf_object_t *object)
+{
+	object->destroy = NULL;
+	object->process = NULL;
+	object->trace = NULL;
+}
+
 /** Destroy object */
 static APR_INLINE void mpf_object_destroy(mpf_object_t *object)
 {
@@ -59,7 +67,6 @@ static APR_INLINE void mpf_object_trace(mpf_object_t *object)
 	if(object->trace)
 		object->trace(object);
 }
-
 
 
 APT_END_EXTERN_C

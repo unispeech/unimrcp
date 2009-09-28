@@ -78,7 +78,7 @@ static void mpf_bridge_trace(mpf_object_t *object)
 
 	mpf_audio_stream_trace(bridge->sink,STREAM_DIRECTION_SEND,&output);
 
-	output.pos = "\0";
+	*output.pos = '\0';
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,output.text.buf);
 }
 
@@ -102,6 +102,7 @@ static mpf_bridge_t* mpf_bridge_base_create(mpf_audio_stream_t *source, mpf_audi
 	bridge = apr_palloc(pool,sizeof(mpf_bridge_t));
 	bridge->source = source;
 	bridge->sink = sink;
+	mpf_object_init(&bridge->base);
 	bridge->base.destroy = mpf_bridge_destroy;
 	bridge->base.process = mpf_bridge_process;
 	bridge->base.trace = mpf_bridge_trace;

@@ -98,6 +98,37 @@ static apt_bool_t mpf_mixer_destroy(mpf_object_t *object)
 	return TRUE;
 }
 
+static void mpf_mixer_trace(mpf_object_t *object)
+{
+	mpf_mixer_t *mixer = (mpf_mixer_t*) object;
+	apr_size_t i;
+	mpf_audio_stream_t *source;
+	char buf[2048];
+	apr_size_t offset;
+
+	apt_text_stream_t output;
+	apt_text_stream_init(&output,buf,sizeof(buf)-1);
+
+	for(i=0; i<mixer->source_count; i++)	{
+		source = mixer->source_arr[i];
+		if(source) {
+			mpf_audio_stream_trace(source,STREAM_DIRECTION_RECEIVE,&output);
+			if(apt_text_is_eos(&output) == FALSE) {
+				*output.pos++ = ';';
+			}
+		}
+	}
+
+	offset = output.pos - output.text.buf;
+	output.pos += apr_snprintf(output.pos, output.text.length - offset,
+		"->Mixer->");
+
+	mpf_audio_stream_trace(mixer->sink,STREAM_DIRECTION_SEND,&output);
+
+	*output.pos = '\0';
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,output.text.buf);
+}
+
 MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 								mpf_audio_stream_t **source_arr, 
 								apr_size_t source_count, 
@@ -118,13 +149,35 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 	mixer->source_arr = NULL;
 	mixer->source_count = 0;
 	mixer->sink = NULL;
+	mpf_object_init(&mixer->base);
 	mixer->base.process = mpf_mixer_process;
 	mixer->base.destroy = mpf_mixer_destroy;
+	mixer->base.trace = mpf_mixer_trace;
+
+	if(mpf_audio_stream_tx_validate(sink,NULL,pool) == FALSE) {
+		return NULL;
+	}
+
+	descriptor = sink->tx_descriptor;
+	if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
+		mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
+		if(codec) {
+			/* set encoder after mixer */
+			mpf_audio_stream_t *encoder = mpf_encoder_create(sink,codec,pool);
+			sink = encoder;
+		}
+	}
+	mixer->sink = sink;
+	mpf_audio_stream_tx_open(sink,NULL);
 
 	for(i=0; i<source_count; i++)	{
 		source = source_arr[i];
 		if(!source) continue;
-		
+
+		if(mpf_audio_stream_rx_validate(source,NULL,pool) == FALSE) {
+			continue;
+		}
+
 		descriptor = source->rx_descriptor;
 		if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
 			mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
@@ -139,18 +192,6 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 	}
 	mixer->source_arr = source_arr;
 	mixer->source_count = source_count;
-
-	descriptor = sink->tx_descriptor;
-	if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
-		mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
-		if(codec) {
-			/* set encoder after mixer */
-			mpf_audio_stream_t *encoder = mpf_encoder_create(sink,codec,pool);
-			sink = encoder;
-		}
-	}
-	mixer->sink = sink;
-	mpf_audio_stream_tx_open(sink,NULL);
 
 	descriptor = sink->tx_descriptor;
 	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);

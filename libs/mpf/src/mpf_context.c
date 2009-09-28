@@ -417,9 +417,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_topology_destroy(mpf_context_t *context)
 		mpf_object_t *object;
 		for(i=0; i<context->mpf_objects->nelts; i++) {
 			object = APR_ARRAY_IDX(context->mpf_objects,i,mpf_object_t*);
-			if(object && object->destroy) {
-				object->destroy(object);
-			}
+			mpf_object_destroy(object);
 		}
 		apr_array_clear(context->mpf_objects);
 	}

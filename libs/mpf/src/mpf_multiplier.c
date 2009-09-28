@@ -78,6 +78,37 @@ static apt_bool_t mpf_multiplier_destroy(mpf_object_t *object)
 	return TRUE;
 }
 
+static void mpf_multiplier_trace(mpf_object_t *object)
+{
+	mpf_multiplier_t *multiplier = (mpf_multiplier_t*) object;
+	apr_size_t i;
+	mpf_audio_stream_t *sink;
+	char buf[2048];
+	apr_size_t offset;
+
+	apt_text_stream_t output;
+	apt_text_stream_init(&output,buf,sizeof(buf)-1);
+
+	mpf_audio_stream_trace(multiplier->source,STREAM_DIRECTION_RECEIVE,&output);
+	
+	offset = output.pos - output.text.buf;
+	output.pos += apr_snprintf(output.pos, output.text.length - offset,
+		"->Multiplier->");
+
+	for(i=0; i<multiplier->sink_count; i++)	{
+		sink = multiplier->sink_arr[i];
+		if(sink) {
+			mpf_audio_stream_trace(sink,STREAM_DIRECTION_SEND,&output);
+			if(apt_text_is_eos(&output) == FALSE) {
+				*output.pos++ = ';';
+			}
+		}
+	}
+
+	*output.pos = '\0';
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,output.text.buf);
+}
+
 MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 								mpf_audio_stream_t *source,
 								mpf_audio_stream_t **sink_arr,
@@ -98,8 +129,14 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 	multiplier->source = NULL;
 	multiplier->sink_arr = NULL;
 	multiplier->sink_count = 0;
+	mpf_object_init(&multiplier->base);
 	multiplier->base.process = mpf_multiplier_process;
 	multiplier->base.destroy = mpf_multiplier_destroy;
+	multiplier->base.trace = mpf_multiplier_trace;
+
+	if(mpf_audio_stream_rx_validate(source,NULL,pool) == FALSE) {
+		return NULL;
+	}
 
 	descriptor = source->rx_descriptor;
 	if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
@@ -116,7 +153,11 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 	for(i=0; i<sink_count; i++)	{
 		sink = sink_arr[i];
 		if(!sink) continue;
-		
+
+		if(mpf_audio_stream_tx_validate(sink,NULL,pool) == FALSE) {
+			continue;
+		}
+
 		descriptor = sink->tx_descriptor;
 		if(descriptor && mpf_codec_lpcm_descriptor_match(descriptor) == FALSE) {
 			mpf_codec_t *codec = mpf_codec_manager_codec_get(codec_manager,descriptor,pool);
