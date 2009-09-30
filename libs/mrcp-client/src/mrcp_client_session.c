@@ -218,6 +218,13 @@ apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t 
 
 apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *session)
 {
+	if(session->state == SESSION_STATE_TERMINATING) {
+		/* session termination request has been sent, still waiting for the response,
+		   all the events must be ignored at this stage */
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected Event! "APT_PTRSID_FMT, MRCP_SESSION_PTRSID(&session->base));
+		return FALSE;
+	}
+	
 	if(session->active_request) {
 		/* raise app response */
 		session->status = MRCP_SIG_STATUS_CODE_TERMINATE;
@@ -1149,7 +1156,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 {
 	if(session->state == SESSION_STATE_TERMINATING) {
 		/* no more requests are allowed, as session is being terminated!
-		   just return, it is horribly wrong and can crush anytime here */
+		   just return, it is horribly wrong and can crash anytime here */
 		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Inappropriate Application Request "APT_PTRSID_FMT" [%d]",
 			MRCP_SESSION_PTRSID(&session->base),
 			app_message->sig_message.command_id);
