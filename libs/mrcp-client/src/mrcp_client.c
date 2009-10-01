@@ -510,6 +510,14 @@ MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session)
 	return client_session->app_obj;
 }
 
+/** Set (associate) external object to the session */
+MRCP_DECLARE(void) mrcp_application_session_object_set(mrcp_session_t *session, void *obj)
+{
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	if(client_session) {
+		client_session->app_obj = obj;
+	}
+}
 
 /** Send session update request */
 MRCP_DECLARE(apt_bool_t) mrcp_application_session_update(mrcp_session_t *session)

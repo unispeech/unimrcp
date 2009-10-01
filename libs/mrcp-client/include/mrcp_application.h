@@ -179,6 +179,13 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
  */
 MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session);
 
+/**
+ * Set (associate) external object to the session.
+ * @param session the session to set object for
+ * @param obj the object to set
+ */
+MRCP_DECLARE(void) mrcp_application_session_object_set(mrcp_session_t *session, void *obj);
+
 /** 
  * Send session update request.
  * @param session the session to update
