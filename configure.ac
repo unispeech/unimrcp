@@ -31,7 +31,7 @@ AC_PROG_LIBTOOL
 # Get version information
 get_version="build/get-version.sh"
 version_hdr="build/uni_version.h"
-plugin_version_hdr="libs/mrcp-engine/include/mrcp_resource_plugin.h"
+plugin_version_hdr="libs/mrcp-engine/include/mrcp_engine_plugin.h"
 UNI_DOTTED_VERSION="`$get_version all $version_hdr UNI`"
 UNI_LT_VERSION="-version-info `$get_version libtool $version_hdr UNI`"
 PLUGIN_LT_VERSION="-version-info `$get_version libtool $plugin_version_hdr PLUGIN`"
