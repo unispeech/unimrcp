@@ -62,7 +62,7 @@ APT_DECLARE(const apt_pair_t*) apt_pair_array_find(const apt_pair_arr_t *arr, co
 	int i;
 	apt_pair_t *pair;
 	for(i=0; i<arr->nelts; i++) {
-		pair = APR_ARRAY_IDX(arr,i,apt_pair_t*);
+		pair = &APR_ARRAY_IDX(arr,i,apt_pair_t);
 		if(apt_string_compare(&pair->name,name) == TRUE) {
 			return pair;
 		}
