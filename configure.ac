@@ -191,6 +191,7 @@ AC_CONFIG_FILES([
   platforms/unimrcp-client/Makefile
   platforms/libasr-client/Makefile
   platforms/asr-client/Makefile
+  platforms/umc/Makefile
   tests/Makefile
   tests/apttest/Makefile
   tests/mpftest/Makefile

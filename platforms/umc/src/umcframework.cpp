@@ -36,6 +36,11 @@ enum UmcTaskMsgType
 	UMC_TASK_KILL_SESSION_MSG
 };
 
+apt_bool_t UmcProcessMsg(apt_task_t* pTask, apt_task_msg_t* pMsg);
+void UmcOnStartComplete(apt_task_t* pTask);
+void UmcOnTerminateComplete(apt_task_t* pTask);
+apt_bool_t AppMessageHandler(const mrcp_app_message_t* pAppMessage);
+
 
 UmcFramework::UmcFramework() :
 	m_pPool(NULL),
@@ -308,13 +313,13 @@ apt_bool_t AppMessageHandler(const mrcp_app_message_t* pMessage)
 }
 
 
-apt_bool_t OnSessionUpdate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
+apt_bool_t AppOnSessionUpdate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	return pSession->OnSessionUpdate(status);
 }
 
-apt_bool_t OnSessionTerminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
+apt_bool_t AppOnSessionTerminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	if(!pSession->OnSessionTerminate(status))
@@ -326,37 +331,37 @@ apt_bool_t OnSessionTerminate(mrcp_application_t *application, mrcp_session_t *s
 	return true;
 }
 
-apt_bool_t OnChannelAdd(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
+apt_bool_t AppOnChannelAdd(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	return pSession->OnChannelAdd(channel,status);
 }
 
-apt_bool_t OnChannelRemove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
+apt_bool_t AppOnChannelRemove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	return pSession->OnChannelRemove(channel,status);
 }
 
-apt_bool_t OnMessageReceive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
+apt_bool_t AppOnMessageReceive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	return pSession->OnMessageReceive(channel,message);
 }
 
-apt_bool_t OnTerminateEvent(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel)
+apt_bool_t AppOnTerminateEvent(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	return pSession->OnTerminateEvent(channel);
 }
 
-apt_bool_t OnResourceDiscover(mrcp_application_t *application, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_sig_status_code_e status)
+apt_bool_t AppOnResourceDiscover(mrcp_application_t *application, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_sig_status_code_e status)
 {
 	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
 	return pSession->OnResourceDiscover(descriptor,status);
 }
 
-apt_bool_t OnReady(mrcp_application_t *application, mrcp_sig_status_code_e status)
+apt_bool_t AppOnReady(mrcp_application_t *application, mrcp_sig_status_code_e status)
 {
 	UmcFramework* pFramework = (UmcFramework*) mrcp_application_object_get(application);
 	pFramework->m_Ready = true;
@@ -395,14 +400,14 @@ apt_bool_t UmcProcessMsg(apt_task_t *pTask, apt_task_msg_t *pMsg)
 		{
 			static const mrcp_app_message_dispatcher_t applicationDispatcher = 
 			{
-				OnSessionUpdate,
-				OnSessionTerminate,
-				OnChannelAdd,
-				OnChannelRemove,
-				OnMessageReceive,
-				OnReady,
-				OnTerminateEvent,
-				OnResourceDiscover
+				AppOnSessionUpdate,
+				AppOnSessionTerminate,
+				AppOnChannelAdd,
+				AppOnChannelRemove,
+				AppOnMessageReceive,
+				AppOnReady,
+				AppOnTerminateEvent,
+				AppOnResourceDiscover
 			};
 
 			mrcp_application_message_dispatch(&applicationDispatcher,pUmcMsg->m_pAppMessage);

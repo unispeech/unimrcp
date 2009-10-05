@@ -64,8 +64,8 @@ protected:
 	friend void UmcOnTerminateComplete(apt_task_t* pTask);
 
 	friend apt_bool_t AppMessageHandler(const mrcp_app_message_t* pAppMessage);
-	friend apt_bool_t OnReady(mrcp_application_t* pMrcpApplication, mrcp_sig_status_code_e status);
-	friend apt_bool_t OnSessionTerminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
+	friend apt_bool_t AppOnReady(mrcp_application_t* pMrcpApplication, mrcp_sig_status_code_e status);
+	friend apt_bool_t AppOnSessionTerminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
 
 private:
 /* ============================ DATA ======================================= */
