@@ -134,7 +134,7 @@ static apr_xml_doc* unimrcp_server_config_parse(const char *dir_path, apr_pool_t
 	rv = apr_xml_parse_file(pool,&parser,&doc,fd,XML_FILE_BUFFER_LENGTH);
 	if(rv != APR_SUCCESS) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse Config File [%s]",file_path);
-		return NULL;
+		doc = NULL;
 	}
 
 	apr_file_close(fd);
