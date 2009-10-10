@@ -273,7 +273,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 
 
 /** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
-MPF_DECLARE(apt_bool_t) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate);
+MPF_DECLARE(int) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate);
 
 
 APT_END_EXTERN_C

@@ -35,7 +35,7 @@ static mpf_codec_attribs_t* mpf_codec_capabilities_attribs_find(const mpf_codec_
 
 
 /** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
-MPF_DECLARE(apt_bool_t) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate)
+MPF_DECLARE(int) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate)
 {
 	switch(sampling_rate) {
 		case 8000:
