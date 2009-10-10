@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "synthscenario.h"
 #include "synthsession.h"
 #include "mrcp_message.h"

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "recogscenario.h"
 #include "recogsession.h"
 #include "mrcp_message.h"

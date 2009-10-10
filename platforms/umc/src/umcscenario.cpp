@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "umcscenario.h"
 
 UmcScenario::UmcScenario() :
