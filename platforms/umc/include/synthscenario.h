@@ -32,21 +32,43 @@ public:
 	virtual ~SynthScenario();
 
 /* ============================ MANIPULATORS =============================== */
-	virtual bool Load(apr_pool_t* pool);
 	virtual void Destroy();
 
 	virtual UmcSession* CreateSession();
 
-	bool InitSpeakRequest(mrcp_message_t* pMrcpMessage) const;
-	bool InitCapabilities(mpf_stream_capabilities_t* pCapabilities) const;
-	FILE* GetAudioOut(const mpf_codec_descriptor_t* pDescriptor, const char* id, apr_pool_t* pool) const;
+/* ============================ ACCESSORS ================================== */
+	const char* GetContentType() const;
+	const char* GetContent() const;
+
+/* ============================ INQUIRIES ================================== */
+	bool IsSpeakEnabled() const;
 
 protected:
+/* ============================ MANIPULATORS =============================== */
+	virtual bool LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool);
+
+	bool LoadSpeak(const apr_xml_elem* pElem, apr_pool_t* pool);
+
 /* ============================ DATA ======================================= */
+	bool        m_Speak;
 	const char* m_ContentType;
 	const char* m_Content;
-	int         m_SampleRates;
-	const char* m_Codec;
 };
+
+/* ============================ INLINE METHODS ============================= */
+inline const char* SynthScenario::GetContentType() const
+{
+	return m_ContentType;
+}
+
+inline const char* SynthScenario::GetContent() const
+{
+	return m_Content;
+}
+
+inline bool SynthScenario::IsSpeakEnabled() const
+{
+	return m_Speak;
+}
 
 #endif /*__SYNTH_SCENARIO_H__*/

@@ -15,10 +15,12 @@
  */
 
 #include "umcsession.h"
+#include "umcscenario.h"
 #include "mrcp_session.h"
 
 UmcSession::UmcSession(const UmcScenario* pScenario) :
 	m_pScenario(pScenario),
+	m_pMrcpProfile(NULL),
 	m_Id(0),
 	m_pMrcpApplication(NULL),
 	m_pMrcpSession(NULL),
@@ -31,13 +33,34 @@ UmcSession::~UmcSession()
 {
 }
 
-bool UmcSession::Run(const char* pProfileName)
+bool UmcSession::Run()
 {
 	if(m_Running)
 		return false;
 
+	if(!m_pMrcpProfile)
+		m_pMrcpProfile = m_pScenario->GetMrcpProfile();
+
+	if(!m_pMrcpProfile || !m_pMrcpApplication)
+		return false;
+
 	m_Running = true;
-	return true;
+	
+	/* create session */
+	CreateMrcpSession(m_pMrcpProfile);
+	
+	bool ret = false;
+	if(m_pScenario->IsDiscoveryEnabled())
+		ret = ResourceDiscover();
+	else
+		ret = Start();
+	
+	if(!ret)
+	{
+		m_Running = false;
+		DestroyMrcpSession();
+	}
+	return ret;
 }
 
 bool UmcSession::Terminate()
@@ -89,7 +112,12 @@ bool UmcSession::OnTerminateEvent(mrcp_channel_t *channel)
 
 bool UmcSession::OnResourceDiscover(mrcp_session_descriptor_t* descriptor, mrcp_sig_status_code_e status)
 {
-	return m_Running;
+	if(!m_Running)
+		return false;
+
+	if(!Start())
+		Terminate();
+	return true;
 }
 
 bool UmcSession::CreateMrcpSession(const char* pProfileName)
@@ -127,6 +155,14 @@ bool UmcSession::SendMrcpRequest(mrcp_channel_t* pMrcpChannel, mrcp_message_t* p
 		return false;
 
 	return (mrcp_application_message_send(m_pMrcpSession,pMrcpChannel,pMrcpMessage) == TRUE);
+}
+
+bool UmcSession::ResourceDiscover()
+{
+	if(!m_Running)
+		return false;
+
+	return (mrcp_application_resource_discover(m_pMrcpSession) == TRUE);
 }
 
 mrcp_channel_t* UmcSession::CreateMrcpChannel(

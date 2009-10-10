@@ -32,23 +32,50 @@ public:
 	virtual ~RecogScenario();
 
 /* ============================ MANIPULATORS =============================== */
-	virtual bool Load(apr_pool_t* pool);
 	virtual void Destroy();
 
 	virtual UmcSession* CreateSession();
 
-	bool InitDefineGrammarRequest(mrcp_message_t* pMrcpMessage) const;
-	bool InitRecognizeRequest(mrcp_message_t* pMrcpMessage) const;
-	bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const;
-	bool InitCapabilities(mpf_stream_capabilities_t* pCapabilities) const;
-	FILE* GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, const char* id, apr_pool_t* pool) const;
+/* ============================ ACCESSORS ================================== */
+	const char* GetContentType() const;
+	const char* GetContent() const;
 
+/* ============================ INQUIRIES ================================== */
+	bool IsDefineGrammarEnabled() const;
+	bool IsRecognizeEnabled() const;
 protected:
+/* ============================ MANIPULATORS =============================== */
+	virtual bool LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool);
+
+	bool LoadRecognize(const apr_xml_elem* pElem, apr_pool_t* pool);
+	bool LoadDefineGrammar(const apr_xml_elem* pElem, apr_pool_t* pool);
+
 /* ============================ DATA ======================================= */
+	bool        m_DefineGrammar;
+	bool        m_Recognize;
 	const char* m_ContentType;
 	const char* m_Content;
-	int         m_SampleRates;
-	const char* m_Codec;
 };
+
+/* ============================ INLINE METHODS ============================= */
+inline const char* RecogScenario::GetContentType() const
+{
+	return m_ContentType;
+}
+
+inline const char* RecogScenario::GetContent() const
+{
+	return m_Content;
+}
+
+inline bool RecogScenario::IsDefineGrammarEnabled() const
+{
+	return m_DefineGrammar;
+}
+
+inline bool RecogScenario::IsRecognizeEnabled() const
+{
+	return m_Recognize;
+}
 
 #endif /*__RECOG_SCENARIO_H__*/

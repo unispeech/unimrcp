@@ -22,6 +22,7 @@
  * @brief UMC Scenario
  */ 
 
+#include <apr_xml.h>
 #include "mrcp_application.h"
 
 class UmcSession;
@@ -30,27 +31,52 @@ class UmcScenario
 {
 public:
 /* ============================ CREATORS =================================== */
-	UmcScenario(const char* pName);
+	UmcScenario();
 	virtual ~UmcScenario();
 
 /* ============================ MANIPULATORS =============================== */
-	virtual bool Load(apr_pool_t* pool);
+	virtual bool Load(const apr_xml_elem* pElem, apr_pool_t* pool);
 	virtual void Destroy();
 
 	virtual UmcSession* CreateSession() = 0;
 
 	void SetDirLayout(apt_dir_layout_t* pDirLayout);
+	void SetName(const char* pName);
+	void SetMrcpProfile(const char* pMrcpProfile);
+
+	bool InitCapabilities(mpf_stream_capabilities_t* pCapabilities) const;
 
 /* ============================ ACCESSORS ================================== */
-	const char* GetName() const {return m_pName;}
+	apt_dir_layout_t* GetDirLayout() const;
+	const char* GetName() const;
+	const char* GetMrcpProfile() const;
+
+/* ============================ INQUIRIES ================================== */
+	bool IsDiscoveryEnabled() const;
 
 protected:
 /* ============================ MANIPULATORS =============================== */
-	const char* LoadFileContent(const char* pFileName, apr_pool_t* pool);
+	virtual bool LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool);
+	
+	bool LoadDiscovery(const apr_xml_elem* pElem, apr_pool_t* pool);
+	bool LoadTermination(const apr_xml_elem* pElem, apr_pool_t* pool);
+	bool LoadCapabilities(const apr_xml_elem* pElem, apr_pool_t* pool);
+	bool LoadRtpTermination(const apr_xml_elem* pElem, apr_pool_t* pool);
+
+	const char* LoadFileContent(const char* pFileName, apr_pool_t* pool) const;
+	int ParseRates(const char* pStr, apr_pool_t* pool) const;
+
+/* ============================ INQUIRIES ================================== */
+	bool IsElementEnabled(const apr_xml_elem* pElem) const;
 
 /* ============================ DATA ======================================= */
-	const char*       m_pName;
-	apt_dir_layout_t* m_pDirLayout;
+	const char*                       m_pName;
+	const char*                       m_pMrcpProfile;
+	apt_dir_layout_t*                 m_pDirLayout;
+
+	bool                              m_ResourceDiscovery;
+	mpf_codec_capabilities_t*         m_pCapabilities;
+	mpf_rtp_termination_descriptor_t* m_pRtpDescriptor;
 };
 
 
@@ -59,5 +85,36 @@ inline void UmcScenario::SetDirLayout(apt_dir_layout_t* pDirLayout)
 {
 	m_pDirLayout = pDirLayout;
 }
+
+inline apt_dir_layout_t* UmcScenario::GetDirLayout() const
+{
+	return m_pDirLayout;
+}
+
+inline void UmcScenario::SetName(const char* pName)
+{
+	m_pName = pName;
+}
+
+inline const char* UmcScenario::GetName() const
+{
+	return m_pName;
+}
+
+inline void UmcScenario::SetMrcpProfile(const char* pMrcpProfile)
+{
+	m_pMrcpProfile = pMrcpProfile;
+}
+
+inline const char* UmcScenario::GetMrcpProfile() const
+{
+	return m_pMrcpProfile;
+}
+
+inline bool UmcScenario::IsDiscoveryEnabled() const
+{
+	return m_ResourceDiscovery;
+}
+
 
 #endif /*__UMC_SCENARIO_H__*/

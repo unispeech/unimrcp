@@ -34,8 +34,14 @@ public:
 	SynthSession(const SynthScenario* pScenario);
 	virtual ~SynthSession();
 
+protected:
 /* ============================ MANIPULATORS =============================== */
-	virtual bool Run(const char* pProfileName);
+	virtual bool Start();
+
+	SynthChannel* CreateSynthChannel();
+
+	mrcp_message_t* CreateSpeakRequest(mrcp_channel_t* pMrcpChannel);
+	FILE* GetAudioOut(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const;
 
 /* ============================ HANDLERS =================================== */
 	virtual bool OnSessionTerminate(mrcp_sig_status_code_e status);
@@ -45,10 +51,6 @@ public:
 
 /* ============================ ACCESSORS ================================== */
 	const SynthScenario* GetScenario() const;
-
-protected:
-/* ============================ MANIPULATORS =============================== */
-	SynthChannel* CreateSynthChannel();
 	
 private:
 /* ============================ DATA ======================================= */

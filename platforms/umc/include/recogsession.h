@@ -34,8 +34,18 @@ public:
 	RecogSession(const RecogScenario* pScenario);
 	virtual ~RecogSession();
 
+protected:
 /* ============================ MANIPULATORS =============================== */
-	virtual bool Run(const char* pProfileName);
+	virtual bool Start();
+
+	RecogChannel* CreateRecogChannel();
+	bool OnDefineGrammar(mrcp_channel_t* pMrcpChannel);
+
+	mrcp_message_t* CreateDefineGrammarRequest(mrcp_channel_t* pMrcpChannel);
+	mrcp_message_t* CreateRecognizeRequest(mrcp_channel_t* pMrcpChannel);
+
+	bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const;
+	FILE* GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const;
 
 /* ============================ HANDLERS =================================== */
 	virtual bool OnSessionTerminate(mrcp_sig_status_code_e status);
@@ -46,15 +56,10 @@ public:
 /* ============================ ACCESSORS ================================== */
 	const RecogScenario* GetScenario() const;
 
-protected:
-/* ============================ MANIPULATORS =============================== */
-	RecogChannel* CreateRecogChannel();
-
-	bool OnDefineGrammar(mrcp_channel_t* pMrcpChannel);
-	
 private:
 /* ============================ DATA ======================================= */
 	RecogChannel* m_pRecogChannel;
+	const char*   m_ContentId;
 };
 
 

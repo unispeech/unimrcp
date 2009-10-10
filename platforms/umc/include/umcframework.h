@@ -22,11 +22,13 @@
  * @brief UMC Application Framework
  */ 
 
+#include <apr_xml.h>
 #include <apr_hash.h>
 #include "mrcp_application.h"
 #include "apt_consumer_task.h"
 
 class UmcSession;
+class UmcScenario;
 
 class UmcFramework
 {
@@ -48,6 +50,9 @@ protected:
 
 	bool CreateTask();
 	void DestroyTask();
+
+	UmcScenario* CreateScenario(const char* pType);
+	apr_xml_doc* LoadDocument();
 
 	bool LoadScenarios();
 	void DestroyScenarios();

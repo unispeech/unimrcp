@@ -38,31 +38,21 @@ SynthSession::~SynthSession()
 {
 }
 
-bool SynthSession::Run(const char* pProfileName)
+bool SynthSession::Start()
 {
-	if(!UmcSession::Run(pProfileName))
+	if(!GetScenario()->IsSpeakEnabled())
 		return false;
-	
-	/* create session */
-	CreateMrcpSession(pProfileName);
 	
 	/* create channel and associate all the required data */
 	m_pSynthChannel = CreateSynthChannel();
 	if(!m_pSynthChannel) 
-	{
-		DestroyMrcpSession();
 		return false;
-	}
 
 	/* add channel to session (send asynchronous request) */
 	if(!AddMrcpChannel(m_pSynthChannel->m_pMrcpChannel))
 	{
-		/* session and channel are still not referenced 
-		and both are allocated from session pool and will
-		be freed with session destroy call */
 		delete m_pSynthChannel;
 		m_pSynthChannel = NULL;
-		DestroyMrcpSession();
 		return false;
 	}
 	return true;
@@ -148,25 +138,21 @@ bool SynthSession::OnChannelAdd(mrcp_channel_t* pMrcpChannel, mrcp_sig_status_co
 		return false;
 
 	SynthChannel* pSynthChannel = (SynthChannel*) mrcp_application_channel_object_get(pMrcpChannel);
-	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) 
-	{
-		/* create MRCP message */
-		mrcp_message_t* pMrcpMessage = CreateMrcpMessage(pMrcpChannel,SYNTHESIZER_SPEAK);
-		if(pMrcpMessage) 
-		{
-			GetScenario()->InitSpeakRequest(pMrcpMessage);
-			SendMrcpRequest(pSynthChannel->m_pMrcpChannel,pMrcpMessage);
-		}
-
-		const mpf_codec_descriptor_t* pDescriptor = mrcp_application_sink_descriptor_get(pMrcpChannel);
-		pSynthChannel->m_pAudioOut = GetScenario()->GetAudioOut(pDescriptor,GetMrcpSessionId(),GetSessionPool());
-	}
-	else 
+	if(status != MRCP_SIG_STATUS_CODE_SUCCESS)
 	{
 		/* error case, just terminate the demo */
-		Terminate();
+		return Terminate();
 	}
 
+	/* create MRCP message */
+	mrcp_message_t* pMrcpMessage = CreateSpeakRequest(pMrcpChannel);
+	if(pMrcpMessage) 
+	{
+		SendMrcpRequest(pSynthChannel->m_pMrcpChannel,pMrcpMessage);
+	}
+
+	const mpf_codec_descriptor_t* pDescriptor = mrcp_application_sink_descriptor_get(pMrcpChannel);
+	pSynthChannel->m_pAudioOut = GetAudioOut(pDescriptor,GetSessionPool());
 	return true;
 }
 
@@ -226,4 +212,50 @@ bool SynthSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t
 		}
 	}
 	return true;
+}
+
+mrcp_message_t* SynthSession::CreateSpeakRequest(mrcp_channel_t* pMrcpChannel)
+{
+	mrcp_message_t* pMrcpMessage = CreateMrcpMessage(pMrcpChannel,SYNTHESIZER_SPEAK);
+	if(!pMrcpMessage)
+		return NULL;
+
+	const SynthScenario* pScenario = GetScenario();
+
+	mrcp_generic_header_t* pGenericHeader;
+	mrcp_synth_header_t* pSynthHeader;
+	/* get/allocate generic header */
+	pGenericHeader = (mrcp_generic_header_t*) mrcp_generic_header_prepare(pMrcpMessage);
+	if(pGenericHeader) 
+	{
+		/* set generic header fields */
+		apt_string_assign(&pGenericHeader->content_type,pScenario->GetContentType(),pMrcpMessage->pool);
+		mrcp_generic_header_property_add(pMrcpMessage,GENERIC_HEADER_CONTENT_TYPE);
+
+		/* set message body */
+		if(pScenario->GetContent())
+			apt_string_assign(&pMrcpMessage->body,pScenario->GetContent(),pMrcpMessage->pool);
+	}
+	/* get/allocate synthesizer header */
+	pSynthHeader = (mrcp_synth_header_t*) mrcp_resource_header_prepare(pMrcpMessage);
+	if(pSynthHeader) 
+	{
+		/* set synthesizer header fields */
+		pSynthHeader->voice_param.age = 28;
+		mrcp_resource_header_property_add(pMrcpMessage,SYNTHESIZER_HEADER_VOICE_AGE);
+	}
+
+	return pMrcpMessage;
+}
+
+FILE* SynthSession::GetAudioOut(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const
+{
+	char* pFileName = apr_psprintf(pool,"synth-%dkHz-%s.pcm",
+		pDescriptor ? pDescriptor->sampling_rate/1000 : 8, GetMrcpSessionId());
+	apt_dir_layout_t* pDirLayout = GetScenario()->GetDirLayout();
+	char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
+	if(!pFilePath) 
+		return NULL;
+
+	return fopen(pFilePath,"wb");
 }

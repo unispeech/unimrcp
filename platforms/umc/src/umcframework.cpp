@@ -171,29 +171,124 @@ void UmcFramework::DestroyTask()
 	}
 }
 
+UmcScenario* UmcFramework::CreateScenario(const char* pType)
+{
+	if(pType)
+	{
+		if(strcasecmp(pType,"Synthesizer") == 0)
+			return new SynthScenario();
+		else if(strcasecmp(pType,"Recognizer") == 0)
+			return new RecogScenario();
+	}
+	return NULL;
+}
+
+apr_xml_doc* UmcFramework::LoadDocument()
+{
+	apr_xml_parser* pParser = NULL;
+	apr_xml_doc* pDoc = NULL;
+	apr_file_t* pFD = NULL;
+	apr_status_t rv;
+	const char* pFilePath;
+
+	pFilePath = apr_psprintf(m_pPool,"%s/%s",m_pDirLayout->conf_dir_path,"umcscenarios.xml");
+
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Open Config File [%s]",pFilePath);
+	rv = apr_file_open(&pFD,pFilePath,APR_READ|APR_BINARY,0,m_pPool);
+	if(rv != APR_SUCCESS) 
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Config File [%s]",pFilePath);
+		return NULL;
+	}
+
+	rv = apr_xml_parse_file(m_pPool,&pParser,&pDoc,pFD,2000);
+	if(rv != APR_SUCCESS) 
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse Config File [%s]",pFilePath);
+		pDoc = NULL;
+	}
+
+	apr_file_close(pFD);
+	return pDoc;
+}
+
 bool UmcFramework::LoadScenarios()
 {
-	SynthScenario* pSynthScenario = new SynthScenario();
-	pSynthScenario->SetDirLayout(m_pDirLayout);
-	pSynthScenario->Load(m_pPool);
-	apr_hash_set(m_pScenarioTable,pSynthScenario->GetName(),APR_HASH_KEY_STRING,pSynthScenario);
+	apr_xml_doc* pDoc = LoadDocument();
+	if(!pDoc)
+		return false;
 
-	RecogScenario* pRecogScenario = new RecogScenario();
-	pRecogScenario->SetDirLayout(m_pDirLayout);
-	pRecogScenario->Load(m_pPool);
-	apr_hash_set(m_pScenarioTable,pRecogScenario->GetName(),APR_HASH_KEY_STRING,pRecogScenario);
+	const apr_xml_attr* pAttr;
+	const apr_xml_elem* pElem;
+	const apr_xml_elem* pRoot = pDoc->root;
+	if(!pRoot || strcasecmp(pRoot->name,"umcscenarios") != 0)
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Document");
+		return FALSE;
+	}
+	for(pElem = pRoot->first_child; pElem; pElem = pElem->next)
+	{
+		if(strcasecmp(pElem->name,"scenario") != 0)
+		{
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",pElem->name);
+			continue;
+		}
+		
+		const char* pName = NULL;
+		const char* pClass = NULL;
+		const char* pMrcpProfile = NULL;
+		for(pAttr = pElem->attr; pAttr; pAttr = pAttr->next) 
+		{
+			if(strcasecmp(pAttr->name,"name") == 0) 
+			{
+				pName = pAttr->value;
+			}
+			else if(strcasecmp(pAttr->name,"class") == 0) 
+			{
+				pClass = pAttr->value;
+			}
+			else if(strcasecmp(pAttr->name,"profile") == 0) 
+			{
+				pMrcpProfile = pAttr->value;
+			}
+		}
+
+		if(pName && pClass)
+		{
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Load Scenario name [%s] class [%s]",pName,pClass);
+			UmcScenario* pScenario = CreateScenario(pClass);
+			if(pScenario)
+			{
+				pScenario->SetDirLayout(m_pDirLayout);
+				pScenario->SetName(pName);
+				pScenario->SetMrcpProfile(pMrcpProfile);
+				if(pScenario->Load(pElem,m_pPool))
+					apr_hash_set(m_pScenarioTable,pScenario->GetName(),APR_HASH_KEY_STRING,pScenario);
+				else
+					delete pScenario;
+			}
+			else
+			{
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No such scenario <%s>",pClass);
+			}
+		}
+		else
+		{
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing either name or class of the scenario");
+		}
+	}
 	return true;
 }
 
 void UmcFramework::DestroyScenarios()
 {
 	UmcScenario* pScenario;
-	void *val;
+	void* pVal;
 	apr_hash_index_t *it = apr_hash_first(m_pPool,m_pScenarioTable);
 	for(; it; it = apr_hash_next(it)) 
 	{
-		apr_hash_this(it,NULL,NULL,&val);
-		pScenario = (UmcScenario*) val;
+		apr_hash_this(it,NULL,NULL,&pVal);
+		pScenario = (UmcScenario*) pVal;
 		if(pScenario)
 		{
 			pScenario->Destroy();
@@ -230,20 +325,27 @@ bool UmcFramework::ProcessRunRequest(int id, const char* pScenarioName, const ch
 		return false;
 
 	pSession->SetId(id);
+	pSession->SetMrcpProfile(pProfileName);
 	pSession->SetMrcpApplication(m_pMrcpApplication);
+	if(!pSession->Run())
+	{
+		delete pSession;
+		return false;
+	}
+
 	AddSession(pSession);
-	return pSession->Run(pProfileName);
+	return true;
 }
 
 void UmcFramework::ProcessKillRequest(int id)
 {
 	UmcSession* pSession;
-	void *val;
+	void* pVal;
 	apr_hash_index_t *it = apr_hash_first(m_pPool,m_pSessionTable);
 	for(; it; it = apr_hash_next(it)) 
 	{
-		apr_hash_this(it,NULL,NULL,&val);
-		pSession = (UmcSession*) val;
+		apr_hash_this(it,NULL,NULL,&pVal);
+		pSession = (UmcSession*) pVal;
 		if(pSession && pSession->GetId() == id)
 		{
 			/* first, terminate session */
@@ -373,8 +475,8 @@ void UmcOnStartComplete(apt_task_t* pTask)
 	apt_consumer_task_t* pConsumerTask = (apt_consumer_task_t*) apt_task_object_get(pTask);
 	UmcFramework* pFramework = (UmcFramework*) apt_consumer_task_object_get(pConsumerTask);
 	
-	pFramework->LoadScenarios();
 	pFramework->CreateMrcpClient();
+	pFramework->LoadScenarios();
 }
 
 void UmcOnTerminateComplete(apt_task_t* pTask)

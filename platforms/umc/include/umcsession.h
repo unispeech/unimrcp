@@ -34,9 +34,10 @@ public:
 	virtual ~UmcSession();
 
 /* ============================ MANIPULATORS =============================== */
-	virtual bool Run(const char* pProfileName) = 0;
+	virtual bool Run();
 	virtual bool Terminate();
 
+	void SetMrcpProfile(const char* pMrcpProfile);
 	void SetMrcpApplication(mrcp_application_t* pMrcpApplication);
 	void SetId(int id);
 
@@ -56,12 +57,15 @@ public:
 
 protected:
 /* ============================ MANIPULATORS =============================== */
+	virtual bool Start() = 0;
+
 	bool CreateMrcpSession(const char* pProfileName);
 	bool DestroyMrcpSession();
 
 	bool AddMrcpChannel(mrcp_channel_t* pMrcpChannel);
 	bool RemoveMrcpChannel(mrcp_channel_t* pMrcpChannel);
 	bool SendMrcpRequest(mrcp_channel_t* pMrcpChannel, mrcp_message_t* pMrcpMessage);
+	bool ResourceDiscover();
 
 	mrcp_channel_t* CreateMrcpChannel(
 			mrcp_resource_id resource_id, 
@@ -82,6 +86,7 @@ protected:
 
 /* ============================ DATA ======================================= */
 	const UmcScenario*  m_pScenario;
+	const char*         m_pMrcpProfile;
 	int                 m_Id;
 
 private:
@@ -112,6 +117,11 @@ inline int UmcSession::GetId() const
 inline void UmcSession::SetMrcpApplication(mrcp_application_t* pMrcpApplication)
 {
 	m_pMrcpApplication = pMrcpApplication;
+}
+
+inline void UmcSession::SetMrcpProfile(const char* pMrcpProfile)
+{
+	m_pMrcpProfile = pMrcpProfile;
 }
 
 #endif /*__UMC_SESSION_H__*/
