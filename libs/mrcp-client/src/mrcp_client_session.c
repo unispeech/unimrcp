@@ -230,10 +230,19 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 		session->status = MRCP_SIG_STATUS_CODE_TERMINATE;
 		mrcp_app_sig_response_raise(session,FALSE);
 
-		/* cancel remaing requests (if any) */
+		/* cancel remaing requests, but do process session termination request (if any) */
 		do {
 			session->active_request = apt_list_pop_front(session->request_queue);
 			if(session->active_request) {
+				const mrcp_app_message_t *app_message = session->active_request;
+				if(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING &&
+					app_message->sig_message.command_id == MRCP_SIG_COMMAND_SESSION_TERMINATE) {
+					/* process session termination */
+					mrcp_app_request_dispatch(session,app_message);
+					break;
+				}
+
+				/* cancel pending request */
 				session->status = MRCP_SIG_STATUS_CODE_CANCEL;
 				mrcp_app_sig_response_raise(session,FALSE);
 			}
