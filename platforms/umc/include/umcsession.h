@@ -39,7 +39,6 @@ public:
 
 	void SetMrcpProfile(const char* pMrcpProfile);
 	void SetMrcpApplication(mrcp_application_t* pMrcpApplication);
-	void SetId(int id);
 
 /* ============================ HANDLERS =================================== */
 	virtual bool OnSessionTerminate(mrcp_sig_status_code_e status);
@@ -53,7 +52,7 @@ public:
 /* ============================ ACCESSORS ================================== */
 	const UmcScenario* GetScenario() const;
 
-	int GetId() const;
+	const char* GetId() const;
 
 protected:
 /* ============================ MANIPULATORS =============================== */
@@ -87,7 +86,7 @@ protected:
 /* ============================ DATA ======================================= */
 	const UmcScenario*  m_pScenario;
 	const char*         m_pMrcpProfile;
-	int                 m_Id;
+	char                m_Id[10];
 
 private:
 /* ============================ DATA ======================================= */
@@ -104,12 +103,7 @@ inline const UmcScenario* UmcSession::GetScenario() const
 	return m_pScenario;
 }
 
-inline void UmcSession::SetId(int id)
-{
-	m_Id = id;
-}
-
-inline int UmcSession::GetId() const
+inline const char* UmcSession::GetId() const
 {
 	return m_Id;
 }

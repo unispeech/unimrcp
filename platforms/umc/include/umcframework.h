@@ -41,8 +41,11 @@ public:
 	bool Create(apt_dir_layout_t* pDirLayout, apr_pool_t* pool);
 	void Destroy();
 
-	int RunSession(const char* pScenarioName, const char* pProfileName);
-	void KillSession(int id);
+	void RunSession(const char* pScenarioName, const char* pProfileName);
+	void KillSession(const char* id);
+
+	void ShowScenarios();
+	void ShowSessions();
 
 protected:
 	bool CreateMrcpClient();
@@ -57,8 +60,10 @@ protected:
 	bool LoadScenarios();
 	void DestroyScenarios();
 
-	bool ProcessRunRequest(int id, const char* pScenarioName, const char* pProfileName);
-	void ProcessKillRequest(int id);
+	bool ProcessRunRequest(const char* pScenarioName, const char* pProfileName);
+	void ProcessKillRequest(const char* id);
+	void ProcessShowScenarios();
+	void ProcessShowSessions();
 
 	bool AddSession(UmcSession* pSession);
 	bool RemoveSession(UmcSession* pSession);
@@ -81,7 +86,6 @@ private:
 	mrcp_client_t*       m_pMrcpClient;
 	mrcp_application_t*  m_pMrcpApplication;
 
-	int                  m_CurSessionId;
 	bool                 m_Ready;
 
 	apr_hash_t*          m_pScenarioTable;

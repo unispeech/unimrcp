@@ -23,7 +23,7 @@
 
 typedef struct
 {
-	int                       m_SessionId;
+	char                      m_SessionId[10];
 	char                      m_ScenarioName[128];
 	char                      m_ProfileName[128];
 	const mrcp_app_message_t* m_pAppMessage;
@@ -33,7 +33,9 @@ enum UmcTaskMsgType
 {
 	UMC_TASK_CLIENT_MSG,
 	UMC_TASK_RUN_SESSION_MSG,
-	UMC_TASK_KILL_SESSION_MSG
+	UMC_TASK_KILL_SESSION_MSG,
+	UMC_TASK_SHOW_SCENARIOS_MSG,
+	UMC_TASK_SHOW_SESSIONS_MSG
 };
 
 apt_bool_t UmcProcessMsg(apt_task_t* pTask, apt_task_msg_t* pMsg);
@@ -48,7 +50,6 @@ UmcFramework::UmcFramework() :
 	m_pTask(NULL),
 	m_pMrcpClient(NULL),
 	m_pMrcpApplication(NULL),
-	m_CurSessionId(0),
 	m_Ready(false),
 	m_pScenarioTable(NULL),
 	m_pSessionTable(NULL)
@@ -159,7 +160,7 @@ bool UmcFramework::CreateTask()
 
 void UmcFramework::DestroyTask()
 {
-	if(m_pTask) 
+	if(m_pTask)
 	{
 		apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
 		if(pTask)
@@ -284,7 +285,7 @@ void UmcFramework::DestroyScenarios()
 {
 	UmcScenario* pScenario;
 	void* pVal;
-	apr_hash_index_t *it = apr_hash_first(m_pPool,m_pScenarioTable);
+	apr_hash_index_t* it = apr_hash_first(m_pPool,m_pScenarioTable);
 	for(; it; it = apr_hash_next(it)) 
 	{
 		apr_hash_this(it,NULL,NULL,&pVal);
@@ -302,7 +303,8 @@ bool UmcFramework::AddSession(UmcSession* pSession)
 {
 	if(!pSession)
 		return false;
-	apr_hash_set(m_pSessionTable,pSession,sizeof(pSession),pSession);
+
+	apr_hash_set(m_pSessionTable,pSession->GetId(),APR_HASH_KEY_STRING,pSession);
 	return true;
 }
 
@@ -310,11 +312,12 @@ bool UmcFramework::RemoveSession(UmcSession* pSession)
 {
 	if(!pSession)
 		return false;
-	apr_hash_set(m_pSessionTable,pSession,sizeof(pSession),NULL);
+
+	apr_hash_set(m_pSessionTable,pSession->GetId(),APR_HASH_KEY_STRING,NULL);
 	return true;
 }
 
-bool UmcFramework::ProcessRunRequest(int id, const char* pScenarioName, const char* pProfileName)
+bool UmcFramework::ProcessRunRequest(const char* pScenarioName, const char* pProfileName)
 {
 	UmcScenario* pScenario = (UmcScenario*) apr_hash_get(m_pScenarioTable,pScenarioName,APR_HASH_KEY_STRING);
 	if(!pScenario)
@@ -324,7 +327,7 @@ bool UmcFramework::ProcessRunRequest(int id, const char* pScenarioName, const ch
 	if(!pSession)
 		return false;
 
-	pSession->SetId(id);
+	printf("[%s]\n",pSession->GetId());
 	pSession->SetMrcpProfile(pProfileName);
 	pSession->SetMrcpApplication(m_pMrcpApplication);
 	if(!pSession->Run())
@@ -337,16 +340,16 @@ bool UmcFramework::ProcessRunRequest(int id, const char* pScenarioName, const ch
 	return true;
 }
 
-void UmcFramework::ProcessKillRequest(int id)
+void UmcFramework::ProcessKillRequest(const char* id)
 {
 	UmcSession* pSession;
 	void* pVal;
-	apr_hash_index_t *it = apr_hash_first(m_pPool,m_pSessionTable);
+	apr_hash_index_t* it = apr_hash_first(m_pPool,m_pSessionTable);
 	for(; it; it = apr_hash_next(it)) 
 	{
 		apr_hash_this(it,NULL,NULL,&pVal);
 		pSession = (UmcSession*) pVal;
-		if(pSession && pSession->GetId() == id)
+		if(pSession && strcasecmp(pSession->GetId(),id) == 0)
 		{
 			/* first, terminate session */
 			pSession->Terminate();
@@ -355,29 +358,57 @@ void UmcFramework::ProcessKillRequest(int id)
 	}
 }
 
-int UmcFramework::RunSession(const char* pScenarioName, const char* pProfileName)
+void UmcFramework::ProcessShowScenarios()
+{
+	UmcScenario* pScenario;
+	void* pVal;
+	printf("%d Scenario(s)\n", apr_hash_count(m_pScenarioTable));
+	apr_hash_index_t* it = apr_hash_first(m_pPool,m_pScenarioTable);
+	for(; it; it = apr_hash_next(it))
+	{
+		apr_hash_this(it,NULL,NULL,&pVal);
+		pScenario = (UmcScenario*) pVal;
+		if(pScenario)
+		{
+			printf("[%s]\n", pScenario->GetName());
+		}
+	}
+}
+
+void UmcFramework::ProcessShowSessions()
+{
+	UmcSession* pSession;
+	void* pVal;
+	printf("%d Session(s)\n", apr_hash_count(m_pSessionTable));
+	apr_hash_index_t* it = apr_hash_first(m_pPool,m_pSessionTable);
+	for(; it; it = apr_hash_next(it)) 
+	{
+		apr_hash_this(it,NULL,NULL,&pVal);
+		pSession = (UmcSession*) pVal;
+		if(pSession)
+		{
+			printf("[%s] - %s\n", pSession->GetId(), pSession->GetScenario()->GetName());
+		}
+	}
+}
+
+void UmcFramework::RunSession(const char* pScenarioName, const char* pProfileName)
 {
 	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
 	apt_task_msg_t* pTaskMsg = apt_task_msg_get(pTask);
 	if(!pTaskMsg) 
-		return 0;
+		return;
 
-	if(m_CurSessionId == INT_MAX)
-		m_CurSessionId = 0;
-	m_CurSessionId++;
-	
 	pTaskMsg->type = TASK_MSG_USER;
 	pTaskMsg->sub_type = UMC_TASK_RUN_SESSION_MSG;
 	UmcTaskMsg* pUmcMsg = (UmcTaskMsg*) pTaskMsg->data;
-	pUmcMsg->m_SessionId = m_CurSessionId;
 	strncpy(pUmcMsg->m_ScenarioName,pScenarioName,sizeof(pUmcMsg->m_ScenarioName)-1);
 	strncpy(pUmcMsg->m_ProfileName,pProfileName,sizeof(pUmcMsg->m_ProfileName)-1);
 	pUmcMsg->m_pAppMessage = NULL;
 	apt_task_msg_signal(pTask,pTaskMsg);
-	return m_CurSessionId;
 }
 
-void UmcFramework::KillSession(int id)
+void UmcFramework::KillSession(const char* id)
 {
 	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
 	apt_task_msg_t* pTaskMsg = apt_task_msg_get(pTask);
@@ -388,8 +419,32 @@ void UmcFramework::KillSession(int id)
 	pTaskMsg->sub_type = UMC_TASK_KILL_SESSION_MSG;
 	
 	UmcTaskMsg* pUmcMsg = (UmcTaskMsg*) pTaskMsg->data;
-	pUmcMsg->m_SessionId = id;
+	strncpy(pUmcMsg->m_SessionId,id,sizeof(pUmcMsg->m_SessionId)-1);
 	pUmcMsg->m_pAppMessage = NULL;
+	apt_task_msg_signal(pTask,pTaskMsg);
+}
+
+void UmcFramework::ShowScenarios()
+{
+	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
+	apt_task_msg_t* pTaskMsg = apt_task_msg_get(pTask);
+	if(!pTaskMsg) 
+		return;
+
+	pTaskMsg->type = TASK_MSG_USER;
+	pTaskMsg->sub_type = UMC_TASK_SHOW_SCENARIOS_MSG;
+	apt_task_msg_signal(pTask,pTaskMsg);
+}
+
+void UmcFramework::ShowSessions()
+{
+	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
+	apt_task_msg_t* pTaskMsg = apt_task_msg_get(pTask);
+	if(!pTaskMsg) 
+		return;
+
+	pTaskMsg->type = TASK_MSG_USER;
+	pTaskMsg->sub_type = UMC_TASK_SHOW_SESSIONS_MSG;
 	apt_task_msg_signal(pTask,pTaskMsg);
 }
 
@@ -518,13 +573,25 @@ apt_bool_t UmcProcessMsg(apt_task_t *pTask, apt_task_msg_t *pMsg)
 		case UMC_TASK_RUN_SESSION_MSG:
 		{
 			if(pFramework->m_Ready)
-				pFramework->ProcessRunRequest(pUmcMsg->m_SessionId,pUmcMsg->m_ScenarioName,pUmcMsg->m_ProfileName);
+				pFramework->ProcessRunRequest(pUmcMsg->m_ScenarioName,pUmcMsg->m_ProfileName);
 			break;
 		}
 		case UMC_TASK_KILL_SESSION_MSG:
 		{
 			if(pFramework->m_Ready)
 				pFramework->ProcessKillRequest(pUmcMsg->m_SessionId);
+			break;
+		}
+		case UMC_TASK_SHOW_SCENARIOS_MSG:
+		{
+			if(pFramework->m_Ready)
+				pFramework->ProcessShowScenarios();
+			break;
+		}
+		case UMC_TASK_SHOW_SESSIONS_MSG:
+		{
+			if(pFramework->m_Ready)
+				pFramework->ProcessShowSessions();
 			break;
 		}
 	}

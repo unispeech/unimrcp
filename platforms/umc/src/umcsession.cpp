@@ -21,12 +21,18 @@
 UmcSession::UmcSession(const UmcScenario* pScenario) :
 	m_pScenario(pScenario),
 	m_pMrcpProfile(NULL),
-	m_Id(0),
 	m_pMrcpApplication(NULL),
 	m_pMrcpSession(NULL),
 	m_Running(false),
 	m_Terminating(false)
 {
+	static int id = 0;
+	if(id == INT_MAX)
+		id = 0;
+	id++;
+
+	int size = apr_snprintf(m_Id,sizeof(m_Id)-1,"%d",id);
+	m_Id[size] = '\0';
 }
 
 UmcSession::~UmcSession()

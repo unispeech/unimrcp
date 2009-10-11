@@ -115,8 +115,18 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 		char* pID = apr_strtok(NULL, " ", &last);
 		if(pID) 
 		{
-			int id = atol(pID);
-			m_pFramework->KillSession(id);
+			m_pFramework->KillSession(pID);
+		}
+	}
+	else if(strcasecmp(name,"show") == 0)
+	{
+		char* pWhat = apr_strtok(NULL, " ", &last);
+		if(pWhat) 
+		{
+			if(strcasecmp(pWhat,"sessions") == 0)
+				m_pFramework->ShowSessions();
+			else if(strcasecmp(pWhat,"scenarios") == 0)
+				m_pFramework->ShowScenarios();
 		}
 	}
 	else if(strcasecmp(name,"loglevel") == 0) 
@@ -134,14 +144,22 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 	else if(strcasecmp(name,"help") == 0) 
 	{
 		printf("usage:\n"
-		       "\n- run [app_name] [profile_name] (run demo application)\n"
-			   "       app_name is one of 'synth', 'recog', 'bypass', 'discover'\n"
-			   "       profile_name is one of 'MRCPv2-Default', 'MRCPv1-Default', ...\n"
+		       "\n- run [scenario] [profile] (run new session)\n"
+			   "       scenario is one of 'synth', 'recog', ... (use 'show scenarios')\n"
+			   "       profile is one of 'MRCPv2-Default', 'MRCPv1-Default', ... (see unimrcpclient.xml)\n"
 			   "\n       examples: \n"
 			   "           run synth\n"
 			   "           run recog\n"
 			   "           run synth MRCPv1-Default\n"
 			   "           run recog MRCPv1-Default\n"
+		       "\n- kill [id] (kill session)\n"
+			   "       id is a session identifier: 1, 2, ... (use 'show sessions')\n"
+			   "\n       example: \n"
+			   "           kill 1\n"
+		       "\n- show [what] (show either available scenarios or in-progress sessions)\n"
+			   "\n       examples: \n"
+			   "           show scenarios\n"
+			   "           show sessions\n"
 		       "\n- loglevel [level] (set loglevel, one of 0,1...7)\n"
 		       "\n- quit, exit\n");
 	}
@@ -185,7 +203,7 @@ void UmcConsole::Usage() const
 		"\n"
 		"Usage:\n"
 		"\n"
-		"  unimrcpclient [options]\n"
+		"  umc [options]\n"
 		"\n"
 		"  Available options:\n"
 		"\n"
