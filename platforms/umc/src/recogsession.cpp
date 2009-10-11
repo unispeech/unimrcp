@@ -429,10 +429,14 @@ bool RecogSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const
 
 FILE* RecogSession::GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const
 {
-	char* pFileName = apr_psprintf(pool,"one-%dkHz.pcm",
-		pDescriptor ? pDescriptor->sampling_rate/1000 : 8);
+	const char* pFileName = GetScenario()->GetAudioSource();
+	if(!pFileName)
+	{
+		pFileName = apr_psprintf(pool,"one-%dkHz.pcm",
+			pDescriptor ? pDescriptor->sampling_rate/1000 : 8);
+	}
 	apt_dir_layout_t* pDirLayout = GetScenario()->GetDirLayout();
-	char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
+	const char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
 	if(!pFilePath)
 		return NULL;
 	

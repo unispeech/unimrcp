@@ -27,7 +27,8 @@ RecogScenario::RecogScenario() :
 	m_DefineGrammar(true),
 	m_Recognize(true),
 	m_ContentType("application/srgs+xml"),
-	m_Content(NULL)
+	m_Content(NULL),
+	m_AudioSource(NULL)
 {
 }
 
@@ -74,6 +75,10 @@ bool RecogScenario::LoadRecognize(const apr_xml_elem* pElem, apr_pool_t* pool)
 		else if(strcasecmp(pAttr->name,"content-location") == 0)
 		{
 			m_Content = LoadFileContent(pAttr->value,pool);
+		}
+		else if(strcasecmp(pAttr->name,"audio-source") == 0)
+		{
+			m_AudioSource = pAttr->value;
 		}
 	}
 

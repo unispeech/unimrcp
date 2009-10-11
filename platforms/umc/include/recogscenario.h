@@ -39,6 +39,7 @@ public:
 /* ============================ ACCESSORS ================================== */
 	const char* GetContentType() const;
 	const char* GetContent() const;
+	const char* GetAudioSource() const;
 
 /* ============================ INQUIRIES ================================== */
 	bool IsDefineGrammarEnabled() const;
@@ -55,6 +56,7 @@ protected:
 	bool        m_Recognize;
 	const char* m_ContentType;
 	const char* m_Content;
+	const char* m_AudioSource;
 };
 
 /* ============================ INLINE METHODS ============================= */
@@ -66,6 +68,11 @@ inline const char* RecogScenario::GetContentType() const
 inline const char* RecogScenario::GetContent() const
 {
 	return m_Content;
+}
+
+inline const char* RecogScenario::GetAudioSource() const
+{
+	return m_AudioSource;
 }
 
 inline bool RecogScenario::IsDefineGrammarEnabled() const
