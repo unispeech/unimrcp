@@ -17,7 +17,7 @@
 /* 
  * Mandatory rules concerning plugin implementation.
  * 1. Each plugin MUST contain the following function as an entry point of the plugin
- *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+ *        MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
  * 2. One and only one response MUST be sent back to the received request.
  * 3. Methods (callbacks) of the MRCP engine channel MUST not block.
  *   (asynch response can be sent from the context of other thread)
@@ -35,10 +35,10 @@
 #include "apt_log.h"
 
 /** Declaration of synthesizer engine methods */
-static apt_bool_t mrcp_swift_engine_destroy(mrcp_resource_engine_t *engine);
-static apt_bool_t mrcp_swift_engine_open(mrcp_resource_engine_t *engine);
-static apt_bool_t mrcp_swift_engine_close(mrcp_resource_engine_t *engine);
-static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
+static apt_bool_t mrcp_swift_engine_destroy(mrcp_engine_t *engine);
+static apt_bool_t mrcp_swift_engine_open(mrcp_engine_t *engine);
+static apt_bool_t mrcp_swift_engine_close(mrcp_engine_t *engine);
+static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool);
 
 static const struct mrcp_engine_method_vtable_t engine_vtable = {
 	mrcp_swift_engine_destroy,
@@ -145,30 +145,30 @@ MRCP_PLUGIN_VERSION_DECLARE
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 
 /** Create Swift synthesizer engine */
-MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	mrcp_swift_engine_t *synth_engine = apr_palloc(pool,sizeof(mrcp_swift_engine_t));
 	synth_engine->swift = NULL;
 	synth_engine->language_table = mrcp_swift_language_table_create(pool);
 	synth_engine->sample_rates = MPF_SAMPLE_RATE_NONE;
 
-	/* create resource engine base */
-	return mrcp_resource_engine_create(
-					MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
-					synth_engine,              /* object to associate */
-					&engine_vtable,            /* virtual methods table of resource engine */
-					pool);                     /* pool to allocate memory from */
+	/* create engine base */
+	return mrcp_engine_create(
+				MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
+				synth_engine,              /* object to associate */
+				&engine_vtable,            /* virtual methods table of engine */
+				pool);                     /* pool to allocate memory from */
 }
 
 /** Destroy synthesizer engine */
-static apt_bool_t mrcp_swift_engine_destroy(mrcp_resource_engine_t *engine)
+static apt_bool_t mrcp_swift_engine_destroy(mrcp_engine_t *engine)
 {
 	/* nothing to destroy */
 	return TRUE;
 }
 
 /** Open synthesizer engine */
-static apt_bool_t mrcp_swift_engine_open(mrcp_resource_engine_t *engine)
+static apt_bool_t mrcp_swift_engine_open(mrcp_engine_t *engine)
 {
 	mrcp_swift_engine_t *synth_engine = engine->obj;
 	
@@ -189,7 +189,7 @@ static apt_bool_t mrcp_swift_engine_open(mrcp_resource_engine_t *engine)
 }
 
 /** Close synthesizer engine */
-static apt_bool_t mrcp_swift_engine_close(mrcp_resource_engine_t *engine)
+static apt_bool_t mrcp_swift_engine_close(mrcp_engine_t *engine)
 {
 	mrcp_swift_engine_t *synth_engine = engine->obj;
 
@@ -203,7 +203,7 @@ static apt_bool_t mrcp_swift_engine_close(mrcp_resource_engine_t *engine)
 }
 
 /** Create demo synthesizer channel derived from engine channel base */
-static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool)
 {
 	mrcp_swift_engine_t *synth_engine = engine->obj;
 
@@ -236,7 +236,7 @@ static mrcp_engine_channel_t* mrcp_swift_engine_channel_create(mrcp_resource_eng
 
 	/* create engine channel base */
 	channel = mrcp_engine_channel_create(
-			engine,               /* resource engine */
+			engine,               /* engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
 			synth_channel,        /* object to associate */
 			termination,          /* associated media termination */
@@ -562,7 +562,7 @@ static apt_bool_t mrcp_swift_channel_voice_set(mrcp_swift_channel_t *synth_chann
 	}
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_SPEECH_LANGUAGE) == TRUE) {
 		const char *swift_lang_name = NULL;
-		mrcp_resource_engine_t *engine = synth_channel->channel->engine;
+		mrcp_engine_t *engine = synth_channel->channel->engine;
 		mrcp_swift_engine_t *synth_engine = engine->obj;
 		if(synth_engine && synth_engine->language_table) {
 			swift_lang_name = apr_table_get(synth_engine->language_table,synth_header->speech_language.buf);

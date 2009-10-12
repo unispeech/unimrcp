@@ -15,9 +15,9 @@
  */
 
 /* 
- * Some mandatory rules for plugin implementation.
+ * Mandatory rules concerning plugin implementation.
  * 1. Each plugin MUST contain the following function as an entry point of the plugin
- *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+ *        MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
  * 2. One and only one response MUST be sent back to the received request.
  * 3. Methods (callbacks) of the MRCP engine channel MUST not block.
  *   (asynch response can be sent from the context of other thread)
@@ -46,10 +46,10 @@ typedef struct pocketsphinx_engine_t pocketsphinx_engine_t;
 typedef struct pocketsphinx_recognizer_t pocketsphinx_recognizer_t;
 
 /** Methods of recognition engine */
-static apt_bool_t pocketsphinx_engine_destroy(mrcp_resource_engine_t *engine);
-static apt_bool_t pocketsphinx_engine_open(mrcp_resource_engine_t *engine);
-static apt_bool_t pocketsphinx_engine_close(mrcp_resource_engine_t *engine);
-static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
+static apt_bool_t pocketsphinx_engine_destroy(mrcp_engine_t *engine);
+static apt_bool_t pocketsphinx_engine_open(mrcp_engine_t *engine);
+static apt_bool_t pocketsphinx_engine_close(mrcp_engine_t *engine);
+static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_engine_t *engine, apr_pool_t *pool);
 
 static const struct mrcp_engine_method_vtable_t engine_vtable = {
 	pocketsphinx_engine_destroy,
@@ -87,8 +87,8 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 
 /** Pocketsphinx engine (engine is an aggregation of recognizers) */
 struct pocketsphinx_engine_t {
-	/* Resource engine base */
-	mrcp_resource_engine_t   *base;
+	/* Engine base */
+	mrcp_engine_t   *base;
 	/** Properties loaded from config file */
 	pocketsphinx_properties_t properties;
 };
@@ -154,53 +154,53 @@ MRCP_PLUGIN_VERSION_DECLARE
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 
 /** Create pocketsphinx engine (engine is an aggregation of recognizers) */
-MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	pocketsphinx_engine_t *engine = apr_palloc(pool,sizeof(pocketsphinx_engine_t));
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create PocketSphinx Engine");
 	
-	/* create resource engine base */
-	engine->base = mrcp_resource_engine_create(
+	/* create engine base */
+	engine->base = mrcp_engine_create(
 					MRCP_RECOGNIZER_RESOURCE,  /* MRCP resource identifier */
 					engine,                    /* object to associate */
-					&engine_vtable,            /* virtual methods table of resource engine */
+					&engine_vtable,            /* virtual methods table of engine */
 					pool);                     /* pool to allocate memory from */
 	return engine->base;
 }
 
 /** Destroy pocketsphinx engine */
-static apt_bool_t pocketsphinx_engine_destroy(mrcp_resource_engine_t *resource_engine)
+static apt_bool_t pocketsphinx_engine_destroy(mrcp_engine_t *engine_base)
 {
 	return TRUE;
 }
 
 /** Open pocketsphinx engine */
-static apt_bool_t pocketsphinx_engine_open(mrcp_resource_engine_t *resource_engine)
+static apt_bool_t pocketsphinx_engine_open(mrcp_engine_t *engine_base)
 {
-	pocketsphinx_engine_t *engine = resource_engine->obj;
-	const apt_dir_layout_t *dir_layout = resource_engine->dir_layout;
+	pocketsphinx_engine_t *engine = engine_base->obj;
+	const apt_dir_layout_t *dir_layout = engine_base->dir_layout;
 
 	char *file_path = NULL;
-	apr_filepath_merge(&file_path,dir_layout->conf_dir_path,POCKETSPHINX_CONFFILE_NAME,0,resource_engine->pool);
+	apr_filepath_merge(&file_path,dir_layout->conf_dir_path,POCKETSPHINX_CONFFILE_NAME,0,engine_base->pool);
 
 	/* load properties */
-	pocketsphinx_properties_load(&engine->properties,file_path,dir_layout,resource_engine->pool);
+	pocketsphinx_properties_load(&engine->properties,file_path,dir_layout,engine_base->pool);
 	return TRUE;
 }
 
 /** Close pocketsphinx engine */
-static apt_bool_t pocketsphinx_engine_close(mrcp_resource_engine_t *resource_engine)
+static apt_bool_t pocketsphinx_engine_close(mrcp_engine_t *engine_base)
 {
 	return TRUE;
 }
 
 /** Create pocketsphinx recognizer */
-static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resource_engine_t *resource_engine, apr_pool_t *pool)
+static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_engine_t *engine_base, apr_pool_t *pool)
 {
 	mpf_stream_capabilities_t *capabilities;
 	mpf_termination_t *termination; 
 	mrcp_engine_channel_t *channel;
-	pocketsphinx_engine_t *engine = resource_engine->obj;
+	pocketsphinx_engine_t *engine = engine_base->obj;
 
 	/* create pocketsphinx recognizer */
 	pocketsphinx_recognizer_t *recognizer = apr_palloc(pool,sizeof(pocketsphinx_recognizer_t));
@@ -243,7 +243,7 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_resourc
 
 	/* create engine channel base */
 	channel = mrcp_engine_channel_create(
-			resource_engine,      /* resource engine */
+			engine_base,          /* engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
 			recognizer,           /* object to associate */
 			termination,          /* associated media termination */

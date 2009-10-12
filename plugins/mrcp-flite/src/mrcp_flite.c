@@ -15,9 +15,9 @@
  */
 
 /* 
- * Some mandatory rules for plugin implementation.
+ * Mandatory rules concerning plugin implementation.
  * 1. Each plugin MUST contain the following function as an entry point of the plugin
- *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+ *        MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
  * 2. One and only one response MUST be sent back to the received request.
  * 3. Methods (callbacks) of the MRCP engine channel MUST not block.
  *   (asynch response can be sent from the context of other thread)
@@ -39,10 +39,10 @@ typedef struct flite_synth_engine_t flite_synth_engine_t;
 typedef struct flite_synth_channel_t flite_synth_channel_t;
 
 /** Declaration of synthesizer engine methods */
-static apt_bool_t flite_synth_engine_destroy(mrcp_resource_engine_t *engine);
-static apt_bool_t flite_synth_engine_open(mrcp_resource_engine_t *engine);
-static apt_bool_t flite_synth_engine_close(mrcp_resource_engine_t *engine);
-static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
+static apt_bool_t flite_synth_engine_destroy(mrcp_engine_t *engine);
+static apt_bool_t flite_synth_engine_open(mrcp_engine_t *engine);
+static apt_bool_t flite_synth_engine_close(mrcp_engine_t *engine);
+static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool);
 
 static const struct mrcp_engine_method_vtable_t engine_vtable = {
 	flite_synth_engine_destroy,
@@ -129,29 +129,29 @@ MRCP_PLUGIN_VERSION_DECLARE
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 
 /** Create flite synthesizer engine */
-MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	/* create flite engine */
 	flite_synth_engine_t *flite_engine = (flite_synth_engine_t *) apr_palloc(pool,sizeof(flite_synth_engine_t));
 	flite_engine->iChannels = 0;
 
-	/* create resource engine base */
-	return mrcp_resource_engine_create(
-					MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
-					flite_engine,              /* object to associate */
-					&engine_vtable,            /* virtual methods table of resource engine */
-					pool);                     /* pool to allocate memory from */
+	/* create engine base */
+	return mrcp_engine_create(
+				MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
+				flite_engine,              /* object to associate */
+				&engine_vtable,            /* virtual methods table of engine */
+				pool);                     /* pool to allocate memory from */
 }
 
 /** Destroy synthesizer engine */
-static apt_bool_t flite_synth_engine_destroy(mrcp_resource_engine_t *engine)
+static apt_bool_t flite_synth_engine_destroy(mrcp_engine_t *engine)
 {
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_destroy");
 	return TRUE;
 }
 
 /** Open synthesizer engine */
-static apt_bool_t flite_synth_engine_open(mrcp_resource_engine_t *engine)
+static apt_bool_t flite_synth_engine_open(mrcp_engine_t *engine)
 {
 	flite_synth_engine_t *flite_engine = (flite_synth_engine_t *) engine->obj;
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_open");
@@ -165,7 +165,7 @@ static apt_bool_t flite_synth_engine_open(mrcp_resource_engine_t *engine)
 }
 
 /** Close synthesizer engine */
-static apt_bool_t flite_synth_engine_close(mrcp_resource_engine_t *engine)
+static apt_bool_t flite_synth_engine_close(mrcp_engine_t *engine)
 {
 	flite_synth_engine_t *flite_engine = (flite_synth_engine_t *) engine->obj;
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite_synth_engine_close");
@@ -203,7 +203,7 @@ static apt_bool_t flite_synth_task_create(flite_synth_channel_t *synth_channel)
 }
 
 /** Create flite synthesizer channel derived from engine channel base */
-static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool)
 {
 	mpf_stream_capabilities_t *capabilities;
 	mpf_termination_t *termination; 
@@ -243,7 +243,7 @@ static mrcp_engine_channel_t* flite_synth_engine_channel_create(mrcp_resource_en
 
 	/* create engine channel base */
 	synth_channel->channel = mrcp_engine_channel_create(
- 			engine,               /* resource engine */
+ 			engine,               /* engine */
  			&channel_vtable,      /* virtual methods table of engine channel */
  			synth_channel,        /* object to associate */
 			termination,          /* associated media termination */

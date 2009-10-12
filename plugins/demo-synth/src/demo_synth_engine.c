@@ -15,9 +15,9 @@
  */
 
 /* 
- * Some mandatory rules for plugin implementation.
+ * Mandatory rules concerning plugin implementation.
  * 1. Each plugin MUST contain the following function as an entry point of the plugin
- *        MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+ *        MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
  * 2. One and only one response MUST be sent back to the received request.
  * 3. Methods (callbacks) of the MRCP engine channel MUST not block.
  *   (asynch response can be sent from the context of other thread)
@@ -39,10 +39,10 @@ typedef struct demo_synth_channel_t demo_synth_channel_t;
 typedef struct demo_synth_msg_t demo_synth_msg_t;
 
 /** Declaration of synthesizer engine methods */
-static apt_bool_t demo_synth_engine_destroy(mrcp_resource_engine_t *engine);
-static apt_bool_t demo_synth_engine_open(mrcp_resource_engine_t *engine);
-static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine);
-static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool);
+static apt_bool_t demo_synth_engine_destroy(mrcp_engine_t *engine);
+static apt_bool_t demo_synth_engine_open(mrcp_engine_t *engine);
+static apt_bool_t demo_synth_engine_close(mrcp_engine_t *engine);
+static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool);
 
 static const struct mrcp_engine_method_vtable_t engine_vtable = {
 	demo_synth_engine_destroy,
@@ -129,7 +129,7 @@ MRCP_PLUGIN_VERSION_DECLARE
 MRCP_PLUGIN_LOGGER_IMPLEMENT
 
 /** Create demo synthesizer engine */
-MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
+MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t *pool)
 {
 	/* create demo engine */
 	demo_synth_engine_t *demo_engine = apr_palloc(pool,sizeof(demo_synth_engine_t));
@@ -150,16 +150,16 @@ MRCP_PLUGIN_DECLARE(mrcp_resource_engine_t*) mrcp_plugin_create(apr_pool_t *pool
 		vtable->process_msg = demo_synth_msg_process;
 	}
 
-	/* create resource engine base */
-	return mrcp_resource_engine_create(
-					MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
-					demo_engine,               /* object to associate */
-					&engine_vtable,            /* virtual methods table of resource engine */
-					pool);                     /* pool to allocate memory from */
+	/* create engine base */
+	return mrcp_engine_create(
+				MRCP_SYNTHESIZER_RESOURCE, /* MRCP resource identifier */
+				demo_engine,               /* object to associate */
+				&engine_vtable,            /* virtual methods table of engine */
+				pool);                     /* pool to allocate memory from */
 }
 
 /** Destroy synthesizer engine */
-static apt_bool_t demo_synth_engine_destroy(mrcp_resource_engine_t *engine)
+static apt_bool_t demo_synth_engine_destroy(mrcp_engine_t *engine)
 {
 	demo_synth_engine_t *demo_engine = engine->obj;
 	if(demo_engine->task) {
@@ -171,7 +171,7 @@ static apt_bool_t demo_synth_engine_destroy(mrcp_resource_engine_t *engine)
 }
 
 /** Open synthesizer engine */
-static apt_bool_t demo_synth_engine_open(mrcp_resource_engine_t *engine)
+static apt_bool_t demo_synth_engine_open(mrcp_engine_t *engine)
 {
 	demo_synth_engine_t *demo_engine = engine->obj;
 	if(demo_engine->task) {
@@ -182,7 +182,7 @@ static apt_bool_t demo_synth_engine_open(mrcp_resource_engine_t *engine)
 }
 
 /** Close synthesizer engine */
-static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
+static apt_bool_t demo_synth_engine_close(mrcp_engine_t *engine)
 {
 	demo_synth_engine_t *demo_engine = engine->obj;
 	if(demo_engine->task) {
@@ -193,7 +193,7 @@ static apt_bool_t demo_synth_engine_close(mrcp_resource_engine_t *engine)
 }
 
 /** Create demo synthesizer channel derived from engine channel base */
-static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_engine_t *engine, apr_pool_t *pool)
+static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool)
 {
 	mpf_stream_capabilities_t *capabilities;
 	mpf_termination_t *termination; 
@@ -222,7 +222,7 @@ static mrcp_engine_channel_t* demo_synth_engine_channel_create(mrcp_resource_eng
 
 	/* create engine channel base */
 	synth_channel->channel = mrcp_engine_channel_create(
-			engine,               /* resource engine */
+			engine,               /* engine */
 			&channel_vtable,      /* virtual methods table of engine channel */
 			synth_channel,        /* object to associate */
 			termination,          /* associated media termination */
