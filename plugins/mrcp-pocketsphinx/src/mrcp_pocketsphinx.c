@@ -422,16 +422,75 @@ static apt_bool_t pocketsphinx_grammars_clear(pocketsphinx_recognizer_t *recogni
 	return TRUE;
 }
 
+/** Load pocketsphinx grammar [RECOG] */
+static mrcp_status_code_e pocketsphinx_grammar_load(pocketsphinx_recognizer_t *recognizer, const char *content_id, const char *content_type, const apt_str_t *content)
+{
+	/* load grammar */
+	mrcp_engine_channel_t *channel = recognizer->channel;
+	const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
+	const char *grammar_file_path = NULL;
+	const char *grammar_file_name = NULL;
+	apr_file_t *fd = NULL;
+	apr_status_t rv;
+	apr_size_t size;
+
+	/* only JSGF grammar is supported */
+	if(strstr(content_type,"jsgf") == NULL) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Not Supported Content-Type [%s] "APT_SIDRES_FMT,
+			content_type,RECOGNIZER_SIDRES(recognizer));
+		return MRCP_STATUS_CODE_UNSUPPORTED_PARAM_VALUE;
+	}
+
+	grammar_file_name = apr_psprintf(channel->pool,"%s-%s.gram",channel->id.buf,content_id);
+	grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file_name,channel->pool);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Grammar File [%s] "APT_SIDRES_FMT,
+		grammar_file_path,RECOGNIZER_SIDRES(recognizer));
+	rv = apr_file_open(&fd,grammar_file_path,APR_CREATE|APR_TRUNCATE|APR_WRITE|APR_BINARY,
+		APR_OS_DEFAULT,channel->pool);
+	if(rv != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open Grammar File to Write [%s] "APT_SIDRES_FMT,
+			grammar_file_path,RECOGNIZER_SIDRES(recognizer));
+		return MRCP_STATUS_CODE_METHOD_FAILED;
+	}
+
+	size = content->length;
+	apr_file_write(fd,content->buf,&size);
+	apr_file_close(fd);
+
+	/* init pocketsphinx decoder */
+	if(pocketsphinx_decoder_init(recognizer,grammar_file_path) != TRUE) {
+		apr_file_remove(grammar_file_path,channel->pool);
+		return MRCP_STATUS_CODE_METHOD_FAILED;
+	}
+	recognizer->grammar_id = content_id;
+	apr_table_setn(recognizer->grammar_table,content_id,grammar_file_path);
+	return MRCP_STATUS_CODE_SUCCESS;
+}
+
+/** Unload pocketsphinx grammar [RECOG] */
+static mrcp_status_code_e pocketsphinx_grammar_unload(pocketsphinx_recognizer_t *recognizer, const char *content_id)
+{
+	/* unload grammar */
+	const char *grammar_file_path = apr_table_get(recognizer->grammar_table,content_id);
+	if(!grammar_file_path) {
+		return MRCP_STATUS_CODE_ILLEGAL_PARAM_VALUE;
+	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Grammar File [%s] "APT_SIDRES_FMT,
+		grammar_file_path,RECOGNIZER_SIDRES(recognizer));
+	apr_file_remove(grammar_file_path,recognizer->channel->pool);
+	apr_table_unset(recognizer->grammar_table,content_id);
+	return MRCP_STATUS_CODE_SUCCESS;
+}
+
 /** Process DEFINE-GRAMMAR request [RECOG] */
 static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
 {
 	const char *content_type = NULL;
 	const char *content_id = NULL;
-	apt_str_t *grammar = NULL;
-
 	mrcp_engine_channel_t *channel = recognizer->channel;
 
-	/* get recognizer header */
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
 	mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(response);
 	if(!generic_header || !recog_header) {
@@ -440,7 +499,7 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 
 	recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
 	mrcp_resource_header_property_add(response,RECOGNIZER_HEADER_COMPLETION_CAUSE);
-	
+
 	/* content-id must be specified */
 	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_ID) == TRUE) {
 		content_id = generic_header->content_id.buf;
@@ -452,78 +511,31 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 		return FALSE;
 	}
 
-	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
-		grammar = &request->body;
-	}
-
-	if(grammar) {
-		/* load grammar */
-		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
-		const char *grammar_file_path = NULL;
-		const char *grammar_file_name = NULL;
-		apr_file_t *fd = NULL;
-		apr_status_t rv;
-		apr_size_t size;
-
+	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_LENGTH) == TRUE &&
+		generic_header->content_length) {
 		/* content-type must be specified */
 		if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_TYPE) == TRUE) {
 			content_type = generic_header->content_type.buf;
 		}
+
 		if(!content_type) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Content-Type "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
 			response->start_line.status_code = MRCP_STATUS_CODE_MISSING_PARAM;
 			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
 			return FALSE;
 		}
-	
-		/* only JSGF grammar is supported */
-		if(strstr(content_type,"jsgf") == NULL) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Not Supported Content-Type [%s] "APT_SIDRES_FMT,
-				content_type,RECOGNIZER_SIDRES(recognizer));
-			response->start_line.status_code = MRCP_STATUS_CODE_UNSUPPORTED_PARAM_VALUE;
+
+		response->start_line.status_code = pocketsphinx_grammar_load(recognizer,content_id,content_type,&request->body);
+		if(response->start_line.status_code != MRCP_STATUS_CODE_SUCCESS) {
 			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
-			return FALSE;
-		}
-
-		grammar_file_name = apr_psprintf(channel->pool,"%s-%s.gram",channel->id.buf,content_id);
-		grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file_name,channel->pool);
-
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Grammar File [%s] "APT_SIDRES_FMT,
-			grammar_file_path,RECOGNIZER_SIDRES(recognizer));
-		rv = apr_file_open(&fd,grammar_file_path,APR_CREATE|APR_TRUNCATE|APR_WRITE|APR_BINARY,
-			APR_OS_DEFAULT,channel->pool);
-		if(rv != APR_SUCCESS) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open Grammar File to Write [%s] "APT_SIDRES_FMT,
-				grammar_file_path,RECOGNIZER_SIDRES(recognizer));
-			response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
-			return FALSE;
-		}
-
-		size = grammar->length;
-		apr_file_write(fd,grammar->buf,&size);
-		apr_file_close(fd);
-
-		/* init pocketsphinx decoder */
-		if(pocketsphinx_decoder_init(recognizer,grammar_file_path) == TRUE) {
-			recognizer->grammar_id = content_id;
-			apr_table_setn(recognizer->grammar_table,content_id,grammar_file_path);
-		}
-		else {
-			response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
-			apr_file_remove(grammar_file_path,channel->pool);
 			return FALSE;
 		}
 	}
 	else {
-		/* unload grammar */
-		const char *grammar_file_path = apr_table_get(recognizer->grammar_table,content_id);
-		if(grammar_file_path) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Grammar File [%s] "APT_SIDRES_FMT,
-				grammar_file_path,RECOGNIZER_SIDRES(recognizer));
-			apr_file_remove(grammar_file_path,channel->pool);
-			apr_table_unset(recognizer->grammar_table,content_id);
+		response->start_line.status_code = pocketsphinx_grammar_unload(recognizer,content_id);
+		if(response->start_line.status_code != MRCP_STATUS_CODE_SUCCESS) {
+			recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
+			return FALSE;
 		}
 	}
 
@@ -535,11 +547,47 @@ static apt_bool_t pocketsphinx_define_grammar(pocketsphinx_recognizer_t *recogni
 /** Process RECOGNIZE request [RECOG] */
 static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, mrcp_message_t *request, mrcp_message_t *response)
 {
+	const char *content_type = NULL;
 	mrcp_engine_channel_t *channel = recognizer->channel;
 	mrcp_recog_header_t *request_recog_header;
 	mrcp_recog_header_t *response_recog_header = mrcp_resource_header_prepare(response);
-	if(!response_recog_header) {
+	mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request);
+	if(!generic_header || !response_recog_header) {
 		return FALSE;
+	}
+
+	/* content-type must be specified */
+	if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_TYPE) == TRUE) {
+		content_type = generic_header->content_type.buf;
+	}
+	if(!content_type) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Content-Type "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
+		response->start_line.status_code = MRCP_STATUS_CODE_MISSING_PARAM;
+		response_recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
+		return FALSE;
+	}
+
+	if(strcmp(content_type,"text/uri-list") == 0) {
+		/* assume the uri-list contains last defined (active) grammar for now */
+	}
+	else {
+		const char *content_id = NULL;
+		/* content-id must be specified */
+		if(mrcp_generic_header_property_check(request,GENERIC_HEADER_CONTENT_ID) == TRUE) {
+			content_id = generic_header->content_id.buf;
+		}
+		if(!content_id) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Content-Id "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
+			response->start_line.status_code = MRCP_STATUS_CODE_MISSING_PARAM;
+			response_recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
+			return FALSE;
+		}
+
+		response->start_line.status_code = pocketsphinx_grammar_load(recognizer,content_id,content_type,&request->body);
+		if(response->start_line.status_code != MRCP_STATUS_CODE_SUCCESS) {
+			response_recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_GRAM_LOAD_FAILURE;
+			return FALSE;
+		}
 	}
 
 	if(!recognizer->decoder || ps_start_utt(recognizer->decoder, NULL) < 0) {
