@@ -26,11 +26,7 @@
 
 #include <stdlib.h>
 #include <swift.h>
-#include "mrcp_resource_engine.h"
-#include "mrcp_synth_resource.h"
-#include "mrcp_synth_header.h"
-#include "mrcp_generic_header.h"
-#include "mrcp_message.h"
+#include "mrcp_synth_engine.h"
 #include "mpf_buffer.h"
 #include "apt_log.h"
 

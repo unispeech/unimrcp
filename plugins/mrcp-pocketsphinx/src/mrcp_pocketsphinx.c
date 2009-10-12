@@ -29,11 +29,7 @@
 #include <apr_thread_proc.h>
 #include <apr_tables.h>
 #include <apr_file_io.h>
-#include "mrcp_resource_engine.h"
-#include "mrcp_recog_resource.h"
-#include "mrcp_recog_header.h"
-#include "mrcp_generic_header.h"
-#include "mrcp_message.h"
+#include "mrcp_recog_engine.h"
 #include "mpf_activity_detector.h"
 #include "pocketsphinx_properties.h"
 #include "apt_log.h"

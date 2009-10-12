@@ -154,7 +154,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_recog_engine.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_resource_engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mrcp_synth_engine.h"
 				>
 			</File>
 		</Filter>

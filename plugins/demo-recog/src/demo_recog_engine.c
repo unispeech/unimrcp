@@ -24,11 +24,7 @@
  * 4. Methods (callbacks) of the MPF engine stream MUST not block.
  */
 
-#include "mrcp_resource_engine.h"
-#include "mrcp_recog_resource.h"
-#include "mrcp_recog_header.h"
-#include "mrcp_generic_header.h"
-#include "mrcp_message.h"
+#include "mrcp_recog_engine.h"
 #include "mpf_activity_detector.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"

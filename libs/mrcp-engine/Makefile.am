@@ -15,6 +15,8 @@ include_HEADERS             = include/mrcp_engine_types.h \
                               include/mrcp_engine_plugin.h \
                               include/mrcp_engine_iface.h \
                               include/mrcp_engine_impl.h \
+                              include/mrcp_synth_engine.h \
+                              include/mrcp_recog_engine.h \
                               include/mrcp_resource_engine.h \
                               include/mrcp_engine_factory.h \
                               include/mrcp_engine_loader.h
