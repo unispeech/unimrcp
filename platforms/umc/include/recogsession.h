@@ -39,6 +39,7 @@ protected:
 	virtual bool Start();
 
 	RecogChannel* CreateRecogChannel();
+	bool StartRecognition(mrcp_channel_t* pMrcpChannel);
 	bool OnDefineGrammar(mrcp_channel_t* pMrcpChannel);
 
 	mrcp_message_t* CreateDefineGrammarRequest(mrcp_channel_t* pMrcpChannel);

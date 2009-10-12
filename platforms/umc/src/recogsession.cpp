@@ -180,21 +180,15 @@ bool RecogSession::OnChannelAdd(mrcp_channel_t* pMrcpChannel, mrcp_sig_status_co
 		return Terminate();
 	}
 
-	RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
-	const RecogScenario* pScenario = GetScenario();
+	if(GetScenario()->IsDefineGrammarEnabled())
+	{
+		mrcp_message_t* pMrcpMessage = CreateDefineGrammarRequest(pMrcpChannel);
+		if(pMrcpMessage)
+			SendMrcpRequest(pMrcpChannel,pMrcpMessage);
+		return true;
+	}
 
-	mrcp_message_t* pMrcpMessage = NULL;
-	if(pScenario->IsDefineGrammarEnabled())
-	{
-		pMrcpMessage = CreateDefineGrammarRequest(pMrcpChannel);
-	}
-	else 
-	{
-		pMrcpMessage = CreateRecognizeRequest(pMrcpChannel);
-	}
-	
-	SendMrcpRequest(pRecogChannel->m_pMrcpChannel,pMrcpMessage);
-	return true;
+	return StartRecognition(pMrcpChannel);
 }
 
 bool RecogSession::OnChannelRemove(mrcp_channel_t* pMrcpChannel, mrcp_sig_status_code_e status)
@@ -282,12 +276,16 @@ bool RecogSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t
 
 bool RecogSession::OnDefineGrammar(mrcp_channel_t* pMrcpChannel)
 {
-	const RecogScenario* pScenario = GetScenario();
-	if(!pScenario->IsRecognizeEnabled())
+	if(GetScenario()->IsRecognizeEnabled())
 	{
-		return Terminate();
+		return StartRecognition(pMrcpChannel);
 	}
 
+	return Terminate();
+}
+
+bool RecogSession::StartRecognition(mrcp_channel_t* pMrcpChannel)
+{
 	RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
 	/* create and send RECOGNIZE request */
 	mrcp_message_t* pMrcpMessage = CreateRecognizeRequest(pMrcpChannel);
@@ -296,15 +294,12 @@ bool RecogSession::OnDefineGrammar(mrcp_channel_t* pMrcpChannel)
 		SendMrcpRequest(pRecogChannel->m_pMrcpChannel,pMrcpMessage);
 	}
 
-	if(pRecogChannel)
+	const mpf_codec_descriptor_t* pDescriptor = mrcp_application_source_descriptor_get(pMrcpChannel);
+	pRecogChannel->m_pAudioIn = GetAudioIn(pDescriptor,GetSessionPool());
+	if(!pRecogChannel->m_pAudioIn)
 	{
-		const mpf_codec_descriptor_t* pDescriptor = mrcp_application_source_descriptor_get(pMrcpChannel);
-		pRecogChannel->m_pAudioIn = GetAudioIn(pDescriptor,GetSessionPool());
-		if(!pRecogChannel->m_pAudioIn)
-		{
-			/* no audio input availble, set some estimated time to complete instead */
-			pRecogChannel->m_TimeToComplete = 5000; // 5 sec
-		}
+		/* no audio input availble, set some estimated time to complete instead */
+		pRecogChannel->m_TimeToComplete = 5000; // 5 sec
 	}
 	return true;
 }
@@ -364,6 +359,9 @@ mrcp_message_t* RecogSession::CreateRecognizeRequest(mrcp_channel_t* pMrcpChanne
 		else
 		{
 			apt_string_assign(&pGenericHeader->content_type,pScenario->GetContentType(),pMrcpMessage->pool);
+			/* set content-id */
+			apt_string_assign(&pGenericHeader->content_id,m_ContentId,pMrcpMessage->pool);
+			mrcp_generic_header_property_add(pMrcpMessage,GENERIC_HEADER_CONTENT_ID);
 			/* set message body */
 			if(pScenario->GetContent())
 				apt_string_assign(&pMrcpMessage->body,pScenario->GetContent(),pMrcpMessage->pool);
