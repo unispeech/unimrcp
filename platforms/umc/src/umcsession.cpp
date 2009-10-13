@@ -50,10 +50,11 @@ bool UmcSession::Run()
 	if(!m_pMrcpProfile || !m_pMrcpApplication)
 		return false;
 
-	m_Running = true;
-	
 	/* create session */
-	CreateMrcpSession(m_pMrcpProfile);
+	if(!CreateMrcpSession(m_pMrcpProfile))
+		return false;
+	
+	m_Running = true;
 	
 	bool ret = false;
 	if(m_pScenario->IsDiscoveryEnabled())
@@ -134,6 +135,9 @@ bool UmcSession::CreateMrcpSession(const char* pProfileName)
 
 bool UmcSession::DestroyMrcpSession()
 {
+	if(!m_pMrcpSession)
+		return false;
+
 	mrcp_application_session_destroy(m_pMrcpSession);
 	m_pMrcpSession = NULL;
 	return true;
