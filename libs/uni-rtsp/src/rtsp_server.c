@@ -412,11 +412,19 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 				message->header.session_id.buf,
 				message->header.session_id.length);
 	if(!session) {
-		/* error case */
+		/* error case, no such session */
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such RTSP Session "APT_SID_FMT,message->header.session_id.buf);
 		return rtsp_server_error_respond(server,rtsp_connection,message,
 								RTSP_STATUS_CODE_NOT_FOUND,
 								RTSP_REASON_PHRASE_NOT_FOUND);
+	}
+	
+	if(session->terminating == TRUE) {
+		/* error case, session is being terminated */
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Not Acceptable Request "APT_SID_FMT,message->header.session_id.buf);
+		return rtsp_server_error_respond(server,rtsp_connection,message,
+								RTSP_STATUS_CODE_NOT_ACCEPTABLE,
+								RTSP_REASON_PHRASE_NOT_ACCEPTABLE);
 	}
 	
 	if(session->active_request) {
