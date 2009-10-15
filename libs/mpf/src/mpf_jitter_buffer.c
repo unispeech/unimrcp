@@ -134,6 +134,9 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 		}
 	}
 	*available_frame_count = jb->frame_count - (*write_ts - jb->read_ts)/jb->frame_ts;
+	if(*available_frame_count <= 0) {
+		result = JB_DISCARD_TOO_EARLY;
+	}
 	return result;
 }
 
