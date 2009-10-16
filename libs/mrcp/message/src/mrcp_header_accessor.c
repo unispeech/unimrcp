@@ -161,12 +161,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_inherit(mrcp_header_accessor_t *accessor, c
 	for(i=0, j=0; i<parent->vtable->field_count && j < parent->counter; i++) {
 		if((parent->properties[i] & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
 			j++;
-			if((parent->properties[i] & MRCP_HEADER_FIELD_VALUE) == MRCP_HEADER_FIELD_VALUE) {
-				accessor->vtable->duplicate_field(accessor,parent,i,pool);
-				mrcp_header_property_add(accessor,i);
-			}
-			else {
-				mrcp_header_name_property_add(accessor,i);
+			if((accessor->properties[i] & MRCP_HEADER_FIELD_NAME) != MRCP_HEADER_FIELD_NAME) {
+				if((parent->properties[i] & MRCP_HEADER_FIELD_VALUE) == MRCP_HEADER_FIELD_VALUE) {
+					accessor->vtable->duplicate_field(accessor,parent,i,pool);
+					mrcp_header_property_add(accessor,i);
+				}
+				else {
+					mrcp_header_name_property_add(accessor,i);
+				}
 			}
 		}
 	}
