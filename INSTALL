@@ -1,29 +1,30 @@
 BUILD REQUIREMENTS
 ==================
-UniMRCP depends on a number of third party tools and libraries,
-which must be installed prior to UniMRCP build.
-
-1. Apache Portable Runtime [>=1.2.x] (http://apr.apache.org/)
-Whenever you want to build any part of UniMRCP, you need the
-Apache Portable Runtime (APR) and the APR Utility (APR-util)
-libraries.
-
-2. Sofia-SIP [>=1.12.6] (http://sofia-sip.sourceforge.net/)
-Sofia-SIP library is used to implement MRCPv2 specification
-compliant SIP signaling. Sofia-SIP is an open-source SIP User-Agent
-library, compliant with the IETF RFC3261 specification.
+UniMRCP depends on a number of third party tools and libraries, 
+which are required and must be installed first.
 
 The easiest and recommended way is to install an appropriate 
-dependency package from download are, which contains 
-APR, APR-Util and Sofia-SIP libraries UniMRCP uses.
+dependency package from the download area, which contains APR, 
+APR-Util and Sofia-SIP libraries prepackaged for UniMRCP use.
 
-http://unimrcp.googlecode.com/files/unimrcp-deps.tar.gz (Unix)
-http://unimrcp.googlecode.com/files/unimrcp-deps.zip (Win)
+http://code.google.com/p/unimrcp/downloads/
 
-Alternatively, original distribution of APR, APR-Util and 
+Alternatively, the original packages of APR, APR-Util and
 Sofia-SIP libraries and patches for them can be downloaded from
+
 http://www.unimrcp.org/dependencies/
 
+References:
+  
+1. Apache Portable Runtime [>=1.2.x] (http://apr.apache.org/). 
+Whenever you want to build any part of UniMRCP, you need the 
+Apache Portable Runtime (APR) and the APR Utility (APR-util) 
+libraries.
+
+2. Sofia-SIP [>=1.12.6] (http://sofia-sip.sourceforge.net/). 
+Sofia-SIP library is used to implement MRCPv2 specification 
+compliant SIP signaling. Sofia-SIP is an open-source SIP User-Agent
+library, compliant with the IETF RFC3261 specification.
 
 
 GNU BUILD
