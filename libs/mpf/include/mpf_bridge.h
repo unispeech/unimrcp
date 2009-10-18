@@ -30,6 +30,7 @@ APT_BEGIN_EXTERN_C
  * Create bridge of audio streams.
  * @param source the source audio stream
  * @param sink the sink audio stream
+ * @param codec_manager the codec manager
  * @param pool the pool to allocate memory from
  */
 MPF_DECLARE(mpf_object_t*) mpf_bridge_create(

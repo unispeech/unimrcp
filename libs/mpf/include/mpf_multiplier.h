@@ -31,6 +31,7 @@ APT_BEGIN_EXTERN_C
  * @param source the audio source
  * @param sink_arr the array of audio sinks
  * @param sink_count the number of audio sinks
+ * @param codec_manager the codec manager
  * @param pool the pool to allocate memory from
  */
 MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(

@@ -18,7 +18,7 @@
 #define __MPF_RESAMPLER_H__
 
 /**
- * @file mpf_encoder.h
+ * @file mpf_resampler.h
  * @brief MPF Stream Resampler
  */ 
 
@@ -28,10 +28,11 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create audio stream resampler.
- * @param stream the stream to resample
+ * @param source the source stream to resample
+ * @param sink the sink stream to resample to
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_resampler_create(mpf_audio_stream_t *stream, mpf_audio_stream_t *sink, apr_pool_t *pool);
+MPF_DECLARE(mpf_audio_stream_t*) mpf_resampler_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

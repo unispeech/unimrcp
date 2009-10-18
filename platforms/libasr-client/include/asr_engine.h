@@ -50,8 +50,9 @@ typedef struct asr_session_t asr_session_t;
 
 /**
  * Create ASR engine.
- * @param dir_layout the dir layout structure
- * @param pool the pool to allocate memory from
+ * @param root_dir_path the path to root directory
+ * @param log_priority the log priority level
+ * @param log_output the log output mode
  */
 ASR_CLIENT_DECLARE(asr_engine_t*) asr_engine_create(
 									const char *root_dir_path,

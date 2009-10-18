@@ -17,7 +17,7 @@
 #include "mpf_resampler.h"
 #include "apt_log.h"
 
-MPF_DECLARE(mpf_audio_stream_t*) mpf_resampler_create(mpf_audio_stream_t *stream, mpf_audio_stream_t *sink, apr_pool_t *pool)
+MPF_DECLARE(mpf_audio_stream_t*) mpf_resampler_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,
 		"Currently resampling is not supported. "

@@ -18,7 +18,7 @@
 #define __MPF_STREAM_DESCRIPTOR_H__
 
 /**
- * @file mpf_stream.h
+ * @file mpf_stream_descriptor.h
  * @brief MPF Stream Descriptor
  */ 
 

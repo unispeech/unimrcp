@@ -84,6 +84,7 @@ struct mpf_audio_stream_vtable_t {
 	/** Virtual write frame method */
 	apt_bool_t (*write_frame)(mpf_audio_stream_t *stream, const mpf_frame_t *frame);
 
+	/** Virtual trace method */
 	void (*trace)(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output);
 };
 

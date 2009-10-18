@@ -90,6 +90,10 @@ MPF_DECLARE(void) mpf_engine_task_msg_type_set(mpf_engine_t *engine, apt_task_ms
 /**
  * Create task message(if not created) and add MPF termination message to it.
  * @param engine the engine task message belongs to
+ * @param command_id the MPF command identifier
+ * @param context the context to add termination to
+ * @param termination the termination to add
+ * @param descriptor the termination dependent descriptor
  * @param task_msg the task message to create and add constructed MPF message to
  */
 MPF_DECLARE(apt_bool_t) mpf_engine_termination_message_add(
@@ -103,6 +107,10 @@ MPF_DECLARE(apt_bool_t) mpf_engine_termination_message_add(
 /**
  * Create task message(if not created) and add MPF association message to it.
  * @param engine the engine task message belongs to
+ * @param command_id the MPF command identifier
+ * @param context the context to add association of terminations for
+ * @param termination the termination to associate
+ * @param assoc_termination the termination to associate
  * @param task_msg the task message to create and add constructed MPF message to
  */
 MPF_DECLARE(apt_bool_t) mpf_engine_assoc_message_add(
@@ -116,6 +124,8 @@ MPF_DECLARE(apt_bool_t) mpf_engine_assoc_message_add(
 /**
  * Create task message(if not created) and add MPF topology message to it.
  * @param engine the engine task message belongs to
+ * @param command_id the MPF command identifier
+ * @param context the context to modify topology for
  * @param task_msg the task message to create and add constructed MPF message to
  */
 MPF_DECLARE(apt_bool_t) mpf_engine_topology_message_add(
