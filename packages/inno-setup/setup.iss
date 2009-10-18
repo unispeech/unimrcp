@@ -1,4 +1,4 @@
-#define uni_version "0.7.0"
+#define uni_version "0.8.0"
 
 AppName=UniMRCP
 AppVerName=UniMRCP-{#= uni_version}
