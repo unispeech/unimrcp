@@ -617,8 +617,9 @@ static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, 
 	/* check if waveform (utterance) should be saved */
 	if(recognizer->properties.save_waveform == TRUE) {
 		apr_status_t rv;
-		const char *waveform_file_name = apr_psprintf(channel->pool,"utter-%s-%d.pcm",
-			channel->id.buf,request->start_line.request_id);
+		const char *waveform_file_name = apr_psprintf(channel->pool,"utter-%s-%"MRCP_REQUEST_ID_FMT".pcm",
+			channel->id.buf,
+			request->start_line.request_id);
 		char *waveform_file_path = NULL;
 		apr_filepath_merge(&waveform_file_path,recognizer->properties.save_waveform_dir,
 			waveform_file_name,0,channel->pool);

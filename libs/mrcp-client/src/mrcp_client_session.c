@@ -594,7 +594,7 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 
 	message->channel_id.session_id = session->base.id;
 	message->start_line.request_id = ++session->base.last_request_id;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCP Request "APT_PTRSIDRES_FMT" [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCP Request "APT_PTRSIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
 					MRCP_SESSION_PTRSID(&session->base),
 					channel->resource_name->buf,
 					message->start_line.request_id);

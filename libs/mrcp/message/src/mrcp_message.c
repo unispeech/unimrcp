@@ -93,18 +93,6 @@ static apt_bool_t mrcp_request_state_generate(mrcp_request_state_e request_state
 }
 
 
-/** Parse MRCP request-id */
-static APR_INLINE mrcp_request_id mrcp_request_id_parse(const apt_str_t *field)
-{
-	return apt_size_value_parse(field);
-}
-
-/** Generate MRCP request-id */
-static APR_INLINE apt_bool_t mrcp_request_id_generate(mrcp_request_id request_id, apt_text_stream_t *stream)
-{
-	return apt_size_value_generate(request_id,stream);
-}
-
 /** Parse MRCP status-code */
 static APR_INLINE mrcp_status_code_e mrcp_status_code_parse(const apt_str_t *field)
 {

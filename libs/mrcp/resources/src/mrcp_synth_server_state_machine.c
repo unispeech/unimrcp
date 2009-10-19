@@ -95,26 +95,30 @@ static APR_INLINE void synth_state_change(mrcp_synth_state_machine_t *state_mach
 
 static apt_bool_t synth_request_set_params(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Request [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Request [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	mrcp_message_header_set(&state_machine->properties,&message->header,message->pool);
 	return synth_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t synth_response_set_params(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	return synth_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t synth_request_get_params(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Request [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Request [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	return synth_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t synth_response_get_params(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	mrcp_message_header_set(&message->header,&state_machine->active_request->header,message->pool);
 	mrcp_message_header_get(&message->header,&state_machine->properties,message->pool);
 	return synth_response_dispatch(state_machine,message);
@@ -125,7 +129,8 @@ static apt_bool_t synth_request_speak(mrcp_synth_state_machine_t *state_machine,
 	mrcp_message_header_inherit(&message->header,&state_machine->properties,message->pool);
 	if(state_machine->speaker) {
 		mrcp_message_t *response;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up SPEAK Request [%d]",message->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up SPEAK Request [%"MRCP_REQUEST_ID_FMT"]",
+			message->start_line.request_id);
 		message->start_line.request_state = MRCP_REQUEST_STATE_PENDING;
 		apt_list_push_back(state_machine->queue,message,message->pool);
 		
@@ -134,13 +139,15 @@ static apt_bool_t synth_request_speak(mrcp_synth_state_machine_t *state_machine,
 		return synth_response_dispatch(state_machine,response);
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEAK Request [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEAK Request [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	return synth_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t synth_response_speak(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEAK Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEAK Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	if(message->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS) {
 		state_machine->speaker = state_machine->active_request;
 		synth_state_change(state_machine,SYNTHESIZER_STATE_SPEAKING);
@@ -207,7 +214,8 @@ static apt_bool_t synth_request_stop(mrcp_synth_state_machine_t *state_machine, 
 
 		if(!request_id_list || active_request_id_list_find(generic_header,state_machine->speaker->start_line.request_id) == TRUE) {
 			/* found in-progress SPEAK request, stop it */
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process STOP Request [%d]",message->start_line.request_id);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process STOP Request [%"MRCP_REQUEST_ID_FMT"]",
+				message->start_line.request_id);
 			return synth_request_dispatch(state_machine,message);
 		}
 	}
@@ -222,7 +230,8 @@ static apt_bool_t synth_response_stop(mrcp_synth_state_machine_t *state_machine,
 {
 	mrcp_message_t *pending_request;
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process STOP Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process STOP Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	/* append active id list */
 	active_request_id_list_append(generic_header,state_machine->speaker->start_line.request_id);
 	mrcp_generic_header_property_add(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
@@ -265,7 +274,8 @@ static apt_bool_t synth_request_pause(mrcp_synth_state_machine_t *state_machine,
 
 static apt_bool_t synth_response_pause(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process PAUSE Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process PAUSE Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	if(message->start_line.status_code == MRCP_STATUS_CODE_SUCCESS) {
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
 		/* append active id list */
@@ -302,7 +312,8 @@ static apt_bool_t synth_request_resume(mrcp_synth_state_machine_t *state_machine
 
 static apt_bool_t synth_response_resume(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process RESUME Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process RESUME Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	if(message->start_line.status_code == MRCP_STATUS_CODE_SUCCESS) {
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
 		/* append active id list */
@@ -327,7 +338,8 @@ static apt_bool_t synth_request_barge_in_occurred(mrcp_synth_state_machine_t *st
 		}
 	
 		if(kill_on_barge_in == TRUE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process BARGE-IN Request [%d]",message->start_line.request_id);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process BARGE-IN Request [%"MRCP_REQUEST_ID_FMT"]",
+				message->start_line.request_id);
 			return synth_request_dispatch(state_machine,message);
 		}
 	}
@@ -340,7 +352,8 @@ static apt_bool_t synth_request_barge_in_occurred(mrcp_synth_state_machine_t *st
 static apt_bool_t synth_response_barge_in_occurred(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process BARGE-IN Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process BARGE-IN Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	/* append active id list */
 	active_request_id_list_append(generic_header,state_machine->speaker->start_line.request_id);
 	mrcp_generic_header_property_add(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
@@ -353,7 +366,8 @@ static apt_bool_t synth_request_control(mrcp_synth_state_machine_t *state_machin
 {
 	mrcp_message_t *response_message;
 	if(state_machine->state == SYNTHESIZER_STATE_SPEAKING) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process CONTROL Request [%d]",message->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process CONTROL Request [%"MRCP_REQUEST_ID_FMT"]",
+			message->start_line.request_id);
 		return synth_request_dispatch(state_machine,message);
 	}
 
@@ -365,7 +379,8 @@ static apt_bool_t synth_request_control(mrcp_synth_state_machine_t *state_machin
 static apt_bool_t synth_response_control(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process CONTROL Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process CONTROL Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	/* append active id list */
 	active_request_id_list_append(generic_header,state_machine->speaker->start_line.request_id);
 	mrcp_generic_header_property_add(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
@@ -376,7 +391,8 @@ static apt_bool_t synth_request_define_lexicon(mrcp_synth_state_machine_t *state
 {
 	mrcp_message_t *response_message;
 	if(state_machine->state == SYNTHESIZER_STATE_IDLE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-LEXICON Request [%d]",message->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-LEXICON Request [%"MRCP_REQUEST_ID_FMT"]",
+			message->start_line.request_id);
 		return synth_request_dispatch(state_machine,message);
 	}
 
@@ -388,7 +404,8 @@ static apt_bool_t synth_request_define_lexicon(mrcp_synth_state_machine_t *state
 
 static apt_bool_t synth_response_define_lexicon(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-LEXICON Response [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-LEXICON Response [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	return synth_response_dispatch(state_machine,message);
 }
 
@@ -404,7 +421,8 @@ static apt_bool_t synth_event_speech_marker(mrcp_synth_state_machine_t *state_ma
 		return FALSE;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEECH-MARKER Event [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEECH-MARKER Event [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	return synth_event_dispatch(state_machine,message);
 }
@@ -413,12 +431,14 @@ static apt_bool_t synth_event_speak_complete(mrcp_synth_state_machine_t *state_m
 {
 	mrcp_message_t *pending_request;
 	if(!state_machine->speaker) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected SPEAK-COMPLETE Event [%d]",message->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected SPEAK-COMPLETE Event [%"MRCP_REQUEST_ID_FMT"]",
+			message->start_line.request_id);
 		return FALSE;
 	}
 
 	if(state_machine->speaker->start_line.request_id != message->start_line.request_id) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected SPEAK-COMPLETE Event [%d]",message->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected SPEAK-COMPLETE Event [%"MRCP_REQUEST_ID_FMT"]",
+			message->start_line.request_id);
 		return FALSE;
 	}
 
@@ -427,7 +447,8 @@ static apt_bool_t synth_event_speak_complete(mrcp_synth_state_machine_t *state_m
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEAK-COMPLETE Event [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SPEAK-COMPLETE Event [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_COMPLETION_CAUSE) != TRUE) {
 		mrcp_synth_header_t *synth_header = mrcp_resource_header_prepare(message);
 		synth_header->completion_cause = SYNTHESIZER_COMPLETION_CAUSE_NORMAL;
@@ -572,7 +593,8 @@ static apt_bool_t synth_state_deactivate(mrcp_state_machine_t *base)
 	message->start_line.request_id = source->start_line.request_id + 1;
 	apt_string_set(&message->start_line.method_name,"DEACTIVATE"); /* informative only */
 	message->header = source->header;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create and Process STOP Request [%d]",message->start_line.request_id);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create and Process STOP Request [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.request_id);
 	return synth_request_dispatch(state_machine,message);
 }
 
