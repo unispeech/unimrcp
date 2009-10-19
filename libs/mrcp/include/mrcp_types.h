@@ -56,7 +56,7 @@ typedef apr_uint64_t  mrcp_request_id;
 /** MRCP request identifier */
 typedef apr_uint32_t  mrcp_request_id;
 /** Format to log MRCP request identifier */
-#define MRCP_REQUEST_ID_FMT    "lu"
+#define MRCP_REQUEST_ID_FMT    "d"
 #endif
 
 
