@@ -24,7 +24,6 @@
 
 #include "mrcp_types.h"
 #include "mrcp_header_accessor.h"
-#include "mrcp_state_machine.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -38,9 +37,6 @@ struct mrcp_resource_t {
 	apt_bool_t (*resourcify_message_by_id)(mrcp_resource_t *resource, mrcp_message_t *message);
 	/** Set resource specific data in a message by resource name */
 	apt_bool_t (*resourcify_message_by_name)(mrcp_resource_t *resource, mrcp_message_t *message);
-
-	/** Create state machine */
-	mrcp_state_machine_t* (*create_state_machine)(void *obj, mrcp_version_e version, apr_pool_t *pool);
 };
 
 /** Initialize MRCP resource */
@@ -48,7 +44,6 @@ static APR_INLINE void mrcp_resource_init(mrcp_resource_t *resource)
 {
 	resource->resourcify_message_by_id = NULL;
 	resource->resourcify_message_by_name = NULL;
-	resource->create_state_machine = NULL;
 }
 
 /** Validate MRCP resource */

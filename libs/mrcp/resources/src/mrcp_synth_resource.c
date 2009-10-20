@@ -16,7 +16,6 @@
 
 #include "mrcp_synth_resource.h"
 #include "mrcp_synth_header.h"
-#include "mrcp_synth_state_machine.h"
 #include "mrcp_resource.h"
 #include "mrcp_message.h"
 
@@ -106,7 +105,5 @@ MRCP_DECLARE(mrcp_resource_t*) mrcp_synth_resource_create(apr_pool_t *pool)
 
 	resource->resourcify_message_by_id = synth_message_resourcify_by_id;
 	resource->resourcify_message_by_name = synth_message_resourcify_by_name;
-
-	resource->create_state_machine = mrcp_synth_state_machine_create;
 	return resource;
 }

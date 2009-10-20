@@ -16,6 +16,8 @@
 
 #include <apr_hash.h>
 #include "mrcp_engine_factory.h"
+#include "mrcp_synth_state_machine.h"
+#include "mrcp_recog_state_machine.h"
 #include "apt_log.h"
 
 /** Engine factory declaration */
@@ -94,6 +96,22 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory
 	if(!engine || !name) {
 		return FALSE;
 	}
+
+	switch(engine->resource_id) {
+		case MRCP_SYNTHESIZER_RESOURCE:
+			engine->create_state_machine = mrcp_synth_state_machine_create;
+			break;
+		case MRCP_RECOGNIZER_RESOURCE:
+			engine->create_state_machine = mrcp_recog_state_machine_create;
+			break;
+		default:
+			break;
+	}
+
+	if(!engine->create_state_machine) {
+		return FALSE;
+	}
+
 	apr_hash_set(factory->engines,name,APR_HASH_KEY_STRING,engine);
 	return TRUE;
 }

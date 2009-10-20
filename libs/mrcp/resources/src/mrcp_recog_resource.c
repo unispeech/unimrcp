@@ -16,7 +16,6 @@
 
 #include "mrcp_recog_resource.h"
 #include "mrcp_recog_header.h"
-#include "mrcp_recog_state_machine.h"
 #include "mrcp_resource.h"
 #include "mrcp_message.h"
 
@@ -136,7 +135,5 @@ MRCP_DECLARE(mrcp_resource_t*) mrcp_recog_resource_create(apr_pool_t *pool)
 
 	resource->resourcify_message_by_id = recog_message_resourcify_by_id;
 	resource->resourcify_message_by_name = recog_message_resourcify_by_name;
-
-	resource->create_state_machine = mrcp_recog_state_machine_create;
 	return resource;
 }

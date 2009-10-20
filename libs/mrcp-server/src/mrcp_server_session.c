@@ -116,7 +116,10 @@ static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t 
 	return session->base.signaling_agent->mrcp_version;
 }
 
-static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name)
+static mrcp_engine_channel_t* mrcp_server_engine_channel_create(
+								mrcp_server_session_t *session,
+								mrcp_channel_t *channel, 
+								const apt_str_t *resource_name)
 {
 	mrcp_engine_t *engine = apr_hash_get(
 									session->profile->engine_table,
@@ -125,6 +128,15 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 	if(!engine) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find MRCP Engine [%s]",resource_name->buf);
 		return NULL;
+	}
+
+	channel->state_machine = engine->create_state_machine(
+						channel,
+						mrcp_session_version_get(session),
+						channel->pool);
+	if(channel->state_machine) {
+		channel->state_machine->on_dispatch = state_machine_on_message_dispatch;
+		channel->state_machine->on_deactivate = state_machine_on_deactivate;
 	}
 
 	return mrcp_engine_channel_virtual_create(engine,mrcp_session_version_get(session),session->base.pool);
@@ -165,16 +177,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 									channel,
 									pool);
 			}
-			channel->state_machine = resource->create_state_machine(
-								channel,
-								mrcp_session_version_get(session),
-								pool);
-			if(channel->state_machine) {
-				channel->state_machine->on_dispatch = state_machine_on_message_dispatch;
-				channel->state_machine->on_deactivate = state_machine_on_deactivate;
-			}
-
-			engine_channel = mrcp_server_engine_channel_create(session,resource_name);
+			engine_channel = mrcp_server_engine_channel_create(session,channel,resource_name);
 			if(engine_channel) {
 				engine_channel->id = session->base.id;
 				engine_channel->event_obj = channel;

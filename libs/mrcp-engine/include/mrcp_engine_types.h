@@ -23,7 +23,7 @@
  */ 
 
 #include <apr_tables.h>
-#include "mrcp_types.h"
+#include "mrcp_state_machine.h"
 #include "mpf_termination.h"
 #include "apt_string.h"
 
@@ -120,6 +120,10 @@ struct mrcp_engine_t {
 	apt_bool_t                         is_open;
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
+
+
+	/** Create state machine */
+	mrcp_state_machine_t* (*create_state_machine)(void *obj, mrcp_version_e version, apr_pool_t *pool);
 };
 
 /** MRCP engine config */

@@ -33,6 +33,7 @@ mrcp_engine_t* mrcp_engine_create(
 	engine->cur_channel_count = 0;
 	engine->is_open = FALSE;
 	engine->pool = pool;
+	engine->create_state_machine = NULL;
 	return engine;
 }
 
