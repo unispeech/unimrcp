@@ -165,7 +165,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 									channel,
 									pool);
 			}
-			channel->state_machine = resource->create_server_state_machine(
+			channel->state_machine = resource->create_state_machine(
 								channel,
 								mrcp_session_version_get(session),
 								pool);

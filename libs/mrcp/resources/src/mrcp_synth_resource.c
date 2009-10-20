@@ -107,7 +107,6 @@ MRCP_DECLARE(mrcp_resource_t*) mrcp_synth_resource_create(apr_pool_t *pool)
 	resource->resourcify_message_by_id = synth_message_resourcify_by_id;
 	resource->resourcify_message_by_name = synth_message_resourcify_by_name;
 
-	resource->create_client_state_machine = mrcp_synth_client_state_machine_create;
-	resource->create_server_state_machine = mrcp_synth_server_state_machine_create;
+	resource->create_state_machine = mrcp_synth_state_machine_create;
 	return resource;
 }

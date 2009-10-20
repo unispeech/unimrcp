@@ -509,8 +509,8 @@ static apt_bool_t recog_state_deactivate(mrcp_state_machine_t *base)
 	return recog_request_dispatch(state_machine,message);
 }
 
-/** Create MRCP recognizer server state machine */
-mrcp_state_machine_t* mrcp_recog_server_state_machine_create(void *obj, mrcp_version_e version, apr_pool_t *pool)
+/** Create MRCP recognizer state machine */
+mrcp_state_machine_t* mrcp_recog_state_machine_create(void *obj, mrcp_version_e version, apr_pool_t *pool)
 {
 	mrcp_message_header_t *properties;
 	mrcp_recog_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_recog_state_machine_t));

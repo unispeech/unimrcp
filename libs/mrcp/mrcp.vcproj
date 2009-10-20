@@ -261,10 +261,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\resources\src\mrcp_recog_client_state_machine.c"
-					>
-				</File>
-				<File
 					RelativePath=".\resources\src\mrcp_recog_header.c"
 					>
 				</File>
@@ -274,10 +270,6 @@
 				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_recog_server_state_machine.c"
-					>
-				</File>
-				<File
-					RelativePath=".\resources\src\mrcp_synth_client_state_machine.c"
 					>
 				</File>
 				<File
