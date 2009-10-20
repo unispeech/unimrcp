@@ -33,8 +33,8 @@ libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            control/src/mrcp_stream.c \
                            resources/src/mrcp_synth_header.c \
                            resources/src/mrcp_synth_resource.c \
-                           resources/src/mrcp_synth_server_state_machine.c \
+                           resources/src/mrcp_synth_state_machine.c \
                            resources/src/mrcp_recog_header.c \
                            resources/src/mrcp_recog_resource.c \
-                           resources/src/mrcp_recog_server_state_machine.c \
+                           resources/src/mrcp_recog_state_machine.c \
                            resources/src/mrcp_default_factory.c

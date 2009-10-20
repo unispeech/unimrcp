@@ -269,7 +269,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\resources\src\mrcp_recog_server_state_machine.c"
+					RelativePath=".\resources\src\mrcp_recog_state_machine.c"
 					>
 				</File>
 				<File
@@ -281,7 +281,7 @@
 					>
 				</File>
 				<File
-					RelativePath=".\resources\src\mrcp_synth_server_state_machine.c"
+					RelativePath=".\resources\src\mrcp_synth_state_machine.c"
 					>
 				</File>
 			</Filter>
