@@ -158,11 +158,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_recog_state_machine.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_resource_engine.h"
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_state_machine.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_synth_engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mrcp_synth_state_machine.h"
 				>
 			</File>
 		</Filter>
@@ -184,6 +196,14 @@
 			</File>
 			<File
 				RelativePath=".\src\mrcp_engine_loader.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_recog_state_machine.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_synth_state_machine.c"
 				>
 			</File>
 		</Filter>

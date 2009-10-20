@@ -194,10 +194,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\control\include\mrcp_state_machine.h"
-					>
-				</File>
-				<File
 					RelativePath=".\control\include\mrcp_stream.h"
 					>
 				</File>
@@ -236,19 +232,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\resources\include\mrcp_recog_state_machine.h"
-					>
-				</File>
-				<File
 					RelativePath=".\resources\include\mrcp_synth_header.h"
 					>
 				</File>
 				<File
 					RelativePath=".\resources\include\mrcp_synth_resource.h"
-					>
-				</File>
-				<File
-					RelativePath=".\resources\include\mrcp_synth_state_machine.h"
 					>
 				</File>
 			</Filter>
@@ -269,19 +257,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\resources\src\mrcp_recog_state_machine.c"
-					>
-				</File>
-				<File
 					RelativePath=".\resources\src\mrcp_synth_header.c"
 					>
 				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_synth_resource.c"
-					>
-				</File>
-				<File
-					RelativePath=".\resources\src\mrcp_synth_state_machine.c"
 					>
 				</File>
 			</Filter>
