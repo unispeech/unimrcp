@@ -119,7 +119,33 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_id(mrcp_resource_factory_t *
 	message->channel_id.resource_name = *name;
 
 	mrcp_generic_header_accessor_set(message);
-	return resource->resourcify_message_by_id(resource,message);
+
+	/* associate method_name and method_id */
+	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
+		const apt_str_t *name = apt_string_table_str_get(
+			resource->get_method_str_table(message->start_line.version),
+			resource->method_count,
+			message->start_line.method_id);
+		if(!name) {
+			return FALSE;
+		}
+		message->start_line.method_name = *name;
+	}
+	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
+		const apt_str_t *name = apt_string_table_str_get(
+			resource->get_event_str_table(message->start_line.version),
+			resource->event_count,
+			message->start_line.method_id);
+		if(!name) {
+			return FALSE;
+		}
+		message->start_line.method_name = *name;
+	}
+
+	message->header.resource_header_accessor.vtable = 
+		resource->get_resource_header_vtable(message->start_line.version);
+
+	return TRUE;
 }
 
 /** Associate MRCP resource specific data by resource name */
@@ -135,7 +161,31 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resourcify_by_name(mrcp_resource_factory_t
 	}
 
 	mrcp_generic_header_accessor_set(message);
-	return resource->resourcify_message_by_name(resource,message);
+
+	/* associate method_name and method_id */
+	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
+		message->start_line.method_id = apt_string_table_id_find(
+			resource->get_method_str_table(message->start_line.version),
+			resource->method_count,
+			&message->start_line.method_name);
+		if(message->start_line.method_id >= resource->method_count) {
+			return FALSE;
+		}
+	}
+	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
+		message->start_line.method_id = apt_string_table_id_find(
+			resource->get_event_str_table(message->start_line.version),
+			resource->event_count,
+			&message->start_line.method_name);
+		if(message->start_line.method_id >= resource->event_count) {
+			return FALSE;
+		}
+	}
+
+	message->header.resource_header_accessor.vtable = 
+		resource->get_resource_header_vtable(message->start_line.version);
+	
+	return TRUE;
 }
 
 /** Get resource name associated with specified resource id */

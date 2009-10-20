@@ -31,26 +31,43 @@ APT_BEGIN_EXTERN_C
 /** MRCP resource definition */
 struct mrcp_resource_t {
 	/** MRCP resource identifier */
-	mrcp_resource_id            id;
+	mrcp_resource_id id;
+	/** Number of methods */
+	apr_size_t       method_count;
+	/** Number of events */
+	apr_size_t       event_count;
 
-	/** Set resource specific data in a message by resource id */
-	apt_bool_t (*resourcify_message_by_id)(mrcp_resource_t *resource, mrcp_message_t *message);
-	/** Set resource specific data in a message by resource name */
-	apt_bool_t (*resourcify_message_by_name)(mrcp_resource_t *resource, mrcp_message_t *message);
+	/** Get string table of methods */
+	const apt_str_table_item_t* (*get_method_str_table)(mrcp_version_e version);
+	/** Get string table of events */
+	const apt_str_table_item_t* (*get_event_str_table)(mrcp_version_e version);
+
+	/** Get vtable of resource header */
+	const mrcp_header_vtable_t* (*get_resource_header_vtable)(mrcp_version_e version);
 };
 
 /** Initialize MRCP resource */
-static APR_INLINE void mrcp_resource_init(mrcp_resource_t *resource)
+static APR_INLINE mrcp_resource_t* mrcp_resource_create(apr_pool_t *pool)
 {
-	resource->resourcify_message_by_id = NULL;
-	resource->resourcify_message_by_name = NULL;
+	mrcp_resource_t *resource = (mrcp_resource_t*) apr_palloc(pool, sizeof(mrcp_resource_t));
+	resource->id = 0;
+	resource->method_count = 0;
+	resource->event_count = 0;
+	resource->get_method_str_table = NULL;
+	resource->get_event_str_table = NULL;
+	resource->get_resource_header_vtable = NULL;
+	return resource;
 }
 
 /** Validate MRCP resource */
 static APR_INLINE apt_bool_t mrcp_resource_validate(mrcp_resource_t *resource)
 {
-	return (resource->resourcify_message_by_id && 
-		resource->resourcify_message_by_name) ? TRUE : FALSE;
+	if(resource->method_count && resource->event_count &&
+		resource->get_method_str_table && resource->get_event_str_table &&
+		 resource->get_resource_header_vtable) {
+		return TRUE;
+	}
+	return FALSE;
 }
 
 APT_END_EXTERN_C
