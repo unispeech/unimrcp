@@ -96,6 +96,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 		vtable->terminate = mrcp_client_agent_task_terminate;
 		vtable->destroy = mrcp_client_agent_task_on_destroy;
 	}
+	apt_task_auto_ready_set(agent->task,FALSE);
 
 	agent->connection_list = apt_list_create(pool);
 
@@ -588,6 +589,9 @@ static apt_bool_t mrcp_client_agent_task_run(apt_task_t *task)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
 		return FALSE;
 	}
+
+	/* explicitly indicate task is ready to process messages */
+	apt_task_ready(agent->task);
 
 	while(running) {
 		status = apt_pollset_poll(agent->pollset, -1, &num, &ret_pfd);
