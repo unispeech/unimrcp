@@ -646,20 +646,6 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 				channel->waiting_for_termination = TRUE;
 				mrcp_server_session_subrequest_add(session);
 			}
-
-			if(termination->audio_stream) {
-				mpf_rtp_media_descriptor_t *rtp_media_descriptor = mrcp_session_audio_media_get(descriptor,0);
-				if(rtp_media_descriptor) {
-					/* some implementations erroneously indicate sendonly stream,
-					   implicitly modify the descriptor, 
-					   assuming stream SHOULD not be disabled on initial offer */
-					mpf_stream_direction_e direction = termination->audio_stream->direction;
-					rtp_media_descriptor->direction |= direction;
-					if(rtp_media_descriptor->state == MPF_MEDIA_DISABLED) {
-						rtp_media_descriptor->state = MPF_MEDIA_ENABLED;
-					}
-				}
-			}
 		}
 	}
 	else {
@@ -756,7 +742,7 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 {
 	int i;
 	mrcp_channel_t *channel;
-	mpf_termination_t *termination;
+	mpf_audio_stream_t *audio_stream;
 	mpf_stream_capabilities_t *capabilities = NULL;
 	mpf_rtp_termination_descriptor_t *rtp_descriptor;
 	mpf_rtp_media_descriptor_t *media_descriptor = mrcp_session_audio_media_get(descriptor,slot->id);
@@ -778,22 +764,34 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 		if(!channel->cmid_arr || mrcp_cmid_find(channel->cmid_arr,slot->mid) == TRUE) {
 			APR_ARRAY_PUSH(slot->channels, mrcp_channel_t*) = channel;
 
+			audio_stream = NULL;
 			if(channel->engine_channel && channel->engine_channel->termination) {
-				termination = channel->engine_channel->termination;
-				if(termination->audio_stream && termination->audio_stream->capabilities) {
-					/* set descriptor according to media termination(s) 
-					of associated control channel(s) */
-					if(capabilities) {
-						mpf_stream_capabilities_merge(
-							capabilities,
-							termination->audio_stream->capabilities,
-							session->base.pool);
-						}
-					else {
-						capabilities = mpf_stream_capabilities_clone(
-							termination->audio_stream->capabilities,
-							session->base.pool);
+				audio_stream = channel->engine_channel->termination->audio_stream;
+			}
+			if(!audio_stream) continue;
+
+			if(audio_stream->capabilities) {
+				/* set descriptor according to media termination(s) 
+				of associated control channel(s) */
+				if(capabilities) {
+					mpf_stream_capabilities_merge(
+						capabilities,
+						audio_stream->capabilities,
+						session->base.pool);
 					}
+				else {
+					capabilities = mpf_stream_capabilities_clone(
+						audio_stream->capabilities,
+						session->base.pool);
+				}
+			}
+
+			if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
+				/* implicitly modify the descriptor, if needed */
+				mpf_stream_direction_e direction = audio_stream->direction;
+				media_descriptor->direction |= direction;
+				if(media_descriptor->state == MPF_MEDIA_DISABLED) {
+					media_descriptor->state = MPF_MEDIA_ENABLED;
 				}
 			}
 		}
