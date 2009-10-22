@@ -23,7 +23,6 @@
 /* common includes */
 #include "unimrcp_client.h"
 #include "mrcp_application.h"
-#include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 /* recognizer includes */
@@ -217,7 +216,8 @@ static apt_bool_t asr_session_destroy_ex(asr_session_t *asr_session, apt_bool_t 
 static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const char *input_file)
 {
 	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
-	char *input_file_path = apt_datadir_filepath_get(dir_layout,input_file,asr_session->mrcp_session->pool);
+	apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
+	char *input_file_path = apt_datadir_filepath_get(dir_layout,input_file,pool);
 	if(!input_file_path) {
 		return FALSE;
 	}
@@ -268,7 +268,8 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 
 		/* set message body */
 		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
-		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,asr_session->mrcp_session->pool);
+		apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
+		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,pool);
 		if(grammar_file_path) {
 			char text[1024];
 			apr_size_t size;
@@ -432,6 +433,7 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	mrcp_channel_t *channel;
 	mrcp_session_t *session;
 	const mrcp_app_message_t *app_message;
+	apr_pool_t *pool;
 
 	asr_session_t *asr_session = malloc(sizeof(asr_session_t));
 
@@ -441,6 +443,7 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 		free(asr_session);
 		return NULL;
 	}
+	pool = mrcp_application_session_pool_get(session);
 	
 	termination = mrcp_application_source_termination_create(
 			session,                   /* session, termination belongs to */
@@ -472,8 +475,8 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	asr_session->app_message = NULL;
 
 	/* Create cond wait object and mutex */
-	apr_thread_mutex_create(&asr_session->mutex,APR_THREAD_MUTEX_DEFAULT,asr_session->mrcp_session->pool);
-	apr_thread_cond_create(&asr_session->wait_object,asr_session->mrcp_session->pool);
+	apr_thread_mutex_create(&asr_session->mutex,APR_THREAD_MUTEX_DEFAULT,pool);
+	apr_thread_cond_create(&asr_session->wait_object,pool);
 
 	/* Send add channel request and wait for the response */
 	apr_thread_mutex_lock(asr_session->mutex);

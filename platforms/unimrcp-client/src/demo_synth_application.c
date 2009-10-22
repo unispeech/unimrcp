@@ -31,7 +31,6 @@
 
 #include "demo_application.h"
 #include "demo_util.h"
-#include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_synth_header.h"
@@ -100,13 +99,14 @@ static mrcp_channel_t* synth_application_channel_create(mrcp_session_t *session)
 	mrcp_channel_t *channel;
 	mpf_termination_t *termination;
 	mpf_stream_capabilities_t *capabilities;
+	apr_pool_t *pool = mrcp_application_session_pool_get(session);
 
 	/* create channel */
-	synth_app_channel_t *synth_channel = apr_palloc(session->pool,sizeof(synth_app_channel_t));
+	synth_app_channel_t *synth_channel = apr_palloc(pool,sizeof(synth_app_channel_t));
 	synth_channel->audio_out = NULL;
 
 	/* create sink stream capabilities */
-	capabilities = mpf_sink_stream_capabilities_create(session->pool);
+	capabilities = mpf_sink_stream_capabilities_create(pool);
 
 	/* add codec capabilities (Linear PCM) */
 	mpf_codec_capabilities_add(
@@ -195,6 +195,7 @@ static apt_bool_t synth_application_on_session_terminate(mrcp_application_t *app
 static apt_bool_t synth_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
 	synth_app_channel_t *synth_channel = mrcp_application_channel_object_get(channel);
+	apr_pool_t *pool = mrcp_application_session_pool_get(session);
 	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
 		mrcp_message_t *mrcp_message;
 		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
@@ -205,11 +206,12 @@ static apt_bool_t synth_application_on_channel_add(mrcp_application_t *applicati
 		}
 
 		if(synth_channel && session) {
+			const apt_str_t *id = mrcp_application_session_id_get(session);
 			const mpf_codec_descriptor_t *descriptor = mrcp_application_sink_descriptor_get(channel);
-			char *file_name = apr_psprintf(session->pool,"synth-%dkHz-%s.pcm",
+			char *file_name = apr_psprintf(pool,"synth-%dkHz-%s.pcm",
 				descriptor ? descriptor->sampling_rate/1000 : 8,
-				session->id.buf);
-			char *file_path = apt_datadir_filepath_get(dir_layout,file_name,session->pool);
+				id->buf);
+			char *file_path = apt_datadir_filepath_get(dir_layout,file_name,pool);
 			if(file_path) {
 				synth_channel->audio_out = fopen(file_path,"wb");
 			}

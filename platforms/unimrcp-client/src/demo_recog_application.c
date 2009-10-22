@@ -32,7 +32,6 @@
 
 #include "demo_application.h"
 #include "demo_util.h"
-#include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_recog_header.h"
@@ -107,15 +106,16 @@ static mrcp_channel_t* recog_application_channel_create(mrcp_session_t *session)
 	mrcp_channel_t *channel;
 	mpf_termination_t *termination;
 	mpf_stream_capabilities_t *capabilities;
+	apr_pool_t *pool = mrcp_application_session_pool_get(session);
 
 	/* create channel */
-	recog_app_channel_t *recog_channel = apr_palloc(session->pool,sizeof(recog_app_channel_t));
+	recog_app_channel_t *recog_channel = apr_palloc(pool,sizeof(recog_app_channel_t));
 	recog_channel->streaming = FALSE;
 	recog_channel->audio_in = NULL;
 	recog_channel->time_to_complete = 0;
 
 	/* create source stream capabilities */
-	capabilities = mpf_source_stream_capabilities_create(session->pool);
+	capabilities = mpf_source_stream_capabilities_create(pool);
 
 	/* add codec capabilities (Linear PCM) */
 	mpf_codec_capabilities_add(
@@ -241,6 +241,7 @@ static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *applic
 	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	mrcp_message_t *mrcp_message;
 	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
+	apr_pool_t *pool = mrcp_application_session_pool_get(session);
 	/* create and send RECOGNIZE request */
 	mrcp_message = demo_recognize_message_create(session,channel,dir_layout);
 	if(mrcp_message) {
@@ -248,9 +249,9 @@ static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *applic
 	}
 	if(recog_channel) {
 		const mpf_codec_descriptor_t *descriptor = mrcp_application_source_descriptor_get(channel);
-		char *file_name = apr_psprintf(session->pool,"one-%dkHz.pcm",
+		char *file_name = apr_psprintf(pool,"one-%dkHz.pcm",
 			descriptor ? descriptor->sampling_rate/1000 : 8);
-		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,session->pool);
+		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,pool);
 		if(file_path) {
 			recog_channel->audio_in = fopen(file_path,"rb");
 			if(recog_channel->audio_in) {

@@ -16,7 +16,6 @@
 
 #include "umcsession.h"
 #include "umcscenario.h"
-#include "mrcp_session.h"
 
 UmcSession::UmcSession(const UmcScenario* pScenario) :
 	m_pScenario(pScenario),
@@ -214,12 +213,14 @@ apr_pool_t* UmcSession::GetSessionPool() const
 {
 	if(!m_pMrcpSession)
 		return NULL;
-	return m_pMrcpSession->pool;
+	return mrcp_application_session_pool_get(m_pMrcpSession);
 }
 
 const char* UmcSession::GetMrcpSessionId() const
 {
 	if(!m_pMrcpSession)
 		return NULL;
-	return m_pMrcpSession->id.buf;
+
+	const apt_str_t *pId = mrcp_application_session_id_get(m_pMrcpSession);
+	return pId->buf;
 }

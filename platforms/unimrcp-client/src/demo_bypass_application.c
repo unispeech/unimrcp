@@ -31,7 +31,6 @@
 
 #include "demo_application.h"
 #include "demo_util.h"
-#include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_synth_header.h"
@@ -80,9 +79,10 @@ demo_application_t* demo_bypass_application_create(apr_pool_t *pool)
 static mrcp_channel_t* demo_application_channel_create(mrcp_session_t *session)
 {
 	mrcp_channel_t *channel;
+	apr_pool_t *pool = mrcp_application_session_pool_get(session);
 	/* create channel */
-	demo_app_channel_t *demo_channel = apr_palloc(session->pool,sizeof(demo_app_channel_t));
-	mpf_rtp_termination_descriptor_t *rtp_descriptor = demo_rtp_descriptor_create(session->pool);
+	demo_app_channel_t *demo_channel = apr_palloc(pool,sizeof(demo_app_channel_t));
+	mpf_rtp_termination_descriptor_t *rtp_descriptor = demo_rtp_descriptor_create(pool);
 	channel = mrcp_application_channel_create(
 			session,                     /* session, channel belongs to */
 			MRCP_SYNTHESIZER_RESOURCE,   /* MRCP resource identifier */

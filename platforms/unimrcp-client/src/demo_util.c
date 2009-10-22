@@ -16,7 +16,6 @@
 
 #include "demo_util.h"
 /* common includes */
-#include "mrcp_session.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 /* synthesizer includes */

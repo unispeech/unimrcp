@@ -500,6 +500,24 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 	return &session->base;
 }
 
+/** Get memory pool the session object is created out of */
+MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(mrcp_session_t *session)
+{
+	if(!session) {
+		return NULL;
+	}
+	return session->pool;
+}
+
+/** Get session identifier */
+MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(mrcp_session_t *session)
+{
+	if(!session) {
+		return NULL;
+	}
+	return &session->id;
+}
+
 /** Get external object associated with the session */
 MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session)
 {

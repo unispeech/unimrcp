@@ -174,6 +174,18 @@ MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(mrcp_appli
 MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile, void *obj);
 
 /**
+ * Get memory pool the session object is created out of.
+ * @param session the session to get pool from
+ */
+MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(mrcp_session_t *session);
+
+/**
+ * Get session identifier.
+ * @param session the session to get identifier of
+ */
+MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(mrcp_session_t *session);
+
+/**
  * Get external object associated with the session.
  * @param session the session to get object from
  */
