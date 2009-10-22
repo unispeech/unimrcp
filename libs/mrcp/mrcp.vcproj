@@ -236,6 +236,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\resources\include\mrcp_recorder_resource.h"
+					>
+				</File>
+				<File
 					RelativePath=".\resources\include\mrcp_synth_header.h"
 					>
 				</File>
@@ -262,6 +266,10 @@
 				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_recorder_header.c"
+					>
+				</File>
+				<File
+					RelativePath=".\resources\src\mrcp_recorder_resource.c"
 					>
 				</File>
 				<File
