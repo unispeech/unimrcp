@@ -724,6 +724,7 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 		else if(frame->type == MEDIA_FRAME_TYPE_EVENT){
 			if(stream->tx_event_descriptor) {
 				rtp_header_prepare(transmitter,stream->tx_event_descriptor->payload_type);
+				transmitter->current_frames = transmitter->packet_frames-1;
 			}
 		}
 		else {
