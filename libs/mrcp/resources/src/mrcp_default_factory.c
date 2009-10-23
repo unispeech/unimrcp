@@ -17,12 +17,14 @@
 #include "mrcp_default_factory.h"
 #include "mrcp_synth_resource.h"
 #include "mrcp_recog_resource.h"
+#include "mrcp_recorder_resource.h"
 #include "apt_log.h"
 
 /** String table of MRCPv2 resources (mrcp_resource_types_e) */
 static const apt_str_table_item_t mrcp_resource_string_table[] = {
 	{{"speechsynth",11},6},
-	{{"speechrecog",11},6}
+	{{"speechrecog",11},6},
+	{{"recorder",    8},0}
 };
 
 /** Create default MRCP resource factory */
@@ -51,6 +53,12 @@ MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_default_factory_create(apr_pool_t *p
 	if(resource) {
 		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Register Recognizer Resource");
 		mrcp_resource_register(resource_factory,resource,MRCP_RECOGNIZER_RESOURCE);
+	}
+
+	resource = mrcp_recorder_resource_create(pool);
+	if(resource) {
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Register Recorder Resource");
+		mrcp_resource_register(resource_factory,resource,MRCP_RECORDER_RESOURCE);
 	}
 
 	return resource_factory;
