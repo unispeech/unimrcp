@@ -23,7 +23,7 @@ include_HEADERS          = include/mrcp.h \
                            resources/include/mrcp_recog_resource.h \
                            resources/include/mrcp_recorder_header.h \
                            resources/include/mrcp_recorder_resource.h \
-                           resources/include/mrcp_default_factory.h
+                           resources/include/mrcp_resource_loader.h
 
 libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            message/src/mrcp_generic_header.c \
@@ -36,4 +36,4 @@ libmrcp_la_SOURCES       = message/src/mrcp_header_accessor.c \
                            resources/src/mrcp_recog_resource.c \
                            resources/src/mrcp_recorder_header.c \
                            resources/src/mrcp_recorder_resource.c \
-                           resources/src/mrcp_default_factory.c
+                           resources/src/mrcp_resource_loader.c

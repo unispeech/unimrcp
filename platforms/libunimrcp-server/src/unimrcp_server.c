@@ -18,7 +18,7 @@
 #include <apr_xml.h>
 #include "unimrcp_server.h"
 #include "uni_version.h"
-#include "mrcp_default_factory.h"
+#include "mrcp_resource_loader.h"
 #include "mpf_engine.h"
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_termination_factory.h"
@@ -57,7 +57,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
-	mrcp_resource_factory_t *resource_factory;
+	mrcp_resource_loader_t *resource_loader;
 	mpf_codec_manager_t *codec_manager;
 	mrcp_server_t *server;
 
@@ -76,8 +76,9 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 
-	resource_factory = mrcp_default_factory_create(pool);
-	if(resource_factory) {
+	resource_loader = mrcp_resource_loader_create(TRUE,pool);
+	if(resource_loader) {
+		mrcp_resource_factory_t *resource_factory = mrcp_resource_factory_get(resource_loader);
 		mrcp_server_resource_factory_register(server,resource_factory);
 	}
 
