@@ -15,8 +15,8 @@
  */
 
 #include "mrcp_client_session.h"
-#include "mrcp_resource.h"
 #include "mrcp_resource_factory.h"
+#include "mrcp_resource.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_connection.h"
 #include "mrcp_session.h"
@@ -112,21 +112,20 @@ mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *applicatio
 }
 
 mrcp_channel_t* mrcp_client_channel_create(
-					mrcp_session_t *session, 
-					mrcp_resource_id resource_id, 
-					mpf_termination_t *termination, 
-					mpf_rtp_termination_descriptor_t *rtp_descriptor, 
+					mrcp_session_t *session,
+					mrcp_resource_t *resource,
+					mpf_termination_t *termination,
+					mpf_rtp_termination_descriptor_t *rtp_descriptor,
 					void *obj)
 {
 	mrcp_channel_t *channel = apr_palloc(session->pool,sizeof(mrcp_channel_t));
 	channel->pool = session->pool;
 	channel->obj = obj;
 	channel->session = session;
-	channel->resource_id = resource_id;
 	channel->control_channel = NULL;
 	channel->termination = termination;
 	channel->rtp_termination_slot = NULL;
-	channel->resource = NULL;
+	channel->resource = resource;
 	channel->waiting_for_channel = FALSE;
 	channel->waiting_for_termination = FALSE;
 
@@ -665,12 +664,6 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 
 	if(!session->offer) {
 		session->offer = mrcp_session_descriptor_create(pool);
-	}
-	if(!channel->resource) {
-		channel->resource = mrcp_resource_get(profile->resource_factory,channel->resource_id);
-		if(!channel->resource) {
-			return FALSE;
-		}
 	}
 	
 	mrcp_client_session_state_set(session,SESSION_STATE_GENERATING_OFFER);

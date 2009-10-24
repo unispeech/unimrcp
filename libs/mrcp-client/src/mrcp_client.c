@@ -17,6 +17,7 @@
 #include <apr_hash.h>
 #include "mrcp_client.h"
 #include "mrcp_resource_factory.h"
+#include "mrcp_resource.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_session.h"
 #include "mrcp_client_connection.h"
@@ -575,14 +576,28 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 									mpf_rtp_termination_descriptor_t *rtp_descriptor, 
 									void *obj)
 {
+	mrcp_resource_t *resource;
+	mrcp_profile_t *profile;
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	if(!client_session || !client_session->profile) {
 		/* Invalid params */
 		return FALSE;
 	}
+	profile = client_session->profile;
+
+	if(!profile->resource_factory) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: invalid profile");
+		return FALSE;
+	}
+	resource = mrcp_resource_get(profile->resource_factory,resource_id);
+	if(!resource) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: no such resource");
+		return FALSE;
+	}
+
 	if(termination) {
 		/* Media engine and RTP factory must be specified in this case */
-		if(!client_session->profile->media_engine || !client_session->profile->rtp_termination_factory) {
+		if(!profile->media_engine || !profile->rtp_termination_factory) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: invalid profile");
 			return FALSE;
 		}
@@ -594,7 +609,8 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 			return FALSE;
 		}
 	}
-	return mrcp_client_channel_create(session,resource_id,termination,rtp_descriptor,obj);
+
+	return mrcp_client_channel_create(session,resource,termination,rtp_descriptor,obj);
 }
 
 /** Get external object associated with the channel */
@@ -677,14 +693,14 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_application_message_create(mrcp_session_t *se
 	mrcp_message_t *mrcp_message;
 	mrcp_profile_t *profile;
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(!client_session || !channel) {
+	if(!client_session || !channel || !channel->resource) {
 		return NULL;
 	}
 	profile = client_session->profile;
 	if(!profile || !profile->resource_factory) {
 		return NULL;
 	}
-	mrcp_message = mrcp_request_create(channel->resource_id,method_id,session->pool);
+	mrcp_message = mrcp_request_create(channel->resource->id,method_id,session->pool);
 	if(mrcp_message) {
 		mrcp_message->start_line.version = profile->signaling_agent->mrcp_version;
 		mrcp_message_resourcify_by_id(profile->resource_factory,mrcp_message);

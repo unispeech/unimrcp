@@ -98,8 +98,6 @@ struct mrcp_channel_t {
 	apr_pool_t             *pool;
 	/** External object associated with channel */
 	void                   *obj;
-	/** MRCP resource identifier */
-	mrcp_resource_id        resource_id;
 	/** MRCP resource */
 	mrcp_resource_t        *resource;
 	/** MRCP session entire channel belongs to */
@@ -163,7 +161,7 @@ mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *applicatio
 /** Create channel */
 mrcp_channel_t* mrcp_client_channel_create(
 					mrcp_session_t *session, 
-					mrcp_resource_id resource_id, 
+					mrcp_resource_t *resource, 
 					mpf_termination_t *termination, 
 					mpf_rtp_termination_descriptor_t *rtp_descriptor, 
 					void *obj);
