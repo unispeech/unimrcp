@@ -194,6 +194,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\control\include\mrcp_resource_loader.h"
+					>
+				</File>
+				<File
 					RelativePath=".\control\include\mrcp_stream.h"
 					>
 				</File>
@@ -204,6 +208,10 @@
 				>
 				<File
 					RelativePath=".\control\src\mrcp_resource_factory.c"
+					>
+				</File>
+				<File
+					RelativePath=".\control\src\mrcp_resource_loader.c"
 					>
 				</File>
 				<File
@@ -236,10 +244,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\resources\include\mrcp_resource_loader.h"
-					>
-				</File>
-				<File
 					RelativePath=".\resources\include\mrcp_synth_header.h"
 					>
 				</File>
@@ -266,10 +270,6 @@
 				</File>
 				<File
 					RelativePath=".\resources\src\mrcp_recorder_resource.c"
-					>
-				</File>
-				<File
-					RelativePath=".\resources\src\mrcp_resource_loader.c"
 					>
 				</File>
 				<File
