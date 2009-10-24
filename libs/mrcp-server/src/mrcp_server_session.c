@@ -36,8 +36,6 @@ struct mrcp_channel_t {
 	/** Memory pool */
 	apr_pool_t             *pool;
 	/** MRCP resource */
-	apt_str_t               resource_name;
-	/** MRCP resource */
 	mrcp_resource_t        *resource;
 	/** MRCP session entire channel belongs to */
 	mrcp_session_t         *session;
@@ -158,17 +156,11 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 	channel->cmid_arr = cmid_arr;
 	channel->waiting_for_channel = FALSE;
 	channel->waiting_for_termination = FALSE;
-	apt_string_reset(&channel->resource_name);
 
 	if(resource_name && resource_name->buf) {
-		mrcp_resource_id resource_id;
 		mrcp_resource_t *resource;
 		mrcp_engine_channel_t *engine_channel;
-		channel->resource_name = *resource_name;
-		resource_id = mrcp_resource_id_find(
-								session->profile->resource_factory,
-								resource_name);
-		resource = mrcp_resource_get(session->profile->resource_factory,resource_id);
+		resource = mrcp_resource_find(session->profile->resource_factory,resource_name);
 		if(resource) {
 			channel->resource = resource;
 			if(mrcp_session_version_get(session) == MRCP_VERSION_2) {
@@ -974,7 +966,7 @@ static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, 
 		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
-		if(apt_string_compare(&channel->resource_name,resource_name) == TRUE) {
+		if(apt_string_compare(&channel->resource->name,resource_name) == TRUE) {
 			return channel;
 		}
 	}

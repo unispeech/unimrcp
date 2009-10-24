@@ -18,6 +18,7 @@
 #include "mrcp_server_session.h"
 #include "mrcp_message.h"
 #include "mrcp_resource_factory.h"
+#include "mrcp_resource.h"
 #include "mrcp_engine_factory.h"
 #include "mrcp_engine_loader.h"
 #include "mrcp_sig_agent.h"
@@ -427,19 +428,19 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_profile_t *profile, apr_table_t *plugin_map)
 {
 	int i;
-	const apt_str_t *resource_name;
+	mrcp_resource_t *resource;
 	const char *plugin_name = NULL;
 	mrcp_engine_t *engine;
 
 	profile->engine_table = apr_hash_make(server->pool);
 	for(i=0; i<MRCP_RESOURCE_TYPE_COUNT; i++) {
-		resource_name = mrcp_resource_name_get(server->resource_factory,i);
-		if(!resource_name) continue;
+		resource = mrcp_resource_get(server->resource_factory,i);
+		if(!resource) continue;
 		
 		engine = NULL;
 		/* first, try to find engine by name specified in plugin map (if available) */
 		if(plugin_map) {
-			plugin_name = apr_table_get(plugin_map,resource_name->buf);
+			plugin_name = apr_table_get(plugin_map,resource->name.buf);
 			if(plugin_name) {
 				engine = mrcp_engine_factory_engine_get(server->engine_factory,plugin_name);
 			}
@@ -452,12 +453,12 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_prof
 		
 		if(engine) {
 			if(engine->config->name) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign MRCP Engine [%s] [%s]",resource_name->buf,engine->config->name);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign MRCP Engine [%s] [%s]",resource->name.buf,engine->config->name);
 			}
-			apr_hash_set(profile->engine_table,resource_name->buf,resource_name->length,engine);
+			apr_hash_set(profile->engine_table,resource->name.buf,resource->name.length,engine);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCP Engine Available [%s]",resource_name->buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCP Engine Available [%s]",resource->name.buf);
 		}
 	}
 

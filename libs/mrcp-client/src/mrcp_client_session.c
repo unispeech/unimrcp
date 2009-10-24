@@ -123,7 +123,6 @@ mrcp_channel_t* mrcp_client_channel_create(
 	channel->obj = obj;
 	channel->session = session;
 	channel->resource_id = resource_id;
-	channel->resource_name = NULL;
 	channel->control_channel = NULL;
 	channel->termination = termination;
 	channel->rtp_termination_slot = NULL;
@@ -573,9 +572,9 @@ static mrcp_channel_t* mrcp_client_channel_find_by_name(mrcp_client_session_t *s
 	mrcp_channel_t *channel;
 	for(i=0; i<session->channels->nelts; i++) {
 		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
-		if(!channel) continue;
+		if(!channel || !channel->resource) continue;
 
-		if(apt_string_compare(channel->resource_name,resource_name) == TRUE) {
+		if(apt_string_compare(&channel->resource->name,resource_name) == TRUE) {
 			return channel;
 		}
 	}
@@ -596,7 +595,7 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	message->start_line.request_id = ++session->base.last_request_id;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCP Request "APT_PTRSIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
 					MRCP_SESSION_PTRSID(&session->base),
-					channel->resource_name->buf,
+					channel->resource->name.buf,
 					message->start_line.request_id);
 
 	if(channel->control_channel) {
@@ -617,13 +616,13 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 	if(!session->offer) {
 		return FALSE;
 	}
-	if(!channel->resource_name) {
+	if(!channel->resource) {
 		return FALSE;
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Modify Control Channel "APT_PTRSIDRES_FMT" [%d]",
 					MRCP_SESSION_PTRSID(&session->base),
-					channel->resource_name->buf,
+					channel->resource->name.buf,
 					enable);
 	if(mrcp_client_channel_find(session,channel,&index) == TRUE) {
 		mrcp_control_descriptor_t *control_media = mrcp_session_control_media_get(session->offer,(apr_size_t)index);
@@ -648,7 +647,7 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		}
 	}
 
-	session->offer->resource_name = *channel->resource_name;
+	session->offer->resource_name = channel->resource->name;
 	session->offer->resource_state = enable;
 	return mrcp_client_session_offer_send(session);
 }
@@ -672,16 +671,12 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		if(!channel->resource) {
 			return FALSE;
 		}
-		channel->resource_name = mrcp_resource_name_get(profile->resource_factory,channel->resource_id);
-		if(!channel->resource_name) {
-			return FALSE;
-		}
 	}
 	
 	mrcp_client_session_state_set(session,SESSION_STATE_GENERATING_OFFER);
 
 	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
-		session->offer->resource_name = *channel->resource_name;
+		session->offer->resource_name = channel->resource->name;
 		session->offer->resource_state = TRUE;
 	}
 	else {
@@ -692,7 +687,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		control_media = mrcp_control_offer_create(pool);
 		control_media->id = mrcp_session_control_media_add(session->offer,control_media);
 		mrcp_cmid_add(control_media->cmid_arr,session->offer->control_media_arr->nelts);
-		control_media->resource_name = *channel->resource_name;
+		control_media->resource_name = channel->resource->name;
 		if(mrcp_client_control_channel_add(channel->control_channel,control_media) == TRUE) {
 			channel->waiting_for_channel = TRUE;
 			mrcp_client_session_subrequest_add(session);
@@ -701,7 +696,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Control Channel "APT_PTRSIDRES_FMT,
 					MRCP_SESSION_PTRSID(&session->base),
-					channel->resource_name->buf);
+					channel->resource->name.buf);
 	/* add control channel */
 	APR_ARRAY_PUSH(session->channels,mrcp_channel_t*) = channel;
 
@@ -875,15 +870,15 @@ static apt_bool_t mrcp_client_resource_discover(mrcp_client_session_t *session)
 	mrcp_client_session_state_set(session,SESSION_STATE_DISCOVERING);
 
 	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
-		const apt_str_t *resource_name;
+		mrcp_resource_t *resource;
 		mrcp_resource_id i;
 
 		for(i=0; i<MRCP_RESOURCE_TYPE_COUNT; i++) {
-			resource_name = mrcp_resource_name_get(session->profile->resource_factory,i);
-			if(!resource_name) continue;
+			resource = mrcp_resource_get(session->profile->resource_factory,i);
+			if(!resource) continue;
 		
 			descriptor = mrcp_session_descriptor_create(session->base.pool);
-			apt_string_copy(&descriptor->resource_name,resource_name,session->base.pool);
+			apt_string_copy(&descriptor->resource_name,&resource->name,session->base.pool);
 			if(mrcp_session_discover_request(&session->base,descriptor) == TRUE) {
 				mrcp_client_session_subrequest_add(session);
 			}

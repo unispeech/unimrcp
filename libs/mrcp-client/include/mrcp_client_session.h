@@ -100,8 +100,6 @@ struct mrcp_channel_t {
 	void                   *obj;
 	/** MRCP resource identifier */
 	mrcp_resource_id        resource_id;
-	/** MRCP resource name */
-	const apt_str_t        *resource_name;
 	/** MRCP resource */
 	mrcp_resource_t        *resource;
 	/** MRCP session entire channel belongs to */

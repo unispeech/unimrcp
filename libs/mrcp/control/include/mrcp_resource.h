@@ -32,15 +32,18 @@ APT_BEGIN_EXTERN_C
 struct mrcp_resource_t {
 	/** MRCP resource identifier */
 	mrcp_resource_id id;
-	/** Number of methods */
-	apr_size_t       method_count;
-	/** Number of events */
-	apr_size_t       event_count;
+	/** MRCP resource name */
+	apt_str_t        name;
 
 	/** Get string table of methods */
 	const apt_str_table_item_t* (*get_method_str_table)(mrcp_version_e version);
+	/** Number of methods */
+	apr_size_t       method_count;
+
 	/** Get string table of events */
 	const apt_str_table_item_t* (*get_event_str_table)(mrcp_version_e version);
+	/** Number of events */
+	apr_size_t       event_count;
 
 	/** Get vtable of resource header */
 	const mrcp_header_vtable_t* (*get_resource_header_vtable)(mrcp_version_e version);
@@ -51,6 +54,7 @@ static APR_INLINE mrcp_resource_t* mrcp_resource_create(apr_pool_t *pool)
 {
 	mrcp_resource_t *resource = (mrcp_resource_t*) apr_palloc(pool, sizeof(mrcp_resource_t));
 	resource->id = 0;
+	apt_string_reset(&resource->name);
 	resource->method_count = 0;
 	resource->event_count = 0;
 	resource->get_method_str_table = NULL;
@@ -64,7 +68,8 @@ static APR_INLINE apt_bool_t mrcp_resource_validate(mrcp_resource_t *resource)
 {
 	if(resource->method_count && resource->event_count &&
 		resource->get_method_str_table && resource->get_event_str_table &&
-		 resource->get_resource_header_vtable) {
+		 resource->get_resource_header_vtable &&
+		 resource->name.buf && resource->name.length) {
 		return TRUE;
 	}
 	return FALSE;
