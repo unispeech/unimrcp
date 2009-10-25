@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include "mrcp_generic_header.h"
+#include "mrcp_start_line.h"
 
 /** String table of mrcp generic-header fields (mrcp_generic_header_id) */
 static const apt_str_table_item_t generic_header_string_table[] = {
@@ -37,30 +36,6 @@ static const apt_str_table_item_t generic_header_string_table[] = {
 	{{"Set-Cookie",                10},10},
 	{{"Set-Cookie2",               11},10}
 };
-
-/** Parse MRCP request-id */
-MRCP_DECLARE(mrcp_request_id) mrcp_request_id_parse(const apt_str_t *field)
-{
-	if(field->buf) {
-#ifdef TOO_LONG_MRCP_REQUEST_ID
-		return apr_atoi64(field->buf);
-#else
-		return atol(field->buf);
-#endif
-	}
-	return 0;
-}
-
-/** Generate MRCP request-id */
-MRCP_DECLARE(apt_bool_t) mrcp_request_id_generate(mrcp_request_id request_id, apt_text_stream_t *stream)
-{
-	int length = sprintf(stream->pos, "%"MRCP_REQUEST_ID_FMT, request_id);
-	if(length <= 0) {
-		return FALSE;
-	}
-	stream->pos += length;
-	return TRUE;
-}
 
 /** Parse mrcp request-id list */
 static apt_bool_t mrcp_request_id_list_parse(mrcp_request_id_list_t *request_id_list, const apt_str_t *value)

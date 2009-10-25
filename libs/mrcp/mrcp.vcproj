@@ -159,6 +159,10 @@
 					RelativePath=".\message\include\mrcp_message.h"
 					>
 				</File>
+				<File
+					RelativePath=".\message\include\mrcp_start_line.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="src"
@@ -174,6 +178,10 @@
 				</File>
 				<File
 					RelativePath=".\message\src\mrcp_message.c"
+					>
+				</File>
+				<File
+					RelativePath=".\message\src\mrcp_start_line.c"
 					>
 				</File>
 			</Filter>
