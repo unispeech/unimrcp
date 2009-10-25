@@ -16,6 +16,7 @@
 
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
+#include "mrcp_resource.h"
 #include "apt_log.h"
 
 /** Protocol name used in version string */
@@ -422,7 +423,6 @@ MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)
 {
 	apt_string_reset(&channel_id->session_id);
 	apt_string_reset(&channel_id->resource_name);
-	channel_id->resource_id = 0;
 }
 
 /** Parse MRCP channel-identifier */
@@ -586,6 +586,96 @@ MRCP_DECLARE(apt_bool_t) mrcp_body_generate(mrcp_message_t *message, apt_text_st
 	return TRUE;
 }
 
+/** Initialize MRCP message */
+static void mrcp_message_init(mrcp_message_t *message, apr_pool_t *pool)
+{
+	mrcp_start_line_init(&message->start_line);
+	mrcp_channel_id_init(&message->channel_id);
+	mrcp_message_header_init(&message->header);
+	apt_string_reset(&message->body);
+	message->resource = NULL;
+	message->pool = pool;
+}
+
+/** Set header accessor interface */
+static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message)
+{
+	message->header.generic_header_accessor.vtable = mrcp_generic_header_vtable_get(message->start_line.version);
+}
+
+/** Associate MRCP resource specific data by resource identifier */
+MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set_by_id(mrcp_message_t *message, mrcp_resource_t *resource)
+{
+	if(!resource) {
+		return FALSE;
+	}
+	message->resource = resource;
+	
+	message->channel_id.resource_name = resource->name;
+
+	mrcp_generic_header_accessor_set(message);
+	message->header.resource_header_accessor.vtable = 
+		resource->get_resource_header_vtable(message->start_line.version);
+
+	/* associate method_name and method_id */
+	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
+		const apt_str_t *name = apt_string_table_str_get(
+			resource->get_method_str_table(message->start_line.version),
+			resource->method_count,
+			message->start_line.method_id);
+		if(!name) {
+			return FALSE;
+		}
+		message->start_line.method_name = *name;
+	}
+	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
+		const apt_str_t *name = apt_string_table_str_get(
+			resource->get_event_str_table(message->start_line.version),
+			resource->event_count,
+			message->start_line.method_id);
+		if(!name) {
+			return FALSE;
+		}
+		message->start_line.method_name = *name;
+	}
+
+	return TRUE;
+}
+
+/** Associate MRCP resource specific data by resource name */
+MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, mrcp_resource_t *resource)
+{
+	if(!resource) {
+		return FALSE;
+	}
+	message->resource = resource;
+
+	mrcp_generic_header_accessor_set(message);
+	message->header.resource_header_accessor.vtable = 
+		resource->get_resource_header_vtable(message->start_line.version);
+	
+	/* associate method_name and method_id */
+	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
+		message->start_line.method_id = apt_string_table_id_find(
+			resource->get_method_str_table(message->start_line.version),
+			resource->method_count,
+			&message->start_line.method_name);
+		if(message->start_line.method_id >= resource->method_count) {
+			return FALSE;
+		}
+	}
+	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
+		message->start_line.method_id = apt_string_table_id_find(
+			resource->get_event_str_table(message->start_line.version),
+			resource->event_count,
+			&message->start_line.method_name);
+		if(message->start_line.method_id >= resource->event_count) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
 
 /** Create MRCP message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool)
@@ -595,34 +685,14 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool)
 	return message;
 }
 
-/** Initialize MRCP message */
-MRCP_DECLARE(void) mrcp_message_init(mrcp_message_t *message, apr_pool_t *pool)
-{
-	mrcp_start_line_init(&message->start_line);
-	mrcp_channel_id_init(&message->channel_id);
-	mrcp_message_header_init(&message->header);
-	apt_string_reset(&message->body);
-	message->pool = pool;
-}
-
-/** Initialize response/event message by request message */
-MRCP_DECLARE(void) mrcp_message_init_by_request(mrcp_message_t *message, const mrcp_message_t *request_message)
-{
-	message->channel_id = request_message->channel_id;
-	message->start_line.request_id = request_message->start_line.request_id;
-	message->start_line.version = request_message->start_line.version;
-	message->start_line.method_id = request_message->start_line.method_id;
-	message->header.generic_header_accessor.vtable = request_message->header.generic_header_accessor.vtable;
-	message->header.resource_header_accessor.vtable = request_message->header.resource_header_accessor.vtable;
-}
-
 /** Create MRCP request message */
-MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_id resource_id, mrcp_method_id method_id, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_t *resource, mrcp_version_e version, mrcp_method_id method_id, apr_pool_t *pool)
 {
 	mrcp_message_t *request_message = mrcp_message_create(pool);
 	request_message->start_line.message_type = MRCP_MESSAGE_TYPE_REQUEST;
+	request_message->start_line.version = version;
 	request_message->start_line.method_id = method_id;
-	request_message->channel_id.resource_id = resource_id;
+	mrcp_message_resource_set_by_id(request_message,resource);
 	return request_message;
 }
 
@@ -630,12 +700,16 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_id resource_id, 
 MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request_message, apr_pool_t *pool)
 {
 	mrcp_message_t *response_message = mrcp_message_create(pool);
-	if(request_message) {
-		mrcp_message_init_by_request(response_message,request_message);
-	}
 	response_message->start_line.message_type = MRCP_MESSAGE_TYPE_RESPONSE;
 	response_message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 	response_message->start_line.status_code = MRCP_STATUS_CODE_SUCCESS;
+	if(request_message) {
+		response_message->channel_id = request_message->channel_id;
+		response_message->start_line.request_id = request_message->start_line.request_id;
+		response_message->start_line.version = request_message->start_line.version;
+		response_message->start_line.method_id = request_message->start_line.method_id;
+		mrcp_message_resource_set_by_id(response_message,request_message->resource);
+	}
 	return response_message;
 }
 
@@ -643,11 +717,14 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request
 MRCP_DECLARE(mrcp_message_t*) mrcp_event_create(const mrcp_message_t *request_message, mrcp_method_id event_id, apr_pool_t *pool)
 {
 	mrcp_message_t *event_message = mrcp_message_create(pool);
-	if(request_message) {
-		mrcp_message_init_by_request(event_message,request_message);
-	}
 	event_message->start_line.message_type = MRCP_MESSAGE_TYPE_EVENT;
 	event_message->start_line.method_id = event_id;
+	if(request_message) {
+		event_message->channel_id = request_message->channel_id;
+		event_message->start_line.request_id = request_message->start_line.request_id;
+		event_message->start_line.version = request_message->start_line.version;
+		mrcp_message_resource_set_by_id(event_message,request_message->resource);
+	}
 	return event_message;
 }
 

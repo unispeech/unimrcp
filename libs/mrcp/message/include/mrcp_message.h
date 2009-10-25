@@ -115,8 +115,6 @@ struct mrcp_channel_id {
 	apt_str_t        session_id;
 	/** MRCP resource name */
 	apt_str_t        resource_name;
-	/** MRCP resource id (associated with resource name) */
-	mrcp_resource_id resource_id;
 };
 
 /** Initialize MRCP channel-identifier */
@@ -172,33 +170,32 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *mess
 /** MRCP message */
 struct mrcp_message_t {
 	/** Start-line of MRCP message */
-	mrcp_start_line_t      start_line;
+	mrcp_start_line_t     start_line;
 	/** Channel-identifier of MRCP message */
-	mrcp_channel_id        channel_id;
+	mrcp_channel_id       channel_id;
 	/** Header of MRCP message */
-	mrcp_message_header_t  header;
+	mrcp_message_header_t header;
 	/** Body of MRCP message */
-	apt_str_t              body;
+	apt_str_t             body;
 
+	/** Associated MRCP resource */
+	mrcp_resource_t      *resource;
 	/** Memory pool MRCP message is allocated from */
-	apr_pool_t            *pool;
+	apr_pool_t           *pool;
 };
 
 /** Create MRCP message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool);
 
-/** Initialize MRCP message */
-MRCP_DECLARE(void) mrcp_message_init(mrcp_message_t *message, apr_pool_t *pool);
-
-/** Initialize MRCP response/event message by request message */
-MRCP_DECLARE(void) mrcp_message_init_by_request(mrcp_message_t *message, const mrcp_message_t *request_message);
-
 /** Create MRCP request message */
-MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_id resource_id, mrcp_method_id method_id, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_t *resource, mrcp_version_e version, mrcp_method_id method_id, apr_pool_t *pool);
 /** Create MRCP response message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request_message, apr_pool_t *pool);
 /** Create MRCP event message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_event_create(const mrcp_message_t *request_message, mrcp_method_id event_id, apr_pool_t *pool);
+
+/** Associate MRCP resource specific data by resource name */
+MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, mrcp_resource_t *resource);
 
 /** Validate MRCP message */
 MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message);

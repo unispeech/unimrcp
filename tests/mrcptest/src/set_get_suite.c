@@ -39,9 +39,12 @@
 static mrcp_message_t* speak_request_create(mrcp_resource_factory_t *factory, apr_pool_t *pool)
 {
 	mrcp_message_t *message;
+	mrcp_resource_t *resource = mrcp_resource_get(factory,MRCP_SYNTHESIZER_RESOURCE);
+	if(!resource) {
+		return NULL;
+	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create SPEAK Request");
-	message = mrcp_request_create(MRCP_SYNTHESIZER_RESOURCE,SYNTHESIZER_SPEAK,pool);
-	mrcp_message_resourcify_by_id(factory,message);
+	message = mrcp_request_create(resource,MRCP_VERSION_2,SYNTHESIZER_SPEAK,pool);
 	if(message) {
 		mrcp_generic_header_t *generic_header;
 		mrcp_synth_header_t *synth_header;
@@ -157,9 +160,12 @@ static mrcp_message_t* speak_event_create(mrcp_resource_factory_t *factory, cons
 static mrcp_message_t* get_params_request_create(mrcp_resource_factory_t *factory, apr_pool_t *pool)
 {
 	mrcp_message_t *message;
+	mrcp_resource_t *resource = mrcp_resource_get(factory,MRCP_SYNTHESIZER_RESOURCE);
+	if(!resource) {
+		return NULL;
+	}
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create GET-PARAMS Request");
-	message = mrcp_request_create(MRCP_SYNTHESIZER_RESOURCE,SYNTHESIZER_GET_PARAMS,pool);
-	mrcp_message_resourcify_by_id(factory,message);
+	message = mrcp_request_create(resource,MRCP_VERSION_2,SYNTHESIZER_GET_PARAMS,pool);
 	if(message) {
 		apt_str_t param_name;
 		apt_str_t param_value;

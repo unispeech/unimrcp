@@ -700,11 +700,11 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_application_message_create(mrcp_session_t *se
 	if(!profile || !profile->resource_factory) {
 		return NULL;
 	}
-	mrcp_message = mrcp_request_create(channel->resource->id,method_id,session->pool);
-	if(mrcp_message) {
-		mrcp_message->start_line.version = profile->signaling_agent->mrcp_version;
-		mrcp_message_resourcify_by_id(profile->resource_factory,mrcp_message);
-	}
+	mrcp_message = mrcp_request_create(
+						channel->resource,
+						profile->signaling_agent->mrcp_version,
+						method_id,
+						session->pool);
 	return mrcp_message;
 }
 

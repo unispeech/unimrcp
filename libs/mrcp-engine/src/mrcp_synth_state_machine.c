@@ -586,7 +586,8 @@ static apt_bool_t synth_state_deactivate(mrcp_state_machine_t *base)
 
 	/* create internal STOP request */
 	message = mrcp_request_create(
-						source->channel_id.resource_id,
+						source->resource,
+						source->start_line.version,
 						SYNTHESIZER_STOP,
 						source->pool);
 	message->channel_id = source->channel_id;
