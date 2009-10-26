@@ -477,6 +477,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 		return FALSE;
 	}
 	if(!profile->resource_factory) {
+		if(!server->resource_factory) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no resources");
+			return FALSE;
+		}
 		profile->resource_factory = server->resource_factory;
 	}
 	mrcp_server_engine_table_make(server,profile,plugin_map);
