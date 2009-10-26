@@ -52,7 +52,6 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
-	mrcp_resource_loader_t *resource_loader;
 	mpf_codec_manager_t *codec_manager;
 	mrcp_client_t *client;
 
@@ -69,12 +68,6 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 	pool = mrcp_client_memory_pool_get(client);
 	if(!pool) {
 		return NULL;
-	}
-
-	resource_loader = mrcp_resource_loader_create(TRUE,pool);
-	if(resource_loader) {
-		mrcp_resource_factory_t *resource_factory = mrcp_resource_factory_get(resource_loader);
-		mrcp_client_resource_factory_register(client,resource_factory);
 	}
 
 	codec_manager = mpf_engine_codec_manager_create(pool);
@@ -481,6 +474,57 @@ static apt_bool_t unimrcp_client_media_engines_load(mrcp_client_t *client, const
 	return TRUE;
 }
 
+/** Load resource */
+static apt_bool_t unimrcp_client_resource_load(mrcp_client_t *client, mrcp_resource_loader_t *resource_loader, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	apt_str_t resource_class;
+	apt_bool_t resource_enabled = TRUE;
+	const apr_xml_attr *attr;
+	apt_string_reset(&resource_class);
+	for(attr = root->attr; attr; attr = attr->next) {
+		if(strcasecmp(attr->name,"class") == 0) {
+			apt_string_set(&resource_class,attr->value);
+		}
+		else if(strcasecmp(attr->name,"enable") == 0) {
+			resource_enabled = atoi(attr->value);
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+		}
+	}
+
+	if(!resource_class.buf || !resource_enabled) {
+		return FALSE;
+	}
+
+	return mrcp_resource_load(resource_loader,&resource_class);
+}
+
+/** Load resources */
+static apt_bool_t unimrcp_client_resources_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	mrcp_resource_factory_t *resource_factory;
+	mrcp_resource_loader_t *resource_loader = mrcp_resource_loader_create(FALSE,pool);
+	if(!resource_loader) {
+		return FALSE;
+	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Resources");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"resource") == 0) {
+			unimrcp_client_resource_load(client,resource_loader,elem,pool);
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
+		}
+	}    
+	
+	resource_factory = mrcp_resource_factory_get(resource_loader);
+	mrcp_client_resource_factory_register(client,resource_factory);
+	return TRUE;
+}
+
 /** Load settings */
 static apt_bool_t unimrcp_client_settings_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
 {
@@ -583,7 +627,10 @@ static apt_bool_t unimrcp_client_config_load(mrcp_client_t *client, const apr_xm
 		return FALSE;
 	}
 	for(elem = root->first_child; elem; elem = elem->next) {
-		if(strcasecmp(elem->name,"settings") == 0) {
+		if(strcasecmp(elem->name,"resources") == 0) {
+			unimrcp_client_resources_load(client,elem,pool);
+		}
+		else if(strcasecmp(elem->name,"settings") == 0) {
 			unimrcp_client_settings_load(client,elem,pool);
 		}
 		else if(strcasecmp(elem->name,"profiles") == 0) {

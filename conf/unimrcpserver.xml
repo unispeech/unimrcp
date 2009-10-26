@@ -1,5 +1,12 @@
 <!-- unimrcpserver document -->
 <unimrcpserver>
+  <!-- MRCP resources -->
+  <resources>
+    <resource class="speechsynth" enable="1"/>
+    <resource class="speechrecog" enable="1"/>
+    <resource class="recorder" enable="1"/>
+  </resources>
+
   <!-- Server settings (signaling, media, ...) -->
   <settings>
     <!-- SIP, RTSP signaling agents -->
