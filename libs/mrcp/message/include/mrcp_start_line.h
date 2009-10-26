@@ -18,8 +18,8 @@
 #define __MRCP_START_LINE_H__
 
 /**
- * @file mrcp_message.h
- * @brief MRCP Message Definition
+ * @file mrcp_start_line.h
+ * @brief MRCP Start Line Definition
  */ 
 
 #include "mrcp_types.h"
