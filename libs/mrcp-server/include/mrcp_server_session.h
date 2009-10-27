@@ -124,7 +124,7 @@ struct mrcp_profile_t {
 };
 
 /** Create server session */
-mrcp_server_session_t* mrcp_server_session_create();
+mrcp_server_session_t* mrcp_server_session_create(void);
 
 /** Process signaling message */
 apt_bool_t mrcp_server_signaling_message_process(mrcp_signaling_message_t *signaling_message);
