@@ -28,7 +28,8 @@
 #define MRCP_NAME_VERSION_SEPARATOR        '/'
 #define MRCP_VERSION_MAJOR_MINOR_SEPARATOR '.'
 
-#define MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT 4
+/** Max number of digits message length consists of */
+#define MAX_DIGIT_COUNT 6
 
 
 /** String table of MRCP request-states (mrcp_request_state_t) */
@@ -276,10 +277,10 @@ static apt_bool_t mrcp_v2_start_line_generate(mrcp_start_line_t *start_line, apt
 	mrcp_version_generate(start_line->version,stream);
 	*stream->pos++ = APT_TOKEN_SP;
 
-	start_line->length = stream->pos - pos; /* length is temrorary used to store offset */
-	/* reserving MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT space for start_line->length */
-	memset(stream->pos,APT_TOKEN_SP,MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT+1);
-	stream->pos += MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT+1;
+	start_line->length = stream->pos - pos; /* length is temporary used to store offset */
+	/* reserving MAX_DIGIT_COUNT space for start_line->length */
+	memset(stream->pos,APT_TOKEN_SP,MAX_DIGIT_COUNT+1);
+	stream->pos += MAX_DIGIT_COUNT+1;
 
 	if(start_line->message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 		mrcp_request_id_generate(start_line->request_id,stream);
@@ -398,13 +399,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_finalize(mrcp_start_line_t *start_line,
 		/* too comlex to generate!!! see the discussion */
 		/* http://www1.ietf.org/mail-archive/web/speechsc/current/msg01734.html */
 		apt_str_t field;
-		field.buf = text_stream->text.buf + start_line->length; /* length is temrorary used to store offset */
-		length -= MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT;
-		apt_var_length_value_generate(&length,MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT,&field);
+		field.buf = text_stream->text.buf + start_line->length; /* length is temporary used to store offset */
+		length -= MAX_DIGIT_COUNT;
+		if(apt_var_length_value_generate(&length,MAX_DIGIT_COUNT,&field) == FALSE) {
+			return FALSE;
+		}
 		field.buf[field.length] = APT_TOKEN_SP;
 		start_line->length += field.length;
 
-		field.length = MRCP_MESSAGE_LENGTH_MAX_DIGITS_COUNT - field.length;
+		field.length = MAX_DIGIT_COUNT - field.length;
 		if(field.length) {
 			memmove(text_stream->text.buf+field.length,text_stream->text.buf,start_line->length);
 			text_stream->text.buf += field.length;

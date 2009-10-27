@@ -173,7 +173,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_generate(mrcp_resource_factory_t *resource
 	}
 
 	/* finalize start-line generation */
-	mrcp_start_line_finalize(&message->start_line,message->body.length,stream);
+	if(mrcp_start_line_finalize(&message->start_line,message->body.length,stream) == FALSE) {
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
