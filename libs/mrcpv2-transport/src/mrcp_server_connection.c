@@ -611,12 +611,14 @@ static apt_bool_t mrcp_server_message_handler(void *obj, mrcp_message_t *message
 	}
 	else if(result == MRCP_STREAM_MESSAGE_INVALID) {
 		/* error case */
-		mrcp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv2 Stream");
-		response = mrcp_response_create(message,message->pool);
-		response->start_line.status_code = MRCP_STATUS_CODE_UNRECOGNIZED_MESSAGE;
-		if(mrcp_server_agent_messsage_send(agent,connection,response) == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Response");
+		if(message->resource) {
+			mrcp_message_t *response;
+			response = mrcp_response_create(message,message->pool);
+			response->start_line.status_code = MRCP_STATUS_CODE_UNRECOGNIZED_MESSAGE;
+			if(mrcp_server_agent_messsage_send(agent,connection,response) == FALSE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Response");
+			}
 		}
 	}
 	return TRUE;

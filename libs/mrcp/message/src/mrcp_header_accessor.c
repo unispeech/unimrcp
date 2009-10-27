@@ -79,6 +79,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_generate(mrcp_header_accessor_t *accessor, 
 
 MRCP_DECLARE(void) mrcp_header_property_add(mrcp_header_accessor_t *accessor, apr_size_t id)
 {
+	if(!accessor->vtable) {
+		return;
+	}
+
 	if(id < accessor->vtable->field_count) {
 		char *prop = &accessor->properties[id];
 		if((*prop & MRCP_HEADER_FIELD_NAME) != MRCP_HEADER_FIELD_NAME) {
@@ -90,6 +94,10 @@ MRCP_DECLARE(void) mrcp_header_property_add(mrcp_header_accessor_t *accessor, ap
 
 MRCP_DECLARE(void) mrcp_header_name_property_add(mrcp_header_accessor_t *accessor, apr_size_t id)
 {
+	if(!accessor->vtable) {
+		return;
+	}
+
 	if(id < accessor->vtable->field_count) {
 		char *prop = &accessor->properties[id];
 		if((*prop & MRCP_HEADER_FIELD_NAME) != MRCP_HEADER_FIELD_NAME) {
@@ -102,6 +110,10 @@ MRCP_DECLARE(void) mrcp_header_name_property_add(mrcp_header_accessor_t *accesso
 
 MRCP_DECLARE(void) mrcp_header_property_remove(mrcp_header_accessor_t *accessor, apr_size_t id)
 {
+	if(!accessor->vtable) {
+		return;
+	}
+
 	if(id < accessor->vtable->field_count) {
 		char *prop = &accessor->properties[id];
 		if((*prop & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
@@ -113,6 +125,10 @@ MRCP_DECLARE(void) mrcp_header_property_remove(mrcp_header_accessor_t *accessor,
 
 MRCP_DECLARE(apt_bool_t) mrcp_header_property_check(mrcp_header_accessor_t *accessor, apr_size_t id)
 {
+	if(!accessor->vtable) {
+		return FALSE;
+	}
+
 	if((id < accessor->vtable->field_count) && accessor->properties) {
 		if((accessor->properties[id] & MRCP_HEADER_FIELD_NAME) == MRCP_HEADER_FIELD_NAME) {
 			return TRUE;
