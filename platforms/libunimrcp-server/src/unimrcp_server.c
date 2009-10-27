@@ -57,7 +57,6 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 {
 	apr_pool_t *pool;
 	apr_xml_doc *doc;
-	mpf_codec_manager_t *codec_manager;
 	mrcp_server_t *server;
 
 	if(!dir_layout) {
@@ -73,11 +72,6 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 	pool = mrcp_server_memory_pool_get(server);
 	if(!pool) {
 		return NULL;
-	}
-
-	codec_manager = mpf_engine_codec_manager_create(pool);
-	if(codec_manager) {
-		mrcp_server_codec_manager_register(server,codec_manager);
 	}
 
 	doc = unimrcp_server_config_parse(dir_layout->conf_dir_path,pool);
@@ -463,6 +457,13 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
+
+	/* create codec manager first */
+	mpf_codec_manager_t *codec_manager = mpf_engine_codec_manager_create(pool);
+	if(codec_manager) {
+		mrcp_server_codec_manager_register(server,codec_manager);
+	}
+
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Media Engines");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"engine") == 0) {
