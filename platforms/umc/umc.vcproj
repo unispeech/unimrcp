@@ -161,6 +161,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\recorderscenario.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\recordersession.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\synthscenario.cpp"
 				>
 			</File>
@@ -196,6 +204,14 @@
 			</File>
 			<File
 				RelativePath=".\include\recogsession.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\recorderscenario.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\recordersession.h"
 				>
 			</File>
 			<File

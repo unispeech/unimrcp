@@ -21,6 +21,8 @@ umc_SOURCES            = src/main.cpp \
                          src/umcsession.cpp \
                          src/recogscenario.cpp \
                          src/recogsession.cpp \
+                         src/recorderscenario.cpp \
+                         src/recordersession.cpp \
                          src/synthscenario.cpp \
                          src/synthsession.cpp 
 umc_LDADD              = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la

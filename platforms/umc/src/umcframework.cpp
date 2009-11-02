@@ -18,6 +18,7 @@
 #include "umcsession.h"
 #include "synthscenario.h"
 #include "recogscenario.h"
+#include "recorderscenario.h"
 #include "unimrcp_client.h"
 #include "apt_log.h"
 
@@ -180,6 +181,8 @@ UmcScenario* UmcFramework::CreateScenario(const char* pType)
 			return new SynthScenario();
 		else if(strcasecmp(pType,"Recognizer") == 0)
 			return new RecogScenario();
+		else if(strcasecmp(pType,"Recorder") == 0)
+			return new RecorderScenario();
 	}
 	return NULL;
 }
