@@ -162,6 +162,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_recorder_engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mrcp_recorder_state_machine.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_resource_engine.h"
 				>
 			</File>
@@ -200,6 +208,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mrcp_recog_state_machine.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mrcp_recorder_state_machine.c"
 				>
 			</File>
 			<File

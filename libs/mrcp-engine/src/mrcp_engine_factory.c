@@ -18,6 +18,7 @@
 #include "mrcp_engine_factory.h"
 #include "mrcp_synth_state_machine.h"
 #include "mrcp_recog_state_machine.h"
+#include "mrcp_recorder_state_machine.h"
 #include "apt_log.h"
 
 /** Engine factory declaration */
@@ -103,6 +104,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory
 			break;
 		case MRCP_RECOGNIZER_RESOURCE:
 			engine->create_state_machine = mrcp_recog_state_machine_create;
+			break;
+		case MRCP_RECORDER_RESOURCE:
+			engine->create_state_machine = mrcp_recorder_state_machine_create;
 			break;
 		default:
 			break;
