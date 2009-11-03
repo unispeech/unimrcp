@@ -269,7 +269,7 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 			mpf_activity_detector_noinput_timeout_set(recog_channel->detector,recog_header->no_input_timeout);
 		}
 		if(mrcp_resource_header_property_check(request,RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT) == TRUE) {
-			mpf_activity_detector_complete_timeout_set(recog_channel->detector,recog_header->speech_complete_timeout);
+			mpf_activity_detector_silence_timeout_set(recog_channel->detector,recog_header->speech_complete_timeout);
 		}
 	}
 
