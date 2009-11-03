@@ -263,6 +263,12 @@ mrcp_message_t* RecorderSession::CreateRecordRequest(mrcp_channel_t* pMrcpChanne
 		/* set recorder header fields */
 		pRecorderHeader->no_input_timeout = 5000;
 		mrcp_resource_header_property_add(pMrcpMessage,RECORDER_HEADER_NO_INPUT_TIMEOUT);
+
+		pRecorderHeader->final_silence = 300;
+		mrcp_resource_header_property_add(pMrcpMessage,RECORDER_HEADER_FINAL_SILENCE);
+
+		pRecorderHeader->max_time = 10000;
+		mrcp_resource_header_property_add(pMrcpMessage,RECORDER_HEADER_MAX_TIME);
 	}
 	return pMrcpMessage;
 }
