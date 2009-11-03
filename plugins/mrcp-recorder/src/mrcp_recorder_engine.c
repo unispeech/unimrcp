@@ -91,6 +91,14 @@ struct recorder_channel_t {
 	apt_bool_t               timers_started;
 	/** Voice activity detector */
 	mpf_activity_detector_t *detector;
+	/** Max length of the recording in msec */
+	apr_size_t               max_time;
+	/** Elapsed time of the recording in msec */
+	apr_size_t               cur_time;
+	/** Written size of the recording in bytes */
+	apr_size_t               cur_size;
+	/** File name of the recording */
+	const char              *file_name;
 	/** File to write to */
 	FILE                    *audio_out;
 };
@@ -141,6 +149,10 @@ static mrcp_engine_channel_t* recorder_engine_channel_create(mrcp_engine_t *engi
 	recorder_channel->record_request = NULL;
 	recorder_channel->stop_response = NULL;
 	recorder_channel->detector = mpf_activity_detector_create(pool);
+	recorder_channel->max_time = 0;
+	recorder_channel->cur_time = 0;
+	recorder_channel->cur_size = 0;
+	recorder_channel->file_name = NULL;
 	recorder_channel->audio_out = NULL;
 
 	capabilities = mpf_sink_stream_capabilities_create(pool);
@@ -213,6 +225,27 @@ static apt_bool_t recorder_file_open(recorder_channel_t *recorder_channel, mrcp_
 		return FALSE;
 	}
 
+	recorder_channel->file_name = file_name;
+	return TRUE;
+}
+
+/** Set Record-URI header field */
+static apt_bool_t recorder_channel_uri_set(recorder_channel_t *recorder_channel, mrcp_message_t *message)
+{
+	char *record_uri;
+	/* get/allocate recorder header */
+	mrcp_recorder_header_t *recorder_header = mrcp_resource_header_prepare(message);
+	if(!recorder_header) {
+		return FALSE;
+	}
+	
+	record_uri = apr_psprintf(message->pool,"<file://mediaserver/data/%s>;size=%d;duration=%d",
+				recorder_channel->file_name,
+				recorder_channel->cur_size,
+				recorder_channel->cur_time);
+
+	apt_string_set(&recorder_header->record_uri,record_uri);
+	mrcp_resource_header_property_add(message,RECORDER_HEADER_RECORD_URI);
 	return TRUE;
 }
 
@@ -232,6 +265,12 @@ static apt_bool_t recorder_channel_record(recorder_channel_t *recorder_channel, 
 		if(mrcp_resource_header_property_check(request,RECORDER_HEADER_NO_INPUT_TIMEOUT) == TRUE) {
 			mpf_activity_detector_noinput_timeout_set(recorder_channel->detector,recorder_header->no_input_timeout);
 		}
+		if(mrcp_resource_header_property_check(request,RECORDER_HEADER_FINAL_SILENCE) == TRUE) {
+			mpf_activity_detector_silence_timeout_set(recorder_channel->detector,recorder_header->final_silence);
+		}
+		if(mrcp_resource_header_property_check(request,RECORDER_HEADER_MAX_TIME) == TRUE) {
+			recorder_channel->max_time = recorder_header->max_time;
+		}
 	}
 
 	/* open file to record */
@@ -243,6 +282,8 @@ static apt_bool_t recorder_channel_record(recorder_channel_t *recorder_channel, 
 		return TRUE;
 	}
 
+	recorder_channel->cur_time = 0;
+	recorder_channel->cur_size = 0;
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	/* send asynchronous response */
 	mrcp_engine_channel_message_send(recorder_channel->channel,response);
@@ -338,6 +379,8 @@ static apt_bool_t recorder_record_complete(recorder_channel_t *recorder_channel,
 		recorder_header->completion_cause = cause;
 		mrcp_resource_header_property_add(message,RECORDER_HEADER_COMPLETION_CAUSE);
 	}
+	/* set record-uri */
+	recorder_channel_uri_set(recorder_channel,message);
 	/* set request state */
 	message->start_line.request_state = MRCP_REQUEST_STATE_COMPLETE;
 
@@ -374,6 +417,10 @@ static apt_bool_t recorder_stream_write(mpf_audio_stream_t *stream, const mpf_fr
 			recorder_channel->audio_out = NULL;
 		}
 		
+		if(recorder_channel->record_request){
+			/* set record-uri */
+			recorder_channel_uri_set(recorder_channel,recorder_channel->stop_response);
+		}
 		/* send asynchronous response to STOP request */
 		mrcp_engine_channel_message_send(recorder_channel->channel,recorder_channel->stop_response);
 		recorder_channel->stop_response = NULL;
@@ -404,6 +451,12 @@ static apt_bool_t recorder_stream_write(mpf_audio_stream_t *stream, const mpf_fr
 
 		if(recorder_channel->audio_out) {
 			fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recorder_channel->audio_out);
+			
+			recorder_channel->cur_size += frame->codec_frame.size;
+			recorder_channel->cur_time += CODEC_FRAME_TIME_BASE;
+			if(recorder_channel->max_time && recorder_channel->cur_time >= recorder_channel->max_time) {
+				recorder_record_complete(recorder_channel,RECORDER_COMPLETION_CAUSE_SUCCESS_MAXTIME);
+			}
 		}
 	}
 	return TRUE;
