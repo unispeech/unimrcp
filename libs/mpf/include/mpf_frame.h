@@ -35,6 +35,13 @@ typedef enum {
 	MEDIA_FRAME_TYPE_EVENT = 0x4  /**< named event frame (RFC4733/RFC2833) */
 } mpf_frame_type_e;
 
+/** Media frame marker */
+typedef enum {
+	MPF_MARKER_NONE,           /**< none */
+	MPF_MARKER_START_OF_EVENT, /**< start of event */
+	MPF_MARKER_END_OF_EVENT,   /**< end of event */
+} mpf_frame_marker_e;
+
 /** Media frame declaration */
 typedef struct mpf_frame_t mpf_frame_t;
 
@@ -42,6 +49,8 @@ typedef struct mpf_frame_t mpf_frame_t;
 struct mpf_frame_t {
 	/** frame type (audio/video/named-event) mpf_frame_type_e */
 	int                     type;
+	/** frame marker (start-of-event,end-of-event) mpf_frame_marker_e */
+	int                     marker;
 	/** codec frame */
 	mpf_codec_frame_t       codec_frame;
 	/** named-event frame */

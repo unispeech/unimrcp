@@ -783,7 +783,7 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 			rtp_header_prepare(
 				transmitter,
 				stream->tx_event_descriptor->payload_type,
-				0,
+				(frame->marker == MPF_MARKER_START_OF_EVENT) ? 1 : 0,
 				transmitter->timestamp);
 			status = mpf_rtp_event_send(rtp_stream,transmitter,frame);
 		}
