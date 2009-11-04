@@ -682,7 +682,11 @@ static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 }
 
 
-static APR_INLINE void rtp_header_prepare(rtp_transmitter_t *transmitter, apr_byte_t payload_type)
+static APR_INLINE void rtp_header_prepare(
+					rtp_transmitter_t *transmitter, 
+					apr_byte_t payload_type,
+					apr_byte_t marker,
+					apr_uint32_t timestamp)
 {
 	rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
 
@@ -696,17 +700,59 @@ static APR_INLINE void rtp_header_prepare(rtp_transmitter_t *transmitter, apr_by
 	header->padding = 0;
 	header->extension = 0;
 	header->count = 0;
-	header->marker = transmitter->inactivity;
+	header->marker = marker;
 	header->type = payload_type;
 	header->sequence = htons(++transmitter->last_seq_num);
-	header->timestamp = htonl(transmitter->timestamp);
+	header->timestamp = htonl(timestamp);
 	header->ssrc = htonl(transmitter->ssrc);
 
-	if(transmitter->inactivity) {
-		transmitter->inactivity = 0;
-	}
-
 	transmitter->packet_size = sizeof(rtp_header_t);
+}
+
+static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
+{
+	apt_bool_t status = TRUE;
+	memcpy(
+		transmitter->packet_data + transmitter->packet_size,
+		frame->codec_frame.buffer,
+		frame->codec_frame.size);
+	transmitter->packet_size += frame->codec_frame.size;
+
+	if(++transmitter->current_frames == transmitter->packet_frames) {
+		if(apr_socket_sendto(
+							rtp_stream->socket,
+							rtp_stream->remote_sockaddr,
+							0,
+							transmitter->packet_data,
+							&transmitter->packet_size) == APR_SUCCESS) {
+			transmitter->stat.sent_packets++;
+		}
+		else {
+			status = FALSE;
+		}
+		transmitter->current_frames = 0;
+	}
+	return status;
+}
+
+static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
+{
+	memcpy(
+		transmitter->packet_data + transmitter->packet_size,
+		&frame->event_frame,
+		sizeof(frame->event_frame));
+	transmitter->packet_size += sizeof(frame->event_frame);
+
+	if(apr_socket_sendto(
+						rtp_stream->socket,
+						rtp_stream->remote_sockaddr,
+						0,
+						transmitter->packet_data,
+						&transmitter->packet_size) != APR_SUCCESS) {
+		return FALSE;
+	}
+	transmitter->stat.sent_packets++;
+	return TRUE;
 }
 
 static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_frame_t *frame)
@@ -717,66 +763,44 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 
 	transmitter->timestamp += transmitter->samples_per_frame;
 
-	if(transmitter->current_frames == 0) {
-		if(frame->type == MEDIA_FRAME_TYPE_NONE) {
-			transmitter->inactivity = 1;
-		}
-		else if(frame->type == MEDIA_FRAME_TYPE_EVENT){
-			if(stream->tx_event_descriptor) {
-				rtp_header_prepare(transmitter,stream->tx_event_descriptor->payload_type);
-				transmitter->current_frames = transmitter->packet_frames-1;
+	if(frame->type == MEDIA_FRAME_TYPE_NONE) {
+		if(!transmitter->inactivity) {
+			if(transmitter->current_frames == 0) {
+				/* set inactivity (ptime alligned) */
+				transmitter->inactivity = 1;
+			}
+			else {
+				/* ptime allignment */
+				status = mpf_rtp_data_send(rtp_stream,transmitter,frame);
 			}
 		}
-		else {
-			rtp_header_prepare(transmitter,stream->tx_descriptor->payload_type);
+		return status;
+	}
+
+	if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT){
+		/* transmit event as soon as received */
+		if(stream->tx_event_descriptor) {
+			rtp_header_prepare(
+				transmitter,
+				stream->tx_event_descriptor->payload_type,
+				0,
+				transmitter->timestamp);
+			status = mpf_rtp_event_send(rtp_stream,transmitter,frame);
 		}
 	}
-	
-	if(!transmitter->inactivity) {
-		if(frame->type == MEDIA_FRAME_TYPE_AUDIO){
-			memcpy(
-				transmitter->packet_data + transmitter->packet_size,
-				frame->codec_frame.buffer,
-				frame->codec_frame.size);
-			transmitter->packet_size += frame->codec_frame.size;
 
-			if(++transmitter->current_frames == transmitter->packet_frames) {
-				if(apr_socket_sendto(
-									rtp_stream->socket,
-									rtp_stream->remote_sockaddr,
-									0,
-									transmitter->packet_data,
-									&transmitter->packet_size) == APR_SUCCESS) {
-					transmitter->stat.sent_packets++;
-				}
-				else {
-					status = FALSE;
-				}
-				transmitter->current_frames = 0;
+	if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO){
+		if(transmitter->current_frames == 0) {
+			rtp_header_prepare(
+					transmitter,
+					stream->tx_descriptor->payload_type,
+					transmitter->inactivity,
+					transmitter->timestamp);
+			if(transmitter->inactivity) {
+				transmitter->inactivity = 0;
 			}
 		}
-		else if(frame->type == MEDIA_FRAME_TYPE_EVENT){
-			memcpy(
-				transmitter->packet_data + transmitter->packet_size,
-				&frame->event_frame,
-				sizeof(frame->event_frame));
-			transmitter->packet_size += sizeof(frame->event_frame);
-
-			if(++transmitter->current_frames == transmitter->packet_frames) {
-				if(apr_socket_sendto(
-									rtp_stream->socket,
-									rtp_stream->remote_sockaddr,
-									0,
-									transmitter->packet_data,
-									&transmitter->packet_size) == APR_SUCCESS) {
-					transmitter->stat.sent_packets++;
-				}
-				else {
-					status = FALSE;
-				}
-				transmitter->current_frames = 0;
-			}
-		}
+		status = mpf_rtp_data_send(rtp_stream,transmitter,frame);
 	}
 
 	return status;
