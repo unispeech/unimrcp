@@ -720,11 +720,11 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 
 	if(++transmitter->current_frames == transmitter->packet_frames) {
 		if(apr_socket_sendto(
-							rtp_stream->socket,
-							rtp_stream->remote_sockaddr,
-							0,
-							transmitter->packet_data,
-							&transmitter->packet_size) == APR_SUCCESS) {
+					rtp_stream->socket,
+					rtp_stream->remote_sockaddr,
+					0,
+					transmitter->packet_data,
+					&transmitter->packet_size) == APR_SUCCESS) {
 			transmitter->stat.sent_packets++;
 		}
 		else {
@@ -737,18 +737,19 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 
 static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
 {
-	memcpy(
-		transmitter->packet_data + transmitter->packet_size,
-		&frame->event_frame,
-		sizeof(frame->event_frame));
+	mpf_named_event_frame_t *event_frame = (mpf_named_event_frame_t*) (transmitter->packet_data + transmitter->packet_size);
+	*event_frame = frame->event_frame;
+	event_frame->edge = (frame->marker == MPF_MARKER_END_OF_EVENT) ? 1 : 0;
+	event_frame->duration = htonl(event_frame->duration);
+	
 	transmitter->packet_size += sizeof(frame->event_frame);
 
 	if(apr_socket_sendto(
-						rtp_stream->socket,
-						rtp_stream->remote_sockaddr,
-						0,
-						transmitter->packet_data,
-						&transmitter->packet_size) != APR_SUCCESS) {
+				rtp_stream->socket,
+				rtp_stream->remote_sockaddr,
+				0,
+				transmitter->packet_data,
+				&transmitter->packet_size) != APR_SUCCESS) {
 		return FALSE;
 	}
 	transmitter->stat.sent_packets++;
@@ -780,11 +781,20 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 	if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT){
 		/* transmit event as soon as received */
 		if(stream->tx_event_descriptor) {
+			if(frame->marker == MPF_MARKER_START_OF_EVENT) {
+				/* store start time (base) of the event */
+				transmitter->timestamp_base = transmitter->timestamp;
+			}
+			else if(frame->marker == MPF_MARKER_NEW_SEGMENT) {
+				/* update base in case of long-lasting events */
+				transmitter->timestamp_base = transmitter->timestamp;
+			}
+
 			rtp_header_prepare(
 				transmitter,
 				stream->tx_event_descriptor->payload_type,
 				(frame->marker == MPF_MARKER_START_OF_EVENT) ? 1 : 0,
-				transmitter->timestamp);
+				transmitter->timestamp_base);
 			status = mpf_rtp_event_send(rtp_stream,transmitter,frame);
 		}
 	}

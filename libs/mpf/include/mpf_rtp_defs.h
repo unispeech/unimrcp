@@ -130,6 +130,8 @@ struct rtp_transmitter_t {
 	apr_uint16_t    last_seq_num;
 	/** Current timestamp (samples processed) */
 	apr_uint32_t    timestamp;
+	/** Event timestamp base */
+	apr_uint32_t    timestamp_base;
 
 	/** RTP packet payload */
 	char           *packet_data;
@@ -164,6 +166,7 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 	transmitter->inactivity = 0;
 	transmitter->last_seq_num = 0;
 	transmitter->timestamp = 0;
+	transmitter->timestamp_base = 0;
 
 	transmitter->packet_data = NULL;
 	transmitter->packet_size = 0;
