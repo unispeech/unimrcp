@@ -589,6 +589,7 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 		header->type == rtp_stream->base->rx_event_descriptor->payload_type) {
 		/* named event */
 		mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t *)buffer;
+		named_event->duration = ntohs((apr_uint16_t)named_event->duration);
 		if(mpf_jitter_buffer_write_named_event(receiver->jb,named_event,header->timestamp) != JB_OK) {
 			receiver->stat.discarded_packets++;
 			rtp_rx_failure_threshold_check(receiver);
@@ -737,10 +738,10 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 
 static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
 {
-	mpf_named_event_frame_t *event_frame = (mpf_named_event_frame_t*) (transmitter->packet_data + transmitter->packet_size);
-	*event_frame = frame->event_frame;
-	event_frame->edge = (frame->marker == MPF_MARKER_END_OF_EVENT) ? 1 : 0;
-	event_frame->duration = htonl(event_frame->duration);
+	mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t*) (transmitter->packet_data + transmitter->packet_size);
+	*named_event = frame->event_frame;
+	named_event->edge = (frame->marker == MPF_MARKER_END_OF_EVENT) ? 1 : 0;
+	named_event->duration = htons((apr_uint16_t)named_event->duration);
 	
 	transmitter->packet_size += sizeof(frame->event_frame);
 
