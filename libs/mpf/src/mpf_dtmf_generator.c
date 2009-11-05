@@ -92,7 +92,7 @@ static const double dtmf_freq[DTMF_EVENT_ID_MAX+1][2] = {
 };
 
 /** Media Processing Framework's Dual Tone Multiple Frequncy generator */
-typedef struct mpf_dtmf_generator_t {
+struct mpf_dtmf_generator_t {
 	/** Generator state */
 	enum mpf_dtmf_generator_state_e  state;
 	/** In-band or out-of-band */
@@ -119,7 +119,7 @@ typedef struct mpf_dtmf_generator_t {
 	apr_size_t                       sample_rate_audio;
 	/** Sampling rate of telephone-events in Hz; used for timing */
 	apr_size_t                       sample_rate_events;
-} mpf_dtmf_generator_t;
+};
 
 
 MPF_DECLARE(struct mpf_dtmf_generator_t *) mpf_dtmf_generator_create_ex(

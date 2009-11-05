@@ -67,7 +67,7 @@ static const char freq2digits[DTMF_FREQUENCIES/2][DTMF_FREQUENCIES/2] =
 	  { '*', '0', '#', 'D' } };
 
 /** Media Processing Framework's Dual Tone Multiple Frequncy detector */
-typedef struct mpf_dtmf_detector_t {
+struct mpf_dtmf_detector_t {
 	/** Mutex to guard the buffer */
 	struct apr_thread_mutex_t     *mutex;
 	/** Recognizer band */
@@ -88,7 +88,7 @@ typedef struct mpf_dtmf_detector_t {
 	apr_size_t                     nsamples;
 	/** Previously detected and last reported digits */
 	char                           last1, last2, curr;
-} mpf_dtmf_detector_t;
+};
 
 
 MPF_DECLARE(struct mpf_dtmf_detector_t *) mpf_dtmf_detector_create_ex(
