@@ -174,7 +174,23 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 
 jb_result_t mpf_jitter_buffer_write_named_event(mpf_jitter_buffer_t *jb, mpf_named_event_frame_t *named_event, apr_uint32_t ts)
 {
-	return JB_OK;
+	mpf_frame_t *media_frame;
+	apr_size_t write_ts;
+	apr_size_t available_frame_count = 0;
+	jb_result_t result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts,&available_frame_count);
+	if(result != JB_OK) {
+		return result;
+	}
+
+	media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
+	media_frame->event_frame = *named_event;
+	media_frame->type |= MEDIA_FRAME_TYPE_EVENT;
+
+	write_ts += jb->frame_ts;
+	if(write_ts > jb->write_ts) {
+		jb->write_ts = write_ts;
+	}
+	return result;
 }
 
 apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_frame)
