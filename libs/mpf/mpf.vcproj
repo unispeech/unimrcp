@@ -192,6 +192,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_dtmf_detector.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\mpf_dtmf_generator.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_encoder.h"
 				>
 			</File>
@@ -334,6 +342,14 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_decoder.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_dtmf_detector.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_dtmf_generator.c"
 				>
 			</File>
 			<File
