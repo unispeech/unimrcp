@@ -125,6 +125,9 @@ static mrcp_resource_t* mrcp_resource_create_by_id(mrcp_resource_id id, apr_pool
 			resource = mrcp_recorder_resource_create(pool);
 			break;
 	}
-	resource->id = id;
+	
+	if(resource) {
+		resource->id = id;
+	}
 	return resource;
 }
