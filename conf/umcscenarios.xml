@@ -5,6 +5,7 @@ Currently available scenarios are
 1. class="Synthesizer"
 2. class="Recognizer"
 3. class="Recorder"
+4. class="DtmfRecofnizer"
 
 More than one scenario of the same type (class) can be defined.
 The name (not class) of the scenario is used to run it from console.
@@ -56,6 +57,23 @@ For instance,
   <scenario name="rec" class="Recorder" profile="MRCPv2-Default">
     <resource-discovery enable="0"/>
     <record enable="1"/>
+
+    <termination enable="1">
+      <capabilities>
+        <codec name="LPCM" rates="8000 16000"/>
+        <!-- <codec name="PCMU" rates="8000 16000"/> -->
+      </capabilities>
+    </termination>
+    <!-- 
+    <rtp-termination enable="1" ip="127.0.0.1" port="5678">
+      <codecs="PCMU PCMA L16/96/8000 PCMU/97/16000 telephone-event/101/8000"/>
+    </rtp-termination>
+    -->
+  </scenario>
+
+  <scenario name="dtmf" class="DtmfRecognizer" profile="MRCPv2-Default">
+    <resource-discovery enable="0"/>
+    <recognize enable="1" content-type="text/uri-list" grammar="builtin:dtmf/digits" digits="1234"/> -->
 
     <termination enable="1">
       <capabilities>

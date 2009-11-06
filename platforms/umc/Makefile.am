@@ -19,12 +19,14 @@ umc_SOURCES            = src/main.cpp \
                          src/umcframework.cpp \
                          src/umcscenario.cpp \
                          src/umcsession.cpp \
+                         src/synthscenario.cpp \
+                         src/synthsession.cpp \
                          src/recogscenario.cpp \
                          src/recogsession.cpp \
                          src/recorderscenario.cpp \
                          src/recordersession.cpp \
-                         src/synthscenario.cpp \
-                         src/synthsession.cpp 
+                         src/dtmfscenario.cpp \
+                         src/dtmfsession.cpp
 umc_LDADD              = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la
 
 if ISMAC

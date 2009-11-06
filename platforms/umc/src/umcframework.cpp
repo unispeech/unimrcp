@@ -19,6 +19,7 @@
 #include "synthscenario.h"
 #include "recogscenario.h"
 #include "recorderscenario.h"
+#include "dtmfscenario.h"
 #include "unimrcp_client.h"
 #include "apt_log.h"
 
@@ -183,6 +184,8 @@ UmcScenario* UmcFramework::CreateScenario(const char* pType)
 			return new RecogScenario();
 		else if(strcasecmp(pType,"Recorder") == 0)
 			return new RecorderScenario();
+		else if(strcasecmp(pType,"DtmfRecognizer") == 0)
+			return new DtmfScenario();
 	}
 	return NULL;
 }
