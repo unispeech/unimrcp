@@ -53,7 +53,7 @@ apt_bool_t mpf_jitter_buffer_restart(mpf_jitter_buffer_t *jb);
 jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts);
 
 /** Write named event to jitter buffer */
-jb_result_t mpf_jitter_buffer_write_named_event(mpf_jitter_buffer_t *jb, mpf_named_event_frame_t *named_event, apr_uint32_t ts);
+jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, mpf_named_event_frame_t *named_event, apr_uint32_t ts, apr_byte_t marker);
 
 /** Read media frame from jitter buffer */
 apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_frame);
