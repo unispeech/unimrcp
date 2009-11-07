@@ -25,12 +25,6 @@
 #	define M_PI 3.141592653589793238462643
 #endif
 
-#if (APR_IS_BIGENDIAN == 1)
-#	define FIX_ENDIAN_16(num) num
-#else
-#	define FIX_ENDIAN_16(num) (((num >> 8) & 0xFF) | ((num & 0xFF) << 8))
-#endif
-
 /** Max DTMF digits waiting to be sent */
 #define MPF_DTMFGEN_QUEUE_LEN  32
 
@@ -267,7 +261,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 			frame->event_frame.event_id = generator->event_id;
 			frame->event_frame.volume = DTMF_EVENT_VOLUME;
 			if (generator->counter >= generator->tone_duration) {
-				frame->event_frame.duration = FIX_ENDIAN_16(generator->tone_duration);
+				frame->event_frame.duration = generator->tone_duration;
 				generator->state = DTMF_GEN_STATE_ENDING;
 				generator->counter = 0;
 				frame->event_frame.edge = 1;
@@ -278,7 +272,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 					frame->marker = MPF_MARKER_START_OF_EVENT;
 				else
 					frame->marker = MPF_MARKER_NONE;
-				frame->event_frame.duration = FIX_ENDIAN_16(generator->counter);
+				frame->event_frame.duration = generator->counter;
 				frame->event_frame.edge = 0;
 				return TRUE;
 			}
@@ -297,7 +291,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 		frame->event_frame.volume = DTMF_EVENT_VOLUME;
 		frame->event_frame.reserved = 0;
 		frame->event_frame.edge = 1;
-		frame->event_frame.duration = FIX_ENDIAN_16(generator->tone_duration);
+		frame->event_frame.duration = generator->tone_duration;
 		if (generator->counter >= 2) {
 			generator->state = DTMF_GEN_STATE_SILENCE;
 			generator->counter *= generator->frame_duration;
