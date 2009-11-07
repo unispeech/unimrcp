@@ -476,6 +476,18 @@ static apt_bool_t demo_recog_stream_write(mpf_audio_stream_t *stream, const mpf_
 				break;
 		}
 
+		if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
+			if(frame->marker == MPF_MARKER_START_OF_EVENT) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Start of Event: id [%d]",
+					frame->event_frame.event_id);
+			}
+			else if(frame->marker == MPF_MARKER_END_OF_EVENT) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected End of Event: id [%d] duration [%d ts]",
+					frame->event_frame.event_id,
+					frame->event_frame.duration);
+			}
+		}
+
 		if(recog_channel->audio_out) {
 			fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recog_channel->audio_out);
 		}
