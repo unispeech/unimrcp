@@ -134,7 +134,7 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 	multiplier->base.destroy = mpf_multiplier_destroy;
 	multiplier->base.trace = mpf_multiplier_trace;
 
-	if(mpf_audio_stream_rx_validate(source,NULL,pool) == FALSE) {
+	if(mpf_audio_stream_rx_validate(source,NULL,NULL,pool) == FALSE) {
 		return NULL;
 	}
 
@@ -154,7 +154,7 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 		sink = sink_arr[i];
 		if(!sink) continue;
 
-		if(mpf_audio_stream_tx_validate(sink,NULL,pool) == FALSE) {
+		if(mpf_audio_stream_tx_validate(sink,NULL,NULL,pool) == FALSE) {
 			continue;
 		}
 

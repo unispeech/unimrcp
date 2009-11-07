@@ -172,8 +172,8 @@ MPF_DECLARE(mpf_object_t*) mpf_bridge_create(mpf_audio_stream_t *source, mpf_aud
 		return NULL;
 	}
 
-	if(mpf_audio_stream_rx_validate(source,sink->tx_descriptor,pool) == FALSE ||
-		mpf_audio_stream_tx_validate(sink,source->rx_descriptor,pool) == FALSE) {
+	if(mpf_audio_stream_rx_validate(source,sink->tx_descriptor,sink->tx_event_descriptor,pool) == FALSE ||
+		mpf_audio_stream_tx_validate(sink,source->rx_descriptor,source->rx_event_descriptor,pool) == FALSE) {
 		return NULL;
 	}
 

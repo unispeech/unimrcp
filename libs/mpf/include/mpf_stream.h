@@ -92,10 +92,18 @@ struct mpf_audio_stream_vtable_t {
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, const mpf_stream_capabilities_t *capabilities, apr_pool_t *pool);
 
 /** Validate audio stream receiver */
-MPF_DECLARE(apt_bool_t) mpf_audio_stream_rx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool);
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_rx_validate(
+							mpf_audio_stream_t *stream,
+							const mpf_codec_descriptor_t *descriptor,
+							const mpf_codec_descriptor_t *event_descriptor,
+							apr_pool_t *pool);
 
 /** Validate audio stream transmitter */
-MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool);
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(
+							mpf_audio_stream_t *stream, 
+							const mpf_codec_descriptor_t *descriptor, 
+							const mpf_codec_descriptor_t *event_descriptor, 
+							apr_pool_t *pool);
 
 /** Destroy audio stream */
 static APR_INLINE apt_bool_t mpf_audio_stream_destroy(mpf_audio_stream_t *stream)

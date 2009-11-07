@@ -60,31 +60,48 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_au
 }
 
 /** Validate audio stream receiver */
-MPF_DECLARE(apt_bool_t) mpf_audio_stream_rx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_rx_validate(
+									mpf_audio_stream_t *stream,
+									const mpf_codec_descriptor_t *descriptor,
+									const mpf_codec_descriptor_t *event_descriptor,
+									apr_pool_t *pool)
 {
 	if(!stream->capabilities) {
 		return FALSE;
 	}
 
-	if(stream->rx_descriptor) {
-		return TRUE;
+	if(!stream->rx_descriptor) {
+		stream->rx_descriptor = mpf_codec_descriptor_create_by_capabilities(&stream->capabilities->codecs,descriptor,pool);
+	}
+	if(!stream->rx_event_descriptor) {
+		if(stream->capabilities->codecs.allow_named_events == TRUE && event_descriptor) {
+			stream->rx_event_descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+			*stream->rx_event_descriptor = *event_descriptor;
+		}
 	}
 
-	stream->rx_descriptor = mpf_codec_descriptor_create_by_capabilities(&stream->capabilities->codecs,descriptor,pool);
 	return stream->rx_descriptor ? TRUE : FALSE;
 }
 
 /** Validate audio stream transmitter */
-MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(mpf_audio_stream_t *stream, const mpf_codec_descriptor_t *descriptor, apr_pool_t *pool)
+MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(
+									mpf_audio_stream_t *stream,
+									const mpf_codec_descriptor_t *descriptor,
+									const mpf_codec_descriptor_t *event_descriptor,
+									apr_pool_t *pool)
 {
 	if(!stream->capabilities) {
 		return FALSE;
 	}
 
-	if(stream->tx_descriptor) {
-		return TRUE;
+	if(!stream->tx_descriptor) {
+		stream->tx_descriptor = mpf_codec_descriptor_create_by_capabilities(&stream->capabilities->codecs,descriptor,pool);
 	}
-
-	stream->tx_descriptor = mpf_codec_descriptor_create_by_capabilities(&stream->capabilities->codecs,descriptor,pool);
+	if(!stream->tx_event_descriptor) {
+		if(stream->capabilities->codecs.allow_named_events == TRUE && event_descriptor) {
+			stream->tx_event_descriptor = apr_palloc(pool,sizeof(mpf_codec_descriptor_t));
+			*stream->tx_event_descriptor = *event_descriptor;
+		}
+	}
 	return stream->tx_descriptor ? TRUE : FALSE;
 }

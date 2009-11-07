@@ -154,7 +154,7 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 	mixer->base.destroy = mpf_mixer_destroy;
 	mixer->base.trace = mpf_mixer_trace;
 
-	if(mpf_audio_stream_tx_validate(sink,NULL,pool) == FALSE) {
+	if(mpf_audio_stream_tx_validate(sink,NULL,NULL,pool) == FALSE) {
 		return NULL;
 	}
 
@@ -174,7 +174,7 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 		source = source_arr[i];
 		if(!source) continue;
 
-		if(mpf_audio_stream_rx_validate(source,NULL,pool) == FALSE) {
+		if(mpf_audio_stream_rx_validate(source,NULL,NULL,pool) == FALSE) {
 			continue;
 		}
 
