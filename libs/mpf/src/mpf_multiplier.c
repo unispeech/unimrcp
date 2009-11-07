@@ -45,6 +45,7 @@ static apt_bool_t mpf_multiplier_process(mpf_object_t *object)
 	mpf_multiplier_t *multiplier = (mpf_multiplier_t*) object;
 
 	multiplier->frame.type = MEDIA_FRAME_TYPE_NONE;
+	multiplier->frame.marker = MPF_MARKER_NONE;
 	multiplier->source->vtable->read_frame(multiplier->source,&multiplier->frame);
 	
 	if((multiplier->frame.type & MEDIA_FRAME_TYPE_AUDIO) == 0) {

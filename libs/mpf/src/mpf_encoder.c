@@ -50,6 +50,7 @@ static apt_bool_t mpf_encoder_process(mpf_audio_stream_t *stream, const mpf_fram
 	mpf_encoder_t *encoder = stream->obj;
 
 	encoder->frame_out.type = frame->type;
+	encoder->frame_out.marker = frame->marker;
 	if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
 		encoder->frame_out.event_frame = frame->event_frame;
 	}

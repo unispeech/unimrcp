@@ -53,6 +53,7 @@ static apt_bool_t mpf_decoder_process(mpf_audio_stream_t *stream, mpf_frame_t *f
 	}
 
 	frame->type = decoder->frame_in.type;
+	frame->marker = decoder->frame_in.marker;
 	if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
 		frame->event_frame = decoder->frame_in.event_frame;
 	}

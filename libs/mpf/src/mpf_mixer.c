@@ -69,11 +69,13 @@ static apt_bool_t mpf_mixer_process(mpf_object_t *object)
 	mpf_mixer_t *mixer = (mpf_mixer_t*) object;
 
 	mixer->mix_frame.type = MEDIA_FRAME_TYPE_NONE;
+	mixer->mix_frame.marker = MPF_MARKER_NONE;
 	memset(mixer->mix_frame.codec_frame.buffer,0,mixer->mix_frame.codec_frame.size);
 	for(i=0; i<mixer->source_count; i++) {
 		source = mixer->source_arr[i];
 		if(source) {
 			mixer->frame.type = MEDIA_FRAME_TYPE_NONE;
+			mixer->frame.marker = MPF_MARKER_NONE;
 			source->vtable->read_frame(source,&mixer->frame);
 			mpf_frames_mix(&mixer->mix_frame,&mixer->frame);
 		}

@@ -58,6 +58,7 @@ struct mpf_jitter_buffer_t {
 mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_descriptor_t *descriptor, mpf_codec_t *codec, apr_pool_t *pool)
 {
 	size_t i;
+	mpf_frame_t *frame;
 	mpf_jitter_buffer_t *jb = apr_palloc(pool,sizeof(mpf_jitter_buffer_t));
 	if(!jb_config) {
 		/* create default jb config */
@@ -88,9 +89,10 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 	jb->raw_data = apr_palloc(pool,jb->frame_size*jb->frame_count);
 	jb->frames = apr_palloc(pool,sizeof(mpf_frame_t)*jb->frame_count);
 	for(i=0; i<jb->frame_count; i++) {
-		jb->frames[i].type = MEDIA_FRAME_TYPE_NONE;
-		jb->frames[i].marker = MPF_MARKER_NONE;
-		jb->frames[i].codec_frame.buffer = jb->raw_data + i*jb->frame_size;
+		frame = &jb->frames[i];
+		frame->type = MEDIA_FRAME_TYPE_NONE;
+		frame->marker = MPF_MARKER_NONE;
+		frame->codec_frame.buffer = jb->raw_data + i*jb->frame_size;
 	}
 
 	jb->playout_delay_ts = jb->config->initial_playout_delay *
@@ -292,6 +294,7 @@ apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_fr
 	else {
 		/* underflow */
 		media_frame->type = MEDIA_FRAME_TYPE_NONE;
+		media_frame->marker = MPF_MARKER_NONE;
 		jb->write_ts += jb->frame_ts;
 	}
 	src_media_frame->type = MEDIA_FRAME_TYPE_NONE;

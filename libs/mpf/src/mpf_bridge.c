@@ -40,6 +40,7 @@ static apt_bool_t mpf_bridge_process(mpf_object_t *object)
 {
 	mpf_bridge_t *bridge = (mpf_bridge_t*) object;
 	bridge->frame.type = MEDIA_FRAME_TYPE_NONE;
+	bridge->frame.marker = MPF_MARKER_NONE;
 	bridge->source->vtable->read_frame(bridge->source,&bridge->frame);
 	
 	if((bridge->frame.type & MEDIA_FRAME_TYPE_AUDIO) == 0) {
