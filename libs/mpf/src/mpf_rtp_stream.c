@@ -573,13 +573,13 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 
 	rtp_rx_seq_update(receiver,(apr_uint16_t)header->sequence);
 	
-	if(rtp_rx_ts_update(receiver,descriptor,&time,header->timestamp) == RTP_TS_DRIFT) {
-		rtp_rx_restart(receiver);
-		return FALSE;
-	}
-	
 	if(header->type == descriptor->payload_type) {
 		/* codec */
+		if(rtp_rx_ts_update(receiver,descriptor,&time,header->timestamp) == RTP_TS_DRIFT) {
+			rtp_rx_restart(receiver);
+			return FALSE;
+		}
+	
 		if(mpf_jitter_buffer_write(receiver->jb,buffer,size,header->timestamp) != JB_OK) {
 			receiver->stat.discarded_packets++;
 			rtp_rx_failure_threshold_check(receiver);
@@ -694,8 +694,8 @@ static APR_INLINE void rtp_header_prepare(
 #if PRINT_RTP_PACKET_STAT
 	printf("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
 		(apr_uint32_t)apr_time_usec(apr_time_now()),
-		transmitter->ssrc, payload_type, transmitter->inactivity ? '*' : ' ',
-		transmitter->timestamp, transmitter->last_seq_num);
+		transmitter->ssrc, payload_type, marker ? '*' : ' ',
+		timestamp, transmitter->last_seq_num);
 #endif	
 	header->version = RTP_VERSION;
 	header->padding = 0;

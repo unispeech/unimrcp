@@ -47,11 +47,11 @@ struct mpf_jitter_buffer_t {
 	apr_size_t       read_ts;
 
 	/* timestamp event starts at */
-	apr_size_t               event_write_base_ts;
+	apr_size_t              event_write_base_ts;
 	/* the first (base) frame of the event */
-	mpf_named_event_frame_t *event_write_base;
+	mpf_named_event_frame_t event_write_base;
 	/* the last received update for the event */
-	mpf_named_event_frame_t *event_write_update;
+	const mpf_named_event_frame_t *event_write_update;
 };
 
 
@@ -103,7 +103,7 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 	jb->write_ts = jb->read_ts = 0;
 
 	jb->event_write_base_ts = 0;
-	jb->event_write_base = NULL;
+	memset(&jb->event_write_base,0,sizeof(mpf_named_event_frame_t));
 	jb->event_write_update = NULL;
 
 	return jb;
@@ -120,7 +120,7 @@ apt_bool_t mpf_jitter_buffer_restart(mpf_jitter_buffer_t *jb)
 	jb->write_ts = jb->read_ts;
 
 	jb->event_write_base_ts = 0;
-	jb->event_write_base = NULL;
+	memset(&jb->event_write_base,0,sizeof(mpf_named_event_frame_t));
 	jb->event_write_update = NULL;
 
 	return TRUE;
@@ -200,7 +200,7 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 	return result;
 }
 
-jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, mpf_named_event_frame_t *named_event, apr_uint32_t ts, apr_byte_t marker)
+jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_named_event_frame_t *named_event, apr_uint32_t ts, apr_byte_t marker)
 {
 	mpf_frame_t *media_frame;
 	apr_size_t write_ts;
@@ -211,11 +211,7 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, mpf_named_eve
 
 	/* new event detection */
 	if(!marker) {
-		if(!jb->event_write_base) {
-			/* the first event received, marker is missing though */
-			marker = 1;
-		}
-		else if(jb->event_write_base->event_id != named_event->event_id) {
+		if(jb->event_write_base.event_id != named_event->event_id) {
 			/* new event detected, marker is missing though */
 			marker = 1;
 		}
@@ -228,16 +224,16 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, mpf_named_eve
 			}
 			else {
 				/* new segment of the same long-lasting event detected */
-				jb->event_write_base = named_event;
-				jb->event_write_update = named_event;
+				jb->event_write_base = *named_event;
+				jb->event_write_update = &jb->event_write_base;
 				jb->event_write_base_ts = write_ts;
 			}
 		}
 	}
 	if(marker) {
 		/* new event */
-		jb->event_write_base = named_event;
-		jb->event_write_update = named_event;
+		jb->event_write_base = *named_event;
+		jb->event_write_update = &jb->event_write_base;
 		jb->event_write_base_ts = write_ts;
 	}
 	else {
@@ -269,6 +265,7 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, mpf_named_eve
 	else if(named_event->edge == 1) {
 		media_frame->marker = MPF_MARKER_END_OF_EVENT;
 	}
+	jb->event_write_update = &media_frame->event_frame;
 
 	write_ts += jb->frame_ts;
 	if(write_ts > jb->write_ts) {
@@ -283,6 +280,7 @@ apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_fr
 	if(jb->write_ts > jb->read_ts) {
 		/* normal read */
 		media_frame->type = src_media_frame->type;
+		media_frame->marker = src_media_frame->marker;
 		if(media_frame->type & MEDIA_FRAME_TYPE_AUDIO) {
 			media_frame->codec_frame.size = src_media_frame->codec_frame.size;
 			memcpy(media_frame->codec_frame.buffer,src_media_frame->codec_frame.buffer,media_frame->codec_frame.size);
