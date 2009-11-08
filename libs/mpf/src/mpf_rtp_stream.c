@@ -592,7 +592,6 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 		named_event->duration = ntohs((apr_uint16_t)named_event->duration);
 		if(mpf_jitter_buffer_event_write(receiver->jb,named_event,header->timestamp,(apr_byte_t)header->marker) != JB_OK) {
 			receiver->stat.discarded_packets++;
-			rtp_rx_failure_threshold_check(receiver);
 		}
 	}
 	else if(header->type == RTP_PT_CN) {
