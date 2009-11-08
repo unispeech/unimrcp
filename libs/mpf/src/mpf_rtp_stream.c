@@ -24,9 +24,9 @@
 #include "apt_log.h"
 
 #if ENABLE_RTP_PACKET_TRACE
-#define RTP_TRACE(format,...) printf(format)
+#define RTP_TRACE printf
 #else
-#define RTP_TRACE(format,...)
+#define RTP_TRACE
 #endif
 
 /** RTP stream */

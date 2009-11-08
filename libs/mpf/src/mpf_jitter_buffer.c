@@ -16,6 +16,12 @@
 
 #include "mpf_jitter_buffer.h"
 
+#if ENABLE_JB_TRACE
+#define JB_TRACE printf
+#else
+#define JB_TRACE
+#endif
+
 struct mpf_jitter_buffer_t {
 	/* jitter buffer config */
 	mpf_jb_config_t *config;
@@ -169,15 +175,18 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 		}
 		else {
 			/* too late */
+			JB_TRACE("JB write ts=%d too late\n",write_ts);
 			return JB_DISCARD_TOO_LATE;
 		}
 	}
 	available_frame_count = jb->frame_count - (write_ts - jb->read_ts)/jb->frame_ts;
 	if(available_frame_count <= 0) {
 		/* too early */
+		JB_TRACE("JB write ts=%d too early\n",write_ts);
 		return JB_DISCARD_TOO_EARLY;
 	}
 
+	JB_TRACE("JB write ts=%d size=%d\n",write_ts,size);
 	while(available_frame_count && size) {
 		media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
 		media_frame->codec_frame.size = jb->frame_size;
@@ -249,13 +258,19 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 
 	if(write_ts < jb->read_ts) {
 		/* too late */
+		JB_TRACE("JB write ts=%d event=%d duration=%d too late\n",
+			write_ts,named_event->event_id,named_event->duration);
 		return JB_DISCARD_TOO_LATE;
 	}
 	else if( (write_ts - jb->read_ts)/jb->frame_ts >= jb->frame_count) {
 		/* too early */
+		JB_TRACE("JB write ts=%d event=%d duration=%d too early\n",
+			write_ts,named_event->event_id,named_event->duration);
 		return JB_DISCARD_TOO_EARLY;
 	}
 
+	JB_TRACE("JB write ts=%d event=%d duration=%d\n",
+		write_ts,named_event->event_id,named_event->duration);
 	media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
 	media_frame->event_frame = *named_event;
 	media_frame->type |= MEDIA_FRAME_TYPE_EVENT;
@@ -279,6 +294,7 @@ apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_fr
 	mpf_frame_t *src_media_frame = mpf_jitter_buffer_frame_get(jb,jb->read_ts);
 	if(jb->write_ts > jb->read_ts) {
 		/* normal read */
+		JB_TRACE("JB read ts=%d\n",	jb->read_ts);
 		media_frame->type = src_media_frame->type;
 		media_frame->marker = src_media_frame->marker;
 		if(media_frame->type & MEDIA_FRAME_TYPE_AUDIO) {
@@ -291,6 +307,7 @@ apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_fr
 	}
 	else {
 		/* underflow */
+		JB_TRACE("JB read ts=%d underflow\n", jb->read_ts);
 		media_frame->type = MEDIA_FRAME_TYPE_NONE;
 		media_frame->marker = MPF_MARKER_NONE;
 		jb->write_ts += jb->frame_ts;
