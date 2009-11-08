@@ -19,7 +19,8 @@
 #if ENABLE_JB_TRACE
 #define JB_TRACE printf
 #else
-#define JB_TRACE
+static APR_INLINE void null_trace() {}
+#define JB_TRACE null_trace
 #endif
 
 struct mpf_jitter_buffer_t {

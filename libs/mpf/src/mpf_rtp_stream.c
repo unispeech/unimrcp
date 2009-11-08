@@ -26,7 +26,8 @@
 #if ENABLE_RTP_PACKET_TRACE
 #define RTP_TRACE printf
 #else
-#define RTP_TRACE
+static APR_INLINE void null_trace() {}
+#define RTP_TRACE null_trace
 #endif
 
 /** RTP stream */
