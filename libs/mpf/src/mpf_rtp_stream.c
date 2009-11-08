@@ -23,6 +23,11 @@
 #include "mpf_rtp_pt.h"
 #include "apt_log.h"
 
+#if ENABLE_RTP_PACKET_TRACE
+#define RTP_TRACE(format,...) printf(format)
+#else
+#define RTP_TRACE(format,...)
+#endif
 
 /** RTP stream */
 typedef struct mpf_rtp_stream_t mpf_rtp_stream_t;
@@ -503,9 +508,7 @@ static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf
 	}
 
 	receiver->stat.jitter += deviation - ((receiver->stat.jitter + 8) >> 4);
-#if PRINT_RTP_PACKET_STAT
-	printf("jitter=%d deviation=%d\n",receiver->stat.jitter,deviation);
-#endif
+	RTP_TRACE("jitter=%d deviation=%d\n",receiver->stat.jitter,deviation);
 	receiver->history.time_last = *time;
 	receiver->history.ts_last = ts;
 
@@ -550,12 +553,10 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 
 	time = apr_time_now();
 
-#if PRINT_RTP_PACKET_STAT
-	printf("RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u size=%lu\n",
+	RTP_TRACE("RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u size=%lu\n",
 					(apr_uint32_t)apr_time_usec(time),
-					header->ssrc, header->type, header->marker ? '*' : ' ',
+					header->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
 					header->timestamp, header->sequence, size);
-#endif
 	if(!receiver->stat.received_packets) {
 		/* initialization */
 		rtp_rx_stat_init(receiver,header,&time);
@@ -690,12 +691,10 @@ static APR_INLINE void rtp_header_prepare(
 {
 	rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
 
-#if PRINT_RTP_PACKET_STAT
-	printf("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
+	RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
 		(apr_uint32_t)apr_time_usec(apr_time_now()),
-		transmitter->ssrc, payload_type, marker ? '*' : ' ',
+		transmitter->ssrc, payload_type, (marker == 1) ? '*' : ' ',
 		timestamp, transmitter->last_seq_num);
-#endif	
 	header->version = RTP_VERSION;
 	header->padding = 0;
 	header->extension = 0;
