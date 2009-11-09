@@ -48,6 +48,8 @@ static apt_bool_t mpf_decoder_close(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_decoder_process(mpf_audio_stream_t *stream, mpf_frame_t *frame)
 {
 	mpf_decoder_t *decoder = stream->obj;
+	decoder->frame_in.type = MEDIA_FRAME_TYPE_NONE;
+	decoder->frame_in.marker = MPF_MARKER_NONE;
 	if(mpf_audio_stream_frame_read(decoder->source,&decoder->frame_in) != TRUE) {
 		return FALSE;
 	}
