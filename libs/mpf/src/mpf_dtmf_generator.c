@@ -97,14 +97,18 @@ struct mpf_dtmf_generator_t {
 	char                             queue[MPF_DTMFGEN_QUEUE_LEN+1];
 	/** DTMF event_id according to RFC4733 */
 	apr_byte_t                       event_id;
-	/** Duration in RTP units: (sample_rate / 1000) * milliseconds; limited to 0xFFFF */
-	apr_uint16_t                     tone_duration;
+	/** Duration in RTP units: (sample_rate / 1000) * milliseconds */
+	apr_uint32_t                     tone_duration;
 	/** Duration of inter-digit silence @see tone_duration */
-	apr_uint16_t                     silence_duration;
+	apr_uint32_t                     silence_duration;
 	/** Multipurpose counter; mostly in RTP time units */
 	apr_uint32_t                     counter;
 	/** Frame duration in RTP units */
-	apr_uint16_t                     frame_duration;
+	apr_uint32_t                     frame_duration;
+	/** RTP named event duration (0..0xFFFF) */
+	apr_uint32_t                     event_duration;
+	/** Set MPF_MARKER_NEW_SEGMENT in the next event frame */
+	apt_bool_t                       new_segment;
 	/** Lower frequency generator */
 	struct sine_state_t              sine1;
 	/** Higher frequency generator */
@@ -113,6 +117,10 @@ struct mpf_dtmf_generator_t {
 	apr_size_t                       sample_rate_audio;
 	/** Sampling rate of telephone-events in Hz; used for timing */
 	apr_size_t                       sample_rate_events;
+	/** How often to issue event packet */
+	apr_size_t                       events_ptime;
+	/** Milliseconds elapsed since last event packet */
+	apr_size_t                       since_last_event;
 };
 
 
@@ -128,10 +136,7 @@ MPF_DECLARE(struct mpf_dtmf_generator_t *) mpf_dtmf_generator_create_ex(
 	int flg_band = band;
 
 	if (!stream->rx_descriptor) flg_band &= ~MPF_DTMF_GENERATOR_INBAND;
-/*
-	Always NULL now:
 	if (!stream->rx_event_descriptor) flg_band &= ~MPF_DTMF_GENERATOR_OUTBAND;
-*/
 	if (!flg_band) return NULL;
 
 	gen = apr_palloc(pool, sizeof(struct mpf_dtmf_generator_t));
@@ -145,19 +150,10 @@ MPF_DECLARE(struct mpf_dtmf_generator_t *) mpf_dtmf_generator_create_ex(
 		gen->sample_rate_audio = stream->rx_descriptor->sampling_rate;
 	gen->sample_rate_events = stream->rx_event_descriptor ?
 		stream->rx_event_descriptor->sampling_rate : gen->sample_rate_audio;
-	gen->frame_duration = (apr_uint16_t) (gen->sample_rate_events / 1000 * CODEC_FRAME_TIME_BASE);
-	if (gen->sample_rate_events * tone_ms / 1000 > 0xFFFF) {
-		gen->tone_duration = 0xFFFF;
-		apt_log(APT_LOG_MARK, APT_PRIO_NOTICE, "DTMF tone duration too long, shortened to approx %dms.",
-			gen->tone_duration / gen->sample_rate_events);
-	} else
-		gen->tone_duration = (apr_uint16_t) (gen->sample_rate_events / 1000 * tone_ms);
-	if (gen->sample_rate_events * silence_ms / 1000 > 0xFFFF) {
-		gen->silence_duration = 0xFFFF;
-		apt_log(APT_LOG_MARK, APT_PRIO_NOTICE, "DTMF silence duration too long, shortened to approx %dms.",
-			gen->silence_duration / gen->sample_rate_events);
-	} else
-		gen->silence_duration = (apr_uint16_t) (gen->sample_rate_events / 1000 * silence_ms);
+	gen->frame_duration = gen->sample_rate_events / 1000 * CODEC_FRAME_TIME_BASE;
+	gen->tone_duration = gen->sample_rate_events / 1000 * tone_ms;
+	gen->silence_duration = gen->sample_rate_events / 1000 * silence_ms;
+	gen->events_ptime = CODEC_FRAME_TIME_BASE;  /* Should be got from event_descriptor */
 	return gen;
 }
 
@@ -217,6 +213,9 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 		if (generator->event_id <= DTMF_EVENT_ID_MAX) {
 			generator->state = DTMF_GEN_STATE_TONE;
 			generator->counter = 0;
+			generator->event_duration = 0;
+			generator->since_last_event = generator->events_ptime;
+			generator->new_segment = FALSE;
 			/* Initialize tone generator */
 			if (generator->band & MPF_DTMF_GENERATOR_INBAND) {
 				double omega;
@@ -238,6 +237,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 
 	if (generator->state == DTMF_GEN_STATE_TONE) {
 		generator->counter += generator->frame_duration;
+		generator->event_duration += generator->frame_duration;
 		if (generator->band & MPF_DTMF_GENERATOR_INBAND) {
 			apr_size_t i;
 			apr_int16_t *samples = (apr_int16_t *) frame->codec_frame.buffer;
@@ -256,27 +256,45 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 			}
 		}
 		if (generator->band & MPF_DTMF_GENERATOR_OUTBAND) {
+			generator->since_last_event += CODEC_FRAME_TIME_BASE;
+			if (generator->since_last_event >= generator->events_ptime)
+				generator->since_last_event = 0;
+			else
+				return TRUE;
 			frame->type |= MEDIA_FRAME_TYPE_EVENT;
 			frame->event_frame.reserved = 0;
 			frame->event_frame.event_id = generator->event_id;
 			frame->event_frame.volume = DTMF_EVENT_VOLUME;
 			if (generator->counter >= generator->tone_duration) {
-				frame->event_frame.duration = generator->tone_duration;
 				generator->state = DTMF_GEN_STATE_ENDING;
 				generator->counter = 0;
 				frame->event_frame.edge = 1;
 				frame->marker = MPF_MARKER_END_OF_EVENT;
-				return TRUE;
+				if (generator->event_duration > 0xFFFF) {
+					/* Shorten the tone a bit instead of lenghtening */
+					generator->new_segment = TRUE;
+					frame->event_frame.duration = 0xFFFF;
+					generator->event_duration = 0;
+				} else
+					frame->event_frame.duration = generator->event_duration;
 			} else {
+				frame->event_frame.edge = 0;
 				if (generator->counter == generator->frame_duration)  /* First chunk of event */
 					frame->marker = MPF_MARKER_START_OF_EVENT;
-				else
+				else if (generator->new_segment) {
+					frame->marker = MPF_MARKER_NEW_SEGMENT;
+					generator->new_segment = FALSE;
+				} else
 					frame->marker = MPF_MARKER_NONE;
-				frame->event_frame.duration = generator->counter;
-				frame->event_frame.edge = 0;
-				return TRUE;
+				if (generator->event_duration > 0xFFFF) {
+					frame->event_frame.duration = 0xFFFF;
+					generator->event_duration = 0;
+					generator->new_segment = TRUE;
+				} else
+					frame->event_frame.duration = generator->event_duration;
 			}
-		}
+			return TRUE;
+		}  /* MPF_DTMF_GENERATOR_OUTBAND */
 		if (generator->counter >= generator->tone_duration) {
 			generator->state = DTMF_GEN_STATE_SILENCE;
 			generator->counter = 0;
@@ -284,6 +302,11 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 		return TRUE;
 	}
 	else if (generator->state == DTMF_GEN_STATE_ENDING) {
+		generator->since_last_event += CODEC_FRAME_TIME_BASE;
+		if (generator->since_last_event >= generator->events_ptime)
+			generator->since_last_event = 0;
+		else
+			return TRUE;
 		generator->counter++;
 		frame->type |= MEDIA_FRAME_TYPE_EVENT;
 		frame->marker = MPF_MARKER_END_OF_EVENT;
@@ -291,10 +314,18 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 		frame->event_frame.volume = DTMF_EVENT_VOLUME;
 		frame->event_frame.reserved = 0;
 		frame->event_frame.edge = 1;
-		frame->event_frame.duration = generator->tone_duration;
+		if (generator->new_segment)
+			/* Tone was shortened a little bit */
+			frame->event_frame.duration = 0xFFFF;
+		else
+			frame->event_frame.duration = generator->event_duration;
 		if (generator->counter >= 2) {
 			generator->state = DTMF_GEN_STATE_SILENCE;
 			generator->counter *= generator->frame_duration;
+		}
+		if (generator->band & MPF_DTMF_GENERATOR_INBAND) {
+			frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+			memset(frame->codec_frame.buffer, 0, frame->codec_frame.size);
 		}
 		return TRUE;
 	}

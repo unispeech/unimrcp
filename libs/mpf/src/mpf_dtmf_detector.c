@@ -34,7 +34,7 @@
 #define GOERTZEL_SAMPLES_8K    102
 
 /** See RFC4733 */
-#define DTMF_EVENT_ID_MAX      15  /* 0123456789*#ABCD */
+#define DTMF_EVENT_ID_MAX       15  /* 0123456789*#ABCD */
 
 /**
  * Goertzel frequency detector (second-order IIR filter) state:
@@ -101,7 +101,10 @@ MPF_DECLARE(struct mpf_dtmf_detector_t *) mpf_dtmf_detector_create_ex(
 	int flg_band = band;
 
 	if (!stream->tx_descriptor) flg_band &= ~MPF_DTMF_DETECTOR_INBAND;
+/*
+	Event descriptor is not important actually
 	if (!stream->tx_event_descriptor) flg_band &= ~MPF_DTMF_DETECTOR_OUTBAND;
+*/
 	if (!flg_band) return NULL;
 
 	det = apr_palloc(pool, sizeof(mpf_dtmf_detector_t));
@@ -260,6 +263,21 @@ MPF_DECLARE(void) mpf_dtmf_detector_get_frame(
 								struct mpf_dtmf_detector_t *detector,
 								const struct mpf_frame_t *frame)
 {
+	if ((detector->band & MPF_DTMF_DETECTOR_OUTBAND) &&
+		(frame->type & MEDIA_FRAME_TYPE_EVENT) &&
+		(frame->event_frame.event_id <= DTMF_EVENT_ID_MAX) &&
+		(frame->marker == MPF_MARKER_START_OF_EVENT))
+	{
+		if (detector->band & MPF_DTMF_DETECTOR_INBAND) {
+			detector->band &= ~MPF_DTMF_DETECTOR_INBAND;
+			apt_log(APT_LOG_MARK, APT_PRIO_INFO, "Out-of-band digit arrived, turning "
+				"in-band DTMF detector off");
+		}
+		mpf_dtmf_detector_add_digit(detector, mpf_event_id_to_dtmf_char(
+			frame->event_frame.event_id));
+		return;
+	}
+
 	if ((detector->band & MPF_DTMF_DETECTOR_INBAND) && (frame->type & MEDIA_FRAME_TYPE_AUDIO)) {
 		apr_int16_t *samples = frame->codec_frame.buffer;
 		apr_size_t i;
@@ -271,20 +289,6 @@ MPF_DECLARE(void) mpf_dtmf_detector_get_frame(
 				detector->nsamples = 0;
 			}
 		}
-	}
-
-	if ((detector->band & MPF_DTMF_DETECTOR_OUTBAND) && (frame->type & MEDIA_FRAME_TYPE_EVENT)) {
-#if 0  /* To be done */
-		if (frame->event_frame.event_id <= DTMF_EVENT_ID_MAX) {
-			if (detector->band & MPF_DTMF_DETECTOR_INBAND) {
-				detector->band &= ~MPF_DTMF_DETECTOR_INBAND;
-				apt_log(APT_LOG_MARK, APT_PRIO_INFO, "Out-of-band digit arrived, switching "
-					"in-band DTMF detector off");
-			}
-			mpf_dtmf_detector_add_digit(detector, mpf_event_id_to_dtmf_char(
-				frame->event_frame.event_id));
-		}
-#endif
 	}
 }
 
