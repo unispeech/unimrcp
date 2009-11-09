@@ -26,13 +26,18 @@
 
 APT_BEGIN_EXTERN_C
 
-/** RTP transmit statistics declaration */
+/** RTP transmitter statistics */
 typedef struct rtp_tx_stat_t rtp_tx_stat_t;
-/** RTP receive statistics declaration */
+/** RTP receiver statistics */
 typedef struct rtp_rx_stat_t rtp_rx_stat_t;
 
+/** RTCP statistics used in Sender Report (SR) */
+typedef struct rtcp_sr_stat_t rtcp_sr_stat_t;
+/** RTCP statistics used in Receiver Report (RR) */
+typedef struct rtcp_rr_stat_t rtcp_rr_stat_t;
 
-/** RTP transmit statistics */
+
+/** RTP transmitter statistics */
 struct rtp_tx_stat_t {
 	/** number of RTP packets received */
 	apr_uint32_t    sent_packets;
@@ -40,7 +45,7 @@ struct rtp_tx_stat_t {
 	/* more to come */
 };
 
-/** RTP receive statistics */
+/** RTP receiver statistics */
 struct rtp_rx_stat_t {
 	/** number of valid RTP packets received */
 	apr_uint32_t           received_packets;
@@ -58,21 +63,54 @@ struct rtp_rx_stat_t {
 	/** number of restarts */
 	apr_byte_t             restarts;
 
-	/** network jitter (rfc3550) */
+	/** network jitter (RFC3550) */
 	apr_uint32_t           jitter;
 
 	/** source id of received RTP stream */
 	apr_uint32_t           ssrc;
 };
 
+/** RTCP statistics used in Sender Report (SR)  */
+struct rtcp_sr_stat {
+	/** sender source identifier */
+	apr_uint32_t ssrc;
+	/** NTP timestamp */
+	apr_uint64_t ntp_timestamp;
+	/** RTP timestamp */
+	apr_uint32_t rtp_ts;
+	/* packets sent */
+	apr_uint32_t sent_packets;
+	/* octets (bytes) sent */
+	apr_uint32_t sent_octets;
+};
 
-/** Reset RTP transmit statistics */
+/** RTCP statistics used in Receiver Report (RR) */
+struct rtcp_rr_stat_t {
+	/** data source being reported */
+	apr_uint32_t ssrc;
+	/** fraction lost since last SR/RR */
+	apr_uint32_t fraction:8;
+	/** cumulative number of packets lost (signed!) */
+	apr_int32_t  lost:24;
+	/** extended last sequence number received */
+	apr_uint32_t last_seq;
+	/** interarrival jitter */
+	apr_uint32_t jitter;
+	/** last SR packet from this source */
+	apr_uint32_t lsr;
+	/** delay since last SR packet */
+	apr_uint32_t dlsr;
+};
+
+
+
+/** Reset RTP transmitter statistics */
 static APR_INLINE void mpf_rtp_tx_stat_reset(rtp_tx_stat_t *tx_stat)
 {
 	memset(tx_stat,0,sizeof(rtp_tx_stat_t));
 }
 
-/** Reset RTP receive statistics */
+/** Reset RTP receiver statistics */
 static APR_INLINE void mpf_rtp_rx_stat_reset(rtp_rx_stat_t *rx_stat)
 {
 	memset(rx_stat,0,sizeof(rtp_rx_stat_t));

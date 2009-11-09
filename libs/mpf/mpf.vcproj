@@ -280,6 +280,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtpc_header.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_stream.h"
 				>
 			</File>
