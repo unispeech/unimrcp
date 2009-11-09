@@ -685,28 +685,20 @@ static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 
 
 static APR_INLINE void rtp_header_prepare(
-					rtp_transmitter_t *transmitter, 
+					rtp_transmitter_t *transmitter,
+					rtp_header_t *header,
 					apr_byte_t payload_type,
 					apr_byte_t marker,
 					apr_uint32_t timestamp)
 {
-	rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
-
-	RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
-		(apr_uint32_t)apr_time_usec(apr_time_now()),
-		transmitter->ssrc, payload_type, (marker == 1) ? '*' : ' ',
-		timestamp, transmitter->last_seq_num);
 	header->version = RTP_VERSION;
 	header->padding = 0;
 	header->extension = 0;
 	header->count = 0;
 	header->marker = marker;
 	header->type = payload_type;
-	header->sequence = htons(++transmitter->last_seq_num);
-	header->timestamp = htonl(timestamp);
+	header->timestamp = timestamp;
 	header->ssrc = htonl(transmitter->ssrc);
-
-	transmitter->packet_size = sizeof(rtp_header_t);
 }
 
 static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
@@ -719,6 +711,13 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 	transmitter->packet_size += frame->codec_frame.size;
 
 	if(++transmitter->current_frames == transmitter->packet_frames) {
+		rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
+		header->sequence = htons(++transmitter->last_seq_num);
+		RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
+			(apr_uint32_t)apr_time_usec(apr_time_now()),
+			transmitter->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
+			header->timestamp, transmitter->last_seq_num);
+		header->timestamp = htonl(header->timestamp);
 		if(apr_socket_sendto(
 					rtp_stream->socket,
 					rtp_stream->remote_sockaddr,
@@ -737,19 +736,36 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 
 static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
 {
-	mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t*) (transmitter->packet_data + transmitter->packet_size);
+	char packet_data[20];
+	apr_size_t packet_size = sizeof(rtp_header_t) + sizeof(mpf_named_event_frame_t);
+	rtp_header_t *header = (rtp_header_t*) packet_data;
+	mpf_named_event_frame_t *named_event = (mpf_named_event_frame_t*)(header+1);
+	rtp_header_prepare(
+		transmitter,
+		header,
+		rtp_stream->base->tx_event_descriptor->payload_type,
+		(frame->marker == MPF_MARKER_START_OF_EVENT) ? 1 : 0,
+		transmitter->timestamp_base);
+
 	*named_event = frame->event_frame;
 	named_event->edge = (frame->marker == MPF_MARKER_END_OF_EVENT) ? 1 : 0;
-	named_event->duration = htons((apr_uint16_t)named_event->duration);
 	
-	transmitter->packet_size += sizeof(frame->event_frame);
+	header->sequence = htons(++transmitter->last_seq_num);
+	RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u event=%2u dur=%3u %c\n",
+		(apr_uint32_t)apr_time_usec(apr_time_now()),
+		transmitter->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
+		header->timestamp, transmitter->last_seq_num,
+		named_event->event_id, named_event->duration,
+		(named_event->edge == 1) ? '*' : ' ');
 
+	header->timestamp = htonl(header->timestamp);
+	named_event->duration = htons((apr_uint16_t)named_event->duration);
 	if(apr_socket_sendto(
 				rtp_stream->socket,
 				rtp_stream->remote_sockaddr,
 				0,
-				transmitter->packet_data,
-				&transmitter->packet_size) != APR_SUCCESS) {
+				packet_data,
+				&packet_size) != APR_SUCCESS) {
 		return FALSE;
 	}
 	transmitter->stat.sent_packets++;
@@ -790,22 +806,20 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 				transmitter->timestamp_base = transmitter->timestamp;
 			}
 
-			rtp_header_prepare(
-				transmitter,
-				stream->tx_event_descriptor->payload_type,
-				(frame->marker == MPF_MARKER_START_OF_EVENT) ? 1 : 0,
-				transmitter->timestamp_base);
 			status = mpf_rtp_event_send(rtp_stream,transmitter,frame);
 		}
 	}
 
 	if((frame->type & MEDIA_FRAME_TYPE_AUDIO) == MEDIA_FRAME_TYPE_AUDIO){
 		if(transmitter->current_frames == 0) {
+			rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
 			rtp_header_prepare(
 					transmitter,
+					header,
 					stream->tx_descriptor->payload_type,
 					transmitter->inactivity,
 					transmitter->timestamp);
+			transmitter->packet_size = sizeof(rtp_header_t);
 			if(transmitter->inactivity) {
 				transmitter->inactivity = 0;
 			}
