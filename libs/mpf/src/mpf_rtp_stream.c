@@ -354,7 +354,7 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 			rtp_stream->remote_media->port,
 			receiver->stat.received_packets,
 			receiver->stat.lost_packets,
-			receiver->stat.jitter);
+			receiver->rr_stat.jitter);
 	return TRUE;
 }
 
@@ -368,7 +368,7 @@ static APR_INLINE void rtp_rx_overall_stat_reset(rtp_receiver_t *receiver)
 
 static APR_INLINE void rtp_rx_stat_init(rtp_receiver_t *receiver, rtp_header_t *header, apr_time_t *time)
 {
-	receiver->stat.ssrc = header->ssrc;
+	receiver->rr_stat.ssrc = header->ssrc;
 	receiver->history.seq_num_base = receiver->history.seq_num_max = (apr_uint16_t)header->sequence;
 	receiver->history.ts_last = header->timestamp;
 	receiver->history.time_last = *time;
@@ -420,7 +420,7 @@ typedef enum {
 
 static APR_INLINE rtp_ssrc_result_e rtp_rx_ssrc_update(rtp_receiver_t *receiver, apr_uint32_t ssrc)
 {
-	if(receiver->stat.ssrc == ssrc) {
+	if(receiver->rr_stat.ssrc == ssrc) {
 		/* known ssrc */
 		if(receiver->history.ssrc_probation) {
 			/* reset the probation for new ssrc */
@@ -432,7 +432,7 @@ static APR_INLINE rtp_ssrc_result_e rtp_rx_ssrc_update(rtp_receiver_t *receiver,
 		if(receiver->history.ssrc_new == ssrc) {
 			if(--receiver->history.ssrc_probation == 0) {
 				/* restart with new ssrc */
-				receiver->stat.ssrc = ssrc;
+				receiver->rr_stat.ssrc = ssrc;
 				return RTP_SSRC_RESTART;
 			}
 			else {
@@ -479,8 +479,8 @@ static APR_INLINE rtp_seq_result_e rtp_rx_seq_update(rtp_receiver_t *receiver, a
 	if(receiver->stat.received_packets - receiver->periodic_history.received_prior >= 50) {
 		receiver->periodic_history.received_prior = receiver->stat.received_packets;
 		receiver->periodic_history.discarded_prior = receiver->stat.discarded_packets;
-		receiver->periodic_history.jitter_min = receiver->stat.jitter;
-		receiver->periodic_history.jitter_max = receiver->stat.jitter;
+		receiver->periodic_history.jitter_min = receiver->rr_stat.jitter;
+		receiver->periodic_history.jitter_max = receiver->rr_stat.jitter;
 	}
 	return result;
 }
@@ -508,16 +508,16 @@ static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf
 		return RTP_TS_DRIFT;
 	}
 
-	receiver->stat.jitter += deviation - ((receiver->stat.jitter + 8) >> 4);
-	RTP_TRACE("jitter=%d deviation=%d\n",receiver->stat.jitter,deviation);
+	receiver->rr_stat.jitter += deviation - ((receiver->rr_stat.jitter + 8) >> 4);
+	RTP_TRACE("jitter=%d deviation=%d\n",receiver->rr_stat.jitter,deviation);
 	receiver->history.time_last = *time;
 	receiver->history.ts_last = ts;
 
-	if(receiver->stat.jitter < receiver->periodic_history.jitter_min) {
-		receiver->periodic_history.jitter_min = receiver->stat.jitter;
+	if(receiver->rr_stat.jitter < receiver->periodic_history.jitter_min) {
+		receiver->periodic_history.jitter_min = receiver->rr_stat.jitter;
 	}
-	if(receiver->stat.jitter > receiver->periodic_history.jitter_max) {
-		receiver->periodic_history.jitter_max = receiver->stat.jitter;
+	if(receiver->rr_stat.jitter > receiver->periodic_history.jitter_max) {
+		receiver->periodic_history.jitter_max = receiver->rr_stat.jitter;
 	}
 	return RTP_TS_UPDATE;
 }

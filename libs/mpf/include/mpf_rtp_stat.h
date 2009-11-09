@@ -38,26 +38,20 @@ typedef struct rtcp_rr_stat_t rtcp_rr_stat_t;
 /** RTP receiver statistics */
 struct rtp_rx_stat_t {
 	/** number of valid RTP packets received */
-	apr_uint32_t           received_packets;
+	apr_uint32_t received_packets;
 	/** number of invalid RTP packets received */
-	apr_uint32_t           invalid_packets;
+	apr_uint32_t invalid_packets;
 
 	/** number of discarded in jitter buffer packets */
-	apr_uint32_t           discarded_packets;
+	apr_uint32_t discarded_packets;
 	/** number of ignored packets */
-	apr_uint32_t           ignored_packets;
+	apr_uint32_t ignored_packets;
 
 	/** number of lost in network packets */
-	apr_uint32_t           lost_packets;
+	apr_uint32_t lost_packets;
 
 	/** number of restarts */
-	apr_byte_t             restarts;
-
-	/** network jitter (RFC3550) */
-	apr_uint32_t           jitter;
-
-	/** source id of received RTP stream */
-	apr_uint32_t           ssrc;
+	apr_byte_t   restarts;
 };
 
 /** RTCP statistics used in Sender Report (SR)  */
@@ -76,7 +70,7 @@ struct rtcp_sr_stat_t {
 
 /** RTCP statistics used in Receiver Report (RR) */
 struct rtcp_rr_stat_t {
-	/** data source being reported */
+	/** source identifier of RTP stream being received */
 	apr_uint32_t ssrc;
 	/** fraction lost since last SR/RR */
 	apr_uint32_t fraction:8;
@@ -84,7 +78,7 @@ struct rtcp_rr_stat_t {
 	apr_int32_t  lost:24;
 	/** extended last sequence number received */
 	apr_uint32_t last_seq;
-	/** interarrival jitter */
+	/** interarrival jitter (RFC35550) */
 	apr_uint32_t jitter;
 	/** last SR packet from this source */
 	apr_uint32_t lsr;
@@ -98,6 +92,12 @@ struct rtcp_rr_stat_t {
 static APR_INLINE void mpf_rtcp_sr_stat_reset(rtcp_sr_stat_t *sr_stat)
 {
 	memset(sr_stat,0,sizeof(rtcp_sr_stat_t));
+}
+
+/** Reset RTCP RR statistics */
+static APR_INLINE void mpf_rtcp_rr_stat_reset(rtcp_rr_stat_t *rr_stat)
+{
+	memset(rr_stat,0,sizeof(rtcp_rr_stat_t));
 }
 
 /** Reset RTP receiver statistics */
