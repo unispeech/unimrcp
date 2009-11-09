@@ -26,8 +26,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** RTP transmitter statistics */
-typedef struct rtp_tx_stat_t rtp_tx_stat_t;
 /** RTP receiver statistics */
 typedef struct rtp_rx_stat_t rtp_rx_stat_t;
 
@@ -36,14 +34,6 @@ typedef struct rtcp_sr_stat_t rtcp_sr_stat_t;
 /** RTCP statistics used in Receiver Report (RR) */
 typedef struct rtcp_rr_stat_t rtcp_rr_stat_t;
 
-
-/** RTP transmitter statistics */
-struct rtp_tx_stat_t {
-	/** number of RTP packets received */
-	apr_uint32_t    sent_packets;
-
-	/* more to come */
-};
 
 /** RTP receiver statistics */
 struct rtp_rx_stat_t {
@@ -71,7 +61,7 @@ struct rtp_rx_stat_t {
 };
 
 /** RTCP statistics used in Sender Report (SR)  */
-struct rtcp_sr_stat {
+struct rtcp_sr_stat_t {
 	/** sender source identifier */
 	apr_uint32_t ssrc;
 	/** NTP timestamp */
@@ -104,10 +94,10 @@ struct rtcp_rr_stat_t {
 
 
 
-/** Reset RTP transmitter statistics */
-static APR_INLINE void mpf_rtp_tx_stat_reset(rtp_tx_stat_t *tx_stat)
+/** Reset RTCP SR statistics */
+static APR_INLINE void mpf_rtcp_sr_stat_reset(rtcp_sr_stat_t *sr_stat)
 {
-	memset(tx_stat,0,sizeof(rtp_tx_stat_t));
+	memset(sr_stat,0,sizeof(rtcp_sr_stat_t));
 }
 
 /** Reset RTP receiver statistics */

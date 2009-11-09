@@ -112,8 +112,6 @@ struct rtp_receiver_t {
 
 /** RTP transmitter */
 struct rtp_transmitter_t {
-	/** RTP stream ssrc */
-	apr_uint32_t    ssrc;
 	/** Packetization time in msec */
 	apr_uint16_t    ptime;
 
@@ -138,8 +136,8 @@ struct rtp_transmitter_t {
 	/** RTP packet payload size */
 	apr_size_t      packet_size;
 
-	/** RTP transmit statistics to report */
-	rtp_tx_stat_t   stat;
+	/** RTCP statistics used in SR */
+	rtcp_sr_stat_t  sr_stat;
 };
 
 
@@ -156,7 +154,6 @@ static APR_INLINE void rtp_receiver_init(rtp_receiver_t *receiver)
 /** Initialize RTP transmitter */
 static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 {
-	transmitter->ssrc = 0;
 	transmitter->ptime = 0;
 
 	transmitter->packet_frames = 0;
@@ -171,7 +168,7 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 	transmitter->packet_data = NULL;
 	transmitter->packet_size = 0;
 
-	mpf_rtp_tx_stat_reset(&transmitter->stat);
+	mpf_rtcp_sr_stat_reset(&transmitter->sr_stat);
 }
 
 APT_END_EXTERN_C

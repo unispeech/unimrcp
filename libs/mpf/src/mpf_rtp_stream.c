@@ -89,7 +89,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	rtp_stream->base->termination = termination;
 	rtp_receiver_init(&rtp_stream->receiver);
 	rtp_transmitter_init(&rtp_stream->transmitter);
-	rtp_stream->transmitter.ssrc = (apr_uint32_t)apr_time_now();
+	rtp_stream->transmitter.sr_stat.ssrc = (apr_uint32_t)apr_time_now();
 
 	return rtp_stream->base;
 }
@@ -674,12 +674,13 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmitter %s:%hu -> %s:%hu [s:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmitter %s:%hu -> %s:%hu [s:%lu o:%lu]",
 			rtp_stream->local_media->ip.buf,
 			rtp_stream->local_media->port,
 			rtp_stream->remote_media->ip.buf,
 			rtp_stream->remote_media->port,
-			rtp_stream->transmitter.stat.sent_packets);
+			rtp_stream->transmitter.sr_stat.sent_packets,
+			rtp_stream->transmitter.sr_stat.sent_octets);
 	return TRUE;
 }
 
@@ -698,7 +699,7 @@ static APR_INLINE void rtp_header_prepare(
 	header->marker = marker;
 	header->type = payload_type;
 	header->timestamp = timestamp;
-	header->ssrc = htonl(transmitter->ssrc);
+	header->ssrc = htonl(transmitter->sr_stat.ssrc);
 }
 
 static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
@@ -715,7 +716,8 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 		header->sequence = htons(++transmitter->last_seq_num);
 		RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
 			(apr_uint32_t)apr_time_usec(apr_time_now()),
-			transmitter->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
+			transmitter->sr_stat.ssrc, header->type, 
+			(header->marker == 1) ? '*' : ' ',
 			header->timestamp, transmitter->last_seq_num);
 		header->timestamp = htonl(header->timestamp);
 		if(apr_socket_sendto(
@@ -724,7 +726,8 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 					0,
 					transmitter->packet_data,
 					&transmitter->packet_size) == APR_SUCCESS) {
-			transmitter->stat.sent_packets++;
+			transmitter->sr_stat.sent_packets++;
+			transmitter->sr_stat.sent_octets += transmitter->packet_size - sizeof(rtp_header_t);
 		}
 		else {
 			status = FALSE;
@@ -753,7 +756,8 @@ static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rt
 	header->sequence = htons(++transmitter->last_seq_num);
 	RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u event=%2u dur=%3u %c\n",
 		(apr_uint32_t)apr_time_usec(apr_time_now()),
-		transmitter->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
+		transmitter->sr_stat.ssrc, 
+		header->type, (header->marker == 1) ? '*' : ' ',
 		header->timestamp, transmitter->last_seq_num,
 		named_event->event_id, named_event->duration,
 		(named_event->edge == 1) ? '*' : ' ');
@@ -768,7 +772,8 @@ static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rt
 				&packet_size) != APR_SUCCESS) {
 		return FALSE;
 	}
-	transmitter->stat.sent_packets++;
+	transmitter->sr_stat.sent_packets++;
+	transmitter->sr_stat.sent_octets += sizeof(mpf_named_event_frame_t);
 	return TRUE;
 }
 
