@@ -248,6 +248,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_rtcp_header.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_rtp_attribs.h"
 				>
 			</File>
@@ -277,10 +281,6 @@
 			</File>
 			<File
 				RelativePath=".\include\mpf_rtp_termination_factory.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\mpf_rtpc_header.h"
 				>
 			</File>
 			<File
