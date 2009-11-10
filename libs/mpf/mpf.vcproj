@@ -248,7 +248,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mpf_rtcp_header.h"
+				RelativePath=".\include\mpf_rtcp_packet.h"
 				>
 			</File>
 			<File

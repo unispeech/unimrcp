@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef __MPF_RTCP_HEADER_H__
-#define __MPF_RTCP_HEADER_H__
+#ifndef __MPF_RTCP_PACKET_H__
+#define __MPF_RTCP_PACKET_H__
 
 /**
- * @file mpf_rtcp_header.h
- * @brief RTCP Header Definition
+ * @file mpf_rtcp_packet.h
+ * @brief RTCP Packet Definition
  */ 
 
-#include "mpf.h"
+#include "mpf_rtcp_header.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -48,6 +48,11 @@ typedef enum {
 
 /** RTCP header declaration */
 typedef struct rtcp_header_t rtcp_header_t;
+/** RTCP packet declaration */
+typedef struct rtcp_packet_t rtcp_packet_t;
+/** SDES item declaration*/
+typedef struct rtcp_sdes_item_t rtcp_sdes_item_t;
+
 
 /** RTCP header */
 struct rtcp_header_t {
@@ -75,6 +80,54 @@ struct rtcp_header_t {
 	apr_uint32_t length: 16;
 };
 
+/** SDES item */
+struct rtcp_sdes_item_t {
+	/** type of item (rtcp_sdes_type_t) */
+	apr_uint8 type;
+	/* length of item (in octets) */
+	apr_uint8 length;
+	/* text, not null-terminated */
+	char data[1];
+};
+
+/** RTCP packet */
+struct mpf_rtcp_packet {
+	/** common header */
+	rtcp_header_t header;
+	union {
+		/** sender report (SR) */
+		struct {
+			/** sr stat */
+			rtcp_sr_stat_t sr_stat;
+			/** variable-length list rr stats */
+			rtcp_rr_stat_t rr_stat[1]; 
+		} sr;
+
+		/** reception report (RR) */
+		struct {
+			/** receiver generating this report */
+			apr_uint32_t   ssrc;
+			/** variable-length list rr stats */
+			rtcp_rr_stat_t rr[1];  
+		} rr;
+
+		/** source description (SDES) */
+		struct {
+			/** first SSRC/CSRC */
+			apr_uint32_t     src;
+			/** list of SDES items */
+			rtcp_sdes_item_t item[1];
+		} sdes;
+
+		/** BYE */
+		struct {
+			/** list of sources */
+			apr_uint32_t src[1];
+			/* can't express trailing text for reason */
+		} bye;
+	} r;
+};
+
 APT_END_EXTERN_C
 
-#endif /*__MPF_RTCP_HEADER_H__*/
+#endif /*__MPF_RTCP_PACKET_H__*/
