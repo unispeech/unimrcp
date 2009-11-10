@@ -113,8 +113,12 @@ struct mpf_rtp_config_t {
 	apr_uint16_t ptime;
 	/** Codec list */
 	mpf_codec_list_t codec_list;
-	/** Preference in offer/anser: 1 - own(local) preference, 0 - remote preference */
+	/** Preference in offer/anwser: 1 - own(local) preference, 0 - remote preference */
 	apt_bool_t own_preferrence;
+	/** Enabled RTCP */
+	apt_bool_t rtcp;
+	/** RTCP transmission interval */
+	apr_uint16_t rtcp_tx_interval;
 	/** Jitter buffer config */
 	mpf_jb_config_t jb_config;
 };
@@ -169,6 +173,8 @@ static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 	rtp_config->ptime = 0;
 	mpf_codec_list_init(&rtp_config->codec_list,0,pool);
 	rtp_config->own_preferrence = FALSE;
+	rtp_config->rtcp = FALSE;
+	rtp_config->rtcp_tx_interval = 0;
 	mpf_jb_config_init(&rtp_config->jb_config);
 	return rtp_config;
 }
