@@ -52,7 +52,7 @@ typedef struct rtp_transmitter_t rtp_transmitter_t;
 
 /** History of RTP receiver */
 struct rtp_rx_history_t {
-	/** Updated on every seq num wrap around*/
+	/** Updated on every seq num wrap around */
 	apr_uint32_t seq_cycles;
 
 	/** First seq num received */

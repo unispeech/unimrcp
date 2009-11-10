@@ -19,7 +19,7 @@
 
 /**
  * @file mpf_rtp_stat.h
- * @brief RTP Statistics
+ * @brief RTP/RTCP Statistics
  */ 
 
 #include "mpf.h"
@@ -78,7 +78,7 @@ struct rtcp_rr_stat_t {
 	apr_int32_t  lost:24;
 	/** extended last sequence number received */
 	apr_uint32_t last_seq;
-	/** interarrival jitter (RFC35550) */
+	/** interarrival jitter (RFC3550) */
 	apr_uint32_t jitter;
 	/** last SR packet from this source */
 	apr_uint32_t lsr;
