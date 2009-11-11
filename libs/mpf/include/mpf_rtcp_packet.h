@@ -22,7 +22,7 @@
  * @brief RTCP Packet Definition
  */ 
 
-#include "mpf_rtcp_header.h"
+#include "mpf.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -83,11 +83,11 @@ struct rtcp_header_t {
 /** SDES item */
 struct rtcp_sdes_item_t {
 	/** type of item (rtcp_sdes_type_t) */
-	apr_uint8 type;
+	apr_byte_t type;
 	/* length of item (in octets) */
-	apr_uint8 length;
+	apr_byte_t length;
 	/* text, not null-terminated */
-	char data[1];
+	char       data[1];
 };
 
 /** RTCP packet */

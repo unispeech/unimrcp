@@ -23,7 +23,7 @@
  */ 
 
 #include "mpf_rtp_defs.h"
-#include "mpf_rtcp_header.h"
+#include "mpf_rtcp_packet.h"
 
 APT_BEGIN_EXTERN_C
 
