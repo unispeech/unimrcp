@@ -43,9 +43,10 @@ struct mpf_rtp_stream_t {
 
 	mpf_rtp_config_t           *config;
 
-	apr_socket_t               *socket;
-	apr_sockaddr_t             *local_sockaddr;
-	apr_sockaddr_t             *remote_sockaddr;
+	apr_socket_t               *rtp_socket;
+	apr_socket_t               *rtcp_socket;
+	apr_sockaddr_t             *rtp_remote_sockaddr;
+	apr_sockaddr_t             *rtcp_remote_sockaddr;
 	
 	apr_pool_t                 *pool;
 };
@@ -68,7 +69,8 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_rtp_stream_transmit
 };
 
-static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media);
+static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media);
+static void mpf_rtp_socket_pair_close(mpf_rtp_stream_t *stream);
 
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, apr_pool_t *pool)
@@ -79,9 +81,10 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	rtp_stream->config = config;
 	rtp_stream->local_media = NULL;
 	rtp_stream->remote_media = NULL;
-	rtp_stream->socket = NULL;
-	rtp_stream->local_sockaddr = NULL;
-	rtp_stream->remote_sockaddr = NULL;
+	rtp_stream->rtp_socket = NULL;
+	rtp_stream->rtcp_socket = NULL;
+	rtp_stream->rtp_remote_sockaddr = NULL;
+	rtp_stream->rtcp_remote_sockaddr = NULL;
 
 	capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_DUPLEX,pool);
 	rtp_stream->base = mpf_audio_stream_create(rtp_stream,&vtable,capabilities,pool);
@@ -122,7 +125,7 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 			if(rtp_stream->config->rtp_port_cur == rtp_stream->config->rtp_port_max) {
 				rtp_stream->config->rtp_port_cur = rtp_stream->config->rtp_port_min;
 			}
-			if(mpf_rtp_socket_create(rtp_stream,local_media) == TRUE) {
+			if(mpf_rtp_socket_pair_create(rtp_stream,local_media) == TRUE) {
 				is_port_ok = TRUE;
 			}
 		} while((is_port_ok == FALSE) && (first_port_in_search != rtp_stream->config->rtp_port_cur));
@@ -131,7 +134,7 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 			status = FALSE;
 		}
 	}
-	else if(mpf_rtp_socket_create(rtp_stream,local_media) == FALSE) {
+	else if(mpf_rtp_socket_pair_create(rtp_stream,local_media) == FALSE) {
 		local_media->state = MPF_MEDIA_DISABLED;
 		status = FALSE;
 	}
@@ -168,7 +171,7 @@ static apt_bool_t mpf_rtp_stream_local_media_update(mpf_rtp_stream_t *rtp_stream
 	if(apt_string_compare(&rtp_stream->local_media->ip,&media->ip) == FALSE ||
 		rtp_stream->local_media->port != media->port) {
 
-		if(mpf_rtp_socket_create(rtp_stream,media) == FALSE) {
+		if(mpf_rtp_socket_pair_create(rtp_stream,media) == FALSE) {
 			media->state = MPF_MEDIA_DISABLED;
 			status = FALSE;
 		}
@@ -194,17 +197,28 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 		apt_string_compare(&rtp_stream->remote_media->ip,&media->ip) == FALSE ||
 		rtp_stream->remote_media->port != media->port) {
 
-		rtp_stream->remote_sockaddr = NULL;
+		/* update RTP port */
+		rtp_stream->rtp_remote_sockaddr = NULL;
 		apr_sockaddr_info_get(
-			&rtp_stream->remote_sockaddr,
+			&rtp_stream->rtp_remote_sockaddr,
 			media->ip.buf,
 			APR_INET,
 			media->port,
 			0,
 			rtp_stream->pool);
-		if(!rtp_stream->remote_sockaddr) {
+		if(!rtp_stream->rtp_remote_sockaddr) {
 			status = FALSE;
 		}
+
+		/* update RTCP port */
+		rtp_stream->rtcp_remote_sockaddr = NULL;
+		apr_sockaddr_info_get(
+			&rtp_stream->rtcp_remote_sockaddr,
+			media->ip.buf,
+			APR_INET,
+			media->port+1,
+			0,
+			rtp_stream->pool);
 	}
 
 	rtp_stream->remote_media = media;
@@ -302,11 +316,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 static apt_bool_t mpf_rtp_stream_destroy(mpf_audio_stream_t *stream)
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	if(rtp_stream->socket) {
-		apr_socket_close(rtp_stream->socket);
-		rtp_stream->socket = NULL;
-	}
-	
+	mpf_rtp_socket_pair_close(rtp_stream);
 	return TRUE;
 }
 
@@ -314,7 +324,7 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
 	rtp_receiver_t *receiver = &rtp_stream->receiver;
-	if(!rtp_stream->socket || !rtp_stream->local_media) {
+	if(!rtp_stream->rtp_socket || !rtp_stream->local_media) {
 		return FALSE;
 	}
 
@@ -613,7 +623,7 @@ static apt_bool_t rtp_rx_process(mpf_rtp_stream_t *rtp_stream)
 	char buffer[1500];
 	apr_size_t size = sizeof(buffer);
 	apr_size_t max_count = 5;
-	while(max_count && apr_socket_recvfrom(rtp_stream->remote_sockaddr,rtp_stream->socket,0,buffer,&size) == APR_SUCCESS) {
+	while(max_count && apr_socket_recvfrom(rtp_stream->rtp_remote_sockaddr,rtp_stream->rtp_socket,0,buffer,&size) == APR_SUCCESS) {
 		rtp_rx_packet_receive(rtp_stream,buffer,size);
 
 		size = sizeof(buffer);
@@ -636,7 +646,7 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 	apr_size_t frame_size;
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
 	rtp_transmitter_t *transmitter = &rtp_stream->transmitter;
-	if(!rtp_stream->socket || !rtp_stream->remote_media) {
+	if(!rtp_stream->rtp_socket || !rtp_stream->remote_media) {
 		return FALSE;
 	}
 
@@ -721,8 +731,8 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 			header->timestamp, transmitter->last_seq_num);
 		header->timestamp = htonl(header->timestamp);
 		if(apr_socket_sendto(
-					rtp_stream->socket,
-					rtp_stream->remote_sockaddr,
+					rtp_stream->rtp_socket,
+					rtp_stream->rtp_remote_sockaddr,
 					0,
 					transmitter->packet_data,
 					&transmitter->packet_size) == APR_SUCCESS) {
@@ -765,8 +775,8 @@ static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rt
 	header->timestamp = htonl(header->timestamp);
 	named_event->duration = htons((apr_uint16_t)named_event->duration);
 	if(apr_socket_sendto(
-				rtp_stream->socket,
-				rtp_stream->remote_sockaddr,
+				rtp_stream->rtp_socket,
+				rtp_stream->rtp_remote_sockaddr,
 				0,
 				packet_data,
 				&packet_size) != APR_SUCCESS) {
@@ -835,45 +845,62 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 	return status;
 }
 
-static apt_bool_t mpf_rtp_socket_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media)
+static apr_socket_t* mpf_socket_create(const char *ip, apr_port_t port, apr_pool_t *pool)
 {
-	if(stream->socket) {
-		apr_socket_close(stream->socket);
-		stream->socket = NULL;
-	}
+	apr_sockaddr_t *local_sockaddr = NULL;
+	apr_socket_t *socket = NULL;
 	
-	stream->local_sockaddr = NULL;
 	apr_sockaddr_info_get(
-		&stream->local_sockaddr,
-		local_media->ip.buf,
+		&local_sockaddr,
+		ip,
 		APR_INET,
-		local_media->port,
+		port,
 		0,
-		stream->pool);
-	if(!stream->local_sockaddr) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Get Sockaddr %s:%hu",
-				local_media->ip.buf,
-				local_media->port);
-		return FALSE;
+		pool);
+	if(!local_sockaddr) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Sockaddr %s:%hu",ip,port);
+		return NULL;
 	}
-	if(apr_socket_create(&stream->socket,stream->local_sockaddr->family,SOCK_DGRAM,0,stream->pool) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Create Socket %s:%hu",
-				local_media->ip.buf,
-				local_media->port);
-		return FALSE;
+	if(apr_socket_create(&socket,local_sockaddr->family,SOCK_DGRAM,0,pool) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Socket %s:%hu", ip,port);
+		return NULL;
 	}
 	
-	apr_socket_opt_set(stream->socket,APR_SO_NONBLOCK,1);
-	apr_socket_timeout_set(stream->socket,0);
-	apr_socket_opt_set(stream->socket,APR_SO_REUSEADDR,1);
+	apr_socket_opt_set(socket,APR_SO_NONBLOCK,1);
+	apr_socket_timeout_set(socket,0);
+	apr_socket_opt_set(socket,APR_SO_REUSEADDR,1);
 
-	if(apr_socket_bind(stream->socket,stream->local_sockaddr) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Failed to Bind Socket to %s:%hu",
-				local_media->ip.buf,
-				local_media->port);
-		apr_socket_close(stream->socket);
-		stream->socket = NULL;
+	if(apr_socket_bind(socket,local_sockaddr) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Bind Socket to %s:%hu", ip,port);
+		apr_socket_close(socket);
+		return NULL;
+	}
+	return socket;
+}
+
+static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media)
+{
+	stream->rtp_socket = mpf_socket_create(local_media->ip.buf,local_media->port,stream->pool);
+	if(!stream->rtp_socket) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RTP Socket");
 		return FALSE;
+	}
+
+	stream->rtcp_socket = mpf_socket_create(local_media->ip.buf,local_media->port+1,stream->pool);
+	if(!stream->rtcp_socket) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RTCP Socket");
 	}
 	return TRUE;
+}
+
+static void mpf_rtp_socket_pair_close(mpf_rtp_stream_t *stream)
+{
+	if(stream->rtp_socket) {
+		apr_socket_close(stream->rtp_socket);
+		stream->rtp_socket = NULL;
+	}
+	if(stream->rtcp_socket) {
+		apr_socket_close(stream->rtcp_socket);
+		stream->rtcp_socket = NULL;
+	}
 }
