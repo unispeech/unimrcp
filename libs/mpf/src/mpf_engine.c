@@ -316,10 +316,10 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				termination->event_handler_obj = engine;
 				termination->event_handler = mpf_engine_event_raise;
 				termination->codec_manager = engine->codec_manager;
-				if(mpf_request->descriptor) {
-					mpf_termination_modify(termination,mpf_request->descriptor);
-				}
+
+				mpf_termination_add(termination,mpf_request->descriptor);
 				if(mpf_context_termination_add(context,termination) == FALSE) {
+					mpf_termination_subtract(termination);
 					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
 					break;
 				}
@@ -327,9 +327,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 			}
 			case MPF_MODIFY_TERMINATION:
 			{
-				if(mpf_request->descriptor) {
-					mpf_termination_modify(termination,mpf_request->descriptor);
-				}
+				mpf_termination_modify(termination,mpf_request->descriptor);
 				break;
 			}
 			case MPF_SUBTRACT_TERMINATION:
@@ -338,6 +336,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 					mpf_response->status_code = MPF_STATUS_CODE_FAILURE;
 					break;
 				}
+				mpf_termination_subtract(termination);
 				break;
 			}
 			case MPF_ADD_ASSOCIATION:

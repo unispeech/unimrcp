@@ -36,8 +36,13 @@ typedef struct mpf_termination_vtable_t mpf_termination_vtable_t;
 struct mpf_termination_vtable_t {
 	/** Virtual termination destroy method */
 	apt_bool_t (*destroy)(mpf_termination_t *termination);
+
+	/** Virtual termination add method */
+	apt_bool_t (*add)(mpf_termination_t *termination, void *descriptor);
 	/** Virtual termination modify method */
 	apt_bool_t (*modify)(mpf_termination_t *termination, void *descriptor);
+	/** Virtual termination subtract method */
+	apt_bool_t (*subtract)(mpf_termination_t *termination);
 };
 
 
@@ -84,11 +89,24 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 										apr_pool_t *pool);
 
 /**
+ * Add MPF termination.
+ * @param termination the termination to add
+ * @param descriptor the termination specific descriptor
+ */
+MPF_DECLARE(apt_bool_t) mpf_termination_add(mpf_termination_t *termination, void *descriptor);
+
+/**
  * Modify MPF termination.
  * @param termination the termination to modify
  * @param descriptor the termination specific descriptor
  */
 MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, void *descriptor);
+
+/**
+ * Subtract MPF termination.
+ * @param termination the termination to subtract
+ */
+MPF_DECLARE(apt_bool_t) mpf_termination_subtract(mpf_termination_t *termination);
 
 
 APT_END_EXTERN_C

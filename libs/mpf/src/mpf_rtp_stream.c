@@ -263,6 +263,18 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 	return TRUE;
 }
 
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_add(mpf_audio_stream_t *stream)
+{
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_subtract(mpf_audio_stream_t *stream)
+{
+	mpf_rtp_stream_t *rtp_stream = stream->obj;
+	mpf_rtp_socket_pair_close(rtp_stream);
+	return TRUE;
+}
+
 MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rtp_stream_descriptor_t *descriptor)
 {
 	apt_bool_t status = TRUE;
@@ -313,10 +325,9 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 	return status;
 }
 
+
 static apt_bool_t mpf_rtp_stream_destroy(mpf_audio_stream_t *stream)
 {
-	mpf_rtp_stream_t *rtp_stream = stream->obj;
-	mpf_rtp_socket_pair_close(rtp_stream);
 	return TRUE;
 }
 

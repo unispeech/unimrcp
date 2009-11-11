@@ -46,10 +46,26 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 	return termination;
 }
 
+MPF_DECLARE(apt_bool_t) mpf_termination_add(mpf_termination_t *termination, void *descriptor)
+{
+	if(termination->vtable && termination->vtable->add) {
+		termination->vtable->add(termination,descriptor);
+	}
+	return TRUE;
+}
+
 MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, void *descriptor)
 {
 	if(termination->vtable && termination->vtable->modify) {
 		termination->vtable->modify(termination,descriptor);
+	}
+	return TRUE;
+}
+
+MPF_DECLARE(apt_bool_t) mpf_termination_subtract(mpf_termination_t *termination)
+{
+	if(termination->vtable && termination->vtable->subtract) {
+		termination->vtable->subtract(termination);
 	}
 	return TRUE;
 }
