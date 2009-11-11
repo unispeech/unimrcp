@@ -24,7 +24,7 @@
 
 #include <apr_tables.h>
 #include "mrcp_state_machine.h"
-#include "mpf_termination.h"
+#include "mpf_types.h"
 #include "apt_string.h"
 
 APT_BEGIN_EXTERN_C

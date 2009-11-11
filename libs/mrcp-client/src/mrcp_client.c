@@ -23,7 +23,7 @@
 #include "mrcp_client_connection.h"
 #include "mrcp_message.h"
 #include "mpf_engine.h"
-#include "mpf_termination.h"
+#include "mpf_termination_factory.h"
 #include "mpf_codec_manager.h"
 #include "apt_pool.h"
 #include "apt_consumer_task.h"
@@ -638,7 +638,7 @@ MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_g
 	if(!channel || !channel->termination) {
 		return NULL;
 	}
-	audio_stream = channel->termination->audio_stream;
+	audio_stream = mpf_termination_audio_stream_get(channel->termination);
 	if(!audio_stream) {
 		return NULL;
 	}
@@ -652,7 +652,7 @@ MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get
 	if(!channel || !channel->termination) {
 		return NULL;
 	}
-	audio_stream = channel->termination->audio_stream;
+	audio_stream = mpf_termination_audio_stream_get(channel->termination);
 	if(!audio_stream) {
 		return NULL;
 	}

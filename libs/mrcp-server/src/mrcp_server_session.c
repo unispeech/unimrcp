@@ -25,7 +25,7 @@
 #include "mrcp_control_descriptor.h"
 #include "mrcp_state_machine.h"
 #include "mrcp_message.h"
-#include "mpf_termination.h"
+#include "mpf_termination_factory.h"
 #include "mpf_stream.h"
 #include "apt_consumer_task.h"
 #include "apt_log.h"
@@ -758,7 +758,7 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 
 			audio_stream = NULL;
 			if(channel->engine_channel && channel->engine_channel->termination) {
-				audio_stream = channel->engine_channel->termination->audio_stream;
+				audio_stream = mpf_termination_audio_stream_get(channel->engine_channel->termination);
 			}
 			if(!audio_stream) continue;
 

@@ -46,45 +46,10 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 	return termination;
 }
 
-MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination)
-{
-	if(termination->vtable && termination->vtable->destroy) {
-		termination->vtable->destroy(termination);
-	}
-	return TRUE;
-}
-
-MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination)
-{
-	return termination->obj;
-}
-
 MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, void *descriptor)
 {
 	if(termination->vtable && termination->vtable->modify) {
 		termination->vtable->modify(termination,descriptor);
 	}
 	return TRUE;
-}
-
-/** Create MPF termination from termination factory */
-MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
-										mpf_termination_factory_t *termination_factory,
-										void *obj,
-										apr_pool_t *pool)
-{
-	if(termination_factory && termination_factory->create_termination) {
-		return termination_factory->create_termination(termination_factory,obj,pool);
-	}
-	return NULL;
-}
-
-/** Create raw MPF termination. */
-MPF_DECLARE(mpf_termination_t*) mpf_raw_termination_create(
-										void *obj,
-										mpf_audio_stream_t *audio_stream,
-										mpf_video_stream_t *video_stream,
-										apr_pool_t *pool)
-{
-	return mpf_termination_base_create(NULL,obj,NULL,audio_stream,video_stream,pool);
 }

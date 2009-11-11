@@ -15,6 +15,7 @@
  */
 
 #include "mrcp_engine_impl.h"
+#include "mpf_termination_factory.h"
 
 /** Create engine */
 mrcp_engine_t* mrcp_engine_create(
@@ -206,8 +207,11 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 /** Get codec descriptor of the audio source stream */
 const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel)
 {
-	if(channel && channel->termination && channel->termination->audio_stream) {
-		return channel->termination->audio_stream->rx_descriptor;
+	if(channel && channel->termination) {
+		mpf_audio_stream_t *audio_stream = mpf_termination_audio_stream_get(channel->termination);
+		if(audio_stream) {
+			return audio_stream->rx_descriptor;
+		}
 	}
 	return NULL;
 }
@@ -215,8 +219,11 @@ const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_ch
 /** Get codec descriptor of the audio sink stream */
 const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel)
 {
-	if(channel && channel->termination && channel->termination->audio_stream) {
-		return channel->termination->audio_stream->tx_descriptor;
+	if(channel && channel->termination) {
+		mpf_audio_stream_t *audio_stream = mpf_termination_audio_stream_get(channel->termination);
+		if(audio_stream) {
+			return audio_stream->tx_descriptor;
+		}
 	}
 	return NULL;
 }

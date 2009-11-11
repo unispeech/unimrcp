@@ -300,6 +300,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_termination_factory.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_timer.h"
 				>
 			</File>
@@ -418,6 +422,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_termination.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_termination_factory.c"
 				>
 			</File>
 			<File

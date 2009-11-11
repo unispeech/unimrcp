@@ -66,15 +66,6 @@ struct mpf_termination_t {
 	mpf_video_stream_t             *video_stream;
 };
 
-/** MPF termination factory */
-struct mpf_termination_factory_t {
-	/** Virtual create */
-	mpf_termination_t* (*create_termination)(mpf_termination_factory_t *factory, void *obj, apr_pool_t *pool);
-
-	/* more to add */
-};
-
-
 /**
  * Create MPF termination base.
  * @param termination_factory the termination factory
@@ -99,42 +90,6 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
  */
 MPF_DECLARE(apt_bool_t) mpf_termination_modify(mpf_termination_t *termination, void *descriptor);
 
-/**
- * Destroy MPF termination.
- * @param termination the termination to destroy
- */
-MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination);
-
-/**
- * Get associated object.
- * @param termination the termination to get object from
- */
-MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination);
-
-
-/**
- * Create MPF termination from termination factory.
- * @param termination_factory the termination factory to create termination from
- * @param obj the external object associated with termination
- * @param pool the pool to allocate memory from
- */
-MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
-										mpf_termination_factory_t *termination_factory,
-										void *obj,
-										apr_pool_t *pool);
-
-/**
- * Create raw MPF termination.
- * @param obj the external object associated with termination
- * @param audio_stream the audio stream of the termination
- * @param video_stream the video stream of the termination
- * @param pool the pool to allocate memory from
- */
-MPF_DECLARE(mpf_termination_t*) mpf_raw_termination_create(
-										void *obj,
-										mpf_audio_stream_t *audio_stream, 
-										mpf_video_stream_t *video_stream, 
-										apr_pool_t *pool);
 
 APT_END_EXTERN_C
 

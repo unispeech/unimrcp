@@ -31,6 +31,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_stream.h \
                            include/mpf_stream_descriptor.h \
                            include/mpf_termination.h \
+                           include/mpf_termination_factory.h \
                            include/mpf_rtp_termination_factory.h \
                            include/mpf_file_termination_factory.h \
                            include/mpf_timer.h \
@@ -66,6 +67,7 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_multiplier.c \
                            src/mpf_named_event.c \
                            src/mpf_termination.c \
+                           src/mpf_termination_factory.c \
                            src/mpf_rtp_termination_factory.c \
                            src/mpf_file_termination_factory.c \
                            src/mpf_frame_buffer.c \

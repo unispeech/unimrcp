@@ -23,7 +23,7 @@
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
 #include "mrcp_message.h"
-#include "mpf_termination.h"
+#include "mpf_termination_factory.h"
 #include "mpf_stream.h"
 #include "apt_consumer_task.h"
 #include "apt_obj_list.h"
@@ -629,7 +629,8 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 			control_media->port = (enable == TRUE) ? TCP_DISCARD_PORT : 0;
 		}
 		if(channel->termination && channel->rtp_termination_slot) {
-			mpf_audio_stream_t *audio_stream = channel->termination->audio_stream;
+			mpf_audio_stream_t *audio_stream = mpf_termination_audio_stream_get(
+														channel->termination);
 			mpf_rtp_media_descriptor_t *audio_media = mrcp_session_audio_media_get(
 														session->offer,
 														channel->rtp_termination_slot->id);
@@ -704,6 +705,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	if(channel->termination) {
 		/* media termination mode */
 		mpf_termination_t *termination;
+		mpf_audio_stream_t *audio_stream;
 
 		if(!session->context) {
 			/* create media context first */
@@ -720,13 +722,13 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		/* initialize rtp descriptor */
 		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
 		mpf_rtp_termination_descriptor_init(rtp_descriptor);
-		if(channel->termination->audio_stream) {
-			mpf_audio_stream_t *stream = channel->termination->audio_stream;
+		audio_stream = mpf_termination_audio_stream_get(channel->termination);
+		if(audio_stream) {
 			mpf_rtp_media_descriptor_t *media;
 			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
 			mpf_rtp_media_descriptor_init(media);
 			media->state = MPF_MEDIA_ENABLED;
-			media->direction = mpf_stream_reverse_direction_get(stream->direction);
+			media->direction = mpf_stream_reverse_direction_get(audio_stream->direction);
 			rtp_descriptor->audio.local = media;
 		}
 

@@ -17,7 +17,6 @@
 #include <apr_thread_cond.h>
 #include "apt_test_suite.h"
 #include "mpf_engine.h"
-#include "mpf_termination.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mpf_file_termination_factory.h"
 #include "mpf_audio_file_descriptor.h"
