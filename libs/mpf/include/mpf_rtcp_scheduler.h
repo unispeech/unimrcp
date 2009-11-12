@@ -28,28 +28,28 @@
 APT_BEGIN_EXTERN_C
 
 /** RTCP scheduler declaration */
-typedef struct rtcp_scheduler_t rtcp_scheduler_t;
+typedef struct mpf_rtcp_scheduler_t mpf_rtcp_scheduler_t;
 
 /** RTCP session declaration */
-typedef struct rtcp_session_t rtcp_session_t;
+typedef struct mpf_rtcp_session_t mpf_rtcp_session_t;
 
 /** Create RTCP scheduler */
-MPF_DECLARE(rtcp_scheduler_t*) mpf_rtcp_scheduler_create(apr_pool_t *pool);
+MPF_DECLARE(mpf_rtcp_scheduler_t*) mpf_rtcp_scheduler_create(apr_pool_t *pool);
 
 /** Process RTCP scheduler tasks */
-MPF_DECLARE(void) mpf_rtcp_scheduler_process(rtcp_scheduler_t *scheduler);
+MPF_DECLARE(void) mpf_rtcp_scheduler_process(mpf_rtcp_scheduler_t *scheduler);
 
 /** Create RTCP session */
-MPF_DECLARE(rtcp_session_t*) mpf_rtcp_session_create(
-								rtcp_scheduler_t *scheduler,
+MPF_DECLARE(mpf_rtcp_session_t*) mpf_rtcp_session_create(
+								mpf_rtcp_scheduler_t *scheduler,
 								rtp_receiver_t *receiver, 
 								rtp_transmitter_t *transmitter,
 								apr_pool_t *pool);
 
 /** Destroy RTCP session */
 MPF_DECLARE(void) mpf_rtcp_session_destroy(
-								rtcp_scheduler_t *scheduler,
-								rtcp_session_t *rtcp_session);
+								mpf_rtcp_scheduler_t *scheduler,
+								mpf_rtcp_session_t *rtcp_session);
 
 APT_END_EXTERN_C
 
