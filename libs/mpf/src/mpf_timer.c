@@ -36,32 +36,21 @@ struct mpf_timer_t {
 	void            *obj;
 };
 
-#define MAX_MEDIA_TIMERS 10
 
-static mpf_timer_t media_timer_set[MAX_MEDIA_TIMERS];
-
-static void CALLBACK mm_timer_proc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
+static void CALLBACK mm_timer_proc(UINT uID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
 
 MPF_DECLARE(mpf_timer_t*) mpf_timer_start(unsigned long timeout, mpf_timer_proc_f timer_proc, void *obj, apr_pool_t *pool)
 {
-	mpf_timer_t *timer = NULL;
-	size_t i;
-	for(i = 0; i<MAX_MEDIA_TIMERS; i++) {
-		if(!media_timer_set[i].timer_id) {
-			timer = &media_timer_set[i];
-			break;
-		}
+	mpf_timer_t *timer = apr_palloc(pool,sizeof(mpf_timer_t));
+	timer->timer_id = timeSetEvent(
+					timeout, 0, mm_timer_proc, (DWORD_PTR) timer, 
+					TIME_PERIODIC | TIME_CALLBACK_FUNCTION | TIME_KILL_SYNCHRONOUS);
+	if(!timer->timer_id) {
+		return NULL;
 	}
-		
-	if(timer) {
-		timer->timer_proc = timer_proc;
-		timer->obj = obj;
-		timer->timer_id = timeSetEvent(timeout, 0, mm_timer_proc, i, 
-			TIME_PERIODIC | TIME_CALLBACK_FUNCTION | TIME_KILL_SYNCHRONOUS);
-		if(!timer->timer_id) {
-			timer = NULL;
-		}
-	}
+
+	timer->timer_proc = timer_proc;
+	timer->obj = obj;
 	return timer;
 }
 
@@ -75,14 +64,12 @@ MPF_DECLARE(void) mpf_timer_stop(mpf_timer_t *timer)
 	}
 }
 
-static void CALLBACK mm_timer_proc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
+static void CALLBACK mm_timer_proc(UINT uID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 {
-	mpf_timer_t *timer;
-	if(dwUser >= MAX_MEDIA_TIMERS) {
-		return;
+	mpf_timer_t *timer = (mpf_timer_t*) dwUser;
+	if(timer) {
+		timer->timer_proc(timer,timer->obj);
 	}
-	timer = &media_timer_set[dwUser];
-	timer->timer_proc(timer,timer->obj);
 }
 
 #else
