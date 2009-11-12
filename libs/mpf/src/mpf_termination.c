@@ -32,6 +32,7 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 	termination->event_handler_obj = NULL;
 	termination->event_handler = NULL;
 	termination->codec_manager = NULL;
+	termination->timer_manager = NULL;
 	termination->termination_factory = termination_factory;
 	termination->vtable = vtable;
 	termination->slot = 0;

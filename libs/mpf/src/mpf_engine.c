@@ -324,6 +324,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				termination->event_handler_obj = engine;
 				termination->event_handler = mpf_engine_event_raise;
 				termination->codec_manager = engine->codec_manager;
+				termination->timer_manager = engine->timer_manager;
 
 				mpf_termination_add(termination,mpf_request->descriptor);
 				if(mpf_context_termination_add(context,termination) == FALSE) {

@@ -26,11 +26,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Opaque MPF timer declaration */
-typedef struct mpf_timer_t mpf_timer_t;
-
-/** Opaque MPF timer manager declaration */
-typedef struct mpf_timer_manager_t mpf_timer_manager_t;
 
 /** Prototype of timer callback */
 typedef void (*mpf_timer_proc_f)(mpf_timer_t *timer, void *obj);
