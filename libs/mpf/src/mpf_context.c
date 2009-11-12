@@ -148,9 +148,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context)
 		termination = context->header[i].termination;
 		if(termination) {
 			mpf_context_termination_subtract(context,termination);
-			if(termination->audio_stream) {
-				mpf_audio_stream_destroy(termination->audio_stream);
-			}
+			mpf_termination_subtract(termination);
 		}
 	}
 	return TRUE;
