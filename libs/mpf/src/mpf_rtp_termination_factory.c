@@ -44,7 +44,7 @@ static apt_bool_t mpf_rtp_termination_add(mpf_termination_t *termination, void *
 		termination->audio_stream = audio_stream;
 	}
 
-	status = mpf_rtp_stream_add(audio_stream);
+	status = mpf_rtp_stream_enable(audio_stream);
 	if(rtp_descriptor) {
 		status = mpf_rtp_stream_modify(audio_stream,&rtp_descriptor->audio);
 	}
@@ -73,7 +73,7 @@ static apt_bool_t mpf_rtp_termination_subtract(mpf_termination_t *termination)
 		return FALSE;
 	}
 	
-	return mpf_rtp_stream_subtract(audio_stream);
+	return mpf_rtp_stream_disable(audio_stream);
 }
 
 static const mpf_termination_vtable_t rtp_vtable = {

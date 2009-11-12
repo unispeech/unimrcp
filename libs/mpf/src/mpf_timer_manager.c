@@ -81,6 +81,7 @@ MPF_DECLARE(mpf_timer_t*) mpf_timer_create(mpf_timer_manager_t *timer_manager, m
 
 /** Set one-shot timer */
 MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_size_t timeout)
+
 {
 	mpf_timer_t *it;
 	mpf_timer_manager_t *manager = timer->manager;
@@ -92,14 +93,19 @@ MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_size_t timeout)
 	/* calculate time to elapse */
 	timer->scheduled_time = manager->elapsed_time + timeout;
 
-	/* insert new node (timer) to sorted by scheduled time list */
-	for(it = APR_RING_LAST(&manager->head);
-			it != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link);
-				it = APR_RING_PREV(it, link)) {
-		
-		if(it->scheduled_time < timer->scheduled_time) {
-			APR_RING_INSERT_AFTER(it,timer,link);
-			break;
+	if(APR_RING_EMPTY(&timer->manager->head, mpf_timer_t, link)) {
+		APR_RING_INSERT_HEAD(&manager->head,timer,mpf_timer_t,link);
+	}
+	else {
+		/* insert new node (timer) to sorted by scheduled time list */
+		for(it = APR_RING_LAST(&manager->head);
+				it != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link);
+					it = APR_RING_PREV(it, link)) {
+			
+			if(it->scheduled_time < timer->scheduled_time) {
+				APR_RING_INSERT_AFTER(it,timer,link);
+				break;
+			}
 		}
 	}
 	return TRUE;
@@ -108,6 +114,10 @@ MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_size_t timeout)
 /** Kill timer */
 MPF_DECLARE(apt_bool_t) mpf_timer_kill(mpf_timer_t *timer)
 {
+	if(!timer->scheduled_time) {
+		return FALSE;
+	}
+
 	/* remove node (timer) from the list */
 	APR_RING_REMOVE(timer,link);
 	timer->scheduled_time = 0;
@@ -142,9 +152,11 @@ static void mpf_scheduler_proc(mpf_scheduler_t *scheduler, void *obj)
 			break;
 		}
 		
-		/* remove the elapsed timer from the list and process it */
+		/* remove the elapsed timer from the list */
 		APR_RING_REMOVE(timer, link);
+		timer->scheduled_time = 0;
+		/* process the elapsed timer */
 		timer->proc(timer,timer->obj);
 	}
-	while(timer != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link));
+	while(!APR_RING_EMPTY(&manager->head, mpf_timer_t, link));
 }
