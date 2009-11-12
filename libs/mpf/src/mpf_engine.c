@@ -18,9 +18,10 @@
 #include "mpf_context.h"
 #include "mpf_termination.h"
 #include "mpf_stream.h"
-#include "mpf_timer.h"
+#include "mpf_scheduler.h"
 #include "mpf_codec_descriptor.h"
 #include "mpf_codec_manager.h"
+#include "mpf_timer_manager.h"
 #include "apt_obj_list.h"
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
@@ -34,11 +35,12 @@ struct mpf_engine_t {
 	apr_thread_mutex_t        *request_queue_guard;
 	apt_cyclic_queue_t        *request_queue;
 	mpf_context_factory_t     *context_factory;
-	mpf_timer_t               *timer;
+	mpf_scheduler_t           *scheduler;
+	mpf_timer_manager_t       *timer_manager;
 	const mpf_codec_manager_t *codec_manager;
 };
 
-static void mpf_engine_main(mpf_timer_t *timer, void *data);
+static void mpf_engine_main(mpf_scheduler_t *scheduler, void *data);
 static apt_bool_t mpf_engine_destroy(apt_task_t *task);
 static apt_bool_t mpf_engine_start(apt_task_t *task);
 static apt_bool_t mpf_engine_terminate(apt_task_t *task);
@@ -85,6 +87,10 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	engine->request_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
 
+	engine->scheduler = mpf_scheduler_create(engine->pool);
+	mpf_scheduler_media_clock_set(engine->scheduler,CODEC_FRAME_TIME_BASE,mpf_engine_main,engine);
+
+	engine->timer_manager = mpf_timer_manager_create(engine->scheduler,engine->pool);
 	return engine;
 }
 
@@ -217,6 +223,8 @@ static apt_bool_t mpf_engine_destroy(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
+	mpf_timer_manager_destroy(engine->timer_manager);
+	mpf_scheduler_destroy(engine->scheduler);
 	mpf_context_factory_destroy(engine->context_factory);
 	apt_cyclic_queue_destroy(engine->request_queue);
 	apr_thread_mutex_destroy(engine->request_queue_guard);
@@ -227,7 +235,7 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	engine->timer = mpf_timer_start(CODEC_FRAME_TIME_BASE,mpf_engine_main,engine,engine->pool);
+	mpf_scheduler_start(engine->scheduler);
 	apt_task_child_start(task);
 	return TRUE;
 }
@@ -236,7 +244,7 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	mpf_timer_stop(engine->timer);
+	mpf_scheduler_stop(engine->scheduler);
 	apt_task_child_terminate(task);
 	return TRUE;
 }
@@ -374,7 +382,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	return apt_task_msg_parent_signal(engine->task,response_msg);
 }
 
-static void mpf_engine_main(mpf_timer_t *timer, void *data)
+static void mpf_engine_main(mpf_scheduler_t *scheduler, void *data)
 {
 	mpf_engine_t *engine = data;
 	apt_task_msg_t *msg;

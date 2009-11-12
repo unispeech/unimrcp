@@ -252,10 +252,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mpf_rtcp_scheduler.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\mpf_rtp_attribs.h"
 				>
 			</File>
@@ -288,6 +284,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mpf_scheduler.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mpf_stream.h"
 				>
 			</File>
@@ -304,7 +304,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mpf_timer.h"
+				RelativePath=".\include\mpf_timer_manager.h"
 				>
 			</File>
 			<File
@@ -401,10 +401,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\mpf_rtcp_scheduler.c"
-				>
-			</File>
-			<File
 				RelativePath=".\src\mpf_rtp_attribs.c"
 				>
 			</File>
@@ -414,6 +410,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_rtp_termination_factory.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_scheduler.c"
 				>
 			</File>
 			<File
@@ -429,7 +429,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\mpf_timer.c"
+				RelativePath=".\src\mpf_timer_manager.c"
 				>
 			</File>
 		</Filter>
