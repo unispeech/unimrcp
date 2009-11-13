@@ -22,7 +22,7 @@
  * @brief RTCP Packet Definition
  */ 
 
-#include "mpf.h"
+#include "mpf_rtp_stat.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -58,26 +58,26 @@ typedef struct rtcp_sdes_item_t rtcp_sdes_item_t;
 struct rtcp_header_t {
 #if (APR_IS_BIGENDIAN == 1)
 	/** protocol version */
-	apr_uint32_t version: 2;
+	unsigned int version: 2;
 	/** padding flag */
-	apr_uint32_t padding: 1;
+	unsigned int padding: 1;
 	/** varies by packet type */
-	apr_uint32_t count:   5;
+	unsigned int count:   5;
 	/** packet type */
-	apr_uint32_t pt:      8;
+	unsigned int pt:      8;
 #else
 	/** varies by packet type */
-	apr_uint32_t count:   5;
+	unsigned int count:   5;
 	/** padding flag */
-	apr_uint32_t padding: 1;
+	unsigned int padding: 1;
 	/** protocol version */
-	apr_uint32_t version: 2;
+	unsigned int version: 2;
 	/** packet type */
-	apr_uint32_t pt:      8;
+	unsigned int pt:      8;
 #endif	
 	
 	/** packet length in words, w/o this word */
-	apr_uint32_t length: 16;
+	unsigned int length:  16;
 };
 
 /** SDES item */
@@ -91,7 +91,7 @@ struct rtcp_sdes_item_t {
 };
 
 /** RTCP packet */
-struct mpf_rtcp_packet {
+struct rtcp_packet_t {
 	/** common header */
 	rtcp_header_t header;
 	union {
@@ -100,7 +100,7 @@ struct mpf_rtcp_packet {
 			/** sr stat */
 			rtcp_sr_stat_t sr_stat;
 			/** variable-length list rr stats */
-			rtcp_rr_stat_t rr_stat[1]; 
+			rtcp_rr_stat_t rr_stat[1];
 		} sr;
 
 		/** reception report (RR) */
@@ -108,13 +108,13 @@ struct mpf_rtcp_packet {
 			/** receiver generating this report */
 			apr_uint32_t   ssrc;
 			/** variable-length list rr stats */
-			rtcp_rr_stat_t rr[1];  
+			rtcp_rr_stat_t rr_stat[1];
 		} rr;
 
 		/** source description (SDES) */
 		struct {
 			/** first SSRC/CSRC */
-			apr_uint32_t     src;
+			apr_uint32_t     ssrc;
 			/** list of SDES items */
 			rtcp_sdes_item_t item[1];
 		} sdes;
@@ -122,7 +122,7 @@ struct mpf_rtcp_packet {
 		/** BYE */
 		struct {
 			/** list of sources */
-			apr_uint32_t src[1];
+			apr_uint32_t ssrc[1];
 			/* can't express trailing text for reason */
 		} bye;
 	} r;

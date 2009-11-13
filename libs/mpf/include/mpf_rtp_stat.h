@@ -58,8 +58,10 @@ struct rtp_rx_stat_t {
 struct rtcp_sr_stat_t {
 	/** sender source identifier */
 	apr_uint32_t ssrc;
-	/** NTP timestamp */
-	apr_uint64_t ntp_timestamp;
+	/** NTP timestamp (seconds) */
+	apr_uint32_t ntp_sec;
+	/** NTP timestamp (fractions) */
+	apr_uint32_t ntp_frac;
 	/** RTP timestamp */
 	apr_uint32_t rtp_ts;
 	/* packets sent */
