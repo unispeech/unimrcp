@@ -15,14 +15,19 @@
  */
 
 #include <apr_network_io.h>
+#include "apt_net.h"
 #include "mpf_rtp_stream.h"
 #include "mpf_termination.h"
 #include "mpf_codec_manager.h"
 #include "mpf_timer_manager.h"
 #include "mpf_rtp_header.h"
+#include "mpf_rtcp_packet.h"
 #include "mpf_rtp_defs.h"
 #include "mpf_rtp_pt.h"
 #include "apt_log.h"
+
+#define MAX_RTP_PACKET_SIZE  1500
+#define MAX_RTCP_PACKET_SIZE 1500
 
 #if ENABLE_RTP_PACKET_TRACE
 #define RTP_TRACE printf
@@ -650,7 +655,7 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 
 static apt_bool_t rtp_rx_process(mpf_rtp_stream_t *rtp_stream)
 {
-	char buffer[1500];
+	char buffer[MAX_RTP_PACKET_SIZE];
 	apr_size_t size = sizeof(buffer);
 	apr_size_t max_count = 5;
 	while(max_count && apr_socket_recvfrom(rtp_stream->rtp_remote_sockaddr,rtp_stream->rtp_socket,0,buffer,&size) == APR_SUCCESS) {
@@ -935,14 +940,162 @@ static void mpf_rtp_socket_pair_close(mpf_rtp_stream_t *stream)
 	}
 }
 
+
+static APR_INLINE void rtcp_header_prepare(rtcp_header_t *header, rtcp_type_e pt)
+{
+	header->version = RTP_VERSION;
+	header->padding = 0;
+	header->count = 0;
+	header->pt = pt;
+	header->length = 0;
+}
+
+static APR_INLINE void rtcp_report_header_prepare(rtcp_header_t *header, mpf_stream_direction_e direction)
+{
+	header->version = RTP_VERSION;
+	header->padding = 0;
+	header->count = 0;
+	header->pt = 0;
+	header->length = 0;
+	
+	if(direction & STREAM_DIRECTION_RECEIVE) {
+		header->pt = RTCP_RR;
+		header->count = 1;
+	}
+	if(direction & STREAM_DIRECTION_SEND) {
+		header->pt = RTCP_SR;
+	}
+}
+
+static APR_INLINE void rtcp_header_length_set(rtcp_header_t *header, apr_size_t length)
+{
+	header->length = htons((apr_uint16_t)length / 4 - 1);
+}
+
+static APR_INLINE void rtcp_sr_generate(mpf_rtp_stream_t *rtp_stream, rtcp_sr_stat_t *sr_stat)
+{
+	*sr_stat = rtp_stream->transmitter.sr_stat;
+	sr_stat->ssrc = htonl(sr_stat->ssrc);
+	apt_ntp_time_get(&sr_stat->ntp_sec, &sr_stat->ntp_frac);
+	sr_stat->ntp_sec = htonl(sr_stat->ntp_sec);
+	sr_stat->ntp_frac = htonl(sr_stat->ntp_frac);
+	sr_stat->rtp_ts = htonl(rtp_stream->transmitter.timestamp);
+	sr_stat->sent_packets = htonl(sr_stat->sent_packets);
+	sr_stat->sent_octets = htonl(sr_stat->sent_octets);
+}
+
+static APR_INLINE void rtcp_rr_generate(mpf_rtp_stream_t *rtp_stream, rtcp_rr_stat_t *rr_stat)
+{
+	*rr_stat = rtp_stream->receiver.rr_stat;
+}
+
+/* Generate either RTCP SR or RTCP RR packet */
+static APR_INLINE apr_size_t rtcp_report_generate(mpf_rtp_stream_t *rtp_stream, rtcp_packet_t *rtcp_packet, apr_size_t length)
+{
+	apr_size_t offset = 0;
+	rtcp_report_header_prepare(&rtcp_packet->header,rtp_stream->base->direction);
+	offset += sizeof(rtcp_header_t);
+	if(rtcp_packet->header.pt == RTCP_SR) {
+		rtcp_sr_generate(rtp_stream,&rtcp_packet->r.sr.sr_stat);
+		offset += sizeof(rtcp_sr_stat_t);
+		if(rtcp_packet->header.count) {
+			rtcp_rr_generate(rtp_stream,rtcp_packet->r.sr.rr_stat);
+			offset += sizeof(rtcp_rr_stat_t);
+		}
+	}
+	else if(rtcp_packet->header.pt == RTCP_RR) {
+		rtcp_rr_generate(rtp_stream,rtcp_packet->r.rr.rr_stat);
+		offset += sizeof(rtcp_packet->r.rr);
+	}
+	rtcp_header_length_set(&rtcp_packet->header,offset);
+	return offset;
+}
+
+/* Generate RTCP SDES packet */
+static APR_INLINE apr_size_t rtcp_sdes_generate(mpf_rtp_stream_t *rtp_stream, rtcp_packet_t *rtcp_packet, apr_size_t length)
+{
+	rtcp_sdes_item_t *item;
+	apr_size_t offset = 0;
+	apr_size_t padding;
+	rtcp_header_prepare(&rtcp_packet->header,RTCP_SDES);
+	offset += sizeof(rtcp_header_t);
+
+	rtcp_packet->header.count ++;
+	rtcp_packet->r.sdes.ssrc = htonl(rtp_stream->transmitter.sr_stat.ssrc);
+	offset += sizeof(apr_uint32_t);
+
+	/* insert SDES CNAME item */
+	item = &rtcp_packet->r.sdes.item[0];
+	item->type = RTCP_SDES_CNAME;
+	item->length = (apr_byte_t)rtp_stream->local_media->ip.length;
+	memcpy(item->data,rtp_stream->local_media->ip.buf,item->length);
+	offset += sizeof(rtcp_sdes_item_t) - 1 + item->length;
+	
+	/* terminate with end marker and pad to next 4-octet boundary */
+	padding = 4 - (offset & 0x3);
+	while(padding--) {
+		item = (rtcp_sdes_item_t*) ((char*)rtcp_packet + offset);
+		item->type = RTCP_SDES_END;
+		offset++;
+	}
+
+	rtcp_header_length_set(&rtcp_packet->header,offset);
+	return offset;
+}
+
+/* Generate RTCP BYE packet */
+static APR_INLINE apr_size_t rtcp_bye_generate(mpf_rtp_stream_t *rtp_stream, rtcp_packet_t *rtcp_packet, apr_size_t length)
+{
+	apr_size_t offset = 0;
+	rtcp_header_prepare(&rtcp_packet->header,RTCP_BYE);
+	offset += sizeof(rtcp_header_t);
+
+	rtcp_packet->r.bye.ssrc[0] = htonl(rtp_stream->transmitter.sr_stat.ssrc);
+	rtcp_packet->header.count++;
+	offset += rtcp_packet->header.count * sizeof(apr_uint32_t);
+
+	rtcp_header_length_set(&rtcp_packet->header,offset);
+	return offset;
+}
+
 static void mpf_rtcp_timer_proc(mpf_timer_t *timer, void *obj)
 {
 	mpf_rtp_stream_t *rtp_stream = obj;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generate RTCP Report %s:%hu -> %s:%hu",
+	char buffer[MAX_RTCP_PACKET_SIZE];
+	apr_size_t length = 0;
+	rtcp_packet_t *rtcp_packet;
+
+	if(!rtp_stream->rtcp_socket || !rtp_stream->local_media || !rtp_stream->remote_media) {
+		/* session is not fully initialized, just re-schedule timer fro now */
+		mpf_timer_set(timer,rtp_stream->config->rtcp_tx_interval);
+		return;
+	}
+
+	rtcp_packet = (rtcp_packet_t*) (buffer + length);
+	length += rtcp_report_generate(rtp_stream,rtcp_packet,sizeof(buffer)-length);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generate RTCP %s Report %s:%hu -> %s:%hu",
+		rtcp_packet->header.pt == RTCP_SR ? "SR" : "RR",
 			rtp_stream->local_media->ip.buf,
 			rtp_stream->local_media->port+1,
 			rtp_stream->remote_media->ip.buf,
 			rtp_stream->remote_media->port+1);
+
+	rtcp_packet = (rtcp_packet_t*) (buffer + length);
+	length += rtcp_sdes_generate(rtp_stream,rtcp_packet,sizeof(buffer)-length);
+	
+	if(apr_socket_sendto(
+				rtp_stream->rtcp_socket,
+				rtp_stream->rtcp_remote_sockaddr,
+				0,
+				buffer,
+				&length) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTCP Report %s:%hu -> %s:%hu",
+			rtp_stream->local_media->ip.buf,
+			rtp_stream->local_media->port+1,
+			rtp_stream->remote_media->ip.buf,
+			rtp_stream->remote_media->port+1);
+	}
 
 	/* re-schedule timer */
 	mpf_timer_set(timer,rtp_stream->config->rtcp_tx_interval);
