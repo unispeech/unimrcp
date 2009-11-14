@@ -20,6 +20,7 @@
 #include <apr_ring.h> 
 #include "mpf_timer_manager.h"
 #include "mpf_scheduler.h"
+#include "apt_log.h"
 
 /** MPF timer manager */
 struct mpf_timer_manager_t {
@@ -27,9 +28,9 @@ struct mpf_timer_manager_t {
 	APR_RING_HEAD(mpf_timer_head_t, mpf_timer_t) head;
 
 	/** Clock resolution */
-	apr_size_t  resolution;
+	apr_uint32_t  resolution;
 	/** Elapsed time */
-	apr_size_t  elapsed_time;
+	apr_uint32_t  elapsed_time;
 };
 
 /** MPF timer */
@@ -40,7 +41,7 @@ struct mpf_timer_t {
 	/** Back pointer to manager */
 	mpf_timer_manager_t *manager;
 	/** Time next report is scheduled at */
-	apr_size_t           scheduled_time;
+	apr_uint32_t         scheduled_time;
 
 	/** Timer proc */
 	mpf_timer_proc_f     proc;
@@ -79,11 +80,24 @@ MPF_DECLARE(mpf_timer_t*) mpf_timer_create(mpf_timer_manager_t *timer_manager, m
 	return timer;
 }
 
-/** Set one-shot timer */
-MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_size_t timeout)
-
+static APR_INLINE mpf_timer_t* mpt_timer_get_by_time(mpf_timer_manager_t *manager, apr_uint32_t time)
 {
 	mpf_timer_t *it;
+	for(it = APR_RING_LAST(&manager->head);
+			it != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link);
+				it = APR_RING_PREV(it, link)) {
+		
+		if(it->scheduled_time <= time) {
+			return it;
+		}
+	}
+	return NULL;
+}
+
+/** Set one-shot timer */
+MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_uint32_t timeout)
+
+{
 	mpf_timer_manager_t *manager = timer->manager;
 
 	if(timeout <= 0 || !timer->proc) {
@@ -92,21 +106,20 @@ MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_size_t timeout)
 	
 	/* calculate time to elapse */
 	timer->scheduled_time = manager->elapsed_time + timeout;
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Set Timer 0x%x [%d]",timer,timer->scheduled_time);
 
 	if(APR_RING_EMPTY(&timer->manager->head, mpf_timer_t, link)) {
-		APR_RING_INSERT_HEAD(&manager->head,timer,mpf_timer_t,link);
+		APR_RING_INSERT_TAIL(&manager->head,timer,mpf_timer_t,link);
 	}
 	else {
 		/* insert new node (timer) to sorted by scheduled time list */
-		for(it = APR_RING_LAST(&manager->head);
-				it != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link);
-					it = APR_RING_PREV(it, link)) {
-			
-			if(it->scheduled_time < timer->scheduled_time) {
-				APR_RING_INSERT_AFTER(it,timer,link);
-				break;
-			}
+		mpf_timer_t *it = mpt_timer_get_by_time(manager,timer->scheduled_time);
+		if(!it) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Set Timer 0x%x [%d]",timer,timer->scheduled_time);
+			timer->scheduled_time = 0;
+			return FALSE;
 		}
+		APR_RING_INSERT_AFTER(it,timer,link);
 	}
 	return TRUE;
 }
@@ -118,6 +131,7 @@ MPF_DECLARE(apt_bool_t) mpf_timer_kill(mpf_timer_t *timer)
 		return FALSE;
 	}
 
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Kill Timer 0x%x [%d]",timer,timer->scheduled_time);
 	/* remove node (timer) from the list */
 	APR_RING_REMOVE(timer,link);
 	timer->scheduled_time = 0;
@@ -127,6 +141,18 @@ MPF_DECLARE(apt_bool_t) mpf_timer_kill(mpf_timer_t *timer)
 		timer->manager->elapsed_time = 0;
 	}
 	return TRUE;
+}
+
+static void mpf_timers_reschedule(mpf_timer_manager_t *manager)
+{
+	mpf_timer_t *it;
+	for(it = APR_RING_LAST(&manager->head);
+			it != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link);
+				it = APR_RING_PREV(it, link)) {
+		
+		it->scheduled_time -= manager->elapsed_time;
+	}
+	manager->elapsed_time = 0;
 }
 
 static void mpf_scheduler_proc(mpf_scheduler_t *scheduler, void *obj)
@@ -141,6 +167,10 @@ static void mpf_scheduler_proc(mpf_scheduler_t *scheduler, void *obj)
 
 	/* increment elapsed time */
 	manager->elapsed_time += manager->resolution;
+	if(manager->elapsed_time >= 0xFFFF) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Reschedule Timers [%d]",manager->elapsed_time);
+		mpf_timers_reschedule(manager);
+	}
 
 	/* process timers */
 	do {
@@ -152,6 +182,7 @@ static void mpf_scheduler_proc(mpf_scheduler_t *scheduler, void *obj)
 			break;
 		}
 		
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Timer Elapsed 0x%x [%d]",timer,timer->scheduled_time);
 		/* remove the elapsed timer from the list */
 		APR_RING_REMOVE(timer, link);
 		timer->scheduled_time = 0;

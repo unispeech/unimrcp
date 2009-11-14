@@ -42,7 +42,7 @@ MPF_DECLARE(void) mpf_timer_manager_destroy(mpf_timer_manager_t *timer_manager);
 MPF_DECLARE(mpf_timer_t*) mpf_timer_create(mpf_timer_manager_t *timer_manager, mpf_timer_proc_f proc, void *obj, apr_pool_t *pool);
 
 /** Set one-shot timer */
-MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_size_t timeout);
+MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_uint32_t timeout);
 
 /** Kill timer */
 MPF_DECLARE(apt_bool_t) mpf_timer_kill(mpf_timer_t *timer);
