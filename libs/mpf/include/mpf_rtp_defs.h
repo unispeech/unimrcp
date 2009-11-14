@@ -75,6 +75,8 @@ struct rtp_rx_history_t {
 struct rtp_rx_periodic_history_t {
 	/** Number of packets received */
 	apr_uint32_t received_prior;
+	/** Number of packets expected */
+	apr_uint32_t expected_prior;
 	/** Number of packets discarded */
 	apr_uint32_t discarded_prior;
 

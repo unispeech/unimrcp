@@ -457,6 +457,54 @@ static rtp_header_t* rtp_rx_header_skip(void **buffer, apr_size_t *size)
 	return header;
 }
 
+static APR_INLINE void rtp_periodic_history_update(rtp_receiver_t *receiver)
+{
+	apr_uint32_t expected_packets;
+	apr_uint32_t expected_interval;
+	apr_uint32_t received_interval;
+	apr_uint32_t lost_interval;
+
+	/* calculate expected packets */
+	expected_packets = receiver->history.seq_cycles + 
+		receiver->history.seq_num_max - receiver->history.seq_num_base + 1;
+
+	/* calculate expected interval */
+	expected_interval = expected_packets - receiver->periodic_history.expected_prior;
+	/* update expected prior */
+	receiver->periodic_history.expected_prior = expected_packets;
+
+	/* calculate received interval */
+	received_interval = receiver->stat.received_packets - receiver->periodic_history.received_prior;
+	/* update received prior */
+	receiver->periodic_history.received_prior = receiver->stat.received_packets;
+	/* calculate lost interval */
+	if(expected_interval > received_interval) {
+		lost_interval = expected_interval - received_interval;
+	}
+	else {
+		lost_interval = 0;
+	}
+
+	/* update lost fraction */
+	if(expected_interval == 0 || lost_interval == 0) {
+		receiver->rr_stat.fraction = 0;
+	}
+	else {
+		receiver->rr_stat.fraction = (lost_interval << 8) / expected_interval;
+	}
+
+	if(expected_packets > receiver->stat.received_packets) {
+		receiver->rr_stat.lost = expected_packets - receiver->stat.received_packets;
+	}
+	else {
+		receiver->rr_stat.lost = 0;
+	}
+
+	receiver->periodic_history.discarded_prior = receiver->stat.discarded_packets;
+	receiver->periodic_history.jitter_min = receiver->rr_stat.jitter;
+	receiver->periodic_history.jitter_max = receiver->rr_stat.jitter;
+}
+
 typedef enum {
 	RTP_SSRC_UPDATE,
 	RTP_SSRC_PROBATION,
@@ -521,12 +569,6 @@ static APR_INLINE rtp_seq_result_e rtp_rx_seq_update(rtp_receiver_t *receiver, a
 	}
 	receiver->stat.received_packets++;
 
-	if(receiver->stat.received_packets - receiver->periodic_history.received_prior >= 50) {
-		receiver->periodic_history.received_prior = receiver->stat.received_packets;
-		receiver->periodic_history.discarded_prior = receiver->stat.discarded_packets;
-		receiver->periodic_history.jitter_min = receiver->rr_stat.jitter;
-		receiver->periodic_history.jitter_max = receiver->rr_stat.jitter;
-	}
 	return result;
 }
 
@@ -987,6 +1029,16 @@ static APR_INLINE void rtcp_sr_generate(mpf_rtp_stream_t *rtp_stream, rtcp_sr_st
 static APR_INLINE void rtcp_rr_generate(mpf_rtp_stream_t *rtp_stream, rtcp_rr_stat_t *rr_stat)
 {
 	*rr_stat = rtp_stream->receiver.rr_stat;
+	rr_stat->ssrc = htonl(rr_stat->ssrc);
+	rr_stat->last_seq =	htonl(rtp_stream->receiver.history.seq_num_max);
+	rr_stat->jitter = htonl(rr_stat->jitter);
+
+#if (APR_IS_BIGENDIAN == 0)
+	rr_stat->lost = ((rr_stat->lost >> 16) & 0x000000ff) |
+						(rr_stat->lost & 0x0000ff00) |
+							((rr_stat->lost << 16) & 0x00ff0000);
+#endif
+
 }
 
 /* Generate either RTCP SR or RTCP RR packet */
@@ -1004,6 +1056,7 @@ static APR_INLINE apr_size_t rtcp_report_generate(mpf_rtp_stream_t *rtp_stream, 
 		}
 	}
 	else if(rtcp_packet->header.pt == RTCP_RR) {
+		rtcp_packet->r.rr.ssrc = htonl(rtp_stream->transmitter.sr_stat.ssrc);
 		rtcp_rr_generate(rtp_stream,rtcp_packet->r.rr.rr_stat);
 		offset += sizeof(rtcp_packet->r.rr);
 	}
@@ -1064,6 +1117,9 @@ static void mpf_rtcp_timer_proc(mpf_timer_t *timer, void *obj)
 	char buffer[MAX_RTCP_PACKET_SIZE];
 	apr_size_t length = 0;
 	rtcp_packet_t *rtcp_packet;
+
+	/* update periodic (prior) history */
+	rtp_periodic_history_update(&rtp_stream->receiver);
 
 	if(!rtp_stream->rtcp_socket || !rtp_stream->local_media || !rtp_stream->remote_media) {
 		/* session is not fully initialized, just re-schedule timer fro now */
