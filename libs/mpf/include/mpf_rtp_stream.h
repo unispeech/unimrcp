@@ -39,13 +39,13 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
  * Add/enable RTP stream.
  * @param stream RTP stream to add
  */
-MPF_DECLARE(apt_bool_t) mpf_rtp_stream_enable(mpf_audio_stream_t *stream);
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_add(mpf_audio_stream_t *stream);
 
 /**
  * Subtract/disable RTP stream.
  * @param stream RTP stream to subtract
  */
-MPF_DECLARE(apt_bool_t) mpf_rtp_stream_disable(mpf_audio_stream_t *stream);
+MPF_DECLARE(apt_bool_t) mpf_rtp_stream_remove(mpf_audio_stream_t *stream);
 
 /**
  * Modify RTP stream.
