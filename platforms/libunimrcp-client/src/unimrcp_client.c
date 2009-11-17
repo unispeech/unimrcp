@@ -407,6 +407,15 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 				else if(strcasecmp(attr_name->value,"ptime") == 0) {
 					rtp_config->ptime = (apr_uint16_t)atol(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"rtcp") == 0) {
+					rtp_config->rtcp = atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtcp-bye") == 0) {
+					rtp_config->rtcp_bye_policy = atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtcp-tx-interval") == 0) {
+					rtp_config->rtcp_tx_interval = (apr_uint16_t)atoi(attr_value->value);
+				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}

@@ -56,6 +56,17 @@
         <param name="codecs" value="PCMU PCMA L16/96/8000 telephone-event/101/8000"/>
         <!-- <param name="codecs" value="PCMU PCMA L16/96/8000 PCMU/97/16000 PCMA/98/16000 L16/99/16000"/> -->
         <!-- <param name="own-preference" value="1"/> -->
+
+        <!-- enable/disable rtcp support -->
+        <param name="rtcp" value="0"/>
+        <!-- rtcp bye policies (rtcp must be enabled first)
+             0 - disable rtcp bye
+             1 - send rtcp bye at the end of session
+             2 - send rtcp bye also at the end of each talkspurt (input)
+        -->
+        <param name="rtcp-bye" value="1"/>
+        <!-- rtcp transmission interval in msec -->
+        <param name="rtcp-tx-interval" value="5000"/>
       </rtp>
     </media>
 
