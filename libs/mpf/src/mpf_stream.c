@@ -46,12 +46,31 @@ MPF_DECLARE(apt_bool_t) mpf_stream_capabilities_merge(mpf_stream_capabilities_t 
 /** Create audio stream */
 MPF_DECLARE(mpf_audio_stream_t*) mpf_audio_stream_create(void *obj, const mpf_audio_stream_vtable_t *vtable, const mpf_stream_capabilities_t *capabilities, apr_pool_t *pool)
 {
-	mpf_audio_stream_t *stream = (mpf_audio_stream_t*)apr_palloc(pool,sizeof(mpf_audio_stream_t));
+	mpf_audio_stream_t *stream;
+	if(!vtable || !capabilities) {
+		return NULL;
+	}
+	
+	/* validate required fields */
+	if(capabilities->direction & STREAM_DIRECTION_SEND) {
+		/* validate sink */
+		if(!vtable->write_frame) {
+			return NULL;
+		}
+	}
+	if(capabilities->direction & STREAM_DIRECTION_RECEIVE) {
+		/* validate source */
+		if(!vtable->read_frame) {
+			return NULL;
+		}
+	}
+
+	stream = (mpf_audio_stream_t*)apr_palloc(pool,sizeof(mpf_audio_stream_t));
 	stream->obj = obj;
 	stream->vtable = vtable;
 	stream->termination = NULL;
 	stream->capabilities = capabilities;
-	stream->direction = capabilities ? capabilities->direction : STREAM_DIRECTION_NONE;
+	stream->direction = capabilities->direction;
 	stream->rx_descriptor = NULL;
 	stream->rx_event_descriptor = NULL;
 	stream->tx_descriptor = NULL;
@@ -104,4 +123,36 @@ MPF_DECLARE(apt_bool_t) mpf_audio_stream_tx_validate(
 		}
 	}
 	return stream->tx_descriptor ? TRUE : FALSE;
+}
+
+/** Trace media path */
+MPF_DECLARE(void) mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output)
+{
+	if(stream->vtable->trace) {
+		stream->vtable->trace(stream,direction,output);
+		return;
+	}
+
+	if(direction & STREAM_DIRECTION_SEND) {
+		mpf_codec_descriptor_t *descriptor = stream->tx_descriptor;
+		if(descriptor) {
+			apr_size_t offset = output->pos - output->text.buf;
+			output->pos += apr_snprintf(output->pos, output->text.length - offset,
+				"[%s/%d/%d]->Sink",
+				descriptor->name.buf,
+				descriptor->sampling_rate,
+				descriptor->channel_count);
+		}
+	}
+	if(direction & STREAM_DIRECTION_RECEIVE) {
+		mpf_codec_descriptor_t *descriptor = stream->rx_descriptor;
+		if(descriptor) {
+			apr_size_t offset = output->pos - output->text.buf;
+			output->pos += apr_snprintf(output->pos, output->text.length - offset,
+				"Source->[%s/%d/%d]",
+				descriptor->name.buf,
+				descriptor->sampling_rate,
+				descriptor->channel_count);
+		}
+	}
 }

@@ -162,36 +162,7 @@ static APR_INLINE apt_bool_t mpf_audio_stream_frame_write(mpf_audio_stream_t *st
 }
 
 /** Trace media path */
-static APR_INLINE void mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output)
-{
-	if(stream->vtable->trace) {
-		stream->vtable->trace(stream,direction,output);
-		return;
-	}
-
-	if(direction & STREAM_DIRECTION_SEND) {
-		mpf_codec_descriptor_t *descriptor = stream->tx_descriptor;
-		if(descriptor) {
-			apr_size_t offset = output->pos - output->text.buf;
-			output->pos += apr_snprintf(output->pos, output->text.length - offset,
-				"[%s/%d/%d]->Sink",
-				descriptor->name.buf,
-				descriptor->sampling_rate,
-				descriptor->channel_count);
-		}
-	}
-	if(direction & STREAM_DIRECTION_RECEIVE) {
-		mpf_codec_descriptor_t *descriptor = stream->rx_descriptor;
-		if(descriptor) {
-			apr_size_t offset = output->pos - output->text.buf;
-			output->pos += apr_snprintf(output->pos, output->text.length - offset,
-				"Source->[%s/%d/%d]",
-				descriptor->name.buf,
-				descriptor->sampling_rate,
-				descriptor->channel_count);
-		}
-	}
-}
+MPF_DECLARE(void) mpf_audio_stream_trace(mpf_audio_stream_t *stream, mpf_stream_direction_e direction, apt_text_stream_t *output);
 
 APT_END_EXTERN_C
 

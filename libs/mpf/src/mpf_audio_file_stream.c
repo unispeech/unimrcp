@@ -117,15 +117,20 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termi
 {
 	mpf_audio_file_stream_t *file_stream = apr_palloc(pool,sizeof(mpf_audio_file_stream_t));
 	mpf_stream_capabilities_t *capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_DUPLEX,pool);
-	file_stream->audio_stream = mpf_audio_stream_create(file_stream,&vtable,capabilities,pool);
-	file_stream->audio_stream->termination = termination;
+	mpf_audio_stream_t *audio_stream = mpf_audio_stream_create(file_stream,&vtable,capabilities,pool);
+	if(!audio_stream) {
+		return NULL;
+	}
+	audio_stream->termination = termination;
 
+	file_stream->audio_stream = audio_stream;
 	file_stream->write_handle = NULL;
 	file_stream->read_handle = NULL;
 	file_stream->eof = FALSE;
 	file_stream->max_write_size = 0;
 	file_stream->cur_write_size = 0;
-	return file_stream->audio_stream;
+
+	return audio_stream;
 }
 
 MPF_DECLARE(apt_bool_t) mpf_file_stream_modify(mpf_audio_stream_t *stream, mpf_audio_file_descriptor_t *descriptor)

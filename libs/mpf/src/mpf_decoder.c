@@ -106,6 +106,9 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 	decoder = apr_palloc(pool,sizeof(mpf_decoder_t));
 	capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_RECEIVE,pool);
 	decoder->base = mpf_audio_stream_create(decoder,&vtable,capabilities,pool);
+	if(!decoder->base) {
+		return NULL;
+	}
 	decoder->base->rx_descriptor = mpf_codec_lpcm_descriptor_create(
 		source->rx_descriptor->sampling_rate,
 		source->rx_descriptor->channel_count,

@@ -97,6 +97,10 @@ mpf_termination_t* mrcp_engine_audio_termination_create(
 			capabilities,         /* stream capabilities */
 			pool);                /* pool to allocate memory from */
 
+	if(!audio_stream) {
+		return NULL;
+	}
+
 	/* create media termination */
 	return mpf_raw_termination_create(
 			NULL,                 /* no object to associate */
@@ -136,6 +140,10 @@ mrcp_engine_channel_t* mrcp_engine_source_channel_create(
 			stream_vtable,        /* virtual methods table of audio stream */
 			capabilities,         /* stream capabilities */
 			pool);                /* pool to allocate memory from */
+
+	if(!audio_stream) {
+		return NULL;
+	}
 
 	audio_stream->rx_descriptor = codec_descriptor;
 	
@@ -185,7 +193,11 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 			stream_vtable,          /* virtual methods table of audio stream */
 			capabilities,           /* stream capabilities */
 			pool);                  /* pool to allocate memory from */
-	
+
+	if(!audio_stream) {
+		return NULL;
+	}
+
 	audio_stream->tx_descriptor = codec_descriptor;
 	
 	/* create media termination */
