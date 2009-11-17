@@ -97,30 +97,38 @@ struct mpf_jb_config_t {
 	apr_byte_t adaptive;
 };
 
+typedef enum {
+	RTCP_BYE_DISABLE,       /**< disable RTCP BYE transmission */
+	RTCP_BYE_PER_SESSION,   /**< transmit RTCP BYE at the end of session */
+	RTCP_BYE_PER_TALKSPURT, /**< transmit RTCP BYE at the end of each talkspurt (input) */
+} rtcp_bye_policy_e;
+
 /** RTP config */
 struct mpf_rtp_config_t {
 	/** Local IP address to bind to */
-	apt_str_t ip;
+	apt_str_t         ip;
 	/** External (NAT) IP address */
-	apt_str_t ext_ip;
+	apt_str_t         ext_ip;
 	/** Min RTP port */
-	apr_port_t rtp_port_min;
+	apr_port_t        rtp_port_min;
 	/** Max RTP port */
-	apr_port_t rtp_port_max;
+	apr_port_t        rtp_port_max;
 	/** Current RTP port */
-	apr_port_t rtp_port_cur;
+	apr_port_t        rtp_port_cur;
 	/** Packetization time */
-	apr_uint16_t ptime;
+	apr_uint16_t      ptime;
 	/** Codec list */
-	mpf_codec_list_t codec_list;
+	mpf_codec_list_t  codec_list;
 	/** Preference in offer/anwser: 1 - own(local) preference, 0 - remote preference */
-	apt_bool_t own_preferrence;
-	/** Enabled RTCP */
-	apt_bool_t rtcp;
-	/** RTCP transmission interval */
-	apr_uint16_t rtcp_tx_interval;
+	apt_bool_t        own_preferrence;
+	/** Enable/disable RTCP support */
+	apt_bool_t        rtcp;
+	/** RTCP report transmission interval */
+	apr_uint16_t      rtcp_tx_interval;
+	/** RTCP BYE policy */
+	rtcp_bye_policy_e rtcp_bye_policy;
 	/** Jitter buffer config */
-	mpf_jb_config_t jb_config;
+	mpf_jb_config_t   jb_config;
 };
 
 /** Initialize media descriptor */
@@ -175,7 +183,9 @@ static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 	rtp_config->own_preferrence = FALSE;
 	rtp_config->rtcp = FALSE;
 	rtp_config->rtcp_tx_interval = 0;
+	rtp_config->rtcp_bye_policy = RTCP_BYE_DISABLE;
 	mpf_jb_config_init(&rtp_config->jb_config);
+
 	return rtp_config;
 }
 

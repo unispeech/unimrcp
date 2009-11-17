@@ -123,7 +123,10 @@ struct rtcp_packet_t {
 		struct {
 			/** list of sources */
 			apr_uint32_t ssrc[1];
-			/* can't express trailing text for reason */
+			/* optional length of reason string (in octets) */
+			apr_byte_t length;
+			/* optional reason string, not null-terminated */
+			char       data[1];
 		} bye;
 	} r;
 };
