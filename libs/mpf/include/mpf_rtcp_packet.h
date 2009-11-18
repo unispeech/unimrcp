@@ -26,6 +26,8 @@
 
 APT_BEGIN_EXTERN_C
 
+
+/** RTCP payload (packet) types */
 typedef enum {
 	RTCP_SR   = 200,
 	RTCP_RR   = 201,
@@ -34,6 +36,7 @@ typedef enum {
 	RTCP_APP  = 204
 } rtcp_type_e;
 
+/** RTCP SDES types */
 typedef enum {
 	RTCP_SDES_END   = 0,
 	RTCP_SDES_CNAME = 1,
@@ -124,12 +127,73 @@ struct rtcp_packet_t {
 			/** list of sources */
 			apr_uint32_t ssrc[1];
 			/* optional length of reason string (in octets) */
-			apr_byte_t length;
+			apr_byte_t   length;
 			/* optional reason string, not null-terminated */
-			char       data[1];
+			char         data[1];
 		} bye;
 	} r;
 };
+
+/** Initialize RTCP header */
+static APR_INLINE void rtcp_header_init(rtcp_header_t *header, rtcp_type_e pt)
+{
+	header->version = RTP_VERSION;
+	header->padding = 0;
+	header->count = 0;
+	header->pt = pt;
+	header->length = 0;
+}
+
+static APR_INLINE void rtcp_header_length_set(rtcp_header_t *header, apr_size_t length)
+{
+	header->length = htons((apr_uint16_t)length / 4 - 1);
+}
+
+static APR_INLINE void rtcp_sr_hton(rtcp_sr_stat_t *sr_stat)
+{
+	sr_stat->ssrc = htonl(sr_stat->ssrc);
+	sr_stat->ntp_sec = htonl(sr_stat->ntp_sec);
+	sr_stat->ntp_frac = htonl(sr_stat->ntp_frac);
+	sr_stat->rtp_ts = htonl(sr_stat->rtp_ts);
+	sr_stat->sent_packets = htonl(sr_stat->sent_packets);
+	sr_stat->sent_octets = htonl(sr_stat->sent_octets);
+}
+
+static APR_INLINE void rtcp_sr_ntoh(rtcp_sr_stat_t *sr_stat)
+{
+	sr_stat->ssrc = ntohl(sr_stat->ssrc);
+	sr_stat->ntp_sec = ntohl(sr_stat->ntp_sec);
+	sr_stat->ntp_frac = ntohl(sr_stat->ntp_frac);
+	sr_stat->rtp_ts = ntohl(sr_stat->rtp_ts);
+	sr_stat->sent_packets = ntohl(sr_stat->sent_packets);
+	sr_stat->sent_octets = ntohl(sr_stat->sent_octets);
+}
+
+static APR_INLINE void rtcp_rr_hton(rtcp_rr_stat_t *rr_stat)
+{
+	rr_stat->ssrc = htonl(rr_stat->ssrc);
+	rr_stat->last_seq =	htonl(rr_stat->last_seq);
+	rr_stat->jitter = htonl(rr_stat->jitter);
+
+#if (APR_IS_BIGENDIAN == 0)
+	rr_stat->lost = ((rr_stat->lost >> 16) & 0x000000ff) |
+						(rr_stat->lost & 0x0000ff00) |
+							((rr_stat->lost << 16) & 0x00ff0000);
+#endif
+}
+
+static APR_INLINE void rtcp_rr_ntoh(rtcp_rr_stat_t *rr_stat)
+{
+	rr_stat->ssrc = ntohl(rr_stat->ssrc);
+	rr_stat->last_seq =	ntohl(rr_stat->last_seq);
+	rr_stat->jitter = ntohl(rr_stat->jitter);
+
+#if (APR_IS_BIGENDIAN == 0)
+	rr_stat->lost = ((rr_stat->lost >> 16) & 0x000000ff) |
+						(rr_stat->lost & 0x0000ff00) |
+							((rr_stat->lost << 16) & 0x00ff0000);
+#endif
+}
 
 APT_END_EXTERN_C
 

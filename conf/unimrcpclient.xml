@@ -68,8 +68,10 @@
              2 - send rtcp bye also at the end of each talkspurt (input)
         -->
         <param name="rtcp-bye" value="1"/>
-        <!-- rtcp transmission interval in msec -->
+        <!-- rtcp transmission interval in msec (set 0 to disable) -->
         <param name="rtcp-tx-interval" value="5000"/>
+        <!-- period (timeout) to check for new rtcp messages in msec (set 0 to disable) -->
+        <param name="rtcp-rx-resolution" value="1000"/>
       </rtp>
     </media>
   </settings>

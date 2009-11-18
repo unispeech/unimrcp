@@ -123,10 +123,12 @@ struct mpf_rtp_config_t {
 	apt_bool_t        own_preferrence;
 	/** Enable/disable RTCP support */
 	apt_bool_t        rtcp;
-	/** RTCP report transmission interval */
-	apr_uint16_t      rtcp_tx_interval;
 	/** RTCP BYE policy */
 	rtcp_bye_policy_e rtcp_bye_policy;
+	/** RTCP report transmission interval */
+	apr_uint16_t      rtcp_tx_interval;
+	/** RTCP rx resolution (timeout to check for a new RTCP message) */
+	apr_uint16_t      rtcp_rx_resolution;
 	/** Jitter buffer config */
 	mpf_jb_config_t   jb_config;
 };
@@ -182,8 +184,9 @@ static APR_INLINE mpf_rtp_config_t* mpf_rtp_config_create(apr_pool_t *pool)
 	mpf_codec_list_init(&rtp_config->codec_list,0,pool);
 	rtp_config->own_preferrence = FALSE;
 	rtp_config->rtcp = FALSE;
-	rtp_config->rtcp_tx_interval = 0;
 	rtp_config->rtcp_bye_policy = RTCP_BYE_DISABLE;
+	rtp_config->rtcp_tx_interval = 0;
+	rtp_config->rtcp_rx_resolution = 0;
 	mpf_jb_config_init(&rtp_config->jb_config);
 
 	return rtp_config;

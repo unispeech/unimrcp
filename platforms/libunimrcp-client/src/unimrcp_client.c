@@ -416,6 +416,9 @@ static mpf_termination_factory_t* unimrcp_client_rtp_factory_load(mrcp_client_t 
 				else if(strcasecmp(attr_name->value,"rtcp-tx-interval") == 0) {
 					rtp_config->rtcp_tx_interval = (apr_uint16_t)atoi(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"rtcp-rx-resolution") == 0) {
+					rtp_config->rtcp_rx_resolution = (apr_uint16_t)atol(attr_value->value);
+				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
