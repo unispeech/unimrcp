@@ -80,18 +80,20 @@ MPF_DECLARE(mpf_timer_t*) mpf_timer_create(mpf_timer_manager_t *timer_manager, m
 	return timer;
 }
 
-static APR_INLINE mpf_timer_t* mpt_timer_get_by_time(mpf_timer_manager_t *manager, apr_uint32_t time)
+static APR_INLINE apt_bool_t mpf_timer_insert(mpf_timer_manager_t *manager, mpf_timer_t *timer)
 {
 	mpf_timer_t *it;
 	for(it = APR_RING_LAST(&manager->head);
 			it != APR_RING_SENTINEL(&manager->head, mpf_timer_t, link);
 				it = APR_RING_PREV(it, link)) {
 		
-		if(it->scheduled_time <= time) {
-			return it;
+		if(it->scheduled_time <= timer->scheduled_time) {
+			APR_RING_INSERT_AFTER(it,timer,link);
+			return TRUE;
 		}
 	}
-	return NULL;
+	APR_RING_INSERT_HEAD(&manager->head,timer,mpf_timer_t,link);
+	return TRUE;
 }
 
 /** Set one-shot timer */
@@ -110,18 +112,11 @@ MPF_DECLARE(apt_bool_t) mpf_timer_set(mpf_timer_t *timer, apr_uint32_t timeout)
 
 	if(APR_RING_EMPTY(&timer->manager->head, mpf_timer_t, link)) {
 		APR_RING_INSERT_TAIL(&manager->head,timer,mpf_timer_t,link);
+		return TRUE;
 	}
-	else {
-		/* insert new node (timer) to sorted by scheduled time list */
-		mpf_timer_t *it = mpt_timer_get_by_time(manager,timer->scheduled_time);
-		if(!it) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Set Timer 0x%x [%d]",timer,timer->scheduled_time);
-			timer->scheduled_time = 0;
-			return FALSE;
-		}
-		APR_RING_INSERT_AFTER(it,timer,link);
-	}
-	return TRUE;
+
+	/* insert new node (timer) to sorted by scheduled time list */
+	return mpf_timer_insert(manager,timer);
 }
 
 /** Kill timer */
