@@ -80,7 +80,7 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_f
 		params->input_file = apr_pstrdup(pool,input_file);
 	}
 	else {
-		params->input_file = "one.pcm";
+		params->input_file = "one-8kHz.pcm";
 	}
 	
 	if(profile) {
