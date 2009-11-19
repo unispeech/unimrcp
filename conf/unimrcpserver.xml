@@ -79,6 +79,7 @@
       <engine name="Flite-1" class="mrcpflite" enable="0"/>
       <engine name="Demo-Synth-1" class="demosynth" enable="1"/>
       <engine name="Demo-Recog-1" class="demorecog" enable="1"/>
+      <engine name="Recorder-1" class="mrcprecorder" enable="1"/>
     </plugin>
   </settings>
 
