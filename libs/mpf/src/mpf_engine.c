@@ -52,7 +52,7 @@ mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
 
-MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
+MPF_DECLARE(mpf_engine_t*) mpf_engine_create(unsigned long rate, apr_pool_t *pool)
 {
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
@@ -88,6 +88,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
 
 	engine->scheduler = mpf_scheduler_create(engine->pool);
+	mpf_scheduler_rate_set(engine->scheduler,rate);
 	mpf_scheduler_media_clock_set(engine->scheduler,CODEC_FRAME_TIME_BASE,mpf_engine_main,engine);
 
 	engine->timer_manager = mpf_timer_manager_create(engine->scheduler,engine->pool);

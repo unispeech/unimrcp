@@ -37,7 +37,8 @@
 
 struct mpf_scheduler_t {
 	apr_pool_t          *pool;
-	unsigned long        resolution;
+	unsigned long        resolution; /* scheduler resolution */
+	unsigned long        rate; /* faster than real-time simulation */
 
 	unsigned long        media_resolution;
 	mpf_scheduler_proc_f media_proc;
@@ -65,6 +66,7 @@ MPF_DECLARE(mpf_scheduler_t*) mpf_scheduler_create(apr_pool_t *pool)
 	mpf_scheduler_init(scheduler);
 	scheduler->pool = pool;
 	scheduler->resolution = 0;
+	scheduler->rate = 1;
 
 	scheduler->media_resolution = 0;
 	scheduler->media_obj = NULL;
@@ -110,6 +112,18 @@ MPF_DECLARE(apt_bool_t) mpf_scheduler_timer_clock_set(
 	return TRUE;
 }
 
+/** Set scheduler rate, which shows how many times scheduler is faster than real-time */
+MPF_DECLARE(apt_bool_t) mpf_scheduler_rate_set(mpf_scheduler_t *scheduler, unsigned long rate)
+{
+	if(rate > 10) {
+		/* do not allow rate more than 10 times faster than real-time */
+		return FALSE;
+	}
+	/* set rate for simualation of faster than real-time behavior */
+	scheduler->rate = rate;
+	return TRUE;
+}
+
 static APR_INLINE void mpf_scheduler_resolution_set(mpf_scheduler_t *scheduler)
 {
 	if(scheduler->media_resolution) {
@@ -118,6 +132,8 @@ static APR_INLINE void mpf_scheduler_resolution_set(mpf_scheduler_t *scheduler)
 	else if(scheduler->timer_resolution) {
 		scheduler->resolution = scheduler->timer_resolution;
 	}
+
+	scheduler->resolution /= scheduler->rate;
 }
 
 

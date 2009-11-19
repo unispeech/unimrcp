@@ -447,18 +447,22 @@ static apt_bool_t unimrcp_client_media_engines_load(mrcp_client_t *client, const
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"engine") == 0) {
 			mpf_engine_t *media_engine;
+			unsigned long rate = 1;
 			const char *name = NULL;
 			const apr_xml_attr *attr;
 			for(attr = elem->attr; attr; attr = attr->next) {
 				if(strcasecmp(attr->name,"name") == 0) {
 					name = apr_pstrdup(pool,attr->value);
 				}
+				else if(strcasecmp(attr->name,"rate") == 0) {
+					rate = atol(attr->value);
+				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
 				}
 			}
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Media Engine");
-			media_engine = mpf_engine_create(pool);
+			media_engine = mpf_engine_create(rate,pool);
 			if(media_engine) {
 				mrcp_client_media_engine_register(client,media_engine,name);
 			}

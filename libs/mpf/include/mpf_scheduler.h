@@ -49,6 +49,11 @@ MPF_DECLARE(apt_bool_t) mpf_scheduler_timer_clock_set(
 								mpf_scheduler_proc_f proc,
 								void *obj);
 
+/** Set scheduler rate, which shows how many times scheduler is faster than real-time */
+MPF_DECLARE(apt_bool_t) mpf_scheduler_rate_set(
+								mpf_scheduler_t *scheduler,
+								unsigned long rate);
+
 /** Start scheduler */
 MPF_DECLARE(apt_bool_t) mpf_scheduler_start(mpf_scheduler_t *scheduler);
 
