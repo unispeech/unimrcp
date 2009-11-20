@@ -87,8 +87,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(unsigned long rate, apr_pool_t *poo
 	engine->request_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&engine->request_queue_guard,APR_THREAD_MUTEX_UNNESTED,engine->pool);
 
-	engine->scheduler = mpf_scheduler_create(engine->pool);
-	mpf_scheduler_rate_set(engine->scheduler,rate);
+	engine->scheduler = mpf_scheduler_create(rate,engine->pool);
 	mpf_scheduler_media_clock_set(engine->scheduler,CODEC_FRAME_TIME_BASE,mpf_engine_main,engine);
 
 	engine->timer_manager = mpf_timer_manager_create(engine->scheduler,engine->pool);
