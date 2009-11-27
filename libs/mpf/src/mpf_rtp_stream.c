@@ -1034,11 +1034,11 @@ static apr_socket_t* mpf_socket_create(apr_sockaddr_t **l_sockaddr, const char *
 		0,
 		pool);
 	if(!*l_sockaddr) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Sockaddr %s:%hu",ip,port);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Get Sockaddr %s:%hu",ip,port);
 		return NULL;
 	}
 	if(apr_socket_create(&socket,(*l_sockaddr)->family,SOCK_DGRAM,0,pool) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Socket %s:%hu", ip,port);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Create Socket %s:%hu", ip,port);
 		return NULL;
 	}
 	
@@ -1047,7 +1047,7 @@ static apr_socket_t* mpf_socket_create(apr_sockaddr_t **l_sockaddr, const char *
 	apr_socket_opt_set(socket,APR_SO_REUSEADDR,1);
 
 	if(apr_socket_bind(socket,*l_sockaddr) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Bind Socket to %s:%hu", ip,port);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Bind Socket to %s:%hu", ip,port);
 		apr_socket_close(socket);
 		return NULL;
 	}
