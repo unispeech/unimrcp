@@ -52,7 +52,6 @@ UmcFramework::UmcFramework() :
 	m_pTask(NULL),
 	m_pMrcpClient(NULL),
 	m_pMrcpApplication(NULL),
-	m_Ready(false),
 	m_pScenarioTable(NULL),
 	m_pSessionTable(NULL)
 {
@@ -69,19 +68,7 @@ bool UmcFramework::Create(apt_dir_layout_t* pDirLayout, apr_pool_t* pool)
 
 	m_pSessionTable = apr_hash_make(m_pPool);
 	m_pScenarioTable = apr_hash_make(m_pPool);
-	if(!CreateTask())
-		return false;
-
-	/* wait for READY state,
-	   preferably cond wait object should be used */
-	int attempts = 0;
-	while(!m_Ready && attempts < 10)
-	{
-		attempts++;
-		apr_sleep(500000);
-	}
-
-	return true;
+	return CreateTask();
 }
 
 void UmcFramework::Destroy()
@@ -155,7 +142,6 @@ bool UmcFramework::CreateTask()
 		pVtable->on_terminate_complete = UmcOnTerminateComplete;
 	}
 
-	m_Ready = false;
 	apt_task_start(pTask);
 	return true;
 }
@@ -524,13 +510,6 @@ apt_bool_t AppOnResourceDiscover(mrcp_application_t *application, mrcp_session_t
 	return pSession->OnResourceDiscover(descriptor,status);
 }
 
-apt_bool_t AppOnReady(mrcp_application_t *application, mrcp_sig_status_code_e status)
-{
-	UmcFramework* pFramework = (UmcFramework*) mrcp_application_object_get(application);
-	pFramework->m_Ready = true;
-	return TRUE;
-}
-
 void UmcOnStartComplete(apt_task_t* pTask)
 {
 	apt_consumer_task_t* pConsumerTask = (apt_consumer_task_t*) apt_task_object_get(pTask);
@@ -568,7 +547,6 @@ apt_bool_t UmcProcessMsg(apt_task_t *pTask, apt_task_msg_t *pMsg)
 				AppOnChannelAdd,
 				AppOnChannelRemove,
 				AppOnMessageReceive,
-				AppOnReady,
 				AppOnTerminateEvent,
 				AppOnResourceDiscover
 			};
@@ -578,26 +556,22 @@ apt_bool_t UmcProcessMsg(apt_task_t *pTask, apt_task_msg_t *pMsg)
 		}
 		case UMC_TASK_RUN_SESSION_MSG:
 		{
-			if(pFramework->m_Ready)
-				pFramework->ProcessRunRequest(pUmcMsg->m_ScenarioName,pUmcMsg->m_ProfileName);
+			pFramework->ProcessRunRequest(pUmcMsg->m_ScenarioName,pUmcMsg->m_ProfileName);
 			break;
 		}
 		case UMC_TASK_KILL_SESSION_MSG:
 		{
-			if(pFramework->m_Ready)
-				pFramework->ProcessKillRequest(pUmcMsg->m_SessionId);
+			pFramework->ProcessKillRequest(pUmcMsg->m_SessionId);
 			break;
 		}
 		case UMC_TASK_SHOW_SCENARIOS_MSG:
 		{
-			if(pFramework->m_Ready)
-				pFramework->ProcessShowScenarios();
+			pFramework->ProcessShowScenarios();
 			break;
 		}
 		case UMC_TASK_SHOW_SESSIONS_MSG:
 		{
-			if(pFramework->m_Ready)
-				pFramework->ProcessShowSessions();
+			pFramework->ProcessShowSessions();
 			break;
 		}
 	}

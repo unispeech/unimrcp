@@ -1264,13 +1264,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_message_dispatch(const mrcp_app_messag
 			}
 			else if(app_message->sig_message.message_type == MRCP_SIG_MESSAGE_TYPE_EVENT) {
 				switch(app_message->sig_message.event_id) {
-					case MRCP_SIG_EVENT_READY:
-						if(dispatcher->on_ready) {
-							status = dispatcher->on_ready(
-										app_message->application,
-										app_message->sig_message.status);
-						}
-						break;
 					case MRCP_SIG_EVENT_TERMINATE:
 						if(dispatcher->on_terminate_event) {
 							status = dispatcher->on_terminate_event(
