@@ -177,6 +177,7 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 			}
 		} while((is_port_ok == FALSE) && (first_port_in_search != rtp_stream->config->rtp_port_cur));
 		if(is_port_ok == FALSE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Free RTP Port");
 			local_media->state = MPF_MEDIA_DISABLED;
 			status = FALSE;
 		}
@@ -1057,13 +1058,13 @@ static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_m
 {
 	stream->rtp_socket = mpf_socket_create(&stream->rtp_l_sockaddr,local_media->ip.buf,local_media->port,stream->pool);
 	if(!stream->rtp_socket) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RTP Socket");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Create RTP Socket");
 		return FALSE;
 	}
 
 	stream->rtcp_socket = mpf_socket_create(&stream->rtcp_l_sockaddr,local_media->ip.buf,local_media->port+1,stream->pool);
 	if(!stream->rtcp_socket) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RTCP Socket");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Create RTCP Socket");
 	}
 	return TRUE;
 }
