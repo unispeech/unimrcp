@@ -438,5 +438,7 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 	if(task->vtable.on_post_run) {
 		task->vtable.on_post_run(task);
 	}
+
+	apr_thread_exit(thread_handle,APR_SUCCESS);
 	return NULL;
 }
