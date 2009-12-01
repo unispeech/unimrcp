@@ -363,6 +363,10 @@ APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task)
 	while(elem) {
 		child_task = apt_list_elem_object_get(elem);
 		if(child_task) {
+			if(child_task->thread_handle) {
+				apr_thread_detach(child_task->thread_handle);
+				child_task->thread_handle = NULL;
+			}
 			if(apt_task_terminate(child_task,FALSE) == TRUE) {
 				task->pending_term++;
 			}
