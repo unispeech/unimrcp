@@ -237,7 +237,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_start(mrcp_client_t *client)
 	}
 
 	if(sync_start == TRUE) {
-		/* get prepared to start stack syncronously */
+		/* get prepared to start stack synchronously */
 		apr_thread_mutex_create(&client->sync_start_mutex,APR_THREAD_MUTEX_DEFAULT,client->pool);
 		apr_thread_cond_create(&client->sync_start_object,client->pool);
 		
