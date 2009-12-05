@@ -57,7 +57,7 @@ MPF_DECLARE(mpf_timer_manager_t*) mpf_timer_manager_create(mpf_scheduler_t *sche
 	mpf_timer_manager_t *timer_manager = apr_palloc(pool,sizeof(mpf_timer_manager_t));
 	APR_RING_INIT(&timer_manager->head, mpf_timer_t, link);
 	timer_manager->elapsed_time = 0;
-	timer_manager->resolution = 100; // 100 ms
+	timer_manager->resolution = 100; /* 100 ms */
 
 	mpf_scheduler_timer_clock_set(scheduler,timer_manager->resolution,mpf_scheduler_proc,timer_manager);
 	return timer_manager;
