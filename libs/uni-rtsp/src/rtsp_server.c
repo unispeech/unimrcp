@@ -131,7 +131,8 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 		return NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Server %s:%hu [%d]",listen_ip,listen_port,max_connection_count);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Server %s:%hu [%"APR_SIZE_T_FMT"]",
+		listen_ip,listen_port,max_connection_count);
 	server = apr_palloc(pool,sizeof(rtsp_server_t));
 	server->pool = pool;
 	server->obj = obj;
@@ -657,7 +658,8 @@ static apt_bool_t rtsp_server_on_disconnect(apt_net_server_task_t *task, apt_net
 		rtsp_server_session_t *session;
 		void *val;
 		apr_hash_index_t *it;
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Terminate Remaining RTSP Sessions [%d]",remaining_sessions);
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Terminate Remaining RTSP Sessions [%"APR_SIZE_T_FMT"]",
+			remaining_sessions);
 		it = apr_hash_first(connection->pool,rtsp_connection->session_table);
 		for(; it; it = apr_hash_next(it)) {
 			apr_hash_this(it,NULL,NULL,&val);

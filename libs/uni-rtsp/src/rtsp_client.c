@@ -138,7 +138,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_client_t *client;
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Client [%d]",max_connection_count);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Client [%"APR_SIZE_T_FMT"]",max_connection_count);
 	client = apr_palloc(pool,sizeof(rtsp_client_t));
 	client->pool = pool;
 	client->obj = obj;
@@ -407,7 +407,7 @@ static apt_bool_t rtsp_client_session_url_generate(rtsp_client_session_t *sessio
 static apt_bool_t rtsp_client_request_push(rtsp_client_connection_t *rtsp_connection, rtsp_client_session_t *session, rtsp_message_t *message)
 {
 	/* add request to inprogress request queue */
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Push RTSP Request to In-Progress Queue "APT_PTRSID_FMT" CSeq:%d",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Push RTSP Request to In-Progress Queue "APT_PTRSID_FMT" CSeq:%"APR_SIZE_T_FMT,
 		session,
 		message->header.session_id.buf ? message->header.session_id.buf : "new",
 		message->header.cseq);
@@ -429,7 +429,7 @@ static apt_bool_t rtsp_client_request_pop(rtsp_client_connection_t *rtsp_connect
 			if(ret_request) {
 				*ret_request = session->active_request;
 			}
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Pop In-Progress RTSP Request "APT_PTR_FMT" CSeq:%d", 
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Pop In-Progress RTSP Request "APT_PTR_FMT" CSeq:%"APR_SIZE_T_FMT, 
 				session, 
 				response->header.cseq);
 			apt_list_elem_remove(rtsp_connection->inprogress_request_queue,elem);
@@ -663,7 +663,7 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 	if(remaining_handles) {
 		void *val;
 		apr_hash_index_t *it;
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Terminate Remaining RTSP Handles [%d]",remaining_handles);
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Terminate Remaining RTSP Handles [%"APR_SIZE_T_FMT"]",remaining_handles);
 		it = apr_hash_first(rtsp_connection->base->pool,rtsp_connection->session_table);
 		for(; it; it = apr_hash_next(it)) {
 			apr_hash_this(it,NULL,NULL,&val);
@@ -738,7 +738,8 @@ static apt_bool_t rtsp_client_message_handler(void *obj, rtsp_message_t *message
 		rtsp_client_session_t *session;
 		/* at first, pop in-progress request/session */
 		if(rtsp_client_request_pop(rtsp_connection,message,&request,&session) == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected RTSP Response Received CSeq:%d",message->header.cseq);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected RTSP Response Received CSeq:%"APR_SIZE_T_FMT,
+				message->header.cseq);
 			return FALSE;
 		}
 

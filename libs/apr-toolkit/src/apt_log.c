@@ -269,7 +269,7 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 static const char* apt_log_file_path_make(apt_log_file_data_t *file_data)
 {
 	char *log_file_path = NULL;
-	const char *log_file_name = apr_psprintf(file_data->pool,"%s-%d.log",file_data->log_file_name,file_data->cur_file_index);
+	const char *log_file_name = apr_psprintf(file_data->pool,"%s-%"APR_SIZE_T_FMT".log",file_data->log_file_name,file_data->cur_file_index);
 	apr_filepath_merge(&log_file_path,file_data->log_dir_path,log_file_name,0,file_data->pool);
 	return log_file_path;
 }

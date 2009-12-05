@@ -99,7 +99,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(rtsp_server_con
 	apt_task_name_set(task,UNIRTSP_TASK_NAME);
 	agent->sig_agent->task = task;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "UNIRTSP_TASK_NAME" %s:%hu [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "UNIRTSP_TASK_NAME" %s:%hu [%"APR_SIZE_T_FMT"]",
 		config->local_ip,
 		config->local_port,
 		config->max_connection_count);
