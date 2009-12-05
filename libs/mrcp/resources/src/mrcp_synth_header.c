@@ -253,25 +253,6 @@ static apt_bool_t mrcp_speech_length_generate(mrcp_speech_length_value_t *speech
 	return TRUE;
 }
 
-/** Generate MRCP synthesizer completion-cause */
-static apt_bool_t mrcp_completion_cause_generate(mrcp_synth_completion_cause_e completion_cause, apt_text_stream_t *stream)
-{
-	int length;
-	const apt_str_t *name = apt_string_table_str_get(completion_cause_string_table,SYNTHESIZER_COMPLETION_CAUSE_COUNT,completion_cause);
-	if(!name) {
-		return FALSE;
-	}
-	length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT" ",completion_cause);
-	if(length <= 0) {
-		return FALSE;
-	}
-	stream->pos += length;
-
-	memcpy(stream->pos,name->buf,name->length);
-	stream->pos += name->length;
-	return TRUE;
-}
-
 /** Initialize synthesizer header */
 static void mrcp_synth_header_init(mrcp_synth_header_t *synth_header)
 {
@@ -398,7 +379,11 @@ static apt_bool_t mrcp_synth_header_generate(mrcp_header_accessor_t *accessor, s
 			apt_string_value_generate(&synth_header->speaker_profile,value);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
-			mrcp_completion_cause_generate(synth_header->completion_cause,value);
+			mrcp_completion_cause_generate(
+				completion_cause_string_table,
+				SYNTHESIZER_COMPLETION_CAUSE_COUNT,
+				synth_header->completion_cause,
+				value);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_REASON:
 			apt_string_value_generate(&synth_header->completion_reason,value);
