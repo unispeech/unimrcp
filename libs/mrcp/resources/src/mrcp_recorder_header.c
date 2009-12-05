@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
 #include "mrcp_recorder_header.h"
 
 /** String table of recorder headers (mrcp_recorder_header_id) */

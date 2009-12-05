@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
 #include "mrcp_recog_header.h"
 
 /** String table of MRCPv1 recognizer headers (mrcp_recog_header_id) */

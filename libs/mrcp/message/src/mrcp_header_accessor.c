@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "mrcp_header_accessor.h"
 
 typedef enum {
