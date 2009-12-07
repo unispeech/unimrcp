@@ -19,6 +19,5 @@
 		Name="VCLinkerTool"
 		LinkIncremental="2"
 		GenerateDebugInformation="true"
-		TargetMachine="1"
 	/>
 </VisualStudioPropertySheet>
