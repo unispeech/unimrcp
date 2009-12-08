@@ -36,12 +36,12 @@ struct mpf_jitter_buffer_t {
 	/* number of frames */
 	apr_size_t       frame_count;
 	/* frame timestamp units (samples) */
-	apr_size_t       frame_ts;
+	apr_uint32_t    frame_ts;
 	/* frame size in bytes */
 	apr_size_t       frame_size;
 
 	/* playout delay in timetsamp units */
-	apr_size_t       playout_delay_ts;
+	apr_uint32_t     playout_delay_ts;
 
 	/* write should be synchronized (offset calculated) */
 	apr_byte_t       write_sync;
@@ -49,14 +49,14 @@ struct mpf_jitter_buffer_t {
 	int              write_ts_offset;
 	
 	/* write pointer in timestamp units */
-	apr_size_t       write_ts;
+	apr_uint32_t     write_ts;
 	/* read pointer in timestamp units */
-	apr_size_t       read_ts;
+	apr_uint32_t     read_ts;
 
 	/* timestamp event starts at */
-	apr_size_t              event_write_base_ts;
+	apr_uint32_t                   event_write_base_ts;
 	/* the first (base) frame of the event */
-	mpf_named_event_frame_t event_write_base;
+	mpf_named_event_frame_t        event_write_base;
 	/* the last received update for the event */
 	const mpf_named_event_frame_t *event_write_update;
 };
@@ -90,7 +90,7 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 	jb->config = jb_config;
 	jb->codec = codec;
 
-	jb->frame_ts = mpf_codec_frame_samples_calculate(descriptor);
+	jb->frame_ts = (apr_uint32_t)mpf_codec_frame_samples_calculate(descriptor);
 	jb->frame_size = mpf_codec_frame_size_calculate(descriptor,codec->attribs);
 	jb->frame_count = jb->config->max_playout_delay / CODEC_FRAME_TIME_BASE;
 	jb->raw_data = apr_palloc(pool,jb->frame_size*jb->frame_count);
@@ -102,8 +102,8 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 		frame->codec_frame.buffer = jb->raw_data + i*jb->frame_size;
 	}
 
-	jb->playout_delay_ts = jb->config->initial_playout_delay *
-		descriptor->channel_count * descriptor->sampling_rate / 1000;
+	jb->playout_delay_ts = (apr_uint32_t)(jb->config->initial_playout_delay *
+		descriptor->channel_count * descriptor->sampling_rate / 1000);
 
 	jb->write_sync = 1;
 	jb->write_ts_offset = 0;
@@ -139,7 +139,7 @@ static APR_INLINE mpf_frame_t* mpf_jitter_buffer_frame_get(mpf_jitter_buffer_t *
 	return &jb->frames[index];
 }
 
-static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_t *jb, apr_uint32_t ts, apr_size_t *write_ts)
+static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_t *jb, apr_uint32_t ts, apr_uint32_t *write_ts)
 {
 	if(jb->write_sync) {
 		jb->write_ts_offset = ts - jb->write_ts;
@@ -157,7 +157,7 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts)
 {
 	mpf_frame_t *media_frame;
-	apr_size_t write_ts;
+	apr_uint32_t write_ts;
 	apr_size_t available_frame_count;
 	jb_result_t result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts);
 	if(result != JB_OK) {
@@ -213,7 +213,7 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_named_event_frame_t *named_event, apr_uint32_t ts, apr_byte_t marker)
 {
 	mpf_frame_t *media_frame;
-	apr_size_t write_ts;
+	apr_uint32_t write_ts;
 	jb_result_t result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts);
 	if(result != JB_OK) {
 		return result;

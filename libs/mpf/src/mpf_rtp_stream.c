@@ -910,7 +910,7 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 					transmitter->packet_data,
 					&transmitter->packet_size) == APR_SUCCESS) {
 			transmitter->sr_stat.sent_packets++;
-			transmitter->sr_stat.sent_octets += transmitter->packet_size - sizeof(rtp_header_t);
+			transmitter->sr_stat.sent_octets += (apr_uint32_t)transmitter->packet_size - sizeof(rtp_header_t);
 		}
 		else {
 			status = FALSE;
