@@ -221,7 +221,7 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 
 	/* new event detection */
 	if(!marker) {
-		if(jb->event_write_base.event_id != named_event->event_id) {
+		if(jb->event_write_base.event_id != named_event->event_id || !jb->event_write_update) {
 			/* new event detected, marker is missing though */
 			marker = 1;
 		}
