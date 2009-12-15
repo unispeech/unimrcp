@@ -612,6 +612,7 @@ static apt_bool_t flite_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_
 #endif
 
 		if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
+			frame->type &= ~MEDIA_FRAME_TYPE_EVENT;
 			flite_synth_speak_complete_raise(synth_channel);
 		}
 	}
