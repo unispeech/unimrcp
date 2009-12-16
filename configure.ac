@@ -213,6 +213,8 @@ AC_CONFIG_FILES([
   build/pkgconfig/unimrcpclient.pc
   build/pkgconfig/unimrcpserver.pc
   build/pkgconfig/unimrcpplugin.pc
+  conf/Makefile
+  data/Makefile
 ])
 
 AC_OUTPUT
