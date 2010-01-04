@@ -12,4 +12,3 @@ DefaultGroupName=UniMRCP
 Compression=lzma
 InternalCompressLevel=max
 SolidCompression=true
-

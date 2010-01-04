@@ -1,7 +1,7 @@
 [Setup]
-#include "setup.iss"
-#define uni_outdir "..\..\Release"
-OutputBaseFilename=unimrcp-{#= uni_version}
+; include either setup-win32.txt or setup-x64.txt
+#include "setup-win32.txt"
+;#include "setup-x64.txt"
 
 [Types]
 Name: full; Description: Full installation

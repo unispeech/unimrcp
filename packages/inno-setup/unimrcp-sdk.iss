@@ -1,6 +1,7 @@
 [Setup]
-#include "setup.iss"
-OutputBaseFilename=unimrcp-sdk-{#= uni_version}
+; include either setup-sdk-win32.txt or setup-sdk-x64.txt
+#include "setup-sdk-win32.txt"
+;#include "setup-sdk-x64.txt"
 
 [Types]
 Name: full; Description: Full installation
@@ -29,10 +30,10 @@ Source: {#= uni_src}\libs\mrcp-client\include\*.h; DestDir: {app}\include; Compo
 Source: {#= uni_src}\libs\mrcp-server\include\*.h; DestDir: {app}\include; Components: sdk
 Source: {#= uni_src}\platforms\libunimrcp-client\include\*.h; DestDir: {app}\include; Components: sdk
 Source: {#= uni_src}\platforms\libunimrcp-server\include\*.h; DestDir: {app}\include; Components: sdk
-Source: {#= uni_src}\Release\lib\*.lib; DestDir: {app}\lib; Components: sdk
-Source: {#= uni_src}\libs\apr\Release\*.lib; DestDir: {app}\lib; Components: sdk
-Source: {#= uni_src}\libs\apr-util\Release\*.lib; DestDir: {app}\lib; Components: sdk
-Source: {#= uni_src}\libs\sofia-sip\win32\libsofia-sip-ua\Release\*.lib; DestDir: {app}\lib; Components: sdk
+Source: {#= uni_src}\{#= release_dir}\lib\*.lib; DestDir: {app}\lib; Components: sdk
+Source: {#= uni_src}\libs\apr\{#= release_dir}\*.lib; DestDir: {app}\lib; Components: sdk
+Source: {#= uni_src}\libs\apr-util\{#= release_dir}\*.lib; DestDir: {app}\lib; Components: sdk
+Source: {#= uni_src}\libs\sofia-sip\win32\libsofia-sip-ua\{#= release_dir}\*.lib; DestDir: {app}\lib; Components: sdk
 Source: {#= uni_src}\build\vsprops\sdk\*.vsprops; DestDir: {app}\vsprops; Components: sdk; AfterInstall: SetProjectPath()
 Source: {#= uni_src}\docs\ea\*; DestDir: {app}\doc\ea; Components: docs/design; Flags: recursesubdirs
 Source: {#= uni_src}\docs\dox\*; DestDir: {app}\doc\dox; Components: docs/api; Flags: recursesubdirs
