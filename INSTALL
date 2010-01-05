@@ -73,6 +73,10 @@ To install the default configuration use
 $ cd conf
 $ make def-conf
 
+To install the default data use
+$ cd data
+$ make def-data
+
 To generate doxygen documentation from the source use
 $ make dox
 
