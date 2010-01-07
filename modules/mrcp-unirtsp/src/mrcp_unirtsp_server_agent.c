@@ -202,7 +202,7 @@ static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrc
 		apt_str_t resource_name_str;
 
 		text_stream.text = message->body;
-		text_stream.pos = text_stream.text.buf;
+		apt_text_stream_reset(&text_stream);
 		apt_string_set(&resource_name_str,resource_name);
 
 		parser = mrcp_parser_create(agent->sig_agent->resource_factory,session->mrcp_session->pool);

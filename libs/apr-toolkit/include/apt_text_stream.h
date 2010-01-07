@@ -115,12 +115,18 @@ static APR_INLINE apt_bool_t apt_string_value_generate(const apt_str_t *str, apt
 	return TRUE;
 }
 
+/** Reset navigation related data of the text stream */
+static APR_INLINE void apt_text_stream_reset(apt_text_stream_t *stream)
+{
+	stream->pos = stream->text.buf;
+}
+
 /** Initialize text stream */
 static APR_INLINE void apt_text_stream_init(apt_text_stream_t *stream, char *buffer, apr_size_t size)
 {
 	stream->text.buf = buffer;
 	stream->text.length = size;
-	stream->pos = stream->text.buf;
+	apt_text_stream_reset(stream);
 }
 
 /** Insert end of the line symbol(s) */

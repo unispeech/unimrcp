@@ -361,6 +361,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_stream_walk(mrcp_parser_t *parser, apt_text_stream
 	while(apt_text_is_eos(stream) == FALSE);
 
 	/* reset stream pos */
-	stream->pos = stream->text.buf;
+	apt_text_stream_reset(stream);
 	return TRUE;
 }

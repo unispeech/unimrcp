@@ -130,7 +130,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse MRCP Stream [%lu bytes]\n%s",length,stream.pos);
 		
 		/* reset pos */
-		stream.pos = stream.text.buf;
+		apt_text_stream_reset(&stream);
 		mrcp_stream_walk(parser,&stream,mrcp_message_handler,generator);
 	}
 	while(apr_file_eof(file) != APR_EOF);

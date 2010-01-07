@@ -699,7 +699,7 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 	rtsp_generator_message_set(rtsp_connection->generator,message);
 	do {
 		stream->text.length = sizeof(rtsp_connection->tx_buffer)-1;
-		stream->pos = stream->text.buf;
+		apt_text_stream_reset(stream);
 		result = rtsp_generator_run(rtsp_connection->generator,stream);
 		if(result == RTSP_STREAM_MESSAGE_COMPLETE || result == RTSP_STREAM_MESSAGE_TRUNCATED) {
 			stream->text.length = stream->pos - stream->text.buf;
@@ -802,7 +802,7 @@ static apt_bool_t rtsp_client_message_receive(apt_net_client_task_t *task, apt_n
 		stream->pos);
 
 	/* reset pos */
-	stream->pos = stream->text.buf;
+	apt_text_stream_reset(stream);
 	/* walk through the stream parsing RTSP messages */
 	return rtsp_stream_walk(rtsp_connection->parser,stream,rtsp_client_message_handler,rtsp_connection);
 }

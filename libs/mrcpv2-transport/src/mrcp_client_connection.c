@@ -528,8 +528,8 @@ static apt_bool_t mrcp_client_agent_messsage_receive(mrcp_connection_agent_t *ag
 		stream->pos);
 
 	/* reset pos */
-	stream->pos = stream->text.buf;
-	/* walk through the stream parsing RTSP messages */
+	apt_text_stream_reset(stream);
+	/* walk through the stream parsing MRCP messages */
 	return mrcp_stream_walk(connection->parser,stream,mrcp_client_message_handler,connection);
 }
 

@@ -282,6 +282,6 @@ RTSP_DECLARE(apt_bool_t) rtsp_stream_walk(rtsp_parser_t *parser, apt_text_stream
 	while(apt_text_is_eos(stream) == FALSE);
 
 	/* reset stream pos */
-	stream->pos = stream->text.buf;
+	apt_text_stream_reset(stream);
 	return TRUE;
 }

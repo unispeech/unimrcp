@@ -213,7 +213,7 @@ static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *spe
 		apt_str_t str;
 		apt_text_stream_t stream;
 		stream.text = *value;
-		stream.pos = stream.text.buf;
+		apt_text_stream_reset(&stream);
 		stream.pos++;
 		if(apt_text_field_read(&stream,APT_TOKEN_SP,TRUE,&str) == FALSE) {
 			return FALSE;

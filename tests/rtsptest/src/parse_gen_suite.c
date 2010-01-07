@@ -98,7 +98,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse RTSP Stream [%lu bytes]\n%s",length,stream.pos);
 		
 		/* reset pos */
-		stream.pos = stream.text.buf;
+		apt_text_stream_reset(&stream);
 		rtsp_stream_walk(parser,&stream,rtsp_message_handler,generator);
 	}
 	while(apr_file_eof(file) != APR_EOF);
