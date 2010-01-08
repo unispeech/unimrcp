@@ -233,7 +233,7 @@ static apt_bool_t apt_pair_parse(apt_pair_t *pair, const apt_str_t *field, apr_p
 {
 	apt_text_stream_t stream;
 	stream.text = *field;
-	stream.pos = stream.text.buf;
+	apt_text_stream_reset(&stream);
 
 	/* read name */
 	if(apt_text_field_read(&stream,'=',TRUE,&pair->name) == FALSE) {
@@ -256,7 +256,7 @@ APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_
 	}
 
 	stream.text = *value;
-	stream.pos = stream.text.buf;
+	apt_text_stream_reset(&stream);
 	/* read name-value pairs */
 	while(apt_text_field_read(&stream,';',TRUE,&field) == TRUE) {
 		pair = apr_array_push(arr);
