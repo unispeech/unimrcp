@@ -514,7 +514,7 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 	apt_bool_t status = FALSE;
 	rtsp_server_connection_t *rtsp_connection;
 	apt_text_stream_t *stream;
-	rtsp_stream_result_e result;
+	rtsp_stream_status_e result;
 
 	if(!connection || !connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No RTSP Connection");
@@ -528,7 +528,7 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 		stream->text.length = sizeof(rtsp_connection->tx_buffer)-1;
 		apt_text_stream_reset(stream);
 		result = rtsp_generator_run(rtsp_connection->generator,stream);
-		if(result == RTSP_STREAM_MESSAGE_COMPLETE || result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+		if(result != RTSP_STREAM_STATUS_INVALID) {
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
@@ -547,15 +547,15 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, apt_net_server
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Stream");
 		}
 	}
-	while(result == RTSP_STREAM_MESSAGE_TRUNCATED);
+	while(result == RTSP_STREAM_STATUS_INCOMPLETE);
 
 	return status;
 }
 
-static apt_bool_t rtsp_server_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_result_e result)
+static apt_bool_t rtsp_server_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_status_e status)
 {
 	rtsp_server_connection_t *rtsp_connection = obj;
-	if(result == RTSP_STREAM_MESSAGE_COMPLETE) {
+	if(status == RTSP_STREAM_STATUS_COMPLETE) {
 		/* message is completely parsed */
 		apt_str_t *destination;
 		rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
@@ -565,7 +565,7 @@ static apt_bool_t rtsp_server_message_handler(void *obj, rtsp_message_t *message
 		}
 		rtsp_server_session_request_process(rtsp_connection->server,rtsp_connection,message);
 	}
-	else if(result == RTSP_STREAM_MESSAGE_INVALID) {
+	else if(status == RTSP_STREAM_STATUS_INVALID) {
 		/* error case */
 		rtsp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Stream");

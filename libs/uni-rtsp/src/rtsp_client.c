@@ -687,7 +687,7 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 	apt_bool_t status = FALSE;
 	rtsp_client_connection_t *rtsp_connection;
 	apt_text_stream_t *stream;
-	rtsp_stream_result_e result;
+	rtsp_stream_status_e result;
 
 	if(!connection || !connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No RTSP Connection");
@@ -701,7 +701,7 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 		stream->text.length = sizeof(rtsp_connection->tx_buffer)-1;
 		apt_text_stream_reset(stream);
 		result = rtsp_generator_run(rtsp_connection->generator,stream);
-		if(result == RTSP_STREAM_MESSAGE_COMPLETE || result == RTSP_STREAM_MESSAGE_TRUNCATED) {
+		if(result != RTSP_STREAM_STATUS_INVALID) {
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
@@ -720,15 +720,15 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Stream");
 		}
 	}
-	while(result == RTSP_STREAM_MESSAGE_TRUNCATED);
+	while(result == RTSP_STREAM_STATUS_INCOMPLETE);
 
 	return status;
 }
 
-static apt_bool_t rtsp_client_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_result_e result)
+static apt_bool_t rtsp_client_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_status_e status)
 {
 	rtsp_client_connection_t *rtsp_connection = obj;
-	if(result != RTSP_STREAM_MESSAGE_COMPLETE) {
+	if(status != RTSP_STREAM_STATUS_COMPLETE) {
 		/* message is not completely parsed, nothing to do */
 		return TRUE;
 	}
