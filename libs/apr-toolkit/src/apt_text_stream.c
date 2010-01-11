@@ -232,16 +232,19 @@ APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt
 static apt_bool_t apt_pair_parse(apt_pair_t *pair, const apt_str_t *field, apr_pool_t *pool)
 {
 	apt_text_stream_t stream;
+	apt_str_t item;
 	stream.text = *field;
 	apt_text_stream_reset(&stream);
 
 	/* read name */
-	if(apt_text_field_read(&stream,'=',TRUE,&pair->name) == FALSE) {
+	if(apt_text_field_read(&stream,'=',TRUE,&item) == FALSE) {
 		return FALSE;
 	}
+	apt_string_copy(&pair->name,&item,pool);
 
 	/* read value */
-	apt_text_field_read(&stream,';',TRUE,&pair->value);
+	apt_text_field_read(&stream,';',TRUE,&item);
+	apt_string_copy(&pair->value,&item,pool);
 	return TRUE;
 }
 
