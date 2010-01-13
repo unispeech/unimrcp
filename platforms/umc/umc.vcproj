@@ -308,6 +308,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\setparamscenario.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\setparamsession.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\synthscenario.cpp"
 				>
 			</File>
@@ -359,6 +367,14 @@
 			</File>
 			<File
 				RelativePath=".\include\recordersession.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\setparamscenario.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\setparamsession.h"
 				>
 			</File>
 			<File
