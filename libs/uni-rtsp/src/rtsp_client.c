@@ -307,8 +307,9 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 }
 
 /* Destroy RTSP connection */
-static apt_bool_t rtsp_client_connection_destroy(rtsp_client_t *client, rtsp_client_connection_t *rtsp_connection)
+static apt_bool_t rtsp_client_connection_destroy(rtsp_client_connection_t *rtsp_connection)
 {
+	rtsp_client_t *client = rtsp_connection->client;
 	apt_list_elem_remove(client->connection_list,rtsp_connection->it);
 	apt_net_client_disconnect(client->task,rtsp_connection->base);
 
@@ -328,10 +329,6 @@ static apt_bool_t rtsp_client_session_terminate_respond(rtsp_client_t *client, r
 
 	session->term_state = TERMINATION_STATE_NONE;
 	client->vtable->on_session_terminate_response(client,session);
-	
-	if(apr_hash_count(rtsp_connection->handle_table) == 0) {
-		rtsp_client_connection_destroy(client,rtsp_connection);
-	}
 	return TRUE;
 }
 
@@ -378,6 +375,10 @@ static apt_bool_t rtsp_client_session_terminate_process(rtsp_client_t *client, r
 		/* respond immediately if no resources left */
 		if(apr_hash_count(session->resource_table) == 0) {
 			rtsp_client_session_terminate_respond(client,session);
+
+			if(apr_hash_count(rtsp_connection->handle_table) == 0) {
+				rtsp_client_connection_destroy(rtsp_connection);
+			}
 		}
 	}
 
@@ -676,7 +677,7 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 	}
 
 	if(!remaining_handles && !cancelled_requests) {
-		rtsp_client_connection_destroy(client,rtsp_connection);
+		rtsp_client_connection_destroy(rtsp_connection);
 	}
 	return TRUE;
 }
@@ -725,6 +726,7 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, apt_net_client
 	return status;
 }
 
+/** return TRUE to proceed with the next message in the stream (if any) */
 static apt_bool_t rtsp_client_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_status_e status)
 {
 	rtsp_client_connection_t *rtsp_connection = obj;
@@ -740,7 +742,7 @@ static apt_bool_t rtsp_client_message_handler(void *obj, rtsp_message_t *message
 		if(rtsp_client_request_pop(rtsp_connection,message,&request,&session) == FALSE) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected RTSP Response Received CSeq:%"APR_SIZE_T_FMT,
 				message->header.cseq);
-			return FALSE;
+			return TRUE;
 		}
 
 		/* next, process session response */
@@ -757,6 +759,12 @@ static apt_bool_t rtsp_client_message_handler(void *obj, rtsp_message_t *message
 				/* respond if no resources left */
 				if(apr_hash_count(session->resource_table) == 0) {
 					rtsp_client_session_terminate_respond(rtsp_connection->client,session);
+
+					if(apr_hash_count(rtsp_connection->handle_table) == 0) {
+						rtsp_client_connection_destroy(rtsp_connection);
+						/* return FALSE to indicate connection has been destroyed */
+						return FALSE;
+					}
 				}
 			}
 		}

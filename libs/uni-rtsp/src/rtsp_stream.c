@@ -258,8 +258,10 @@ RTSP_DECLARE(apt_bool_t) rtsp_stream_walk(rtsp_parser_t *parser, apt_text_stream
 		if(status == RTSP_STREAM_STATUS_COMPLETE) {
 			/* message is completely parsed */
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Parsed RTSP Message [%lu]", stream->pos - stream->text.buf);
-			/* invoke message handler */
-			handler(obj,parser->message,status);
+			/* connection has already been destroyed, if handler return FALSE  */
+			if(handler(obj,parser->message,status) == FALSE) {
+				return TRUE;
+			}
 		}
 		else if(status == RTSP_STREAM_STATUS_INCOMPLETE) {
 			/* message is partially parsed, to be continued */
@@ -274,9 +276,10 @@ RTSP_DECLARE(apt_bool_t) rtsp_stream_walk(rtsp_parser_t *parser, apt_text_stream
 			/* error case */
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Message");
 			/* invoke message handler */
-			handler(obj,parser->message,status);
-			/* reset stream pos */
-			stream->pos = stream->text.buf;
+			if(handler(obj,parser->message,status) == TRUE) {
+				/* reset stream pos */
+				stream->pos = stream->text.buf;
+			}
 			return FALSE;
 		}
 	}
