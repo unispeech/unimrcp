@@ -62,22 +62,24 @@ struct mrcp_connection_t {
 	apr_hash_t       *channel_table;
 
 	/** Rx buffer */
-	char              rx_buffer[MRCP_STREAM_BUFFER_SIZE];
+	char             *rx_buffer;
+	/** Rx buffer size */
+	apr_size_t        rx_buffer_size;
 	/** Rx stream */
 	apt_text_stream_t rx_stream;
 	/** MRCP parser to parser MRCP messages out of rx stream */
 	mrcp_parser_t    *parser;
 
 	/** Tx buffer */
-	char              tx_buffer[MRCP_STREAM_BUFFER_SIZE];
-	/** Tx stream */
-	apt_text_stream_t tx_stream;
-	/** MRCP generator to generate MRCP messages out of tx stream */
+	char             *tx_buffer;
+	/** Tx buffer size */
+	apr_size_t        tx_buffer_size;
+	/** MRCP generator to generate MRCP messages into tx stream */
 	mrcp_generator_t *generator;
 };
 
 /** Create MRCP connection. */
-mrcp_connection_t* mrcp_connection_create(void);
+mrcp_connection_t* mrcp_connection_create();
 
 /** Destroy MRCP connection. */
 void mrcp_connection_destroy(mrcp_connection_t *connection);

@@ -38,6 +38,8 @@ struct mrcp_connection_agent_t {
 
 	apt_bool_t               force_new_connection;
 	apr_size_t               max_connection_count;
+	apr_size_t               tx_buffer_size;
+	apr_size_t               rx_buffer_size;
 
 	apr_sockaddr_t          *sockaddr;
 	/* Listening socket */
@@ -97,6 +99,8 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->pollset = NULL;
 	agent->max_connection_count = max_connection_count;
 	agent->force_new_connection = force_new_connection;
+	agent->rx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
+	agent->tx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 
 	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,agent->pool);
 	if(!agent->sockaddr) {
@@ -175,6 +179,28 @@ MRCP_DECLARE(void) mrcp_server_connection_resource_factory_set(
 								mrcp_resource_factory_t *resource_factroy)
 {
 	agent->resource_factory = resource_factroy;
+}
+
+/** Set rx buffer size */
+MRCP_DECLARE(void) mrcp_server_connection_rx_size_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t size)
+{
+	if(size < MRCP_STREAM_BUFFER_SIZE) {
+		size = MRCP_STREAM_BUFFER_SIZE;
+	}
+	agent->rx_buffer_size = size;
+}
+
+/** Set tx buffer size */
+MRCP_DECLARE(void) mrcp_server_connection_tx_size_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t size)
+{
+	if(size < MRCP_STREAM_BUFFER_SIZE) {
+		size = MRCP_STREAM_BUFFER_SIZE;
+	}
+	agent->tx_buffer_size = size;
 }
 
 /** Get task */
@@ -460,8 +486,17 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Accepted TCP/MRCPv2 Connection %s",connection->id);
 	connection->agent = agent;
 	connection->it = apt_list_push_back(agent->connection_list,connection,connection->pool);
+
 	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
 	connection->generator = mrcp_generator_create(agent->resource_factory,connection->pool);
+
+	connection->tx_buffer_size = agent->tx_buffer_size;
+	connection->tx_buffer = apr_palloc(connection->pool,connection->tx_buffer_size+1);
+
+	connection->rx_buffer_size = agent->rx_buffer_size;
+	connection->rx_buffer = apr_palloc(connection->pool,connection->rx_buffer_size+1);
+	apt_text_stream_init(&connection->rx_stream,connection->rx_buffer,connection->rx_buffer_size);
+	
 	return TRUE;
 }
 
@@ -557,27 +592,26 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, mrcp_message_t *message)
 {
 	apt_bool_t status = FALSE;
-	apt_text_stream_t *stream;
+	apt_text_stream_t stream;
 	mrcp_stream_status_e result;
 	if(!connection || !connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCPv2 Connection");
 		return FALSE;
 	}
-	stream = &connection->tx_stream;
 
 	mrcp_generator_message_set(connection->generator,message);
 	do {
-		apt_text_stream_init(&connection->tx_stream,connection->tx_buffer,sizeof(connection->tx_buffer)-1);
-		result = mrcp_generator_run(connection->generator,stream);
+		apt_text_stream_init(&stream,connection->tx_buffer,connection->tx_buffer_size);
+		result = mrcp_generator_run(connection->generator,&stream);
 		if(result != MRCP_STREAM_STATUS_INVALID) {
-			stream->text.length = stream->pos - stream->text.buf;
-			*stream->pos = '\0';
+			stream.text.length = stream.pos - stream.text.buf;
+			*stream.pos = '\0';
 
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %s [%lu bytes]\n%s",
 				connection->id,
-				stream->text.length,
-				stream->text.buf);
-			if(apr_socket_send(connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
+				stream.text.length,
+				stream.text.buf);
+			if(apr_socket_send(connection->sock,stream.text.buf,&stream.text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
 			else {
@@ -636,13 +670,17 @@ static apt_bool_t mrcp_server_agent_messsage_receive(mrcp_connection_agent_t *ag
 		return FALSE;
 	}
 	stream = &connection->rx_stream;
-	
-	/* init length of the stream */
-	stream->text.length = sizeof(connection->rx_buffer)-1;
-	/* calculate offset remaining from the previous receive / if any */
-	offset = stream->pos - stream->text.buf;
-	/* calculate available length */
-	length = stream->text.length - offset;
+
+	/* init length of the buffer to read */
+	offset = 0;
+	length = connection->rx_buffer_size;
+	if(stream->pos > stream->text.buf) {
+		/* calculate offset remaining from the previous receive / if any */
+		offset = stream->pos - stream->text.buf;
+		/* calculate available length */
+		length -= offset;
+	}
+
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
 		return mrcp_server_agent_connection_close(agent,connection);

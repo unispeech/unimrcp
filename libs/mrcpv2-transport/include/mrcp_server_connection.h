@@ -81,6 +81,24 @@ MRCP_DECLARE(void) mrcp_server_connection_resource_factory_set(
 								mrcp_resource_factory_t *resource_factory);
 
 /**
+ * Set rx buffer size.
+ * @param agent the agent to set buffer size for
+ * @param size the size of rx buffer to set
+ */
+MRCP_DECLARE(void) mrcp_server_connection_rx_size_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t size);
+
+/**
+ * Set tx buffer size.
+ * @param agent the agent to set buffer size for
+ * @param size the size of the rx buffer to set
+ */
+MRCP_DECLARE(void) mrcp_server_connection_tx_size_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t size);
+
+/**
  * Get task.
  * @param agent the agent to get task from
  */

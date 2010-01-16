@@ -35,10 +35,13 @@ mrcp_connection_t* mrcp_connection_create()
 	connection->access_count = 0;
 	connection->it = NULL;
 	connection->channel_table = apr_hash_make(pool);
-	apt_text_stream_init(&connection->rx_stream,connection->rx_buffer,sizeof(connection->rx_buffer)-1);
-	apt_text_stream_init(&connection->tx_stream,connection->tx_buffer,sizeof(connection->tx_buffer)-1);
 	connection->parser = NULL;
 	connection->generator = NULL;
+	connection->rx_buffer = NULL;
+	connection->rx_buffer_size = 0;
+	connection->tx_buffer = NULL;
+	connection->tx_buffer_size = 0;
+
 	return connection;
 }
 

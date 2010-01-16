@@ -332,6 +332,9 @@ static mrcp_connection_agent_t* unimrcp_server_connection_agent_load(mrcp_server
 	apr_port_t mrcp_port = DEFAULT_MRCP_PORT;
 	apr_size_t max_connection_count = 100;
 	apt_bool_t force_new_connection = FALSE;
+	apr_size_t rx_buffer_size = 0;
+	apr_size_t tx_buffer_size = 0;
+	mrcp_connection_agent_t *agent;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading MRCPv2 Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -352,13 +355,28 @@ static mrcp_connection_agent_t* unimrcp_server_connection_agent_load(mrcp_server
 				else if(strcasecmp(attr_name->value,"force-new-connection") == 0) {
 					force_new_connection = atoi(attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"rx-buffer-size") == 0) {
+					rx_buffer_size = atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"tx-buffer-size") == 0) {
+					tx_buffer_size = atoi(attr_value->value);
+				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
 			}
 		}
 	}    
-	return mrcp_server_connection_agent_create(mrcp_ip,mrcp_port,max_connection_count,force_new_connection,pool);
+	agent = mrcp_server_connection_agent_create(mrcp_ip,mrcp_port,max_connection_count,force_new_connection,pool);
+	if(agent) {
+		if(rx_buffer_size) {
+			mrcp_server_connection_rx_size_set(agent,rx_buffer_size);
+		}
+		if(tx_buffer_size) {
+			mrcp_server_connection_tx_size_set(agent,tx_buffer_size);
+		}
+	}
+	return agent;
 }
 
 /** Load MRCPv2 conection agents */
