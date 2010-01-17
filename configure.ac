@@ -215,6 +215,7 @@ AC_CONFIG_FILES([
   build/pkgconfig/unimrcpplugin.pc
   conf/Makefile
   data/Makefile
+  docs/doxygen.conf
 ])
 
 AC_OUTPUT
