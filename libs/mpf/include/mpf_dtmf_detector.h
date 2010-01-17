@@ -17,7 +17,7 @@
 #ifndef __MPF_DTMF_DETECTOR_H__
 #define __MPF_DTMF_DETECTOR_H__
 
-/*
+/**
  * @file mpf_dtmf_detector.h
  * @brief DTMF detector
  *

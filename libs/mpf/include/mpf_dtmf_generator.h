@@ -17,8 +17,8 @@
 #ifndef __MPF_DTMF_GENERATOR_H__
 #define __MPF_DTMF_GENERATOR_H__
 
-/*
- * @file mpf_named_event.h
+/**
+ * @file mpf_dtmf_generator.h
  * @brief DTMF generator
  *
  * Generator used to send DTMF tones. Capable to send digits
