@@ -26,6 +26,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Declaration of signaling server params */
+typedef struct mrcp_sig_server_params_t mrcp_sig_server_params_t;
+
 /** Opaque MRCP signaling agent declaration */
 typedef struct mrcp_sig_agent_t mrcp_sig_agent_t;
 

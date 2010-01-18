@@ -123,6 +123,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
+									mrcp_sig_server_params_t *server_params,
 									apr_pool_t *pool);
 
 /**

@@ -168,8 +168,6 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 	mrcp_sofia_client_config_t *config = mrcp_sofiasip_client_config_alloc(pool);
 	config->local_ip = DEFAULT_LOCAL_IP_ADDRESS;
 	config->local_port = DEFAULT_SIP_LOCAL_PORT;
-	config->remote_ip = DEFAULT_REMOTE_IP_ADDRESS;
-	config->remote_port = DEFAULT_SIP_REMOTE_PORT;
 	config->ext_ip = NULL;
 	config->user_agent_name = DEFAULT_SOFIASIP_UA_NAME;
 	config->origin = DEFAULT_SDP_ORIGIN;
@@ -189,18 +187,6 @@ static mrcp_sig_agent_t* unimrcp_client_sofiasip_agent_load(mrcp_client_t *clien
 				}
 				else if(strcasecmp(attr_name->value,"client-port") == 0) {
 					config->local_port = (apr_port_t)atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"server-ip") == 0) {
-					config->remote_ip = ip_addr_get(attr_value->value,pool);
-				}
-				else if(strcasecmp(attr_name->value,"server-port") == 0) {
-					config->remote_port = (apr_port_t)atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"server-username") == 0) {
-					config->remote_user_name = apr_pstrdup(pool,attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"force-destination") == 0) {
-					config->force_destination = atoi(attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"sip-transport") == 0) {
 					config->transport = apr_pstrdup(pool,attr_value->value);
@@ -226,7 +212,6 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 	const apr_xml_elem *elem;
 	rtsp_client_config_t *config = mrcp_unirtsp_client_config_alloc(pool);
 	config->origin = DEFAULT_SDP_ORIGIN;
-	config->resource_location = DEFAULT_RESOURCE_LOCATION;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading UniRTSP Agent");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -235,23 +220,49 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 			const apr_xml_attr *attr_value;
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
-				if(strcasecmp(attr_name->value,"server-ip") == 0) {
-					config->server_ip = ip_addr_get(attr_value->value,pool);
-				}
-				else if(strcasecmp(attr_name->value,"server-port") == 0) {
-					config->server_port = (apr_port_t)atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"resource-location") == 0) {
-					config->resource_location = apr_pstrdup(pool,attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
+				if(strcasecmp(attr_name->value,"sdp-origin") == 0) {
 					config->origin = apr_pstrdup(pool,attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"max-connection-count") == 0) {
 					config->max_connection_count = atol(attr_value->value);
 				}
+				else {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
+				}
+			}
+		}
+	}    
+	return mrcp_unirtsp_client_agent_create(config,pool);
+}
+
+/** Load signaling server params */
+static mrcp_sig_server_params_t* unimrcp_client_server_params_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	mrcp_sig_server_params_t *params = mrcp_server_params_alloc(pool);
+	params->resource_location = DEFAULT_RESOURCE_LOCATION;
+
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Signaling Server Params");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			const apr_xml_attr *attr_name;
+			const apr_xml_attr *attr_value;
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				if(strcasecmp(attr_name->value,"server-ip") == 0) {
+					params->server_ip = ip_addr_get(attr_value->value,pool);
+				}
+				else if(strcasecmp(attr_name->value,"server-port") == 0) {
+					params->server_port = (apr_port_t)atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"server-username") == 0) {
+					params->user_name = apr_pstrdup(pool,attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"resource-location") == 0) {
+					params->resource_location = apr_pstrdup(pool,attr_value->value);
+				}
 				else if(strcasecmp(attr_name->value,"force-destination") == 0) {
-					config->force_destination = atoi(attr_value->value);
+					params->force_destination = atoi(attr_value->value);
 				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
@@ -259,11 +270,12 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 			}
 		}
 		else if(strcasecmp(elem->name,"resourcemap") == 0) {
-			resource_map_load(config->resource_map,elem,pool);
+			resource_map_load(params->resource_map,elem,pool);
 		}
-	}    
-	return mrcp_unirtsp_client_agent_create(config,pool);
+	}
+	return params;
 }
+
 
 /** Load signaling agents */
 static apt_bool_t unimrcp_client_signaling_agents_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
@@ -592,6 +604,7 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 	mrcp_connection_agent_t *cnt_agent = NULL;
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
+	mrcp_sig_server_params_t *server_params = NULL;
 	const apr_xml_elem *elem;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
@@ -630,10 +643,13 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 				}
 			}
 		}
+		else if(strcasecmp(elem->name,"server-params") == 0) {
+			server_params = unimrcp_client_server_params_load(client,elem,pool);
+		}
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Profile [%s]",name);
-	profile = mrcp_client_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,pool);
+	profile = mrcp_client_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,server_params,pool);
 	return mrcp_client_profile_register(client,profile,name);
 }
 

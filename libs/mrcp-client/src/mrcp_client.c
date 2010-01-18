@@ -428,6 +428,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
+									mrcp_sig_server_params_t *server_params,
 									apr_pool_t *pool)
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
@@ -436,6 +437,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 	profile->rtp_termination_factory = rtp_factory;
 	profile->signaling_agent = signaling_agent;
 	profile->connection_agent = connection_agent;
+	profile->server_params = server_params;
 	return profile;
 }
 
@@ -456,6 +458,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 	if(profile->signaling_agent->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
+		return FALSE;
+	}
+
+	if(!profile->server_params) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing server params",name);
 		return FALSE;
 	}
 

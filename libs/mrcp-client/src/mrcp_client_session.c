@@ -1191,7 +1191,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 	
 	if(session->registered == FALSE) {
 		session->base.signaling_agent = session->profile->signaling_agent;
-		session->base.signaling_agent->create_client_session(&session->base);
+		session->base.signaling_agent->create_client_session(&session->base,session->profile->server_params);
 
 		mrcp_client_session_add(session->application->client,session);
 		session->registered = TRUE;

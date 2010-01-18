@@ -33,6 +33,20 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_vers
 	return sig_agent;
 }
 
+/** Allocate MRCP server params */
+MRCP_DECLARE(mrcp_sig_server_params_t*) mrcp_server_params_alloc(apr_pool_t *pool)
+{
+	mrcp_sig_server_params_t *params = apr_palloc(pool,sizeof(mrcp_sig_server_params_t));
+	params->server_ip = NULL;
+	params->server_port = 0;
+	params->user_name = NULL;
+	params->resource_location = NULL;
+	params->resource_map = apr_table_make(pool,2);
+	params->force_destination = FALSE;
+	return params;
+}
+
+
 MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding)
 {
 	mrcp_session_t *session;
