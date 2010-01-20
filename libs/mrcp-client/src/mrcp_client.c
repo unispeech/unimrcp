@@ -49,6 +49,8 @@ struct mrcp_client_t {
 	apr_hash_t              *sig_agent_table;
 	/** Table of connection agents (mrcp_connection_agent_t*) */
 	apr_hash_t              *cnt_agent_table;
+	/** Table of RTP settings (mpf_rtp_settings_t*) */
+	apr_hash_t              *rtp_settings_table;
 	/** Table of profiles (mrcp_profile_t*) */
 	apr_hash_t              *profile_table;
 
@@ -178,6 +180,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 	client->rtp_factory_table = NULL;
 	client->sig_agent_table = NULL;
 	client->cnt_agent_table = NULL;
+	client->rtp_settings_table = NULL;
 	client->profile_table = NULL;
 	client->app_table = NULL;
 	client->session_table = NULL;
@@ -202,6 +205,7 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 	client->rtp_factory_table = apr_hash_make(client->pool);
 	client->sig_agent_table = apr_hash_make(client->pool);
 	client->cnt_agent_table = apr_hash_make(client->pool);
+	client->rtp_settings_table = apr_hash_make(client->pool);
 	client->profile_table = apr_hash_make(client->pool);
 	client->app_table = apr_hash_make(client->pool);
 	
@@ -372,6 +376,23 @@ MRCP_DECLARE(mpf_termination_factory_t*) mrcp_client_rtp_factory_get(mrcp_client
 	return apr_hash_get(client->rtp_factory_table,name,APR_HASH_KEY_STRING);
 }
 
+/** Register RTP settings */
+MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_settings_register(mrcp_client_t *client, mpf_rtp_settings_t *rtp_settings, const char *name)
+{
+	if(!rtp_settings || !name) {
+		return FALSE;
+	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register RTP Settings [%s]",name);
+	apr_hash_set(client->rtp_settings_table,name,APR_HASH_KEY_STRING,rtp_settings);
+	return TRUE;
+}
+
+/** Get RTP settings by name */
+MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(mrcp_client_t *client, const char *name)
+{
+	return apr_hash_get(client->rtp_settings_table,name,APR_HASH_KEY_STRING);
+}
+
 /** Register MRCP signaling agent */
 MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *client, mrcp_sig_agent_t *signaling_agent, const char *name)
 {
@@ -428,6 +449,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
+									mpf_rtp_settings_t *rtp_settings,
 									mrcp_sig_server_params_t *server_params,
 									apr_pool_t *pool)
 {
@@ -435,6 +457,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 	profile->resource_factory = resource_factory;
 	profile->media_engine = media_engine;
 	profile->rtp_termination_factory = rtp_factory;
+	profile->rtp_settings = rtp_settings;
 	profile->signaling_agent = signaling_agent;
 	profile->connection_agent = connection_agent;
 	profile->server_params = server_params;

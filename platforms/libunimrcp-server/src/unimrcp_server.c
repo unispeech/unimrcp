@@ -415,7 +415,7 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 	const apr_xml_elem *elem;
 	char *rtp_ip = DEFAULT_IP_ADDRESS;
 	char *rtp_ext_ip = NULL;
-	mpf_rtp_config_t *rtp_config = mpf_rtp_config_create(pool);
+	mpf_rtp_config_t *rtp_config = mpf_rtp_config_alloc(pool);
 	rtp_config->rtp_port_min = DEFAULT_RTP_PORT_MIN;
 	rtp_config->rtp_port_max = DEFAULT_RTP_PORT_MAX;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading RTP Termination Factory");
@@ -437,39 +437,6 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 				else if(strcasecmp(attr_name->value,"rtp-port-max") == 0) {
 					rtp_config->rtp_port_max = (apr_port_t)atol(attr_value->value);
 				}
-				else if(strcasecmp(attr_name->value,"playout-delay") == 0) {
-					rtp_config->jb_config.initial_playout_delay = atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"min-playout-delay") == 0) {
-					rtp_config->jb_config.min_playout_delay = atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"max-playout-delay") == 0) {
-					rtp_config->jb_config.max_playout_delay = atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"codecs") == 0) {
-					const mpf_codec_manager_t *codec_manager = mrcp_server_codec_manager_get(server);
-					if(codec_manager) {
-						mpf_codec_manager_codec_list_load(codec_manager,&rtp_config->codec_list,attr_value->value,pool);
-					}
-				}
-				else if(strcasecmp(attr_name->value,"ptime") == 0) {
-					rtp_config->ptime = (apr_uint16_t)atol(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"own-preference") == 0) {
-					rtp_config->own_preferrence = atoi(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"rtcp") == 0) {
-					rtp_config->rtcp = atoi(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"rtcp-bye") == 0) {
-					rtp_config->rtcp_bye_policy = atoi(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"rtcp-tx-interval") == 0) {
-					rtp_config->rtcp_tx_interval = (apr_uint16_t)atoi(attr_value->value);
-				}
-				else if(strcasecmp(attr_name->value,"rtcp-rx-resolution") == 0) {
-					rtp_config->rtcp_rx_resolution = (apr_uint16_t)atol(attr_value->value);
-				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
@@ -482,6 +449,61 @@ static mpf_termination_factory_t* unimrcp_server_rtp_factory_load(mrcp_server_t 
 	}
 	return mpf_rtp_termination_factory_create(rtp_config,pool);
 }
+
+/** Load RTP settings */
+static mpf_rtp_settings_t* unimrcp_server_rtp_settings_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	mpf_rtp_settings_t *rtp_settings = mpf_rtp_settings_alloc(pool);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading RTP Settings");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"param") == 0) {
+			const apr_xml_attr *attr_name;
+			const apr_xml_attr *attr_value;
+			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
+				if(strcasecmp(attr_name->value,"playout-delay") == 0) {
+					rtp_settings->jb_config.initial_playout_delay = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"min-playout-delay") == 0) {
+					rtp_settings->jb_config.min_playout_delay = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"max-playout-delay") == 0) {
+					rtp_settings->jb_config.max_playout_delay = atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"codecs") == 0) {
+					const mpf_codec_manager_t *codec_manager = mrcp_server_codec_manager_get(server);
+					if(codec_manager) {
+						mpf_codec_manager_codec_list_load(codec_manager,&rtp_settings->codec_list,attr_value->value,pool);
+					}
+				}
+				else if(strcasecmp(attr_name->value,"ptime") == 0) {
+					rtp_settings->ptime = (apr_uint16_t)atol(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"own-preference") == 0) {
+					rtp_settings->own_preferrence = atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtcp") == 0) {
+					rtp_settings->rtcp = atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtcp-bye") == 0) {
+					rtp_settings->rtcp_bye_policy = atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtcp-tx-interval") == 0) {
+					rtp_settings->rtcp_tx_interval = (apr_uint16_t)atoi(attr_value->value);
+				}
+				else if(strcasecmp(attr_name->value,"rtcp-rx-resolution") == 0) {
+					rtp_settings->rtcp_rx_resolution = (apr_uint16_t)atol(attr_value->value);
+				}
+				else {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
+				}
+			}
+		}
+	}
+	return rtp_settings;
+}
+
 
 /** Load media engines */
 static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const apr_xml_elem *root, apr_pool_t *pool)
@@ -534,6 +556,23 @@ static apt_bool_t unimrcp_server_media_engines_load(mrcp_server_t *server, const
 			rtp_factory = unimrcp_server_rtp_factory_load(server,elem,pool);
 			if(rtp_factory) {
 				mrcp_server_rtp_factory_register(server,rtp_factory,name);
+			}
+		}
+		else if(strcasecmp(elem->name,"rtp-settings") == 0) {
+			mpf_rtp_settings_t *rtp_settings;
+			const char *name = NULL;
+			const apr_xml_attr *attr;
+			for(attr = elem->attr; attr; attr = attr->next) {
+				if(strcasecmp(attr->name,"name") == 0) {
+					name = apr_pstrdup(pool,attr->value);
+				}
+				else {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+				}
+			}
+			rtp_settings = unimrcp_server_rtp_settings_load(server,elem,pool);
+			if(rtp_settings) {
+				mrcp_server_rtp_settings_register(server,rtp_settings,name);
 			}
 		}
 		else {
@@ -713,6 +752,7 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 	mrcp_connection_agent_t *cnt_agent = NULL;
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
+	mpf_rtp_settings_t *rtp_settings = NULL;
 	apr_table_t *plugin_map = NULL;
 	const apr_xml_elem *elem;
 	const apr_xml_attr *attr;
@@ -747,6 +787,9 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 				else if(strcasecmp(attr_name->value,"rtp-factory") == 0) {
 					rtp_factory = mrcp_server_rtp_factory_get(server,attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"rtp-settings") == 0) {
+					rtp_settings = mrcp_server_rtp_settings_get(server,attr_value->value);
+				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
 				}
@@ -759,7 +802,7 @@ static apt_bool_t unimrcp_server_profile_load(mrcp_server_t *server, const apr_x
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Profile [%s]",name);
-	profile = mrcp_server_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,pool);
+	profile = mrcp_server_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,rtp_settings,pool);
 	return mrcp_server_profile_register(server,profile,plugin_map,name);
 }
 

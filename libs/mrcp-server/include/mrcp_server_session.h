@@ -117,6 +117,8 @@ struct mrcp_profile_t {
 	mpf_engine_t              *media_engine;
 	/** RTP termination factory */
 	mpf_termination_factory_t *rtp_termination_factory;
+	/** RTP settings */
+	mpf_rtp_settings_t        *rtp_settings;
 	/** Signaling agent */
 	mrcp_sig_agent_t          *signaling_agent;
 	/** Connection agent */

@@ -145,6 +145,8 @@ struct mrcp_profile_t {
 
 	/** Signaling server params */
 	mrcp_sig_server_params_t  *server_params;
+	/** RTP settings */
+	mpf_rtp_settings_t        *rtp_settings;
 };
 
 /** MRCP application */

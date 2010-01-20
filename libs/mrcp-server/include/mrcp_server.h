@@ -24,6 +24,7 @@
 
 #include "mrcp_server_types.h"
 #include "mrcp_engine_iface.h"
+#include "mpf_rtp_descriptor.h"
 #include "apt_task.h"
 
 APT_BEGIN_EXTERN_C
@@ -99,6 +100,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server
 MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_factory_register(mrcp_server_t *server, mpf_termination_factory_t *rtp_termination_factory, const char *name);
 
 /**
+ * Register RTP settings.
+ * @param server the MRCP server to set RTP settings for
+ * @param rtp_settings the settings to set
+ * @param name the name of the settings
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_settings_register(mrcp_server_t *server, mpf_rtp_settings_t *rtp_settings, const char *name);
+
+/**
  * Register MRCP signaling agent.
  * @param server the MRCP server to set signaling agent for
  * @param signaling_agent the signaling agent to set
@@ -121,6 +130,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
+									mpf_rtp_settings_t *rtp_settings,
 									apr_pool_t *pool);
 
 /**
@@ -163,6 +173,13 @@ MRCP_DECLARE(mpf_engine_t*) mrcp_server_media_engine_get(mrcp_server_t *server, 
  * @param name the name to lookup
  */
 MRCP_DECLARE(mpf_termination_factory_t*) mrcp_server_rtp_factory_get(mrcp_server_t *server, const char *name);
+
+/** 
+ * Get RTP settings by name
+ * @param client the MRCP server to get from
+ * @param name the name to lookup
+ */
+MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_server_rtp_settings_get(mrcp_server_t *server, const char *name);
 
 /**
  * Get signaling agent by name.

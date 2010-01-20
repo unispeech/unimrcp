@@ -749,6 +749,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		/* initialize rtp descriptor */
 		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
 		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+		rtp_descriptor->audio.settings = profile->rtp_settings;
 		audio_stream = mpf_termination_audio_stream_get(channel->termination);
 		if(audio_stream) {
 			mpf_rtp_media_descriptor_t *media;
