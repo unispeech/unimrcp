@@ -143,8 +143,8 @@ struct mrcp_profile_t {
 	/** Connection agent */
 	mrcp_connection_agent_t   *connection_agent;
 
-	/** Signaling server params */
-	mrcp_sig_server_params_t  *server_params;
+	/** Signaling settings */
+	mrcp_sig_settings_t       *signaling_settings;
 	/** RTP settings */
 	mpf_rtp_settings_t        *rtp_settings;
 };

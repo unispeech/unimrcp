@@ -29,13 +29,13 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Parameters of signaling server */
-struct mrcp_sig_server_params_t {
+/** Signaling settings */
+struct mrcp_sig_settings_t {
 	/** Server IP address */
 	char        *server_ip;
 	/** Server port */
 	apr_port_t   server_port;
-	/** Remote SIP user name (v2 only) */
+	/** Server SIP user name (v2 only) */
 	char        *user_name;
 	/** Resource location (v1 only) */
 	char        *resource_location;
@@ -51,31 +51,31 @@ struct mrcp_sig_server_params_t {
 /** MRCP signaling agent  */
 struct mrcp_sig_agent_t {
 	/** Memory pool to allocate memory from */
-	apr_pool_t          *pool;
+	apr_pool_t              *pool;
 	/** External object associated with agent */
-	void                *obj;
+	void                    *obj;
 	/** Parent object (client/server) */
-	void                *parent;
+	void                    *parent;
 	/** MRCP version */
-	mrcp_version_e       mrcp_version;
+	mrcp_version_e           mrcp_version;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t *resource_factory;
 	/** Task interface */
-	apt_task_t          *task;
+	apt_task_t              *task;
 	/** Task message pool used to allocate signaling agent messages */
-	apt_task_msg_pool_t *msg_pool;
+	apt_task_msg_pool_t     *msg_pool;
 
 	/** Virtual create_server_session */
 	mrcp_session_t* (*create_server_session)(mrcp_sig_agent_t *signaling_agent);
 	/** Virtual create_client_session */
-	apt_bool_t (*create_client_session)(mrcp_session_t *session, mrcp_sig_server_params_t *params);
+	apt_bool_t (*create_client_session)(mrcp_session_t *session, mrcp_sig_settings_t *settings);
 };
 
 /** Create signaling agent. */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool);
 
-/** Allocate MRCP server params. */
-MRCP_DECLARE(mrcp_sig_server_params_t*) mrcp_server_params_alloc(apr_pool_t *pool);
+/** Allocate MRCP signaling settings. */
+MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_signaling_settings_alloc(apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

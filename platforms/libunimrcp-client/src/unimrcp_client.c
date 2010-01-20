@@ -236,13 +236,13 @@ static mrcp_sig_agent_t* unimrcp_client_rtsp_agent_load(mrcp_client_t *client, c
 }
 
 /** Load signaling server params */
-static mrcp_sig_server_params_t* unimrcp_client_server_params_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
+static mrcp_sig_settings_t* unimrcp_client_signaling_settings_load(mrcp_client_t *client, const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_elem *elem;
-	mrcp_sig_server_params_t *params = mrcp_server_params_alloc(pool);
-	params->resource_location = DEFAULT_RESOURCE_LOCATION;
+	mrcp_sig_settings_t *settings = mrcp_signaling_settings_alloc(pool);
+	settings->resource_location = DEFAULT_RESOURCE_LOCATION;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Signaling Server Params");
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Signaling Settings");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		if(strcasecmp(elem->name,"param") == 0) {
 			const apr_xml_attr *attr_name;
@@ -250,19 +250,19 @@ static mrcp_sig_server_params_t* unimrcp_client_server_params_load(mrcp_client_t
 			if(param_name_value_get(elem,&attr_name,&attr_value) == TRUE) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
 				if(strcasecmp(attr_name->value,"server-ip") == 0) {
-					params->server_ip = ip_addr_get(attr_value->value,pool);
+					settings->server_ip = ip_addr_get(attr_value->value,pool);
 				}
 				else if(strcasecmp(attr_name->value,"server-port") == 0) {
-					params->server_port = (apr_port_t)atol(attr_value->value);
+					settings->server_port = (apr_port_t)atol(attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"server-username") == 0) {
-					params->user_name = apr_pstrdup(pool,attr_value->value);
+					settings->user_name = apr_pstrdup(pool,attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"resource-location") == 0) {
-					params->resource_location = apr_pstrdup(pool,attr_value->value);
+					settings->resource_location = apr_pstrdup(pool,attr_value->value);
 				}
 				else if(strcasecmp(attr_name->value,"force-destination") == 0) {
-					params->force_destination = atoi(attr_value->value);
+					settings->force_destination = atoi(attr_value->value);
 				}
 				else {
 					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr_name->value);
@@ -270,10 +270,10 @@ static mrcp_sig_server_params_t* unimrcp_client_server_params_load(mrcp_client_t
 			}
 		}
 		else if(strcasecmp(elem->name,"resourcemap") == 0) {
-			resource_map_load(params->resource_map,elem,pool);
+			resource_map_load(settings->resource_map,elem,pool);
 		}
 	}
-	return params;
+	return settings;
 }
 
 
@@ -305,6 +305,23 @@ static apt_bool_t unimrcp_client_signaling_agents_load(mrcp_client_t *client, co
 			}
 			if(sig_agent) {
 				mrcp_client_signaling_agent_register(client,sig_agent,name);
+			}
+		}
+		else if(strcasecmp(elem->name,"settings") == 0) {
+			mrcp_sig_settings_t *sig_settings = NULL;
+			const char *name = NULL;
+			const apr_xml_attr *attr;
+			for(attr = elem->attr; attr; attr = attr->next) {
+				if(strcasecmp(attr->name,"name") == 0) {
+					name = apr_pstrdup(pool,attr->value);
+				}
+				else {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);
+				}
+			}
+			sig_settings = unimrcp_client_signaling_settings_load(client,elem,pool);
+			if(sig_settings) {
+				mrcp_client_signaling_settings_register(client,sig_settings,name);
 			}
 		}
 		else {
@@ -644,7 +661,7 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
 	mpf_rtp_settings_t *rtp_settings = NULL;
-	mrcp_sig_server_params_t *server_params = NULL;
+	mrcp_sig_settings_t *signaling_settings = NULL;
 	const apr_xml_elem *elem;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
@@ -669,6 +686,9 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 				if(strcasecmp(attr_name->value,"signaling-agent") == 0) {
 					sig_agent = mrcp_client_signaling_agent_get(client,attr_value->value);
 				}
+				else if(strcasecmp(attr_name->value,"signaling-settings") == 0) {
+					signaling_settings = mrcp_client_signaling_settings_get(client,attr_value->value);
+				}
 				else if(strcasecmp(attr_name->value,"connection-agent") == 0) {
 					cnt_agent = mrcp_client_connection_agent_get(client,attr_value->value);
 				}
@@ -686,13 +706,10 @@ static apt_bool_t unimrcp_client_profile_load(mrcp_client_t *client, const apr_x
 				}
 			}
 		}
-		else if(strcasecmp(elem->name,"server-params") == 0) {
-			server_params = unimrcp_client_server_params_load(client,elem,pool);
-		}
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Profile [%s]",name);
-	profile = mrcp_client_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,rtp_settings,server_params,pool);
+	profile = mrcp_client_profile_create(NULL,sig_agent,cnt_agent,media_engine,rtp_factory,rtp_settings,signaling_settings,pool);
 	return mrcp_client_profile_register(client,profile,name);
 }
 

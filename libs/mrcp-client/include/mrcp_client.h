@@ -118,6 +118,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_settings_register(mrcp_client_t *client
 MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *client, mrcp_sig_agent_t *signaling_agent, const char *name);
 
 /**
+ * Register MRCP signaling settings.
+ * @param client the MRCP client to set signaling settings for
+ * @param signaling_settings the signaling settings to set
+ * @param name the name of the agent
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_settings_register(mrcp_client_t *client, mrcp_sig_settings_t *signaling_settings, const char *name);
+
+/**
  * Register MRCP connection agent (MRCPv2 only).
  * @param client the MRCP client to set connection agent for
  * @param connection_agent the connection agent to set
@@ -133,7 +141,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
 									mpf_rtp_settings_t *rtp_settings,
-									mrcp_sig_server_params_t *server_params,
+									mrcp_sig_settings_t *signaling_settings,
 									apr_pool_t *pool);
 
 /**
@@ -185,6 +193,13 @@ MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(mrcp_client_t *cl
  * @param name the name to lookup
  */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_client_signaling_agent_get(mrcp_client_t *client, const char *name);
+
+/**
+ * Get signaling settings by name.
+ * @param client the MRCP client to get from
+ * @param name the name to lookup
+ */
+MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_client_signaling_settings_get(mrcp_client_t *client, const char *name);
 
 /**
  * Get connection agent by name.
