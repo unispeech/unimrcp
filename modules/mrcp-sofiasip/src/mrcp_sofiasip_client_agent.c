@@ -243,13 +243,13 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 	session->obj = sofia_session;
 
 	if(settings->user_name && settings->user_name != '\0') {
-		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%d",
+		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%hu",
 										settings->user_name,
 										settings->server_ip,
 										settings->server_port);
 	}
 	else {
-		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s:%d",
+		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s:%hu",
 										settings->server_ip,
 										settings->server_port);
 	}
