@@ -120,8 +120,8 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(mrcp_sofia_cli
 		vtable->terminate = mrcp_sofia_task_terminate;
 	}
 	sofia_agent->sig_agent->task = task;
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "SOFIA_TASK_NAME" ["SOFIA_SIP_VERSION"] %s:%hu",
-			config->local_ip,config->local_port);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "SOFIA_TASK_NAME" ["SOFIA_SIP_VERSION"] %s",
+		sofia_agent->sip_bind_str);
 	return sofia_agent->sig_agent;
 }
 
@@ -148,17 +148,17 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	}
 
 	sofia_agent->config = config;
-	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%d", local_ip, config->local_port);
-	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s:%d", local_ip, config->local_port);
+	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu", local_ip, config->local_port);
+	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s:%hu", local_ip, config->local_port);
 
 	if(config->transport) {
-		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d;transport=%s",
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%hu;transport=%s",
 										config->local_ip,
 										config->local_port,
 										config->transport);
 	}
 	else {
-		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%d",
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%hu",
 										config->local_ip,
 										config->local_port);
 	}
