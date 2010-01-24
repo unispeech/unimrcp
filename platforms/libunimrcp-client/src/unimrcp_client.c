@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <apr_xml.h>
+#include <apr_fnmatch.h>
 #include "unimrcp_client.h"
 #include "uni_version.h"
 #include "mrcp_resource_loader.h"
@@ -63,15 +64,15 @@ struct unimrcp_client_loader_t {
 	const char    *auto_ip;
 };
 
-static apt_bool_t unimrcp_client_load(mrcp_client_t *mrcp_client, const char *file_path, apr_pool_t *pool);
+static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const char *dir_path, const char *file_name, apr_pool_t *pool);
 
 /** Create and load UniMRCP client */
 MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	apr_pool_t *pool;
 	mrcp_client_t *client;
-	const char *file_path;
 	const char *dir_path;
+	unimrcp_client_loader_t *loader;
 
 	if(!dir_layout) {
 		return NULL;
@@ -88,18 +89,20 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 
+	loader = apr_palloc(pool,sizeof(unimrcp_client_loader_t));
+	loader->doc = NULL;
+	loader->client = client;
+	loader->pool = pool;
+	loader->ip = DEFAULT_IP_ADDRESS;
+	loader->ext_ip = NULL;
+	loader->auto_ip = NULL;
+
 	dir_path = dir_layout->conf_dir_path;
 	if(!dir_path) {
 		dir_path = DEFAULT_CONF_DIR_PATH;
 	}
-	if(*dir_path == '\0') {
-		file_path = CONF_FILE_NAME;
-	}
-	else {
-		file_path = apr_psprintf(pool,"%s/%s",dir_path,CONF_FILE_NAME);
-	}
 
-	if(unimrcp_client_load(client,file_path,pool) == FALSE) {
+	if(unimrcp_client_load(loader,dir_path,CONF_FILE_NAME,pool) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load UniMRCP Client Document");
 	}
 
@@ -963,15 +966,25 @@ static apr_xml_doc* unimrcp_client_doc_parse(const char *file_path, apr_pool_t *
 }
 
 /** Load UniMRCP client */
-static apt_bool_t unimrcp_client_load(mrcp_client_t *mrcp_client, const char *file_path, apr_pool_t *pool)
+static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const char *dir_path, const char *file_name, apr_pool_t *pool)
 {
 	apr_xml_doc *doc;
 	const apr_xml_elem *elem;
 	const apr_xml_elem *root;
-	unimrcp_client_loader_t *loader;
+	const apr_xml_attr *attr;
+	const char *file_path;
+	const char *version = NULL;
+	const char *subfolder = NULL;
 
-	if(!file_path) {
+	if(!dir_path || !file_name) {
 		return FALSE;
+	}
+
+	if(*dir_path == '\0') {
+		file_path = file_name;
+	}
+	else {
+		file_path = apr_psprintf(pool,"%s/%s",dir_path,file_name);
 	}
 
 	/* Parse XML document */
@@ -988,13 +1001,23 @@ static apt_bool_t unimrcp_client_load(mrcp_client_t *mrcp_client, const char *fi
 		return FALSE;
 	}
 
-	loader = apr_palloc(pool,sizeof(unimrcp_client_loader_t));
+	/* Read attributes */
+	for(attr = root->attr; attr; attr = attr->next) {
+		if(strcasecmp(attr->name,"version") == 0) {
+			version = attr->value;
+		}
+		else if(strcasecmp(attr->name,"subfolder") == 0) {
+			subfolder = attr->value;
+		}
+	}
+
+	/* Check version number first */
+	if(!version) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Version");
+		return FALSE;
+	}
+
 	loader->doc = doc;
-	loader->client = mrcp_client;
-	loader->pool = pool;
-	loader->ip = DEFAULT_IP_ADDRESS;
-	loader->ext_ip = NULL;
-	loader->auto_ip = NULL;
 
 	/* Navigate through document */
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -1012,6 +1035,28 @@ static apt_bool_t unimrcp_client_load(mrcp_client_t *mrcp_client, const char *fi
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
+		}
+	}
+
+	if(subfolder && subfolder != '\0') {
+		apr_dir_t *dir;
+		apr_finfo_t finfo;
+		apr_status_t rv;
+
+		dir_path = apr_psprintf(pool,"%s/%s",dir_path,subfolder);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Enter Directory [%s]",dir_path);
+		rv = apr_dir_open(&dir,dir_path,pool);
+		if(rv == APR_SUCCESS) {
+			while(apr_dir_read(&finfo, APR_FINFO_NAME, dir) == APR_SUCCESS) {
+				if(apr_fnmatch("*.xml", finfo.name, 0) == APR_SUCCESS) {
+					unimrcp_client_load(loader,dir_path,finfo.name,pool);
+				}
+			}
+			apr_dir_close(dir);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Leave Directory [%s]",dir_path);
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Directory %s",dir_path);
 		}
 	}
 	return TRUE;
