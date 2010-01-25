@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- UniMRCP client document -->
 <unimrcpclient xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                xsi:noNamespaceSchemaLocation="unimrcpclient.xsd" 
@@ -66,28 +66,7 @@
   </components>
   
   <settings>
-    <!-- SIP MRCPv2 settings -->
-    <sip-settings id="SIP-Settings-1">
-      <!-- Server address should be explicitly specified, it defaults to "ip" address set in the properties. -->
-      <!-- <server-ip>10.10.0.1</server-ip> -->
-      <server-port>8060</server-port>
-      <!-- <force-destination>true</force-destination> -->
-    </sip-settings>
-    
-    <!-- RTSP MRCPv1 settings -->
-    <rtsp-settings id="RTSP-Settings-1">
-      <!-- Server address should be explicitly specified, it defaults to "ip" address set in the properties. -->
-      <!-- <server-ip>10.10.0.1</server-ip> -->
-      <server-port>1554</server-port>
-      <!-- <force-destination>true</force-destination> -->
-      <resource-location>media</resource-location>
-      <resource-map>
-        <param name="speechsynth" value="speechsynthesizer"/>
-        <param name="speechrecog" value="speechrecognizer"/>
-      </resource-map>
-    </rtsp-settings>
-    
-    <!-- RTP/RTCP settings -->
+    <!-- common (default) RTP/RTCP settings -->
     <rtp-settings id="RTP-Settings-1">
       <jitter-buffer>
         <playout-delay>50</playout-delay>

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- UniMRCP server document -->
 <unimrcpserver xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="unimrcpserver.xsd" version="1.0">
   <properties>
@@ -87,7 +87,7 @@
       <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
       <engine id="Recorder-1" name="mrcprecorder" enable="true"/>
 
-      <!-- engines may have additional params
+      <!-- Engines may have additional named and generic params
       <engine id="Your-Engine-1" name="yourengine" enable="true">
         <max-channel-count>100</max-channel-count>
         <param name="..." value="..."/>
