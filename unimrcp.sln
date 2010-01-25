@@ -170,6 +170,21 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mrcprecorder", "plugins\mrc
 		{843425BE-9A9A-44F4-A4E3-4B57D6ABD53C} = {843425BE-9A9A-44F4-A4E3-4B57D6ABD53C}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "conf", "conf", "{9155EBB8-E7DD-49AE-A86A-7B90B9F09888}"
+	ProjectSection(SolutionItems) = preProject
+		conf\unimrcpclient.xml = conf\unimrcpclient.xml
+		conf\unimrcpclient.xsd = conf\unimrcpclient.xsd
+		conf\unimrcpserver.xml = conf\unimrcpserver.xml
+		conf\unimrcpserver.xsd = conf\unimrcpserver.xsd
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "client-profiles", "client-profiles", "{F2D6C1AF-0C05-4695-84AF-15A2F92F9899}"
+	ProjectSection(SolutionItems) = preProject
+		conf\client-profiles\lumenvox.xml = conf\client-profiles\lumenvox.xml
+		conf\client-profiles\nuance.xml = conf\client-profiles\nuance.xml
+		conf\client-profiles\unimrcp.xml = conf\client-profiles\unimrcp.xml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -447,5 +462,6 @@ Global
 		{01D63BF5-7798-4746-852A-4B45229BB735} = {62083CC3-13BF-49EA-BFE8-4C9337C0D82C}
 		{4714EF49-BFD5-4B22-95F7-95A07F1EAC25} = {62083CC3-13BF-49EA-BFE8-4C9337C0D82C}
 		{71D62A04-8EF6-4C6B-AC12-0C15A875E53A} = {62083CC3-13BF-49EA-BFE8-4C9337C0D82C}
+		{F2D6C1AF-0C05-4695-84AF-15A2F92F9899} = {9155EBB8-E7DD-49AE-A86A-7B90B9F09888}
 	EndGlobalSection
 EndGlobal
