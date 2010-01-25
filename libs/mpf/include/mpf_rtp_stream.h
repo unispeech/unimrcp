@@ -30,10 +30,11 @@ APT_BEGIN_EXTERN_C
 /**
  * Create RTP stream.
  * @param termination the back pointer to hold
- * @param config the configuration to use
+ * @param config the configuration of RTP factory
+ * @param settings the settings to use
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, apr_pool_t *pool);
+MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, mpf_rtp_settings_t *settings, apr_pool_t *pool);
 
 /**
  * Add/enable RTP stream.

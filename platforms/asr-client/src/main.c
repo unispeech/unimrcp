@@ -87,7 +87,7 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_f
 		params->profile = apr_pstrdup(pool,profile);
 	}
 	else {
-		params->profile = "MRCPv2-Default";
+		params->profile = "uni2";
 	}
 
 	/* Launch a thread to run demo ASR session in */
@@ -126,7 +126,7 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 			"\n- run [grammar_file] [audio_input_file] [profile_name] (run demo asr client)\n"
 			"       grammar_file is the name of grammar file, (path is relative to data dir)\n"
 			"       audio_input_file is the name of audio file, (path is relative to data dir)\n"
-			"       profile_name is one of 'MRCPv2-Default', 'MRCPv1-Default', ...\n"
+			"       profile_name is one of 'uni2', 'uni1', ...\n"
 			"\n       examples: \n"
 			"           run\n"
 			"           run grammar.xml one.pcm\n"

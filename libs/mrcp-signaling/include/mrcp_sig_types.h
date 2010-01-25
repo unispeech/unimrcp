@@ -26,6 +26,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Opaque MRCP signaling settings declaration */
+typedef struct mrcp_sig_settings_t mrcp_sig_settings_t;
+
 /** Opaque MRCP signaling agent declaration */
 typedef struct mrcp_sig_agent_t mrcp_sig_agent_t;
 

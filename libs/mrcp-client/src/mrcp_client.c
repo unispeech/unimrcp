@@ -47,8 +47,12 @@ struct mrcp_client_t {
 	apr_hash_t              *rtp_factory_table;
 	/** Table of signaling agents (mrcp_sig_agent_t*) */
 	apr_hash_t              *sig_agent_table;
+	/** Table of signaling settings (mrcp_sig_settings_t*) */
+	apr_hash_t              *sig_settings_table;
 	/** Table of connection agents (mrcp_connection_agent_t*) */
 	apr_hash_t              *cnt_agent_table;
+	/** Table of RTP settings (mpf_rtp_settings_t*) */
+	apr_hash_t              *rtp_settings_table;
 	/** Table of profiles (mrcp_profile_t*) */
 	apr_hash_t              *profile_table;
 
@@ -177,7 +181,9 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 	client->media_engine_table = NULL;
 	client->rtp_factory_table = NULL;
 	client->sig_agent_table = NULL;
+	client->sig_settings_table = NULL;
 	client->cnt_agent_table = NULL;
+	client->rtp_settings_table = NULL;
 	client->profile_table = NULL;
 	client->app_table = NULL;
 	client->session_table = NULL;
@@ -201,7 +207,9 @@ MRCP_DECLARE(mrcp_client_t*) mrcp_client_create(apt_dir_layout_t *dir_layout)
 	client->media_engine_table = apr_hash_make(client->pool);
 	client->rtp_factory_table = apr_hash_make(client->pool);
 	client->sig_agent_table = apr_hash_make(client->pool);
+	client->sig_settings_table = apr_hash_make(client->pool);
 	client->cnt_agent_table = apr_hash_make(client->pool);
+	client->rtp_settings_table = apr_hash_make(client->pool);
 	client->profile_table = apr_hash_make(client->pool);
 	client->app_table = apr_hash_make(client->pool);
 	
@@ -372,6 +380,23 @@ MRCP_DECLARE(mpf_termination_factory_t*) mrcp_client_rtp_factory_get(mrcp_client
 	return apr_hash_get(client->rtp_factory_table,name,APR_HASH_KEY_STRING);
 }
 
+/** Register RTP settings */
+MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_settings_register(mrcp_client_t *client, mpf_rtp_settings_t *rtp_settings, const char *name)
+{
+	if(!rtp_settings || !name) {
+		return FALSE;
+	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register RTP Settings [%s]",name);
+	apr_hash_set(client->rtp_settings_table,name,APR_HASH_KEY_STRING,rtp_settings);
+	return TRUE;
+}
+
+/** Get RTP settings by name */
+MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(mrcp_client_t *client, const char *name)
+{
+	return apr_hash_get(client->rtp_settings_table,name,APR_HASH_KEY_STRING);
+}
+
 /** Register MRCP signaling agent */
 MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *client, mrcp_sig_agent_t *signaling_agent, const char *name)
 {
@@ -395,6 +420,24 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_client_signaling_agent_get(mrcp_client_t *c
 {
 	return apr_hash_get(client->sig_agent_table,name,APR_HASH_KEY_STRING);
 }
+
+/** Register MRCP signaling settings */
+MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_settings_register(mrcp_client_t *client, mrcp_sig_settings_t *signaling_settings, const char *name)
+{
+	if(!signaling_settings || !name) {
+		return FALSE;
+	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Signaling Settings [%s]",name);
+	apr_hash_set(client->sig_settings_table,name,APR_HASH_KEY_STRING,signaling_settings);
+	return TRUE;
+}
+
+/** Get signaling settings by name */
+MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_client_signaling_settings_get(mrcp_client_t *client, const char *name)
+{
+	return apr_hash_get(client->sig_settings_table,name,APR_HASH_KEY_STRING);
+}
+
 
 /** Register MRCP connection agent (MRCPv2 only) */
 MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *client, mrcp_connection_agent_t *connection_agent, const char *name)
@@ -428,14 +471,18 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
+									mpf_rtp_settings_t *rtp_settings,
+									mrcp_sig_settings_t *signaling_settings,
 									apr_pool_t *pool)
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
 	profile->resource_factory = resource_factory;
 	profile->media_engine = media_engine;
 	profile->rtp_termination_factory = rtp_factory;
+	profile->rtp_settings = rtp_settings;
 	profile->signaling_agent = signaling_agent;
 	profile->connection_agent = connection_agent;
+	profile->signaling_settings = signaling_settings;
 	return profile;
 }
 
@@ -456,6 +503,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 	if(profile->signaling_agent->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
+		return FALSE;
+	}
+
+	if(!profile->signaling_settings) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling settings",name);
 		return FALSE;
 	}
 

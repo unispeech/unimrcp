@@ -105,7 +105,7 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 			const char* pProfileName = apr_strtok(NULL, " ", &last);
 			if(!pProfileName) 
 			{
-				pProfileName = "MRCPv2-Default";
+				pProfileName = "uni2";
 			}
 			m_pFramework->RunSession(pScenarioName,pProfileName);
 		}
@@ -146,12 +146,12 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 		printf("usage:\n"
 		       "\n- run [scenario] [profile] (run new session)\n"
 			   "       scenario is one of 'synth', 'recog', ... (use 'show scenarios')\n"
-			   "       profile is one of 'MRCPv2-Default', 'MRCPv1-Default', ... (see unimrcpclient.xml)\n"
+			   "       profile is one of 'uni2', 'uni1', ... (see unimrcpclient.xml)\n"
 			   "\n       examples: \n"
 			   "           run synth\n"
 			   "           run recog\n"
-			   "           run synth MRCPv1-Default\n"
-			   "           run recog MRCPv1-Default\n"
+			   "           run synth uni1\n"
+			   "           run recog uni1\n"
 		       "\n- kill [id] (kill session)\n"
 			   "       id is a session identifier: 1, 2, ... (use 'show sessions')\n"
 			   "\n       example: \n"

@@ -40,7 +40,7 @@ static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, ch
 		if(app_name) {
 			char *profile_name = apr_strtok(NULL, " ", &last);
 			if(!profile_name) {
-				profile_name = "MRCPv2-Default";
+				profile_name = "uni2";
 			}
 			demo_framework_app_run(framework,app_name,profile_name);
 		}
@@ -58,12 +58,12 @@ static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, ch
 		printf("usage:\n"
 		       "\n- run [app_name] [profile_name] (run demo application)\n"
 			   "       app_name is one of 'synth', 'recog', 'bypass', 'discover'\n"
-			   "       profile_name is one of 'MRCPv2-Default', 'MRCPv1-Default', ...\n"
+			   "       profile_name is one of 'uni2', 'uni1', ...\n"
 			   "\n       examples: \n"
 			   "           run synth\n"
 			   "           run recog\n"
-			   "           run synth MRCPv1-Default\n"
-			   "           run recog MRCPv1-Default\n"
+			   "           run synth uni1\n"
+			   "           run recog uni1\n"
 		       "\n- loglevel [level] (set loglevel, one of 0,1...7)\n"
 		       "\n- quit, exit\n");
 	}

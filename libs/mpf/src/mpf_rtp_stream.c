@@ -55,6 +55,7 @@ struct mpf_rtp_stream_t {
 	rtp_receiver_t              receiver;
 
 	mpf_rtp_config_t           *config;
+	mpf_rtp_settings_t         *settings;
 
 	apr_socket_t               *rtp_socket;
 	apr_socket_t               *rtcp_socket;
@@ -96,7 +97,7 @@ static void mpf_rtcp_tx_timer_proc(mpf_timer_t *timer, void *obj);
 static void mpf_rtcp_rx_timer_proc(mpf_timer_t *timer, void *obj);
 
 
-MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, apr_pool_t *pool)
+MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, mpf_rtp_settings_t *settings, apr_pool_t *pool)
 {
 	mpf_rtp_stream_t *rtp_stream = apr_palloc(pool,sizeof(mpf_rtp_stream_t));
 	mpf_stream_capabilities_t *capabilities = mpf_stream_capabilities_create(STREAM_DIRECTION_DUPLEX,pool);
@@ -111,6 +112,7 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	rtp_stream->base = audio_stream;
 	rtp_stream->pool = pool;
 	rtp_stream->config = config;
+	rtp_stream->settings = settings;
 	rtp_stream->local_media = NULL;
 	rtp_stream->remote_media = NULL;
 	rtp_stream->rtp_socket = NULL;
@@ -126,14 +128,14 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 	rtp_transmitter_init(&rtp_stream->transmitter);
 	rtp_stream->transmitter.sr_stat.ssrc = (apr_uint32_t)apr_time_now();
 
-	if(config->rtcp == TRUE) {
-		if(config->rtcp_tx_interval) {
+	if(settings->rtcp == TRUE) {
+		if(settings->rtcp_tx_interval) {
 			rtp_stream->rtcp_tx_timer = mpf_timer_create(
 										termination->timer_manager,
 										mpf_rtcp_tx_timer_proc,
 										rtp_stream, pool);
 		}
-		if(config->rtcp_rx_resolution) {
+		if(settings->rtcp_rx_resolution) {
 			rtp_stream->rtcp_rx_timer = mpf_timer_create(
 										termination->timer_manager,
 										mpf_rtcp_rx_timer_proc,
@@ -187,12 +189,12 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 		status = FALSE;
 	}
 
-	if(rtp_stream->config->ptime) {
-		local_media->ptime = rtp_stream->config->ptime;
+	if(rtp_stream->settings->ptime) {
+		local_media->ptime = rtp_stream->settings->ptime;
 	}
 
 	if(mpf_codec_list_is_empty(&local_media->codec_list) == TRUE) {
-		if(mpf_codec_list_is_empty(&rtp_stream->config->codec_list) == TRUE) {
+		if(mpf_codec_list_is_empty(&rtp_stream->settings->codec_list) == TRUE) {
 			mpf_codec_manager_codec_list_get(
 								rtp_stream->base->termination->codec_manager,
 								&local_media->codec_list,
@@ -200,7 +202,7 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 		}
 		else {
 			mpf_codec_list_copy(&local_media->codec_list,
-								&rtp_stream->config->codec_list,
+								&rtp_stream->settings->codec_list,
 								rtp_stream->pool);
 		}
 		
@@ -297,10 +299,10 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 		}
 
 		if(rtp_stream->rtcp_tx_timer) {
-			mpf_timer_set(rtp_stream->rtcp_tx_timer,rtp_stream->config->rtcp_tx_interval);
+			mpf_timer_set(rtp_stream->rtcp_tx_timer,rtp_stream->settings->rtcp_tx_interval);
 		}
 		if(rtp_stream->rtcp_rx_timer) {
-			mpf_timer_set(rtp_stream->rtcp_rx_timer,rtp_stream->config->rtcp_rx_resolution);
+			mpf_timer_set(rtp_stream->rtcp_rx_timer,rtp_stream->settings->rtcp_rx_resolution);
 		}
 	}
 	else if(rtp_stream->state == MPF_MEDIA_ENABLED && remote_media->state == MPF_MEDIA_DISABLED) {
@@ -318,7 +320,7 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 		if(rtp_stream->rtcp_rx_timer) {
 			mpf_timer_kill(rtp_stream->rtcp_rx_timer);
 		}
-		if(rtp_stream->config->rtcp == TRUE && rtp_stream->config->rtcp_bye_policy != RTCP_BYE_DISABLE) {
+		if(rtp_stream->settings->rtcp == TRUE && rtp_stream->settings->rtcp_bye_policy != RTCP_BYE_DISABLE) {
 			apt_str_t reason = {RTCP_BYE_SESSION_ENDED, sizeof(RTCP_BYE_SESSION_ENDED)-1};
 			mpf_rtcp_bye_send(rtp_stream,&reason);
 		}
@@ -337,7 +339,7 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 		}
 
 		/* intersect local and remote codecs */
-		if(rtp_stream->config->own_preferrence == TRUE) {
+		if(rtp_stream->settings->own_preferrence == TRUE) {
 			mpf_codec_lists_intersect(
 				&local_media->codec_list,
 				&remote_media->codec_list);
@@ -376,7 +378,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_remove(mpf_audio_stream_t *stream)
 		if(rtp_stream->rtcp_rx_timer) {
 			mpf_timer_kill(rtp_stream->rtcp_rx_timer);
 		}
-		if(rtp_stream->config->rtcp == TRUE && rtp_stream->config->rtcp_bye_policy != RTCP_BYE_DISABLE) {
+		if(rtp_stream->settings->rtcp == TRUE && rtp_stream->settings->rtcp_bye_policy != RTCP_BYE_DISABLE) {
 			apt_str_t reason = {RTCP_BYE_SESSION_ENDED, sizeof(RTCP_BYE_SESSION_ENDED)-1};
 			mpf_rtcp_bye_send(rtp_stream,&reason);
 		}
@@ -451,7 +453,7 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 	}
 
 	receiver->jb = mpf_jitter_buffer_create(
-						&rtp_stream->config->jb_config,
+						&rtp_stream->settings->jb_config,
 						stream->rx_descriptor,
 						codec,
 						rtp_stream->pool);
@@ -461,7 +463,7 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
 			rtp_stream->rtp_r_sockaddr->port,
-			rtp_stream->config->jb_config.initial_playout_delay);
+			rtp_stream->settings->jb_config.initial_playout_delay);
 	return TRUE;
 }
 
@@ -825,8 +827,8 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 	}
 
 	if(!transmitter->ptime) {
-		if(rtp_stream->config && rtp_stream->config->ptime) {
-			transmitter->ptime = rtp_stream->config->ptime;
+		if(rtp_stream->settings && rtp_stream->settings->ptime) {
+			transmitter->ptime = rtp_stream->settings->ptime;
 		}
 		else {
 			transmitter->ptime = 20;
@@ -973,7 +975,7 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 			if(transmitter->current_frames == 0) {
 				/* set inactivity (ptime alligned) */
 				transmitter->inactivity = 1;
-				if(rtp_stream->config->rtcp == TRUE && rtp_stream->config->rtcp_bye_policy == RTCP_BYE_PER_TALKSPURT) {
+				if(rtp_stream->settings->rtcp == TRUE && rtp_stream->settings->rtcp_bye_policy == RTCP_BYE_PER_TALKSPURT) {
 					apt_str_t reason = {RTCP_BYE_TALKSPURT_ENDED, sizeof(RTCP_BYE_TALKSPURT_ENDED)-1};
 					mpf_rtcp_bye_send(rtp_stream,&reason);
 				}
@@ -1374,7 +1376,7 @@ static void mpf_rtcp_tx_timer_proc(mpf_timer_t *timer, void *obj)
 	mpf_rtcp_report_send(rtp_stream);
 
 	/* re-schedule timer */
-	mpf_timer_set(timer,rtp_stream->config->rtcp_tx_interval);
+	mpf_timer_set(timer,rtp_stream->settings->rtcp_tx_interval);
 }
 
 static void mpf_rtcp_rx_timer_proc(mpf_timer_t *timer, void *obj)
@@ -1396,5 +1398,5 @@ static void mpf_rtcp_rx_timer_proc(mpf_timer_t *timer, void *obj)
 	}
 
 	/* re-schedule timer */
-	mpf_timer_set(timer,rtp_stream->config->rtcp_rx_resolution);
+	mpf_timer_set(timer,rtp_stream->settings->rtcp_rx_resolution);
 }

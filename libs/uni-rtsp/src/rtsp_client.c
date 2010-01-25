@@ -283,7 +283,8 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 	rtsp_client_connection_t *rtsp_connection;
 	apt_net_client_connection_t *connection = apt_net_client_connect(client->task,session->server_ip.buf,session->server_port);
 	if(!connection) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Connect to RTSP Server %s:%d",session->server_ip.buf,session->server_port);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Connect to RTSP Server %s:%hu",
+			session->server_ip.buf,session->server_port);
 		return FALSE;
 	}
 	rtsp_connection = apr_palloc(connection->pool,sizeof(rtsp_client_connection_t));
@@ -389,14 +390,14 @@ static apt_bool_t rtsp_client_session_url_generate(rtsp_client_session_t *sessio
 {
 	apt_str_t *url = &message->start_line.common.request_line.url;
 	if(session->resource_location.length) {
-		url->buf = apr_psprintf(message->pool,"rtsp://%s:%d/%s/%s",
+		url->buf = apr_psprintf(message->pool,"rtsp://%s:%hu/%s/%s",
 						session->server_ip.buf,
 						session->server_port,
 						session->resource_location.buf,
 						message->start_line.common.request_line.resource_name);
 	}
 	else {
-		url->buf = apr_psprintf(message->pool,"rtsp://%s:%d/%s",
+		url->buf = apr_psprintf(message->pool,"rtsp://%s:%hu/%s",
 						session->server_ip.buf,
 						session->server_port,
 						message->start_line.common.request_line.resource_name);

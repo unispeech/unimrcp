@@ -53,6 +53,8 @@ struct mrcp_server_t {
 	apr_hash_t              *sig_agent_table;
 	/** Table of connection agents (mrcp_connection_agent_t*) */
 	apr_hash_t              *cnt_agent_table;
+	/** Table of RTP settings (mpf_rtp_settings_t*) */
+	apr_hash_t              *rtp_settings_table;
 	/** Table of profiles (mrcp_profile_t*) */
 	apr_hash_t              *profile_table;
 
@@ -181,6 +183,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	server->rtp_factory_table = NULL;
 	server->sig_agent_table = NULL;
 	server->cnt_agent_table = NULL;
+	server->rtp_settings_table = NULL;
 	server->profile_table = NULL;
 	server->session_table = NULL;
 	server->connection_msg_pool = NULL;
@@ -207,6 +210,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 
 	server->media_engine_table = apr_hash_make(server->pool);
 	server->rtp_factory_table = apr_hash_make(server->pool);
+	server->rtp_settings_table = apr_hash_make(server->pool);
 	server->sig_agent_table = apr_hash_make(server->pool);
 	server->cnt_agent_table = apr_hash_make(server->pool);
 
@@ -356,6 +360,23 @@ MRCP_DECLARE(mpf_termination_factory_t*) mrcp_server_rtp_factory_get(mrcp_server
 	return apr_hash_get(server->rtp_factory_table,name,APR_HASH_KEY_STRING);
 }
 
+/** Register RTP settings */
+MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_settings_register(mrcp_server_t *server, mpf_rtp_settings_t *rtp_settings, const char *name)
+{
+	if(!rtp_settings || !name) {
+		return FALSE;
+	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register RTP Settings [%s]",name);
+	apr_hash_set(server->rtp_settings_table,name,APR_HASH_KEY_STRING,rtp_settings);
+	return TRUE;
+}
+
+/** Get RTP settings by name */
+MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_server_rtp_settings_get(mrcp_server_t *server, const char *name)
+{
+	return apr_hash_get(server->rtp_settings_table,name,APR_HASH_KEY_STRING);
+}
+
 /** Register MRCP signaling agent */
 MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent, const char *name)
 {
@@ -413,6 +434,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
+									mpf_rtp_settings_t *rtp_settings,
 									apr_pool_t *pool)
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
@@ -420,6 +442,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 	profile->engine_table = NULL;
 	profile->media_engine = media_engine;
 	profile->rtp_termination_factory = rtp_factory;
+	profile->rtp_settings = rtp_settings;
 	profile->signaling_agent = signaling_agent;
 	profile->connection_agent = connection_agent;
 	return profile;

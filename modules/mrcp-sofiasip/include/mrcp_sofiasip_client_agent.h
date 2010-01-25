@@ -40,18 +40,6 @@ struct mrcp_sofia_client_config_t {
 	apr_port_t local_port;
 	/** Local SIP user name */
 	char      *local_user_name;
-	
-	/** Remote IP address */
-	char      *remote_ip;
-	/** Remote SIP port */
-	apr_port_t remote_port;
-	/** Remote SIP user name */
-	char      *remote_user_name;
-
-	/** Force destination ip address. Should be used only in case 
-	SDP contains incorrect connection address (local IP address behind NAT) */
-	apt_bool_t force_destination;
-
 	/** User agent name */
 	char      *user_agent_name;
 	/** SDP origin */

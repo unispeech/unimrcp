@@ -746,6 +746,7 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 	mpf_rtp_termination_descriptor_init(rtp_descriptor);
 	rtp_descriptor->audio.local = NULL;
 	rtp_descriptor->audio.remote = media_descriptor;
+	rtp_descriptor->audio.settings = session->profile->rtp_settings;
 
 	slot->mid = media_descriptor->mid;
 	slot->channels = apr_array_make(session->base.pool,1,sizeof(mrcp_channel_t*));

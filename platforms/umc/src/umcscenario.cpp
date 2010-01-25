@@ -19,7 +19,7 @@
 
 UmcScenario::UmcScenario() :
 	m_pName(NULL),
-	m_pMrcpProfile("MRCPv2-Default"),
+	m_pMrcpProfile("uni2"),
 	m_pDirLayout(NULL),
 	m_ResourceDiscovery(false),
 	m_pCapabilities(NULL),

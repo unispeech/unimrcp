@@ -106,7 +106,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	}
 	suite_engine->engine = engine;
 
-	config = mpf_rtp_config_create(suite->pool);
+	config = mpf_rtp_config_alloc(suite->pool);
 	apt_string_set(&config->ip,"127.0.0.1");
 	config->rtp_port_min = 5000;
 	config->rtp_port_min = 6000;

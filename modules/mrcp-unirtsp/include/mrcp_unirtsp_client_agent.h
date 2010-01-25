@@ -28,29 +28,15 @@
 
 APT_BEGIN_EXTERN_C
 
-/** UniRTSP config declaration */
+/** Declaration of UniRTSP agent config */
 typedef struct rtsp_client_config_t rtsp_client_config_t;
 
-/** UniRTSP config */
+/** Configuration of UniRTSP agent */
 struct rtsp_client_config_t {
-	/** Server IP address */
-	char        *server_ip;
-	/** Server port */
-	apr_port_t   server_port;
-	/** Resource location */
-	char        *resource_location;
 	/** SDP origin */
 	char        *origin;
-
-	/** Map of the MRCP resource names */
-	apr_table_t *resource_map;
-
 	/** Number of max RTSP connections */
 	apr_size_t   max_connection_count;
-
-	/** Force destination ip address. Should be used only in case 
-	SDP contains incorrect connection address (local IP address behind NAT) */
-	apt_bool_t force_destination;
 };
 
 /**
@@ -62,6 +48,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
  * Allocate UniRTSP config.
  */
 MRCP_DECLARE(rtsp_client_config_t*) mrcp_unirtsp_client_config_alloc(apr_pool_t *pool);
+
 
 APT_END_EXTERN_C
 

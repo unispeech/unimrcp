@@ -37,7 +37,11 @@ static apt_bool_t mpf_rtp_termination_add(mpf_termination_t *termination, void *
 	mpf_audio_stream_t *audio_stream = termination->audio_stream;
 	if(!audio_stream) {
 		rtp_termination_factory_t *termination_factory = (rtp_termination_factory_t*)termination->termination_factory;
-		audio_stream = mpf_rtp_stream_create(termination,termination_factory->config,termination->pool);
+		audio_stream = mpf_rtp_stream_create(
+							termination,
+							termination_factory->config,
+							rtp_descriptor->audio.settings,
+							termination->pool);
 		if(!audio_stream) {
 			return FALSE;
 		}
