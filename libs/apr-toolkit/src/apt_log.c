@@ -16,6 +16,7 @@
 
 #include <apr_time.h>
 #include <apr_file_io.h>
+#include <apr_portable.h>
 #include "apt_log.h"
 
 #define MAX_LOG_ENTRY_SIZE 4096
@@ -224,12 +225,12 @@ APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e p
 	return status;
 }
 
-static APR_INLINE int apt_thread_id_get()
+static APR_INLINE unsigned long apt_thread_id_get()
 {
 #ifdef WIN32
-	return GetCurrentThreadId();
+	return (unsigned long) GetCurrentThreadId();
 #else
-	return getpid();
+	return (unsigned long) apr_os_thread_current();
 #endif
 }
 
@@ -259,7 +260,7 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 		offset += apr_snprintf(log_entry+offset,max_size-offset,"%s:%03d ",file,line);
 	}
 	if(apt_logger->header & APT_LOG_HEADER_THREAD) {
-		offset += apr_snprintf(log_entry+offset,max_size-offset,"%05d ",apt_thread_id_get());
+		offset += apr_snprintf(log_entry+offset,max_size-offset,"%05lu ",apt_thread_id_get());
 	}
 	if(apt_logger->header & APT_LOG_HEADER_PRIORITY) {
 		memcpy(log_entry+offset,priority_snames[priority],MAX_PRIORITY_NAME_LENGTH);
