@@ -69,6 +69,7 @@ typedef enum {
 	APT_LOG_HEADER_TIME     = 0x02, /**< enable time output */
 	APT_LOG_HEADER_PRIORITY = 0x04, /**< enable priority name output */
 	APT_LOG_HEADER_MARK     = 0x08, /**< enable file:line mark output */
+	APT_LOG_HEADER_THREAD   = 0x10, /**< enable thread identifier output */
 
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
 } apt_log_header_e;

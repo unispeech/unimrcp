@@ -224,6 +224,15 @@ APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e p
 	return status;
 }
 
+static APR_INLINE int apt_thread_id_get()
+{
+#ifdef WIN32
+	return GetCurrentThreadId();
+#else
+	return getpid();
+#endif
+}
+
 static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr)
 {
 	char log_entry[MAX_LOG_ENTRY_SIZE];
@@ -248,6 +257,9 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 	}
 	if(apt_logger->header & APT_LOG_HEADER_MARK) {
 		offset += apr_snprintf(log_entry+offset,max_size-offset,"%s:%03d ",file,line);
+	}
+	if(apt_logger->header & APT_LOG_HEADER_THREAD) {
+		offset += apr_snprintf(log_entry+offset,max_size-offset,"%05d ",apt_thread_id_get());
 	}
 	if(apt_logger->header & APT_LOG_HEADER_PRIORITY) {
 		memcpy(log_entry+offset,priority_snames[priority],MAX_PRIORITY_NAME_LENGTH);
