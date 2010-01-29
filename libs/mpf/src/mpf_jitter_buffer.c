@@ -102,6 +102,10 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 		frame->codec_frame.buffer = jb->raw_data + i*jb->frame_size;
 	}
 
+	if(jb->config->initial_playout_delay % CODEC_FRAME_TIME_BASE != 0) {
+		jb->config->initial_playout_delay += CODEC_FRAME_TIME_BASE - jb->config->initial_playout_delay % CODEC_FRAME_TIME_BASE;
+	}
+
 	jb->playout_delay_ts = (apr_uint32_t)(jb->config->initial_playout_delay *
 		descriptor->channel_count * descriptor->sampling_rate / 1000);
 
