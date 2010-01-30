@@ -144,6 +144,12 @@ APT_DECLARE(apt_bool_t) apt_log_output_mode_set(apt_log_output_e mode);
 APT_DECLARE(apt_bool_t) apt_log_priority_set(apt_log_priority_e priority);
 
 /**
+ * Translate the priority (log level) string to enum.
+ * @param str the string to translate
+ */
+APT_DECLARE(apt_log_priority_e) apt_log_priority_translate(const char *str);
+
+/**
  * Set the header (format) for log messages.
  * @param header the header to set (used as bitmask)
  */

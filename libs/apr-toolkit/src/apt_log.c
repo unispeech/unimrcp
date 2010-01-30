@@ -187,6 +187,28 @@ APT_DECLARE(apt_bool_t) apt_log_priority_set(apt_log_priority_e priority)
 	return TRUE;
 }
 
+APT_DECLARE(apt_log_priority_e) apt_log_priority_translate(const char *str)
+{
+	if(strcasecmp(str, "EMERGENCY") == 0)
+		return APT_PRIO_EMERGENCY;
+	else if(strcasecmp(str, "ALERT") == 0)
+		return APT_PRIO_ALERT;
+	else if(strcasecmp(str, "CRITICAL") == 0)
+		return APT_PRIO_CRITICAL;
+	else if(strcasecmp(str, "ERROR") == 0)
+		return APT_PRIO_ERROR;
+	else if(strcasecmp(str, "WARNING") == 0)
+		return APT_PRIO_WARNING;
+	else if(strcasecmp(str, "NOTICE") == 0)
+		return APT_PRIO_NOTICE;
+	else if(strcasecmp(str, "INFO") == 0)
+		return APT_PRIO_INFO;
+	else if(strcasecmp(str, "DEBUG") == 0)
+		return APT_PRIO_DEBUG;
+
+	return APT_PRIO_DEBUG;
+}
+
 APT_DECLARE(apt_bool_t) apt_log_header_set(int header)
 {
 	if(!apt_logger) {
