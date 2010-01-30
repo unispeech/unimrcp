@@ -592,14 +592,6 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 	return status;
 }
 
-static APR_INLINE const apt_str_table_item_t* recog_header_string_table_get(mrcp_version_e version)
-{
-	if(version == MRCP_VERSION_1) {
-		return v1_recog_header_string_table;
-	}
-	return v2_recog_header_string_table;
-}
-
 static const mrcp_header_vtable_t v1_vtable = {
 	mrcp_recog_header_allocate,
 	NULL, /* nothing to destroy */
