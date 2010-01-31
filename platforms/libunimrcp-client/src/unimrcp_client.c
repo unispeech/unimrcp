@@ -59,6 +59,8 @@ struct unimrcp_client_loader_t {
 	const char    *ip;
 	/** Default external (NAT) ip address (named property) */
 	const char    *ext_ip;
+	/** Default server ip address (named property) */
+	const char    *server_ip;
 	
 	/** Implicitly detected, cached ip address */
 	const char    *auto_ip;
@@ -93,8 +95,9 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 	loader->doc = NULL;
 	loader->client = client;
 	loader->pool = pool;
-	loader->ip = DEFAULT_IP_ADDRESS;
+	loader->ip = NULL;
 	loader->ext_ip = NULL;
+	loader->server_ip = NULL;
 	loader->auto_ip = NULL;
 
 	dir_path = dir_layout->conf_dir_path;
@@ -195,7 +198,7 @@ static apt_bool_t name_value_attribs_get(const apr_xml_elem *elem, const apr_xml
 	return (*name && *value) ? TRUE : FALSE;
 }
 
-static char* unimrcp_client_ip_address_get(unimrcp_client_loader_t *loader, const apr_xml_elem *elem)
+static char* unimrcp_client_ip_address_get(unimrcp_client_loader_t *loader, const apr_xml_elem *elem, const char *default_ip)
 {
 	const apr_xml_attr *attr = NULL;
 	for(attr = elem->attr; attr; attr = attr->next) {
@@ -216,7 +219,7 @@ static char* unimrcp_client_ip_address_get(unimrcp_client_loader_t *loader, cons
 	}
 
 	if(is_cdata_valid(elem)) {
-		/* use provided ip address */
+		/* use specified ip address */
 		return cdata_copy(elem,loader->pool);
 	}
 
@@ -286,10 +289,10 @@ static apt_bool_t unimrcp_client_sip_uac_load(unimrcp_client_loader_t *loader, c
 	for(elem = root->first_child; elem; elem = elem->next) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Element <%s>",elem->name);
 		if(strcasecmp(elem->name,"sip-ip") == 0) {
-			config->local_ip = unimrcp_client_ip_address_get(loader,elem);
+			config->local_ip = unimrcp_client_ip_address_get(loader,elem,loader->ip);
 		}
 		else if(strcasecmp(elem->name,"sip-ext-ip") == 0) {
-			config->ext_ip = unimrcp_client_ip_address_get(loader,elem);
+			config->ext_ip = unimrcp_client_ip_address_get(loader,elem,loader->ext_ip);
 		}
 		else if(strcasecmp(elem->name,"sip-port") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
@@ -455,10 +458,10 @@ static apt_bool_t unimrcp_client_rtp_factory_load(unimrcp_client_loader_t *loade
 	for(elem = root->first_child; elem; elem = elem->next) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Element <%s>",elem->name);
 		if(strcasecmp(elem->name,"rtp-ip") == 0) {
-			rtp_ip = unimrcp_client_ip_address_get(loader,elem);
+			rtp_ip = unimrcp_client_ip_address_get(loader,elem,loader->ip);
 		}
 		else if(strcasecmp(elem->name,"rtp-ext-ip") == 0) {
-			rtp_ext_ip = unimrcp_client_ip_address_get(loader,elem);
+			rtp_ext_ip = unimrcp_client_ip_address_get(loader,elem,loader->ext_ip);
 		}
 		else if(strcasecmp(elem->name,"rtp-port-min") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
@@ -503,7 +506,7 @@ static apt_bool_t unimrcp_client_sip_settings_load(unimrcp_client_loader_t *load
 	for(elem = root->first_child; elem; elem = elem->next) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Element <%s>",elem->name);
 		if(strcasecmp(elem->name,"server-ip") == 0) {
-			settings->server_ip = unimrcp_client_ip_address_get(loader,elem);
+			settings->server_ip = unimrcp_client_ip_address_get(loader,elem,loader->server_ip);
 		}
 		else if(strcasecmp(elem->name,"server-port") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
@@ -526,8 +529,9 @@ static apt_bool_t unimrcp_client_sip_settings_load(unimrcp_client_loader_t *load
 	}
 	
 	if(!settings->server_ip) {
-		settings->server_ip = apr_pstrdup(loader->pool,loader->ip);
+		settings->server_ip = apr_pstrdup(loader->pool,loader->server_ip);
 	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create SIP Settings %s:%hu",settings->server_ip,settings->server_port);
 	return mrcp_client_signaling_settings_register(loader->client,settings,id);
 }
 
@@ -542,7 +546,7 @@ static apt_bool_t unimrcp_client_rtsp_settings_load(unimrcp_client_loader_t *loa
 	for(elem = root->first_child; elem; elem = elem->next) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Element <%s>",elem->name);
 		if(strcasecmp(elem->name,"server-ip") == 0) {
-			settings->server_ip = unimrcp_client_ip_address_get(loader,elem);
+			settings->server_ip = unimrcp_client_ip_address_get(loader,elem,loader->server_ip);
 		}
 		else if(strcasecmp(elem->name,"server-port") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
@@ -577,8 +581,9 @@ static apt_bool_t unimrcp_client_rtsp_settings_load(unimrcp_client_loader_t *loa
 	}
 	
 	if(!settings->server_ip) {
-		settings->server_ip = apr_pstrdup(loader->pool,loader->ip);
+		settings->server_ip = apr_pstrdup(loader->pool,loader->server_ip);
 	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create RTSP Settings %s:%hu",settings->server_ip,settings->server_port);
 	return mrcp_client_signaling_settings_register(loader->client,settings,id);
 }
 
@@ -801,16 +806,27 @@ static apt_bool_t unimrcp_client_properties_load(unimrcp_client_loader_t *loader
 	for(elem = root->first_child; elem; elem = elem->next) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Element <%s>",elem->name);
 		if(strcasecmp(elem->name,"ip") == 0) {
-			loader->ip = unimrcp_client_ip_address_get(loader,elem);
+			loader->ip = unimrcp_client_ip_address_get(loader,elem,DEFAULT_IP_ADDRESS);
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Property ip:%s",loader->ip);
 		}
 		else if(strcasecmp(elem->name,"ext-ip") == 0) {
-			loader->ext_ip = unimrcp_client_ip_address_get(loader,elem);
+			loader->ext_ip = unimrcp_client_ip_address_get(loader,elem,DEFAULT_IP_ADDRESS);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Property ext-ip:%s",loader->ext_ip);
+		}
+		else if(strcasecmp(elem->name,"server-ip") == 0) {
+			loader->server_ip = unimrcp_client_ip_address_get(loader,elem,DEFAULT_IP_ADDRESS);
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Property ext-ip:%s",loader->ext_ip);
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
+	}
+
+	if(!loader->ip) {
+		loader->ip = DEFAULT_IP_ADDRESS;
+	}
+	if(!loader->server_ip) {
+		loader->server_ip = loader->ip;
 	}
 	return TRUE;
 }

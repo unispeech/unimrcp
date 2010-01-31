@@ -22,6 +22,11 @@
                   <xsd:attribute name="type" type="xsd:string" />
                 </xsd:complexType>
               </xsd:element>
+              <xsd:element name="server-ip" minOccurs="0">
+                <xsd:complexType>
+                  <xsd:attribute name="type" type="xsd:string" />
+                </xsd:complexType>
+              </xsd:element>
             </xsd:sequence>
           </xsd:complexType>
         </xsd:element>

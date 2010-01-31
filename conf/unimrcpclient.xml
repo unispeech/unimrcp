@@ -11,6 +11,7 @@
     <ip type="auto"/>
     <!-- <ip>10.10.0.1</ip> -->
     <!-- <ext-ip>a.b.c.d</ext-ip> -->
+    <!-- <server-ip>a.b.c.d</server-ip> -->
   </properties>
 
   <components>
