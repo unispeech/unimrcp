@@ -417,11 +417,13 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session)
 {
 	mrcp_session_descriptor_t *descriptor = session->offer;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Offer "APT_PTRSID_FMT" [c:%d a:%d v:%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Offer "APT_PTRSID_FMT" [c:%d a:%d v:%d] to %s:%hu",
 		MRCP_SESSION_PTRSID(&session->base),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
-		descriptor->video_media_arr->nelts);
+		descriptor->video_media_arr->nelts,
+		session->profile->signaling_settings->server_ip,
+		session->profile->signaling_settings->server_port);
 	return mrcp_session_offer(&session->base,descriptor);
 }
 
