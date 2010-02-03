@@ -862,7 +862,7 @@ static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmitter %s:%hu -> %s:%hu [s:%lu o:%lu]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
-			rtp_stream->rtp_l_sockaddr->hostname,
+			rtp_stream->rtp_r_sockaddr->hostname,
 			rtp_stream->rtp_r_sockaddr->port,
 			rtp_stream->transmitter.sr_stat.sent_packets,
 			rtp_stream->transmitter.sr_stat.sent_octets);
