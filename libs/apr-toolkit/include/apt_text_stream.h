@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_TEXT_STREAM_H__
-#define __APT_TEXT_STREAM_H__
+#ifndef APT_TEXT_STREAM_H
+#define APT_TEXT_STREAM_H
 
 /**
  * @file apt_text_stream.h
@@ -199,4 +201,4 @@ APT_DECLARE(apt_bool_t) apt_unique_id_generate(apt_str_t *id, apr_size_t length,
 
 APT_END_EXTERN_C
 
-#endif /*__APT_TEXT_STREAM_H__*/
+#endif /* APT_TEXT_STREAM_H */

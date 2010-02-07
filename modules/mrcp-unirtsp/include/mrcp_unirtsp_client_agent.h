@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_UNIRTSP_CLIENT_AGENT_H__
-#define __MRCP_UNIRTSP_CLIENT_AGENT_H__
+#ifndef MRCP_UNIRTSP_CLIENT_AGENT_H
+#define MRCP_UNIRTSP_CLIENT_AGENT_H
 
 /**
  * @file mrcp_unirtsp_client_agent.h
@@ -52,4 +54,4 @@ MRCP_DECLARE(rtsp_client_config_t*) mrcp_unirtsp_client_config_alloc(apr_pool_t 
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_UNIRTSP_CLIENT_AGENT_H__*/
+#endif /* MRCP_UNIRTSP_CLIENT_AGENT_H */

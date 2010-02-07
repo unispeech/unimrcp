@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_RESOURCE_FACTORY_H__
-#define __MRCP_RESOURCE_FACTORY_H__
+#ifndef MRCP_RESOURCE_FACTORY_H
+#define MRCP_RESOURCE_FACTORY_H
 
 /**
  * @file mrcp_resource_factory.h
@@ -45,4 +47,4 @@ MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_find(mrcp_resource_factory_t *resou
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_RESOURCE_FACTORY_H__*/
+#endif /* MRCP_RESOURCE_FACTORY_H */

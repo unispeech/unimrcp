@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_CONSUMER_TASK_H__
-#define __APT_CONSUMER_TASK_H__
+#ifndef APT_CONSUMER_TASK_H
+#define APT_CONSUMER_TASK_H
 
 /**
  * @file apt_consumer_task.h
@@ -60,4 +62,4 @@ APT_DECLARE(void*) apt_consumer_task_object_get(apt_consumer_task_t *task);
 
 APT_END_EXTERN_C
 
-#endif /*__APT_CONSUMER_TASK_H__*/
+#endif /* APT_CONSUMER_TASK_H */

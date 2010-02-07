@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Arsen Chaloyan
+ * Copyright 2009-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __ASR_ENGINE_H__
-#define __ASR_ENGINE_H__
+#ifndef ASR_ENGINE_H
+#define ASR_ENGINE_H
 
 /**
  * @file asr_engine.h
@@ -99,4 +101,4 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_log_priority_set(apt_log_priority_e lo
 
 APT_END_EXTERN_C
 
-#endif /*__ASR_ENGINE_H__*/
+#endif /* ASR_ENGINE_H */

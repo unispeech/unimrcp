@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_DIR_LAYOUT_H__
-#define __APT_DIR_LAYOUT_H__
+#ifndef APT_DIR_LAYOUT_H
+#define APT_DIR_LAYOUT_H
 
 /**
  * @file apt_dir_layout.h
@@ -64,4 +66,4 @@ APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, 
 
 APT_END_EXTERN_C
 
-#endif /*__APT_DIR_LAYOUT_H__*/
+#endif /* APT_DIR_LAYOUT_H */

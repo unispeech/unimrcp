@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_ENGINE_LOADER_H__
-#define __MRCP_ENGINE_LOADER_H__
+#ifndef MRCP_ENGINE_LOADER_H
+#define MRCP_ENGINE_LOADER_H
 
 /**
  * @file mrcp_engine_loader.h
@@ -45,4 +47,4 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_ENGINE_LOADER_H__*/
+#endif /* MRCP_ENGINE_LOADER_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __RTSP_STREAM_H__
-#define __RTSP_STREAM_H__
+#ifndef RTSP_STREAM_H
+#define RTSP_STREAM_H
 
 /**
  * @file rtsp_stream.h
@@ -66,4 +68,4 @@ RTSP_DECLARE(apt_bool_t) rtsp_stream_walk(rtsp_parser_t *parser, apt_text_stream
 
 APT_END_EXTERN_C
 
-#endif /*__RTSP_STREAM_H__*/
+#endif /* RTSP_STREAM_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_GENERIC_HEADER_H__
-#define __MRCP_GENERIC_HEADER_H__
+#ifndef MRCP_GENERIC_HEADER_H
+#define MRCP_GENERIC_HEADER_H
 
 /**
  * @file mrcp_generic_header.h
@@ -120,4 +122,4 @@ MRCP_DECLARE(apt_bool_t) active_request_id_list_find(mrcp_generic_header_t *gene
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_GENERIC_HEADER_H__*/
+#endif /* MRCP_GENERIC_HEADER_H */

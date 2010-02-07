@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __RTSP_HEADER_H__
-#define __RTSP_HEADER_H__
+#ifndef RTSP_HEADER_H
+#define RTSP_HEADER_H
 
 /**
  * @file rtsp_header.h
@@ -229,4 +231,4 @@ static APR_INLINE apt_bool_t rtsp_header_property_check(const rtsp_header_proper
 
 APT_END_EXTERN_C
 
-#endif /*__RTSP_HEADER_H__*/
+#endif /* RTSP_HEADER_H */

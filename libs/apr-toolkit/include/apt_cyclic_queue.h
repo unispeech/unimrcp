@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_CYCLIC_QUEUE_H__
-#define __APT_CYCLIC_QUEUE_H__
+#ifndef APT_CYCLIC_QUEUE_H
+#define APT_CYCLIC_QUEUE_H
 
 /**
  * @file apt_cyclic_queue.h
@@ -74,4 +76,4 @@ APT_DECLARE(apt_bool_t) apt_cyclic_queue_is_empty(apt_cyclic_queue_t *queue);
 
 APT_END_EXTERN_C
 
-#endif /*__APT_CYCLIC_QUEUE_H__*/
+#endif /* APT_CYCLIC_QUEUE_H */

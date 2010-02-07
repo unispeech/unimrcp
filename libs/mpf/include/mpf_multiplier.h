@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MPF_MULTIPLIER_H__
-#define __MPF_MULTIPLIER_H__
+#ifndef MPF_MULTIPLIER_H
+#define MPF_MULTIPLIER_H
 
 /**
  * @file mpf_multiplier.h
@@ -44,4 +46,4 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_MULTIPLIER_H__*/
+#endif /* MPF_MULTIPLIER_H */

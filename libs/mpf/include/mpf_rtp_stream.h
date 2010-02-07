@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MPF_RTP_STREAM_H__
-#define __MPF_RTP_STREAM_H__
+#ifndef MPF_RTP_STREAM_H
+#define MPF_RTP_STREAM_H
 
 /**
  * @file mpf_rtp_stream.h
@@ -57,4 +59,4 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_RTP_STREAM_H__*/
+#endif /* MPF_RTP_STREAM_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_TASK_H__
-#define __APT_TASK_H__
+#ifndef APT_TASK_H
+#define APT_TASK_H
 
 /**
  * @file apt_task.h
@@ -219,4 +221,4 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 
 APT_END_EXTERN_C
 
-#endif /*__APT_TASK_H__*/
+#endif /* APT_TASK_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_POLLSET_H__
-#define __APT_POLLSET_H__
+#ifndef APT_POLLSET_H
+#define APT_POLLSET_H
 
 /**
  * @file apt_pollset.h
@@ -93,4 +95,4 @@ APT_DECLARE(apt_bool_t) apt_pollset_is_wakeup(apt_pollset_t *pollset, const apr_
 
 APT_END_EXTERN_C
 
-#endif /*__APT_POLLSET_H__*/
+#endif /* APT_POLLSET_H */

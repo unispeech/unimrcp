@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_SOFIASIP_SERVER_AGENT_H__
-#define __MRCP_SOFIASIP_SERVER_AGENT_H__
+#ifndef MRCP_SOFIASIP_SERVER_AGENT_H
+#define MRCP_SOFIASIP_SERVER_AGENT_H
 
 /**
  * @file mrcp_sofiasip_server_agent.h
@@ -65,4 +67,4 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_SOFIASIP_SERVER_AGENT_H__*/
+#endif /* MRCP_SOFIASIP_SERVER_AGENT_H */

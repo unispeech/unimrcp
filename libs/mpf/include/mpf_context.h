@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MPF_CONTEXT_H__
-#define __MPF_CONTEXT_H__
+#ifndef MPF_CONTEXT_H
+#define MPF_CONTEXT_H
 
 /**
  * @file mpf_context.h
@@ -126,4 +128,4 @@ MPF_DECLARE(apt_bool_t) mpf_context_process(mpf_context_t *context);
 
 APT_END_EXTERN_C
 
-#endif /*__MPF_CONTEXT_H__*/
+#endif /* MPF_CONTEXT_H */

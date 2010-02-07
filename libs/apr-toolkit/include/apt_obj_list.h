@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __APT_OBJ_LIST_H__
-#define __APT_OBJ_LIST_H__
+#ifndef APT_OBJ_LIST_H
+#define APT_OBJ_LIST_H
 
 /**
  * @file apt_obj_list.h
@@ -134,4 +136,4 @@ APT_DECLARE(void*) apt_list_elem_object_get(apt_list_elem_t *elem);
 
 APT_END_EXTERN_C
 
-#endif /*__APT_OBJ_LIST_H__*/
+#endif /* APT_OBJ_LIST_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __UNI_VERSION_H__
-#define __UNI_VERSION_H__
+#ifndef UNI_VERSION_H
+#define UNI_VERSION_H
 
 /**
  * @file uni_version.h
@@ -63,4 +65,4 @@
      APR_STRINGIFY(UNI_MINOR_VERSION) "." \
      APR_STRINGIFY(UNI_PATCH_VERSION)
 
-#endif /* __UNI_VERSION_H__ */
+#endif /* UNI_VERSION_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_HEADER_ACCESSOR_H__
-#define __MRCP_HEADER_ACCESSOR_H__
+#ifndef MRCP_HEADER_ACCESSOR_H
+#define MRCP_HEADER_ACCESSOR_H
 
 /**
  * @file mrcp_header_accessor.h
@@ -155,4 +157,4 @@ MRCP_DECLARE(apt_bool_t) mrcp_completion_cause_generate(const apt_str_table_item
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_HEADER_ACCESSOR_H__*/
+#endif /* MRCP_HEADER_ACCESSOR_H */

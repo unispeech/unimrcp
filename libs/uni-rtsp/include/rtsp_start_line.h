@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __RTSP_START_LINE_H__
-#define __RTSP_START_LINE_H__
+#ifndef RTSP_START_LINE_H
+#define RTSP_START_LINE_H
 
 /**
  * @file rtsp_start_line.h
@@ -172,4 +174,4 @@ RTSP_DECLARE(const apt_str_t*) rtsp_reason_phrase_get(rtsp_reason_phrase_e reaso
 
 APT_END_EXTERN_C
 
-#endif /*__RTSP_START_LINE_H__*/
+#endif /* RTSP_START_LINE_H */

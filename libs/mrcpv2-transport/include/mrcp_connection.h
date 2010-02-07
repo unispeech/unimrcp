@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __MRCP_CONNECTION_H__
-#define __MRCP_CONNECTION_H__
+#ifndef MRCP_CONNECTION_H
+#define MRCP_CONNECTION_H
 
 /**
  * @file mrcp_connection.h
@@ -98,4 +100,4 @@ apt_bool_t mrcp_connection_disconnect_raise(mrcp_connection_t *connection, const
 
 APT_END_EXTERN_C
 
-#endif /*__MRCP_CONNECTION_H__*/
+#endif /* MRCP_CONNECTION_H */

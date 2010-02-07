@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Arsen Chaloyan
+ * Copyright 2008-2010 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * $Id$
  */
 
-#ifndef __SYNTH_SESSION_H__
-#define __SYNTH_SESSION_H__
+#ifndef SYNTH_SESSION_H
+#define SYNTH_SESSION_H
 
 /**
  * @file synthsession.h
@@ -63,4 +65,4 @@ inline const SynthScenario* SynthSession::GetScenario() const
 	return (SynthScenario*)m_pScenario;
 }
 
-#endif /*__SYNTH_SESSION_H__*/
+#endif /* SYNTH_SESSION_H */
