@@ -608,7 +608,7 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Engine Params");
 		config->params = apr_table_make(loader->pool,1);
 		for(elem = root->first_child; elem; elem = elem->next) {
-			if(strcasecmp(attr->name,"max-channel-count") == 0) {
+			if(strcasecmp(elem->name,"max-channel-count") == 0) {
 				if(is_cdata_valid(elem) == TRUE) {
 					config->max_channel_count = atol(cdata_text_get(elem));
 				}
