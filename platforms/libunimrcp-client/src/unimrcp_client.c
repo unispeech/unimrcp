@@ -815,7 +815,7 @@ static apt_bool_t unimrcp_client_properties_load(unimrcp_client_loader_t *loader
 		}
 		else if(strcasecmp(elem->name,"server-ip") == 0) {
 			loader->server_ip = unimrcp_client_ip_address_get(loader,elem,DEFAULT_IP_ADDRESS);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Property ext-ip:%s",loader->ext_ip);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Property server-ip:%s",loader->server_ip);
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
