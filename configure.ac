@@ -213,6 +213,7 @@ AC_CONFIG_FILES([
   build/pkgconfig/unimrcpclient.pc
   build/pkgconfig/unimrcpserver.pc
   build/pkgconfig/unimrcpplugin.pc
+  build/svnrev/Makefile
   conf/Makefile
   data/Makefile
   docs/doxygen.conf
