@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- UniMRCP client document -->
 <unimrcpclient xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-               xsi:noNamespaceSchemaLocation="..\unimrcpclient.xsd" 
+               xsi:noNamespaceSchemaLocation="../unimrcpclient.xsd" 
                version="1.0">
   <settings>
     <!-- SIP MRCPv2 settings -->
