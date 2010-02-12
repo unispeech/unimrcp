@@ -25,7 +25,7 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine="$(SolutionDir)$(ConfigurationName)\bin\svnrev -r$(SolutionDir)build\svnrev\svnrev.input -o$(SolutionDir)build\uni_revision.h"
+				CommandLine="$(SolutionDir)$(ConfigurationName)\bin\svnrev -r$(SolutionDir)build\svnrev\svnrev.input -p$(SolutionDir) -o$(SolutionDir)build\uni_revision.h&#x0D;&#x0A;"
 				Outputs="$(SolutionDir)build\uni_revision.h"
 			/>
 			<Tool
@@ -100,7 +100,7 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine="$(SolutionDir)$(ConfigurationName)\bin\svnrev -r$(SolutionDir)build\svnrev\svnrev.input -o$(SolutionDir)build\uni_revision.h"
+				CommandLine="$(SolutionDir)$(ConfigurationName)\bin\svnrev -r$(SolutionDir)build\svnrev\svnrev.input -p$(SolutionDir) -o$(SolutionDir)build\uni_revision.h&#x0D;&#x0A;"
 				Outputs="$(SolutionDir)build\uni_revision.h"
 			/>
 			<Tool

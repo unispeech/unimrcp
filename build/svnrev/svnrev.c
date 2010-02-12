@@ -186,6 +186,7 @@ int main(int argc, char *argv[])
   FILE *fp;
   FILE *input_file;
   char *input_file_name = NULL;
+  char *path_prefix = NULL;
   int index;
   int process_self = 0;
   int verbose = 0;
@@ -244,6 +245,9 @@ int main(int argc, char *argv[])
       case 'r':
         input_file_name = &argv[index][2];
         break;
+      case 'p':
+        path_prefix = &argv[index][2];
+        break;
       case 'v':
         verbose = 1;
         break;
@@ -275,8 +279,13 @@ int main(int argc, char *argv[])
 	  apr_pool_t *pool;
       char *file_path;
       char dir_path[256]; /* line */
-	  int offset = sprintf(dir_path, "../../");
-      apr_initialize();
+	  int offset = 0;
+	  if(path_prefix)
+	    offset = sprintf(dir_path, "../../");
+	  else
+	    offset = sprintf(dir_path, "%s", path_prefix);
+      
+	  apr_initialize();
 	  apr_pool_create(&pool,NULL);
 	  while (fgets(dir_path + offset, sizeof(dir_path) - offset, input_file) != NULL ) { /* read a line */ 
         size_t len = strlen(dir_path)-1;
