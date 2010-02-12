@@ -7,4 +7,4 @@ svnrev_LDADD         = $(UNIMRCP_APR_LIBS) $(UNIMRCP_APU_LIBS)
 svnrev_SOURCES       = svnrev.c
 
 rev:
-	./svnrev -rsvnrev.input -o../uni_revision.h
+	./svnrev -rsvnrev.input -p../../ -o../uni_revision.h
