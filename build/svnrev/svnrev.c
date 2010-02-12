@@ -276,29 +276,29 @@ int main(int argc, char *argv[])
       apr_dir_t *dir;
       apr_finfo_t finfo;
       apr_status_t rv;
-	  apr_pool_t *pool;
+      apr_pool_t *pool;
       char *file_path;
       char dir_path[256]; /* line */
-	  int offset = 0;
-	  if(path_prefix)
-	    offset = sprintf(dir_path, "../../");
-	  else
-	    offset = sprintf(dir_path, "%s", path_prefix);
+      int offset = 0;
+      if(path_prefix)
+        offset = sprintf(dir_path, "%s", path_prefix);
+      else
+        offset = sprintf(dir_path, "../../");
       
-	  apr_initialize();
-	  apr_pool_create(&pool,NULL);
-	  while (fgets(dir_path + offset, sizeof(dir_path) - offset, input_file) != NULL ) { /* read a line */ 
+      apr_initialize();
+      apr_pool_create(&pool,NULL);
+      while (fgets(dir_path + offset, sizeof(dir_path) - offset, input_file) != NULL ) { /* read a line */ 
         size_t len = strlen(dir_path)-1;
         if(dir_path[len] == '\n') 
           dir_path[len] = 0;
         rv = apr_dir_open(&dir,dir_path,pool);
         if(rv == APR_SUCCESS) {
           while (apr_dir_read(&finfo, APR_FINFO_NAME, dir) == APR_SUCCESS) { /* get next file */
-			if(finfo.filetype != APR_REG) continue;
+            if(finfo.filetype != APR_REG) continue;
 
-			apr_filepath_merge(&file_path,dir_path,finfo.name,0,pool);
+            apr_filepath_merge(&file_path,dir_path,finfo.name,0,pool);
 
-		    filemodified = 0;
+            filemodified = 0;
             if (strcasecmp(file_path, outname)!=0)
               processfile(file_path, 0, &max_build, &accum_build, &max_year, &max_month, &max_day, &filemodified);
             if (filemodified && verbose)
@@ -312,12 +312,12 @@ int main(int argc, char *argv[])
         }
       }
       fclose (input_file);
-	  apr_pool_destroy(pool);
+      apr_pool_destroy(pool);
       apr_terminate();
     }
-	else {
+    else {
       fprintf(stderr, "No such input file '%s'\n", input_file_name);
-	}
+    }
   }
   else {
     for (index = 1; index < argc; index++) {
