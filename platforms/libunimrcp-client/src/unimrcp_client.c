@@ -635,6 +635,7 @@ static apt_bool_t unimrcp_client_rtcp_settings_load(unimrcp_client_loader_t *loa
 		return TRUE;
 	}
 
+	rtcp_settings->rtcp = TRUE;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading RTCP Settings");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Element <%s>",elem->name);
