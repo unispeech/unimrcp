@@ -30,6 +30,10 @@
       <!-- <force-destination>true</force-destination> -->
       <ua-name>UniMRCP SofiaSIP</ua-name>
       <sdp-origin>UniMRCPServer</sdp-origin>
+      <!-- <sip-t1>500</sip-t1> -->
+      <!-- <sip-t2>4000</sip-t2> -->
+      <!-- <sip-t4>4000</sip-t4> -->
+      <!-- <sip-t1x64>32000</sip-t1x64> -->
     </sip-uas>
 
     <!-- UniRTSP MRCPv1 signaling agent -->

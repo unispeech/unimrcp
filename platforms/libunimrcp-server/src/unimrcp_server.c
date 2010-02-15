@@ -321,6 +321,26 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 				config->force_destination = cdata_bool_get(elem);
 			}
 		}
+		else if(strcasecmp(elem->name,"sip-t1") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->sip_t1 = atol(cdata_text_get(elem));
+			}
+		}
+		else if(strcasecmp(elem->name,"sip-t2") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->sip_t2 = atol(cdata_text_get(elem));
+			}
+		}
+		else if(strcasecmp(elem->name,"sip-t4") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->sip_t4 = atol(cdata_text_get(elem));
+			}
+		}
+		else if(strcasecmp(elem->name,"sip-t1x64") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->sip_t1x64 = atol(cdata_text_get(elem));
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}

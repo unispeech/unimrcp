@@ -33,6 +33,10 @@
       <sip-transport>udp</sip-transport>
       <ua-name>UniMRCP SofiaSIP</ua-name>
       <sdp-origin>UniMRCPClient</sdp-origin>
+      <!-- <sip-t1>500</sip-t1> -->
+      <!-- <sip-t2>4000</sip-t2> -->
+      <!-- <sip-t4>4000</sip-t4> -->
+      <!-- <sip-t1x64>32000</sip-t1x64> -->
     </sip-uac>
 
     <!-- UniRTSP MRCPv1 signaling agent -->

@@ -139,6 +139,11 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 	config->user_agent_name = NULL;
 	config->origin = NULL;
 	config->transport = NULL;
+
+	config->sip_t1 = 0;
+	config->sip_t2 = 0;
+	config->sip_t4 = 0;
+	config->sip_t1x64 = 0;
 	return config;
 }
 
@@ -170,6 +175,7 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 static void mrcp_sofia_task_initialize(apt_task_t *task)
 {
 	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
+	mrcp_sofia_client_config_t *sofia_config = sofia_agent->config;
 
 	/* Initialize Sofia-SIP library and create event loop */
 	su_init();
@@ -190,7 +196,11 @@ static void mrcp_sofia_task_initialize(apt_task_t *task)
 					sofia_agent->nua,
 					NUTAG_AUTOANSWER(0),
 					NUTAG_APPL_METHOD("OPTIONS"),
-					SIPTAG_USER_AGENT_STR(sofia_agent->config->user_agent_name),
+					TAG_IF(sofia_config->sip_t1,NTATAG_SIP_T1(sofia_config->sip_t1)),
+					TAG_IF(sofia_config->sip_t2,NTATAG_SIP_T2(sofia_config->sip_t2)),
+					TAG_IF(sofia_config->sip_t4,NTATAG_SIP_T4(sofia_config->sip_t4)),
+					TAG_IF(sofia_config->sip_t1x64,NTATAG_SIP_T1X64(sofia_config->sip_t1x64)),
+					SIPTAG_USER_AGENT_STR(sofia_config->user_agent_name),
 					TAG_END());
 	}
 }

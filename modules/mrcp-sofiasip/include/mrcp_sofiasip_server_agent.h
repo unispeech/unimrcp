@@ -40,7 +40,6 @@ struct mrcp_sofia_server_config_t {
 	char      *ext_ip;
 	/** Local port to bind to */
 	apr_port_t local_port;
-
 	/** SIP user name */
 	char      *user_name;
 	/** User agent name */
@@ -49,10 +48,17 @@ struct mrcp_sofia_server_config_t {
 	char      *origin;
 	/** SIP transport */
 	char      *transport;
-
 	/** Force destination ip address. Should be used only in case 
 	SDP contains incorrect connection address (local IP address behind NAT) */
 	apt_bool_t force_destination;
+	/** SIP T1 timer */
+	apr_size_t sip_t1;
+	/** SIP T2 timer */
+	apr_size_t sip_t2;
+	/** SIP T4 timer */
+	apr_size_t sip_t4;
+	/** SIP T1x64 timer */
+	apr_size_t sip_t1x64;
 };
 
 /**

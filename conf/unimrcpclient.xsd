@@ -59,10 +59,14 @@
                   <xsd:sequence>
                     <xsd:element name="sip-ip" type="xsd:string" minOccurs="0" />
                     <xsd:element name="sip-ext-ip" type="xsd:string" minOccurs="0" />
-                    <xsd:element name="sip-port" type="xsd:string" />
+                    <xsd:element name="sip-port" type="xsd:short" />
                     <xsd:element name="sip-transport" type="xsd:string" />
                     <xsd:element name="ua-name" type="xsd:string" minOccurs="0" />
                     <xsd:element name="sdp-origin" type="xsd:string" minOccurs="0" />
+                    <xsd:element name="sip-t1" type="xsd:long" minOccurs="0" />
+                    <xsd:element name="sip-t2" type="xsd:long" minOccurs="0" />
+                    <xsd:element name="sip-t4" type="xsd:long" minOccurs="0" />
+                    <xsd:element name="sip-t1x64" type="xsd:long" minOccurs="0" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />
                   <xsd:attribute name="type" type="xsd:string" use="required" />
