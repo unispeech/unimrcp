@@ -32,7 +32,6 @@
 #include "apt_log.h"
 
 #define CONF_FILE_NAME            "unimrcpserver.xml"
-#define DEFAULT_CONF_DIR_PATH     "../conf"
 #define DEFAULT_PLUGIN_DIR_PATH   "../plugin"
 #ifdef WIN32
 #define DEFAULT_PLUGIN_EXT        "dll"
@@ -1082,7 +1081,6 @@ static apr_xml_doc* unimrcp_server_doc_parse(const char *file_path, apr_pool_t *
 static apt_bool_t unimrcp_server_load(mrcp_server_t *mrcp_server, apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 {
 	const char *file_path;
-	const char *dir_path;
 	apr_xml_doc *doc;
 	const apr_xml_elem *elem;
 	const apr_xml_elem *root;
@@ -1090,18 +1088,9 @@ static apt_bool_t unimrcp_server_load(mrcp_server_t *mrcp_server, apt_dir_layout
 	unimrcp_server_loader_t *loader;
 	const char *version = NULL;
 
-	dir_path = dir_layout->conf_dir_path;
-	if(!dir_path) {
-		dir_path = DEFAULT_CONF_DIR_PATH;
-	}
-	if(*dir_path == '\0') {
-		file_path = CONF_FILE_NAME;
-	}
-	else {
-		file_path = apr_psprintf(pool,"%s/%s",dir_path,CONF_FILE_NAME);
-	}
-
+	file_path = apt_confdir_filepath_get(dir_layout,CONF_FILE_NAME,pool);
 	if(!file_path) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Path to Conf File [%s]",CONF_FILE_NAME);
 		return FALSE;
 	}
 

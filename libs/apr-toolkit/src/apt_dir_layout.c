@@ -74,3 +74,14 @@ APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, 
 	}
 	return NULL;
 }
+
+APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
+{
+	if(dir_layout && dir_layout->conf_dir_path && file_name) {
+		char *file_path = NULL;
+		if(apr_filepath_merge(&file_path,dir_layout->conf_dir_path,file_name,0,pool) == APR_SUCCESS) {
+			return file_path;
+		}
+	}
+	return NULL;
+}

@@ -58,10 +58,11 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 									const char *data_dir_path,
 									apr_pool_t *pool);
 
-/**
- * Construct file path with the given file name relative to data dir.
- */
+/** Construct file path relative to data dir using the file name specified. */
 APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool);
+
+/** Construct file path relative to conf dir using the file name specified. */
+APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C
