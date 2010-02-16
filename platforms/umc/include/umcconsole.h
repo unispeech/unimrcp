@@ -49,8 +49,8 @@ private:
 	struct UmcOptions
 	{
 		const char*        m_RootDirPath;
-		apt_log_priority_e m_LogPriority;
-		apt_log_output_e   m_LogOutput;
+		const char*        m_LogPriority;
+		const char*        m_LogOutput;
 	};
 
 	UmcOptions    m_Options;

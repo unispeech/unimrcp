@@ -19,6 +19,7 @@
 #include <apr_time.h>
 #include <apr_file_io.h>
 #include <apr_portable.h>
+#include <apr_xml.h>
 #include "apt_log.h"
 
 #define MAX_LOG_ENTRY_SIZE 4096
@@ -64,6 +65,7 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 
 static const char* apt_log_file_path_make(apt_log_file_data_t *file_data);
 static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *log_entry, apr_size_t size);
+static apr_xml_doc* apt_log_doc_parse(const char *file_path, apr_pool_t *pool);
 
 
 APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_priority_e priority, apr_pool_t *pool)
@@ -77,6 +79,62 @@ APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_p
 	apt_logger->header = APT_LOG_HEADER_DEFAULT;
 	apt_logger->ext_handler = NULL;
 	apt_logger->file_data = NULL;
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_log_instance_load(const char *config_file, apr_pool_t *pool)
+{
+	apr_xml_doc *doc;
+	const apr_xml_elem *elem;
+	const apr_xml_elem *root;
+	char *text;
+
+	if(apt_logger) {
+		return FALSE;
+	}
+	apt_logger = apr_palloc(pool,sizeof(apt_logger_t));
+	apt_logger->mode = APT_LOG_OUTPUT_CONSOLE;
+	apt_logger->priority = APT_PRIO_INFO;
+	apt_logger->header = APT_LOG_HEADER_DEFAULT;
+	apt_logger->ext_handler = NULL;
+	apt_logger->file_data = NULL;
+
+
+	/* Parse XML document */
+	doc = apt_log_doc_parse(config_file,pool);
+	if(!doc) {
+		return FALSE;
+	}
+
+	root = doc->root;
+
+	/* Match document name */
+	if(!root || strcasecmp(root->name,"aptlogger") != 0) {
+		/* Unknown document */
+		return FALSE;
+	}
+
+	/* Navigate through document */
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(!elem->first_cdata.first || !elem->first_cdata.first->text) 
+			continue;
+
+		text = apr_pstrdup(pool,elem->first_cdata.first->text);
+		apr_collapse_spaces(text,text);
+		
+		if(strcasecmp(elem->name,"priority") == 0) {
+			apt_logger->priority = apt_log_priority_translate(text);
+		}
+		else if(strcasecmp(elem->name,"output") == 0) {
+			apt_logger->mode = apt_log_output_mode_translate(text);
+		}
+		else if(strcasecmp(elem->name,"headers") == 0) {
+			apt_logger->header = apt_log_header_translate(text);
+		}
+		else {
+			/* Unknown element */
+		}
+	}
 	return TRUE;
 }
 
@@ -180,6 +238,31 @@ APT_DECLARE(apt_bool_t) apt_log_output_mode_set(apt_log_output_e mode)
 	return TRUE;
 }
 
+APT_DECLARE(apt_bool_t) apt_log_output_mode_check(apt_log_output_e mode)
+{
+	if(!apt_logger) {
+		return FALSE;
+	}
+	return (apt_logger->mode | mode) ? TRUE : FALSE;
+}
+
+APT_DECLARE(int) apt_log_output_mode_translate(char *str)
+{
+	int mode = APT_LOG_OUTPUT_NONE;
+	char *name;
+	char *last;
+	name = apr_strtok(str, ",", &last);
+	while(name) {
+		if(strcasecmp(name, "CONSOLE") == 0)
+			mode |=  APT_LOG_OUTPUT_CONSOLE;
+		else if(strcasecmp(name, "FILE") == 0)
+			mode |=  APT_LOG_OUTPUT_FILE;
+		
+		name = apr_strtok(NULL, ",", &last);
+	}
+	return mode;
+}
+
 APT_DECLARE(apt_bool_t) apt_log_priority_set(apt_log_priority_e priority)
 {
 	if(!apt_logger || priority >= APT_PRIO_COUNT) {
@@ -218,6 +301,29 @@ APT_DECLARE(apt_bool_t) apt_log_header_set(int header)
 	}
 	apt_logger->header = header;
 	return TRUE;
+}
+
+APT_DECLARE(int) apt_log_header_translate(char *str)
+{
+	int header = APT_LOG_OUTPUT_NONE;
+	char *name;
+	char *last;
+	name = apr_strtok(str, ",", &last);
+	while(name) {
+		if(strcasecmp(name, "DATE") == 0)
+			header |=  APT_LOG_HEADER_DATE;
+		else if(strcasecmp(name, "TIME") == 0)
+			header |=  APT_LOG_HEADER_TIME;
+		else if(strcasecmp(name, "PRIORITY") == 0)
+			header |=  APT_LOG_HEADER_PRIORITY;
+		else if(strcasecmp(name, "MARK") == 0)
+			header |=  APT_LOG_HEADER_MARK;
+		else if(strcasecmp(name, "THREAD") == 0)
+			header |=  APT_LOG_HEADER_THREAD;
+
+		name = apr_strtok(NULL, ",", &last);
+	}
+	return header;
 }
 
 APT_DECLARE(apt_bool_t) apt_log_ext_handler_set(apt_log_ext_handler_f handler)
@@ -339,4 +445,25 @@ static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *
 
 	apr_thread_mutex_unlock(file_data->mutex);
 	return TRUE;
+}
+
+static apr_xml_doc* apt_log_doc_parse(const char *file_path, apr_pool_t *pool)
+{
+	apr_xml_parser *parser = NULL;
+	apr_xml_doc *xml_doc = NULL;
+	apr_file_t *fd = NULL;
+	apr_status_t rv;
+
+	rv = apr_file_open(&fd,file_path,APR_READ|APR_BINARY,0,pool);
+	if(rv != APR_SUCCESS) {
+		return NULL;
+	}
+
+	rv = apr_xml_parse_file(pool,&parser,&xml_doc,fd,2000);
+	if(rv != APR_SUCCESS) {
+		xml_doc = NULL;
+	}
+	
+	apr_file_close(fd);
+	return xml_doc;
 }

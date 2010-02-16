@@ -25,9 +25,9 @@
 #include "apt_log.h"
 
 typedef struct {
-	const char        *root_dir_path;
-	apt_log_priority_e log_priority;
-	apt_log_output_e   log_output;
+	const char   *root_dir_path;
+	const char   *log_priority;
+	const char   *log_output;
 } client_options_t;
 
 static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, char *cmdline)
@@ -147,14 +147,10 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 				options->root_dir_path = optarg;
 				break;
 			case 'l':
-				if(optarg) {
-					options->log_priority = atoi(optarg);
-				}
+				options->log_priority = optarg;
 				break;
 			case 'o':
-				if(optarg) {
-					options->log_output = atoi(optarg);
-				}
+				options->log_output = optarg;
 				break;
 			case 'h':
 				usage();
@@ -175,6 +171,7 @@ int main(int argc, const char * const *argv)
 	apr_pool_t *pool = NULL;
 	client_options_t options;
 	apt_dir_layout_t *dir_layout;
+	const char *log_conf_path;
 	demo_framework_t *framework;
 
 	/* APR global initialization */
@@ -192,8 +189,8 @@ int main(int argc, const char * const *argv)
 
 	/* set the default options */
 	options.root_dir_path = "../";
-	options.log_priority = APT_PRIO_INFO;
-	options.log_output = APT_LOG_OUTPUT_CONSOLE;
+	options.log_priority = NULL;
+	options.log_output = NULL;
 
 	/* load options */
 	if(demo_framework_options_load(&options,argc,argv,pool) != TRUE) {
@@ -204,10 +201,22 @@ int main(int argc, const char * const *argv)
 
 	/* create the structure of default directories layout */
 	dir_layout = apt_default_dir_layout_create(options.root_dir_path,pool);
-	/* create singleton logger */
-	apt_log_instance_create(options.log_output,options.log_priority,pool);
 
-	if((options.log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+	/* get path to logger configuration file */
+	log_conf_path = apt_confdir_filepath_get(dir_layout,"logger.xml",pool);
+	/* create and load singleton logger */
+	apt_log_instance_load(log_conf_path,pool);
+
+	if(options.log_priority) {
+		/* override the log priority, if specified in command line */
+		apt_log_priority_set(atoi(options.log_priority));
+	}
+	if(options.log_output) {
+		/* override the log output mode, if specified in command line */
+		apt_log_output_mode_set(atoi(options.log_output));
+	}
+
+	if(apt_log_output_mode_check(APT_LOG_OUTPUT_FILE) == TRUE) {
 		/* open the log file */
 		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,pool);
 	}

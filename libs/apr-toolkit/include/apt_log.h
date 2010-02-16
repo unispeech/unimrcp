@@ -99,6 +99,13 @@ typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const ch
 APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_priority_e priority, apr_pool_t *pool);
 
 /**
+ * Create and load the singleton instance of the logger.
+ * @param config_file the path to configuration file to load settings from
+ * @param pool the memory pool to use
+ */
+APT_DECLARE(apt_bool_t) apt_log_instance_load(const char *config_file, apr_pool_t *pool);
+
+/**
  * Destroy the singleton instance of the logger.
  */
 APT_DECLARE(apt_bool_t) apt_log_instance_destroy(void);
@@ -134,10 +141,22 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(
 APT_DECLARE(apt_bool_t) apt_log_file_close(void);
 
 /**
- * Set the logging output.
+ * Set the logging output mode.
  * @param mode the mode to set
  */
 APT_DECLARE(apt_bool_t) apt_log_output_mode_set(apt_log_output_e mode);
+
+/**
+ * Check the logging output mode to be enabled (set) or not.
+ * @param mode the mode to check
+ */
+APT_DECLARE(apt_bool_t) apt_log_output_mode_check(apt_log_output_e mode);
+
+/**
+ * Translate the output mode string to bitmask of apt_log_output_e values.
+ * @param str the string to translate
+ */
+APT_DECLARE(int) apt_log_output_mode_translate(char *str);
 
 /**
  * Set the logging priority (log level).
@@ -156,6 +175,12 @@ APT_DECLARE(apt_log_priority_e) apt_log_priority_translate(const char *str);
  * @param header the header to set (used as bitmask)
  */
 APT_DECLARE(apt_bool_t) apt_log_header_set(int header);
+
+/**
+ * Translate the header string to bitmask of apt_log_header_e values.
+ * @param str the string to translate
+ */
+APT_DECLARE(int) apt_log_header_translate(char *str);
 
 /**
  * Set the extended external log handler.

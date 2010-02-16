@@ -39,6 +39,7 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 {
 	apr_pool_t* pool = NULL;
 	apt_dir_layout_t* pDirLayout = NULL;
+	const char *logConfPath;
 
 	/* APR global initialization */
 	if(apr_initialize() != APR_SUCCESS) 
@@ -65,10 +66,24 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 
 	/* create the structure of default directories layout */
 	pDirLayout = apt_default_dir_layout_create(m_Options.m_RootDirPath,pool);
-	/* create singleton logger */
-	apt_log_instance_create(m_Options.m_LogOutput,m_Options.m_LogPriority,pool);
 
-	if((m_Options.m_LogOutput & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) 
+	/* get path to logger configuration file */
+	logConfPath = apt_confdir_filepath_get(pDirLayout,"logger.xml",pool);
+	/* create and load singleton logger */
+	apt_log_instance_load(logConfPath,pool);
+
+	if(m_Options.m_LogPriority) 
+	{
+		/* override the log priority, if specified in command line */
+		apt_log_priority_set((apt_log_priority_e)atoi(m_Options.m_LogPriority));
+	}
+	if(m_Options.m_LogOutput) 
+	{
+		/* override the log output mode, if specified in command line */
+		apt_log_output_mode_set((apt_log_output_e)atoi(m_Options.m_LogOutput));
+	}
+
+	if(apt_log_output_mode_check(APT_LOG_OUTPUT_FILE) == TRUE) 
 	{
 		/* open the log file */
 		apt_log_file_open(pDirLayout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,pool);
@@ -240,8 +255,8 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 
 	/* set the default options */
 	m_Options.m_RootDirPath = "../";
-	m_Options.m_LogPriority = APT_PRIO_INFO;
-	m_Options.m_LogOutput = APT_LOG_OUTPUT_CONSOLE;
+	m_Options.m_LogPriority = NULL;
+	m_Options.m_LogOutput = NULL;
 
 	rv = apr_getopt_init(&opt, pool , argc, argv);
 	if(rv != APR_SUCCESS)
@@ -256,15 +271,11 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 				break;
 			case 'l':
 				if(optarg) 
-				{
-					m_Options.m_LogPriority = (apt_log_priority_e) atoi(optarg);
-				}
+				m_Options.m_LogPriority = optarg;
 				break;
 			case 'o':
 				if(optarg) 
-				{
-					m_Options.m_LogOutput = (apt_log_output_e) atoi(optarg);
-				}
+				m_Options.m_LogOutput = optarg;
 				break;
 			case 'h':
 				Usage();
