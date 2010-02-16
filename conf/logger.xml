@@ -1,21 +1,21 @@
 <!-- Logger Document -->
 <aptlogger>
   <!--  Set the log priority to one of
-	  EMERGENCY     system is unusable
-	  ALERT         action must be taken immediately
-	  CRITICAL      critical condition
-	  ERROR         error condition
-	  WARNING       warning condition
-	  NOTICE        normal, but significant condition
-	  INFO          informational message
-	  DEBUG         debug-level message
+    EMERGENCY     system is unusable
+    ALERT         action must be taken immediately
+    CRITICAL      critical condition
+    ERROR         error condition
+    WARNING       warning condition
+    NOTICE        normal, but significant condition
+    INFO          informational message
+    DEBUG         debug-level message
   -->
   <priority>INFO</priority>
 
   <!--  Set the log output mode
- 	  CONSOLE       console output
- 	  FILE          log file output
- 	  CONSOLE,FILE  both console and the log file output
+    CONSOLE       console output
+    FILE          log file output
+    CONSOLE,FILE  both console and the log file output
   -->
   <output>CONSOLE</output>
 
