@@ -38,12 +38,14 @@ static apt_bool_t mpf_decoder_destroy(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_decoder_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	mpf_decoder_t *decoder = stream->obj;
+	mpf_codec_open(decoder->codec);
 	return mpf_audio_stream_rx_open(decoder->source,decoder->codec);
 }
 
 static apt_bool_t mpf_decoder_close(mpf_audio_stream_t *stream)
 {
 	mpf_decoder_t *decoder = stream->obj;
+	mpf_codec_close(decoder->codec);
 	return mpf_audio_stream_rx_close(decoder->source);
 }
 
