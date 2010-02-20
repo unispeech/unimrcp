@@ -258,6 +258,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_multipart_content.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_net.h"
 				>
 			</File>
@@ -332,6 +336,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_log.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_multipart_content.c"
 				>
 			</File>
 			<File
