@@ -16,6 +16,7 @@
  * $Id$
  */
 
+#include <stdlib.h>
 #include "apt_multipart_content.h"
 #include "apt_text_stream.h"
 
