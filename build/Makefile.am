@@ -1,4 +1,5 @@
 MAINTAINERCLEANFILES   = Makefile.in
+CLEANFILES             = uni_revision.h
 
 SUBDIRS                = pkgconfig svnrev
 
