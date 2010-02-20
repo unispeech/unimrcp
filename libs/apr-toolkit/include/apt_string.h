@@ -67,7 +67,7 @@ static APR_INLINE apr_size_t apt_string_length_get(const apt_str_t *str)
 /** Check whether string is empty. */
 static APR_INLINE apr_size_t apt_string_is_empty(const apt_str_t *str)
 {
-	return str->length ? TRUE : FALSE;
+	return str->length ? FALSE : TRUE;
 }
 
 /**
