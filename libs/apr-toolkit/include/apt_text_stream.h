@@ -171,6 +171,20 @@ static APR_INLINE void apt_text_char_skip(apt_text_stream_t *stream, char ch)
 	if(stream->pos < end && *stream->pos == ch) stream->pos++;
 }
 
+/** Skip specified characters */
+static APR_INLINE void apt_text_chars_skip(apt_text_stream_t *stream, char ch)
+{
+	const char *end = stream->text.buf + stream->text.length;
+	while(stream->pos < end && *stream->pos == ch) stream->pos++;
+}
+
+/** Skip to specified character */
+static APR_INLINE void apt_text_skip_to_char(apt_text_stream_t *stream, char ch)
+{
+	const char *end = stream->text.buf + stream->text.length;
+	while(stream->pos < end && *stream->pos != ch) stream->pos++;
+}
+
 /** Check whether end of stream is reached */
 static APR_INLINE apt_bool_t apt_text_is_eos(const apt_text_stream_t *stream)
 {
