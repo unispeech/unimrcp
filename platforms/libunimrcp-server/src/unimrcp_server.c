@@ -20,7 +20,6 @@
 #include <apr_xml.h>
 #include "unimrcp_server.h"
 #include "uni_version.h"
-#include "uni_revision.h"
 #include "mrcp_resource_loader.h"
 #include "mpf_engine.h"
 #include "mpf_codec_manager.h"
@@ -86,7 +85,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 		return NULL;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Server ["UNI_VERSION_STRING"] [r"UNI_REVISION_STRING"]");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Server ["UNI_VERSION_STRING"]");
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
 	server = mrcp_server_create(dir_layout);
 	if(!server) {
