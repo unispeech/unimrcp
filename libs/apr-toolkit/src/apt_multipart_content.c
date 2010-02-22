@@ -137,6 +137,7 @@ APT_DECLARE(apt_str_t*) apt_multipart_content_finalize(apt_multipart_content_t *
 	apt_text_eol_insert(&multipart_content->stream);
 
 	stream->text.length = stream->pos - stream->text.buf;
+	stream->text.buf[stream->text.length] = '\0';
 	return &stream->text;
 }
 

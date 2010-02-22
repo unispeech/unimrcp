@@ -21,6 +21,7 @@
 
 apt_test_suite_t* task_test_suite_create(apr_pool_t *pool);
 apt_test_suite_t* consumer_task_test_suite_create(apr_pool_t *pool);
+apt_test_suite_t* multipart_test_suite_create(apr_pool_t *pool);
 
 int main(int argc, const char * const *argv)
 {
@@ -42,6 +43,9 @@ int main(int argc, const char * const *argv)
 	apt_test_framework_suite_add(test_framework,test_suite);
 
 	test_suite = consumer_task_test_suite_create(pool);
+	apt_test_framework_suite_add(test_framework,test_suite);
+
+	test_suite = multipart_test_suite_create(pool);
 	apt_test_framework_suite_add(test_framework,test_suite);
 
 	/* run tests */
