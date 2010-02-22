@@ -37,6 +37,11 @@
 
 #include "asr_engine.h"
 
+typedef enum {
+	INPUT_MODE_NONE,
+	INPUT_MODE_FILE,
+	INPUT_MODE_STREAM
+} input_mode_e;
 
 /** ASR engine on top of UniMRCP client stack */
 struct asr_engine_t {
@@ -52,23 +57,29 @@ struct asr_engine_t {
 /** ASR session on top of UniMRCP session/channel */
 struct asr_session_t {
 	/** Back pointer to engine */
-	asr_engine_t       *engine;
+	asr_engine_t             *engine;
 	/** MRCP session */
-	mrcp_session_t     *mrcp_session;
+	mrcp_session_t           *mrcp_session;
 	/** MRCP channel */
-	mrcp_channel_t     *mrcp_channel;
+	mrcp_channel_t           *mrcp_channel;
 	/** RECOGNITION-COMPLETE message  */
-	mrcp_message_t     *recog_complete;
+	mrcp_message_t           *recog_complete;
 
-	/** File to read audio stream from */
-	FILE               *audio_in;
+	/** Input mode (either file or stream) */
+	input_mode_e              input_mode;
+	/** File to read media frames from */
+	FILE                     *audio_in;
+	/** Callback to get media frames from */
+	asr_session_callback_f    callback;
+	/** Object to pass to callback */
+	void                     *obj;
 	/** Streaming is in-progress */
-	apt_bool_t          streaming;
+	apt_bool_t                streaming;
 
 	/** Conditional wait object */
-	apr_thread_cond_t  *wait_object;
+	apr_thread_cond_t        *wait_object;
 	/** Mutex of the wait object */
-	apr_thread_mutex_t *mutex;
+	apr_thread_mutex_t       *mutex;
 
 	/** Message sent from client stack */
 	const mrcp_app_message_t *app_message;
@@ -243,14 +254,21 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 {
 	asr_session_t *asr_session = stream->obj;
 	if(asr_session && asr_session->streaming == TRUE) {
-		if(asr_session->audio_in) {
-			if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,asr_session->audio_in) == frame->codec_frame.size) {
-				/* normal read */
-				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+		if(asr_session->input_mode == INPUT_MODE_FILE) {
+			if(asr_session->audio_in) {
+				if(fread(frame->codec_frame.buffer,1,frame->codec_frame.size,asr_session->audio_in) == frame->codec_frame.size) {
+					/* normal read */
+					frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+				}
+				else {
+					/* file is over */
+					asr_session->streaming = FALSE;
+				}
 			}
-			else {
-				/* file is over */
-				asr_session->streaming = FALSE;
+		}
+		if(asr_session->input_mode == INPUT_MODE_STREAM) {
+			if(asr_session->callback) {
+				asr_session->callback(asr_session->obj,frame);
 			}
 		}
 	}
@@ -476,8 +494,11 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	asr_session->mrcp_session = session;
 	asr_session->mrcp_channel = channel;
 	asr_session->recog_complete = NULL;
+	asr_session->input_mode = INPUT_MODE_NONE;
 	asr_session->streaming = FALSE;
 	asr_session->audio_in = NULL;
+	asr_session->callback = NULL;
+	asr_session->obj = NULL;
 	asr_session->mutex = NULL;
 	asr_session->wait_object = NULL;
 	asr_session->app_message = NULL;
@@ -503,8 +524,11 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	return asr_session;
 }
 
-/** Initiate recognition */
-ASR_CLIENT_DECLARE(const char*) asr_session_recognize(asr_session_t *asr_session, const char *grammar_file, const char *input_file)
+/** Initiate recognition based on specified grammar and input file */
+ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
+									asr_session_t *asr_session, 
+									const char *grammar_file, 
+									const char *input_file)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
@@ -553,9 +577,90 @@ ASR_CLIENT_DECLARE(const char*) asr_session_recognize(asr_session_t *asr_session
 	}
 	
 	/* Open input file and start streaming */
+	asr_session->input_mode = INPUT_MODE_FILE;
 	if(asr_input_file_open(asr_session,input_file) == FALSE) {
 		return NULL;
 	}
+	asr_session->streaming = TRUE;
+
+	/* Wait for events either START-OF-INPUT or RECOGNITION-COMPLETE */
+	do {
+		apr_thread_mutex_lock(asr_session->mutex);
+		app_message = NULL;
+		if(apr_thread_cond_timedwait(asr_session->wait_object,asr_session->mutex, 60 * 1000000) != APR_SUCCESS) {
+			apr_thread_mutex_unlock(asr_session->mutex);
+			return NULL;
+		}
+		app_message = asr_session->app_message;
+		asr_session->app_message = NULL;
+		apr_thread_mutex_unlock(asr_session->mutex);
+
+		mrcp_message = mrcp_event_get(app_message);
+		if(mrcp_message && mrcp_message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
+			asr_session->recog_complete = mrcp_message;
+		}
+	}
+	while(!asr_session->recog_complete);
+
+	/* Get results */
+	return nlsml_input_get(asr_session->recog_complete);
+}
+
+/** Initiate recognition based on specified grammar and input stream */
+ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
+									asr_session_t *asr_session,
+									const char *grammar_file,
+									asr_session_callback_f callback,
+									void *obj)
+{
+	const mrcp_app_message_t *app_message;
+	mrcp_message_t *mrcp_message;
+
+	app_message = NULL;
+	mrcp_message = define_grammar_message_create(asr_session,grammar_file);
+	if(!mrcp_message) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create DEFINE-GRAMMAR Request");
+		return NULL;
+	}
+
+	/* Send DEFINE-GRAMMAR request and wait for the response */
+	apr_thread_mutex_lock(asr_session->mutex);
+	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
+		apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
+		app_message = asr_session->app_message;
+		asr_session->app_message = NULL;
+	}
+	apr_thread_mutex_unlock(asr_session->mutex);
+
+	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_COMPLETE) == FALSE) {
+		return NULL;
+	}
+
+	/* Reset prev recog result (if any) */
+	asr_session->recog_complete = NULL;
+
+	app_message = NULL;
+	mrcp_message = recognize_message_create(asr_session);
+	if(!mrcp_message) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
+		return NULL;
+	}
+
+	/* Send RECOGNIZE request and wait for the response */
+	apr_thread_mutex_lock(asr_session->mutex);
+	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
+		apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
+		app_message = asr_session->app_message;
+		asr_session->app_message = NULL;
+	}
+	apr_thread_mutex_unlock(asr_session->mutex);
+
+	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_INPROGRESS) == FALSE) {
+		return NULL;
+	}
+	
+	/* Set input mode and start streaming */
+	asr_session->input_mode = INPUT_MODE_STREAM;
 	asr_session->streaming = TRUE;
 
 	/* Wait for events either START-OF-INPUT or RECOGNITION-COMPLETE */

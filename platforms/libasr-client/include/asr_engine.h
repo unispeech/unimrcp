@@ -25,6 +25,7 @@
  */ 
 
 #include "apt_log.h"
+#include "mpf_frame.h"
 
 /** Lib export/import defines (win32) */
 #ifdef WIN32
@@ -48,6 +49,9 @@ typedef struct asr_engine_t asr_engine_t;
 
 /** Opaque ASR session */
 typedef struct asr_session_t asr_session_t;
+
+/** Prototype of callback to get input frames to recognize */
+typedef apt_bool_t (*asr_session_callback_f)(void *obj, mpf_frame_t *frame);
 
 
 /**
@@ -77,13 +81,30 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_destroy(asr_engine_t *engine);
 ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, const char *profile);
 
 /**
- * Initiate recognition.
+ * Initiate recognition based on specified grammar and input file.
  * @param session the session to run recognition in the scope of
  * @param grammar_file the name of the grammar file to use (path is relative to data dir)
  * @param input_file the name of the audio input file to use (path is relative to data dir)
  * @return the recognition result (input element of NLSML content)
  */
-ASR_CLIENT_DECLARE(const char*) asr_session_recognize(asr_session_t *session, const char *grammar_file, const char *input_file);
+ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
+									asr_session_t *session, 
+									const char *grammar_file, 
+									const char *input_file);
+
+/**
+ * Initiate recognition based on specified grammar and input stream.
+ * @param session the session to run recognition in the scope of
+ * @param grammar_file the name of the grammar file to use (path is relative to data dir)
+ * @param callback the callback to be called to get input media frames
+ * @param obj the object to pass to the callback
+ * @return the recognition result (input element of NLSML content)
+ */
+ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
+									asr_session_t *session, 
+									const char *grammar_file, 
+									asr_session_callback_f callback, 
+									void *obj);
 
 /**
  * Destroy ASR session.
