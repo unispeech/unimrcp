@@ -30,6 +30,8 @@
 
 #define MPF_TASK_NAME "Media Processing Engine"
 
+#define MPF_TIMER_RESOLUTION 100 /* 100 ms */
+
 struct mpf_engine_t {
 	apr_pool_t                *pool;
 	apt_task_t                *task;
@@ -42,7 +44,8 @@ struct mpf_engine_t {
 	const mpf_codec_manager_t *codec_manager;
 };
 
-static void mpf_engine_main(mpf_scheduler_t *scheduler, void *data);
+static void mpf_engine_main(mpf_scheduler_t *scheduler, void *obj);
+static void mpf_engine_timer_proc(mpf_scheduler_t *scheduler, void *obj);
 static apt_bool_t mpf_engine_destroy(apt_task_t *task);
 static apt_bool_t mpf_engine_start(apt_task_t *task);
 static apt_bool_t mpf_engine_terminate(apt_task_t *task);
@@ -92,7 +95,8 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	engine->scheduler = mpf_scheduler_create(engine->pool);
 	mpf_scheduler_media_clock_set(engine->scheduler,CODEC_FRAME_TIME_BASE,mpf_engine_main,engine);
 
-	engine->timer_manager = mpf_timer_manager_create(engine->scheduler,engine->pool);
+	engine->timer_manager = mpf_timer_manager_create(engine->pool);
+	mpf_scheduler_timer_clock_set(engine->scheduler,MPF_TIMER_RESOLUTION,mpf_engine_timer_proc,engine);
 	return engine;
 }
 
@@ -385,9 +389,9 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	return apt_task_msg_parent_signal(engine->task,response_msg);
 }
 
-static void mpf_engine_main(mpf_scheduler_t *scheduler, void *data)
+static void mpf_engine_main(mpf_scheduler_t *scheduler, void *obj)
 {
-	mpf_engine_t *engine = data;
+	mpf_engine_t *engine = obj;
 	apt_task_msg_t *msg;
 
 	/* process request queue */
@@ -403,6 +407,12 @@ static void mpf_engine_main(mpf_scheduler_t *scheduler, void *data)
 
 	/* process factory of media contexts */
 	mpf_context_factory_process(engine->context_factory);
+}
+
+static void mpf_engine_timer_proc(mpf_scheduler_t *scheduler, void *obj)
+{
+	mpf_engine_t *engine = obj;
+	mpf_timers_advance(engine->timer_manager,MPF_TIMER_RESOLUTION);
 }
 
 MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *pool)

@@ -34,10 +34,13 @@ typedef void (*mpf_timer_proc_f)(mpf_timer_t *timer, void *obj);
 
 
 /** Create timer manager */
-MPF_DECLARE(mpf_timer_manager_t*) mpf_timer_manager_create(mpf_scheduler_t *scheduler, apr_pool_t *pool);
+MPF_DECLARE(mpf_timer_manager_t*) mpf_timer_manager_create(apr_pool_t *pool);
 
 /** Destroy timer manager */
 MPF_DECLARE(void) mpf_timer_manager_destroy(mpf_timer_manager_t *timer_manager);
+
+/** Advance scheduled timers */
+MPF_DECLARE(void) mpf_timers_advance(mpf_timer_manager_t *manager, apr_uint32_t elapsed_time);
 
 
 /** Create timer */

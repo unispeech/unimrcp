@@ -21,7 +21,6 @@
 #endif
 #include <apr_ring.h> 
 #include "mpf_timer_manager.h"
-#include "mpf_scheduler.h"
 #include "apt_log.h"
 
 /** MPF timer manager */
@@ -29,8 +28,6 @@ struct mpf_timer_manager_t {
 	/** Ring head */
 	APR_RING_HEAD(mpf_timer_head_t, mpf_timer_t) head;
 
-	/** Clock resolution */
-	apr_uint32_t  resolution;
 	/** Elapsed time */
 	apr_uint32_t  elapsed_time;
 };
@@ -51,23 +48,57 @@ struct mpf_timer_t {
 	void                *obj;
 };
 
-static void mpf_scheduler_proc(mpf_scheduler_t *scheduler, void *obj);
+static void mpf_timers_reschedule(mpf_timer_manager_t *manager);
 
 /** Create timer manager */
-MPF_DECLARE(mpf_timer_manager_t*) mpf_timer_manager_create(mpf_scheduler_t *scheduler, apr_pool_t *pool)
+MPF_DECLARE(mpf_timer_manager_t*) mpf_timer_manager_create(apr_pool_t *pool)
 {
 	mpf_timer_manager_t *timer_manager = apr_palloc(pool,sizeof(mpf_timer_manager_t));
 	APR_RING_INIT(&timer_manager->head, mpf_timer_t, link);
 	timer_manager->elapsed_time = 0;
-	timer_manager->resolution = 100; /* 100 ms */
-
-	mpf_scheduler_timer_clock_set(scheduler,timer_manager->resolution,mpf_scheduler_proc,timer_manager);
 	return timer_manager;
 }
 
 /** Destroy timer manager */
 MPF_DECLARE(void) mpf_timer_manager_destroy(mpf_timer_manager_t *timer_manager)
 {
+}
+
+/** Advance scheduled timers */
+MPF_DECLARE(void) mpf_timers_advance(mpf_timer_manager_t *manager, apr_uint32_t elapsed_time)
+{
+	mpf_timer_t *timer;
+
+	if(APR_RING_EMPTY(&manager->head, mpf_timer_t, link)) {
+		/* just return, nothing to do */
+		return;
+	}
+
+	/* increment elapsed time */
+	manager->elapsed_time += elapsed_time;
+	if(manager->elapsed_time >= 0xFFFF) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Reschedule Timers [%lu]",manager->elapsed_time);
+		mpf_timers_reschedule(manager);
+	}
+
+	/* process timers */
+	do {
+		/* get first node (timer) */
+		timer = APR_RING_FIRST(&manager->head);
+
+		if(timer->scheduled_time > manager->elapsed_time) {
+			/* scheduled time is not elapsed yet */
+			break;
+		}
+		
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Timer Elapsed 0x%x [%lu]",timer,timer->scheduled_time);
+		/* remove the elapsed timer from the list */
+		APR_RING_REMOVE(timer, link);
+		timer->scheduled_time = 0;
+		/* process the elapsed timer */
+		timer->proc(timer,timer->obj);
+	}
+	while(!APR_RING_EMPTY(&manager->head, mpf_timer_t, link));
 }
 
 
@@ -150,41 +181,4 @@ static void mpf_timers_reschedule(mpf_timer_manager_t *manager)
 		it->scheduled_time -= manager->elapsed_time;
 	}
 	manager->elapsed_time = 0;
-}
-
-static void mpf_scheduler_proc(mpf_scheduler_t *scheduler, void *obj)
-{
-	mpf_timer_manager_t *manager = obj;
-	mpf_timer_t *timer;
-
-	if(APR_RING_EMPTY(&manager->head, mpf_timer_t, link)) {
-		/* just return, nothing to do */
-		return;
-	}
-
-	/* increment elapsed time */
-	manager->elapsed_time += manager->resolution;
-	if(manager->elapsed_time >= 0xFFFF) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Reschedule Timers [%lu]",manager->elapsed_time);
-		mpf_timers_reschedule(manager);
-	}
-
-	/* process timers */
-	do {
-		/* get first node (timer) */
-		timer = APR_RING_FIRST(&manager->head);
-
-		if(timer->scheduled_time > manager->elapsed_time) {
-			/* scheduled time is not elapsed yet */
-			break;
-		}
-		
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Timer Elapsed 0x%x [%lu]",timer,timer->scheduled_time);
-		/* remove the elapsed timer from the list */
-		APR_RING_REMOVE(timer, link);
-		timer->scheduled_time = 0;
-		/* process the elapsed timer */
-		timer->proc(timer,timer->obj);
-	}
-	while(!APR_RING_EMPTY(&manager->head, mpf_timer_t, link));
 }
