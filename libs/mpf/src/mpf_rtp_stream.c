@@ -18,10 +18,10 @@
 
 #include <apr_network_io.h>
 #include "apt_net.h"
+#include "apt_timer_queue.h"
 #include "mpf_rtp_stream.h"
 #include "mpf_termination.h"
 #include "mpf_codec_manager.h"
-#include "mpf_timer_manager.h"
 #include "mpf_rtp_header.h"
 #include "mpf_rtcp_packet.h"
 #include "mpf_rtp_defs.h"
@@ -66,8 +66,8 @@ struct mpf_rtp_stream_t {
 	apr_sockaddr_t             *rtcp_l_sockaddr;
 	apr_sockaddr_t             *rtcp_r_sockaddr;
 
-	mpf_timer_t                *rtcp_tx_timer;
-	mpf_timer_t                *rtcp_rx_timer;
+	apt_timer_t                *rtcp_tx_timer;
+	apt_timer_t                *rtcp_rx_timer;
 	
 	apr_pool_t                 *pool;
 };
@@ -95,8 +95,8 @@ static void mpf_rtp_socket_pair_close(mpf_rtp_stream_t *stream);
 
 static apt_bool_t mpf_rtcp_report_send(mpf_rtp_stream_t *stream);
 static apt_bool_t mpf_rtcp_bye_send(mpf_rtp_stream_t *stream, apt_str_t *reason);
-static void mpf_rtcp_tx_timer_proc(mpf_timer_t *timer, void *obj);
-static void mpf_rtcp_rx_timer_proc(mpf_timer_t *timer, void *obj);
+static void mpf_rtcp_tx_timer_proc(apt_timer_t *timer, void *obj);
+static void mpf_rtcp_rx_timer_proc(apt_timer_t *timer, void *obj);
 
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termination, mpf_rtp_config_t *config, mpf_rtp_settings_t *settings, apr_pool_t *pool)
@@ -132,14 +132,14 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_rtp_stream_create(mpf_termination_t *termin
 
 	if(settings->rtcp == TRUE) {
 		if(settings->rtcp_tx_interval) {
-			rtp_stream->rtcp_tx_timer = mpf_timer_create(
-										termination->timer_manager,
+			rtp_stream->rtcp_tx_timer = apt_timer_create(
+										termination->timer_queue,
 										mpf_rtcp_tx_timer_proc,
 										rtp_stream, pool);
 		}
 		if(settings->rtcp_rx_resolution) {
-			rtp_stream->rtcp_rx_timer = mpf_timer_create(
-										termination->timer_manager,
+			rtp_stream->rtcp_rx_timer = apt_timer_create(
+										termination->timer_queue,
 										mpf_rtcp_rx_timer_proc,
 										rtp_stream, pool);
 		}
@@ -301,10 +301,10 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 		}
 
 		if(rtp_stream->rtcp_tx_timer) {
-			mpf_timer_set(rtp_stream->rtcp_tx_timer,rtp_stream->settings->rtcp_tx_interval);
+			apt_timer_set(rtp_stream->rtcp_tx_timer,rtp_stream->settings->rtcp_tx_interval);
 		}
 		if(rtp_stream->rtcp_rx_timer) {
-			mpf_timer_set(rtp_stream->rtcp_rx_timer,rtp_stream->settings->rtcp_rx_resolution);
+			apt_timer_set(rtp_stream->rtcp_rx_timer,rtp_stream->settings->rtcp_rx_resolution);
 		}
 	}
 	else if(rtp_stream->state == MPF_MEDIA_ENABLED && remote_media->state == MPF_MEDIA_DISABLED) {
@@ -317,10 +317,10 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 		}
 
 		if(rtp_stream->rtcp_tx_timer) {
-			mpf_timer_kill(rtp_stream->rtcp_tx_timer);
+			apt_timer_kill(rtp_stream->rtcp_tx_timer);
 		}
 		if(rtp_stream->rtcp_rx_timer) {
-			mpf_timer_kill(rtp_stream->rtcp_rx_timer);
+			apt_timer_kill(rtp_stream->rtcp_rx_timer);
 		}
 		if(rtp_stream->settings->rtcp == TRUE && rtp_stream->settings->rtcp_bye_policy != RTCP_BYE_DISABLE) {
 			apt_str_t reason = {RTCP_BYE_SESSION_ENDED, sizeof(RTCP_BYE_SESSION_ENDED)-1};
@@ -375,10 +375,10 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_remove(mpf_audio_stream_t *stream)
 		}
 
 		if(rtp_stream->rtcp_tx_timer) {
-			mpf_timer_kill(rtp_stream->rtcp_tx_timer);
+			apt_timer_kill(rtp_stream->rtcp_tx_timer);
 		}
 		if(rtp_stream->rtcp_rx_timer) {
-			mpf_timer_kill(rtp_stream->rtcp_rx_timer);
+			apt_timer_kill(rtp_stream->rtcp_rx_timer);
 		}
 		if(rtp_stream->settings->rtcp == TRUE && rtp_stream->settings->rtcp_bye_policy != RTCP_BYE_DISABLE) {
 			apt_str_t reason = {RTCP_BYE_SESSION_ENDED, sizeof(RTCP_BYE_SESSION_ENDED)-1};
@@ -1370,7 +1370,7 @@ static apt_bool_t mpf_rtcp_compound_packet_receive(mpf_rtp_stream_t *rtp_stream,
 	return TRUE;
 }
 
-static void mpf_rtcp_tx_timer_proc(mpf_timer_t *timer, void *obj)
+static void mpf_rtcp_tx_timer_proc(apt_timer_t *timer, void *obj)
 {
 	mpf_rtp_stream_t *rtp_stream = obj;
 
@@ -1378,10 +1378,10 @@ static void mpf_rtcp_tx_timer_proc(mpf_timer_t *timer, void *obj)
 	mpf_rtcp_report_send(rtp_stream);
 
 	/* re-schedule timer */
-	mpf_timer_set(timer,rtp_stream->settings->rtcp_tx_interval);
+	apt_timer_set(timer,rtp_stream->settings->rtcp_tx_interval);
 }
 
-static void mpf_rtcp_rx_timer_proc(mpf_timer_t *timer, void *obj)
+static void mpf_rtcp_rx_timer_proc(apt_timer_t *timer, void *obj)
 {
 	mpf_rtp_stream_t *rtp_stream = obj;
 	if(rtp_stream->rtcp_socket && rtp_stream->rtcp_l_sockaddr && rtp_stream->rtcp_r_sockaddr) {
@@ -1400,5 +1400,5 @@ static void mpf_rtcp_rx_timer_proc(mpf_timer_t *timer, void *obj)
 	}
 
 	/* re-schedule timer */
-	mpf_timer_set(timer,rtp_stream->settings->rtcp_rx_resolution);
+	apt_timer_set(timer,rtp_stream->settings->rtcp_rx_resolution);
 }

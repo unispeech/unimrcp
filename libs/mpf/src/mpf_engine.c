@@ -23,7 +23,6 @@
 #include "mpf_scheduler.h"
 #include "mpf_codec_descriptor.h"
 #include "mpf_codec_manager.h"
-#include "mpf_timer_manager.h"
 #include "apt_obj_list.h"
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
@@ -40,7 +39,7 @@ struct mpf_engine_t {
 	apt_cyclic_queue_t        *request_queue;
 	mpf_context_factory_t     *context_factory;
 	mpf_scheduler_t           *scheduler;
-	mpf_timer_manager_t       *timer_manager;
+	apt_timer_queue_t         *timer_queue;
 	const mpf_codec_manager_t *codec_manager;
 };
 
@@ -95,7 +94,7 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 	engine->scheduler = mpf_scheduler_create(engine->pool);
 	mpf_scheduler_media_clock_set(engine->scheduler,CODEC_FRAME_TIME_BASE,mpf_engine_main,engine);
 
-	engine->timer_manager = mpf_timer_manager_create(engine->pool);
+	engine->timer_queue = apt_timer_queue_create(engine->pool);
 	mpf_scheduler_timer_clock_set(engine->scheduler,MPF_TIMER_RESOLUTION,mpf_engine_timer_proc,engine);
 	return engine;
 }
@@ -229,7 +228,7 @@ static apt_bool_t mpf_engine_destroy(apt_task_t *task)
 {
 	mpf_engine_t *engine = apt_task_object_get(task);
 
-	mpf_timer_manager_destroy(engine->timer_manager);
+	apt_timer_queue_destroy(engine->timer_queue);
 	mpf_scheduler_destroy(engine->scheduler);
 	mpf_context_factory_destroy(engine->context_factory);
 	apt_cyclic_queue_destroy(engine->request_queue);
@@ -330,7 +329,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				termination->event_handler_obj = engine;
 				termination->event_handler = mpf_engine_event_raise;
 				termination->codec_manager = engine->codec_manager;
-				termination->timer_manager = engine->timer_manager;
+				termination->timer_queue = engine->timer_queue;
 
 				mpf_termination_add(termination,mpf_request->descriptor);
 				if(mpf_context_termination_add(context,termination) == FALSE) {
@@ -412,7 +411,7 @@ static void mpf_engine_main(mpf_scheduler_t *scheduler, void *obj)
 static void mpf_engine_timer_proc(mpf_scheduler_t *scheduler, void *obj)
 {
 	mpf_engine_t *engine = obj;
-	mpf_timers_advance(engine->timer_manager,MPF_TIMER_RESOLUTION);
+	apt_timer_queue_advance(engine->timer_queue,MPF_TIMER_RESOLUTION);
 }
 
 MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *pool)

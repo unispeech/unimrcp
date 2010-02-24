@@ -25,6 +25,7 @@
  */ 
 
 #include "mpf_types.h"
+#include "apt_timer_queue.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -60,8 +61,8 @@ struct mpf_termination_t {
 	mpf_termination_event_handler_f event_handler;
 	/** Codec manager */
 	const mpf_codec_manager_t      *codec_manager;
-	/** Timer manager */
-	mpf_timer_manager_t            *timer_manager;
+	/** Timer queue */
+	apt_timer_queue_t              *timer_queue;
 	/** Termination factory entire termination created by */
 	mpf_termination_factory_t      *termination_factory;
 	/** Table of virtual methods */

@@ -37,12 +37,6 @@ typedef struct mpf_scheduler_t mpf_scheduler_t;
 /** Opaque codec manager declaration */
 typedef struct mpf_codec_manager_t mpf_codec_manager_t;
 
-/** Opaque MPF timer manager declaration */
-typedef struct mpf_timer_manager_t mpf_timer_manager_t;
-
-/** Opaque MPF timer declaration */
-typedef struct mpf_timer_t mpf_timer_t;
-
 /** Opaque MPF context declaration */
 typedef struct mpf_context_t mpf_context_t;
 

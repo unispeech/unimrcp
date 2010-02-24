@@ -317,6 +317,10 @@
 				RelativePath=".\include\apt_text_stream.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\apt_timer_queue.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
@@ -392,6 +396,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_text_stream.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_timer_queue.c"
 				>
 			</File>
 		</Filter>
