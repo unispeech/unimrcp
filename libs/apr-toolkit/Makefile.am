@@ -24,6 +24,7 @@ include_HEADERS          = include/apt.h \
                            include/apt_net.h \
                            include/apt_nlsml_doc.h \
                            include/apt_multipart_content.h \
+                           include/apt_timer_queue.h \
                            include/apt_test_suite.h
 
 libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
@@ -43,4 +44,5 @@ libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
                            src/apt_net.c \
                            src/apt_nlsml_doc.c \
                            src/apt_multipart_content.c \
+                           src/apt_timer_queue.c \
                            src/apt_test_suite.c
