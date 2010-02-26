@@ -46,6 +46,12 @@ APT_DECLARE(void) apt_timer_queue_destroy(apt_timer_queue_t *timer_queue);
 /** Advance scheduled timers */
 APT_DECLARE(void) apt_timer_queue_advance(apt_timer_queue_t *timer_queue, apr_uint32_t elapsed_time);
 
+/** Is timer queue empty */
+APT_DECLARE(apt_bool_t) apt_timer_queue_is_empty(apt_timer_queue_t *timer_queue);
+
+/** Get current timeout */
+APT_DECLARE(apt_bool_t) apt_timer_queue_timeout_get(apt_timer_queue_t *timer_queue, apr_uint32_t *timeout);
+
 
 /** Create timer */
 APT_DECLARE(apt_timer_t*) apt_timer_create(apt_timer_queue_t *timer_queue, apt_timer_proc_f proc, void *obj, apr_pool_t *pool);
