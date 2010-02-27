@@ -45,6 +45,8 @@ static const apt_str_table_item_t rtsp_reason_string_table[] = {
 	{{"Not Found",              9},4},
 	{{"Method Not Allowed",    18},0},
 	{{"Not Acceptable",        14},4},
+	{{"Proxy Auth Required",   19},0},
+	{{"Request Timeout",       15},0},
 	{{"Session Not Found",     17},0},
 	{{"Internal Server Error", 21},0},
 	{{"Not Implemented",       15},4}
