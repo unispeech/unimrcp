@@ -52,12 +52,14 @@ struct rtsp_client_vtable_t {
 /**
  * Create RTSP client.
  * @param max_connection_count the number of max RTSP connections
+ * @param request_timeout the request timeout to set
  * @param obj the external object to send event to
  * @param handler the response/event handler
  * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 								apr_size_t max_connection_count,
+								apr_size_t request_timeout,
 								void *obj,
 								const rtsp_client_vtable_t *handler,
 								apr_pool_t *pool);

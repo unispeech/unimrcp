@@ -42,6 +42,7 @@
     <!-- UniRTSP MRCPv1 signaling agent -->
     <rtsp-uac id="RTSP-Agent-1" type="UniRTSP">
       <max-connection-count>100</max-connection-count>
+      <!-- <request-timeout>5000</request-timeout> -->
       <sdp-origin>UniMRCPClient</sdp-origin>
     </rtsp-uac>
     

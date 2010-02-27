@@ -80,6 +80,7 @@
                 <xsd:complexType>
                   <xsd:sequence>
                     <xsd:element name="max-connection-count" type="xsd:short" minOccurs="0" />
+                    <xsd:element name="request-timeout" type="xsd:long" minOccurs="0" />
                     <xsd:element name="sdp-origin" type="xsd:string" minOccurs="0" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />

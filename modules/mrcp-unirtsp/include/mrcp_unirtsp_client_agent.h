@@ -39,6 +39,8 @@ struct rtsp_client_config_t {
 	char        *origin;
 	/** Number of max RTSP connections */
 	apr_size_t   max_connection_count;
+	/** Request timeout */
+	apr_size_t   request_timeout;
 };
 
 /**

@@ -43,6 +43,8 @@ struct rtsp_client_t {
 	apr_pool_t                 *sub_pool;
 	apt_obj_list_t             *connection_list;
 
+	apr_uint32_t                request_timeout;
+
 	void                       *obj;
 	const rtsp_client_vtable_t *vtable;
 };
@@ -95,6 +97,9 @@ struct rtsp_client_session_t {
 	/** Pending request queue (rtsp_message_t*) */
 	apt_obj_list_t           *pending_request_queue;
 
+	/** Timer used for request timeouts */
+	apt_timer_t              *request_timer;
+
 	/** Resource table */
 	apr_hash_t               *resource_table;
 
@@ -129,12 +134,15 @@ static apt_bool_t rtsp_client_session_message_process(rtsp_client_t *client, rts
 static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
 
+static apt_bool_t rtsp_client_timer_proc(apt_timer_t *timer, void *obj);
+
 /** Create RTSP client */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
-										apr_size_t max_connection_count,
-										void *obj,
-										const rtsp_client_vtable_t *handler,
-										apr_pool_t *pool)
+								apr_size_t max_connection_count,
+								apr_size_t request_timeout,
+								void *obj,
+								const rtsp_client_vtable_t *handler,
+								apr_pool_t *pool)
 {
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
@@ -160,7 +168,14 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 
 	client->sub_pool = apt_subpool_create(pool);
 	client->connection_list = NULL;
+	client->request_timeout = request_timeout;
 	return client;
+}
+
+/** Set request timeout */
+RTSP_DECLARE(apt_bool_t) rtsp_client_request_timeout_set(rtsp_client_t *client, apr_uint32_t timeout)
+{
+	return TRUE;
 }
 
 /** Destroy RTSP client */
@@ -247,6 +262,11 @@ RTSP_DECLARE(rtsp_client_session_t*) rtsp_client_session_create(
 	session->connection = NULL;
 	session->active_request = NULL;
 	session->pending_request_queue = apt_list_create(pool);
+	session->request_timer = apt_net_client_timer_create(
+								client->task,
+								rtsp_client_timer_proc,
+								session,
+								pool);
 	session->resource_table = apr_hash_make(pool);
 	session->term_state = TERMINATION_STATE_NONE;
 
@@ -417,6 +437,9 @@ static apt_bool_t rtsp_client_request_push(rtsp_client_connection_t *rtsp_connec
 		message->header.cseq);
 	apt_list_push_back(rtsp_connection->inprogress_request_queue,session,session->pool);
 	session->active_request = message;
+	if(rtsp_connection->client->request_timeout) {
+		apt_timer_set(session->request_timer,rtsp_connection->client->request_timeout);
+	}
 	return TRUE;
 }
 
@@ -438,6 +461,7 @@ static apt_bool_t rtsp_client_request_pop(rtsp_client_connection_t *rtsp_connect
 				response->header.cseq);
 			apt_list_elem_remove(rtsp_connection->inprogress_request_queue,elem);
 			session->active_request = NULL;
+			apt_timer_kill(session->request_timer);
 			return TRUE;
 		}
 		elem = apt_list_next_elem_get(rtsp_connection->inprogress_request_queue,elem);
@@ -632,12 +656,36 @@ static apt_bool_t rtsp_client_session_terminate_raise(rtsp_client_t *client, rts
 	return TRUE;
 }
 
+/* Cancel RTSP request */
+static apt_bool_t rtsp_client_request_cancel(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_status_code_e status_code, rtsp_reason_phrase_e reason)
+{
+	rtsp_message_t *request;
+	rtsp_message_t *response;
+	if(!session->active_request) {
+		return FALSE;
+	}
+
+	request = session->active_request;
+	session->active_request = NULL;
+
+	response = rtsp_response_create(
+						request,
+						status_code,
+						reason,
+						session->pool);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Cancel RTSP Request "APT_PTRSID_FMT" CSeq:%"APR_SIZE_T_FMT" [%d]",
+		session,
+		request->header.session_id.buf ? request->header.session_id.buf : "new",
+		request->header.cseq,
+		status_code);
+	rtsp_client_session_response_process(client,session,request,response);
+	return TRUE;
+}
+
 /* RTSP connection disconnected */
 static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_connection_t *rtsp_connection)
 {
 	rtsp_client_session_t *session;
-	rtsp_message_t *request;
-	rtsp_message_t *response;
 	apr_size_t remaining_handles = 0;
 	apr_size_t cancelled_requests = 0;
 
@@ -647,17 +695,15 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 	/* Cancel in-progreess requests */
 	do {
 		session = apt_list_pop_front(rtsp_connection->inprogress_request_queue);
-		if(session && session->active_request) {
-			request = session->active_request;
-			session->active_request = NULL;
-			cancelled_requests++;
-
-			response = rtsp_response_create(
-								request,
-								RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
-								RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR,
-								session->pool);
-			rtsp_client_session_response_process(client,session,request,response);
+		if(session) {
+			if(rtsp_client_request_cancel(
+						client,
+						session,
+						RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
+						RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR) == TRUE) {
+				cancelled_requests++;
+				apt_timer_kill(session->request_timer);
+			}
 		}
 	}
 	while(session);
@@ -834,5 +880,23 @@ static apt_bool_t rtsp_client_task_msg_process(apt_task_t *task, apt_task_msg_t 
 			break;
 	}
 
+	return TRUE;
+}
+
+/* Timer callback */
+static apt_bool_t rtsp_client_timer_proc(apt_timer_t *timer, void *obj)
+{
+	rtsp_client_session_t *session = obj;
+	if(!session || !session->connection || !session->connection->client) {
+		return FALSE;
+	}
+
+	if(session->request_timer == timer) {
+		rtsp_client_request_cancel(
+				session->connection->client,
+				session,
+				RTSP_STATUS_CODE_REQUEST_TIMEOUT,
+				RTSP_REASON_PHRASE_REQUEST_TIMEOUT);
+	}
 	return TRUE;
 }

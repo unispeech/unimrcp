@@ -377,10 +377,15 @@ static apt_bool_t unimrcp_client_rtsp_uac_load(unimrcp_client_loader_t *loader, 
 				config->max_connection_count = atol(cdata_text_get(elem));
 			}
 		}
+		else if(strcasecmp(elem->name,"request-timeout") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->request_timeout = atol(cdata_text_get(elem));
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	
 	agent = mrcp_unirtsp_client_agent_create(config,loader->pool);
 	return mrcp_client_signaling_agent_register(loader->client,agent,id);

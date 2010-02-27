@@ -94,8 +94,12 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_con
 		return NULL;
 	}
 
-	agent->rtsp_client = rtsp_client_create(config->max_connection_count,
-										agent,&session_response_vtable,pool);
+	agent->rtsp_client = rtsp_client_create(
+								config->max_connection_count,
+								config->request_timeout,
+								agent,
+								&session_response_vtable,
+								pool);
 	if(!agent->rtsp_client) {
 		return NULL;
 	}
@@ -115,6 +119,7 @@ MRCP_DECLARE(rtsp_client_config_t*) mrcp_unirtsp_client_config_alloc(apr_pool_t 
 	rtsp_client_config_t *config = apr_palloc(pool,sizeof(rtsp_client_config_t));
 	config->origin = NULL;
 	config->max_connection_count = 100;
+	config->request_timeout = 0;
 	return config;
 }
 
