@@ -134,7 +134,7 @@ static apt_bool_t rtsp_client_session_message_process(rtsp_client_t *client, rts
 static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
 
-static apt_bool_t rtsp_client_timer_proc(apt_timer_t *timer, void *obj);
+static void rtsp_client_timer_proc(apt_timer_t *timer, void *obj);
 
 /** Create RTSP client */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
@@ -884,11 +884,11 @@ static apt_bool_t rtsp_client_task_msg_process(apt_task_t *task, apt_task_msg_t 
 }
 
 /* Timer callback */
-static apt_bool_t rtsp_client_timer_proc(apt_timer_t *timer, void *obj)
+static void rtsp_client_timer_proc(apt_timer_t *timer, void *obj)
 {
 	rtsp_client_session_t *session = obj;
 	if(!session || !session->connection || !session->connection->client) {
-		return FALSE;
+		return;
 	}
 
 	if(session->request_timer == timer) {
@@ -898,5 +898,4 @@ static apt_bool_t rtsp_client_timer_proc(apt_timer_t *timer, void *obj)
 				RTSP_STATUS_CODE_REQUEST_TIMEOUT,
 				RTSP_REASON_PHRASE_REQUEST_TIMEOUT);
 	}
-	return TRUE;
 }
