@@ -36,6 +36,8 @@ struct apt_net_client_task_t {
 	apt_cyclic_queue_t            *msg_queue;
 	apt_pollset_t                 *pollset;
 
+	apt_timer_queue_t             *timer_queue;
+
 	const apt_net_client_vtable_t *client_vtable;
 };
 
@@ -80,6 +82,8 @@ APT_DECLARE(apt_net_client_task_t*) apt_net_client_task_create(
 
 	task->msg_queue = apt_cyclic_queue_create(CYCLIC_QUEUE_DEFAULT_SIZE);
 	apr_thread_mutex_create(&task->guard,APR_THREAD_MUTEX_UNNESTED,pool);
+
+	task->timer_queue = apt_timer_queue_create(pool);
 	return task;
 }
 
@@ -104,13 +108,13 @@ APT_DECLARE(apt_bool_t) apt_net_client_task_destroy(apt_net_client_task_t *task)
 	return apt_task_destroy(task->base);
 }
 
-/** Start connection task. */
+/** Start connection task */
 APT_DECLARE(apt_bool_t) apt_net_client_task_start(apt_net_client_task_t *task)
 {
 	return apt_task_start(task->base);
 }
 
-/** Terminate connection task. */
+/** Terminate connection task */
 APT_DECLARE(apt_bool_t) apt_net_client_task_terminate(apt_net_client_task_t *task)
 {
 	return apt_task_terminate(task->base,TRUE);
@@ -220,6 +224,12 @@ APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, a
 	return TRUE;
 }
 
+/** Create timer */
+APT_DECLARE(apt_timer_t*) apt_net_client_timer_create(apt_net_client_task_t *task, apt_timer_proc_f proc, void *obj, apr_pool_t *pool)
+{
+	return apt_timer_create(task->timer_queue,proc,obj,pool);
+}
+
 /** Create the pollset */
 static apt_bool_t apt_net_client_task_pollset_create(apt_net_client_task_t *task)
 {
@@ -270,6 +280,9 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 	apr_status_t status;
 	apr_int32_t num;
 	const apr_pollfd_t *ret_pfd;
+	apr_interval_time_t timeout;
+	apr_uint32_t queue_timeout;
+	apr_time_t time_now, time_last = 0;
 	int i;
 
 	if(!task) {
@@ -286,8 +299,17 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 	apt_task_ready(task->base);
 
 	while(running) {
-		status = apt_pollset_poll(task->pollset, -1, &num, &ret_pfd);
-		if(status != APR_SUCCESS) {
+		timeout = -1;
+		if(apt_timer_queue_timeout_get(task->timer_queue,&queue_timeout) == TRUE) {
+			timeout = queue_timeout * 1000;
+			time_last = apr_time_now();
+		}
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Task Messages [%s] timeout: %"APR_TIME_T_FMT,
+			apt_task_name_get(task->base),
+			timeout);
+		status = apt_pollset_poll(task->pollset, timeout, &num, &ret_pfd);
+		if(status != APR_SUCCESS && status != APR_TIMEUP) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Poll status: %d",status);
 			continue;
 		}
 		for(i = 0; i < num; i++) {
@@ -302,6 +324,13 @@ static apt_bool_t apt_net_client_task_run(apt_task_t *base)
 	
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message");
 			task->client_vtable->on_receive(task,ret_pfd[i].client_data);
+		}
+		
+		if(timeout != -1) {
+			time_now = apr_time_now();
+			if(time_now > time_last) {
+				apt_timer_queue_advance(task->timer_queue,(apr_uint32_t)((time_now - time_last)/1000));
+			}
 		}
 	}
 

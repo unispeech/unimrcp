@@ -26,6 +26,7 @@
 
 #include <apr_poll.h>
 #include "apt_task.h"
+#include "apt_timer_queue.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -122,6 +123,11 @@ APT_DECLARE(apt_bool_t) apt_net_client_connection_close(apt_net_client_task_t *t
  * Close and destroy connection.
  */
 APT_DECLARE(apt_bool_t) apt_net_client_disconnect(apt_net_client_task_t *task, apt_net_client_connection_t *connection);
+
+/**
+ * Create timer.
+ */
+APT_DECLARE(apt_timer_t*) apt_net_client_timer_create(apt_net_client_task_t *task, apt_timer_proc_f proc, void *obj, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C
