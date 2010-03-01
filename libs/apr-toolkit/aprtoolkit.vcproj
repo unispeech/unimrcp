@@ -286,6 +286,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_poller_task.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_pollset.h"
 				>
 			</File>
@@ -368,6 +372,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_pair.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_poller_task.c"
 				>
 			</File>
 			<File
