@@ -159,7 +159,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(task_msg_data_t),pool);
 
 	server->task = apt_poller_task_create(
-						max_connection_count,
+						max_connection_count + 1,
 						rtsp_server_poller_signal_process,
 						server,
 						msg_pool,
