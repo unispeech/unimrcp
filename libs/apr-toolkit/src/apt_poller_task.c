@@ -30,7 +30,6 @@ struct apt_poller_task_t {
 	
 	void               *obj;
 	apt_poll_signal_f   signal_handler;
-	apr_size_t          max_pollset_size;
 
 	apr_thread_mutex_t *guard;
 	apt_cyclic_queue_t *msg_queue;
@@ -62,11 +61,17 @@ APT_DECLARE(apt_poller_task_t*) apt_poller_task_create(
 	task->pool = pool;
 	task->obj = obj;
 	task->pollset = NULL;
-	task->max_pollset_size = max_pollset_size;
 	task->signal_handler = signal_handler;
+
+	task->pollset = apt_pollset_create((apr_uint32_t)max_pollset_size,pool);
+	if(!task->pollset) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
+		return NULL;
+	}
 
 	task->base = apt_task_create(task,msg_pool,pool);
 	if(!task->base) {
+		apt_pollset_destroy(task->pollset);
 		return NULL;
 	}
 
@@ -89,6 +94,10 @@ APT_DECLARE(apt_poller_task_t*) apt_poller_task_create(
 static apt_bool_t apt_poller_task_on_destroy(apt_task_t *base)
 {
 	apt_poller_task_t *task = apt_task_object_get(base);
+	if(task->pollset) {
+		apt_pollset_destroy(task->pollset);
+		task->pollset = NULL;
+	}
 	if(task->guard) {
 		apr_thread_mutex_destroy(task->guard);
 		task->guard = NULL;
@@ -152,27 +161,6 @@ APT_DECLARE(apt_timer_t*) apt_poller_task_timer_create(
 	return apt_timer_create(task->timer_queue,proc,obj,pool);
 }
 
-/** Create the pollset */
-static apt_bool_t apt_poller_task_pollset_create(apt_poller_task_t *task)
-{
-	task->pollset = apt_pollset_create((apr_uint32_t)task->max_pollset_size, task->pool);
-	if(!task->pollset) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-/** Destroy the pollset */
-static void apt_poller_task_pollset_destroy(apt_poller_task_t *task)
-{
-	if(task->pollset) {
-		apt_pollset_destroy(task->pollset);
-		task->pollset = NULL;
-	}
-}
-
 static apt_bool_t apt_poller_task_wakeup_process(apt_poller_task_t *task)
 {
 	apt_bool_t status = TRUE;
@@ -207,12 +195,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 	int i;
 
 	if(!task) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Network Client Task");
-		return FALSE;
-	}
-
-	if(apt_poller_task_pollset_create(task) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Poller Task");
 		return FALSE;
 	}
 
@@ -255,7 +238,6 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 		}
 	}
 
-	apt_poller_task_pollset_destroy(task);
 	return TRUE;
 }
 
