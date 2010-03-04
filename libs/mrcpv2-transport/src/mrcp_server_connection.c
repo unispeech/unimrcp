@@ -65,6 +65,7 @@ struct connection_task_msg_t {
 	mrcp_message_t            *message;
 };
 
+static apt_bool_t mrcp_server_agent_on_destroy(apt_task_t *task);
 static apt_bool_t mrcp_server_agent_msg_process(apt_task_t *task, apt_task_msg_t *task_msg);
 static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_t *descriptor);
 
@@ -123,6 +124,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 
 	vtable = apt_poller_task_vtable_get(agent->task);
 	if(vtable) {
+		vtable->destroy = mrcp_server_agent_on_destroy;
 		vtable->process_msg = mrcp_server_agent_msg_process;
 	}
 
@@ -148,15 +150,25 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	return agent;
 }
 
-/** Destroy connection agent. */
-MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
+static apt_bool_t mrcp_server_agent_on_destroy(apt_task_t *task)
 {
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	apt_poller_task_t *poller_task = apt_task_object_get(task);
+	mrcp_connection_agent_t *agent = apt_poller_task_object_get(poller_task);
+
+	apt_pollset_t *pollset = apt_poller_task_pollset_get(poller_task);
 	if(pollset) {
 		apt_pollset_remove(pollset,&agent->listen_sock_pfd);
 	}
 	mrcp_server_agent_listening_socket_destroy(agent);
+
+	apt_poller_task_cleanup(poller_task);
+	return TRUE;
+}
+
+/** Destroy connection agent. */
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
 	return apt_poller_task_destroy(agent->task);
 }
 

@@ -115,6 +115,7 @@ struct task_msg_data_t {
 	rtsp_message_t        *message;
 };
 
+static apt_bool_t rtsp_server_on_destroy(apt_task_t *task);
 static apt_bool_t rtsp_server_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_t *descriptor);
 static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_connection_t *connection, rtsp_message_t *message);
@@ -170,6 +171,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	
 	vtable = apt_poller_task_vtable_get(server->task);
 	if(vtable) {
+		vtable->destroy = rtsp_server_on_destroy;
 		vtable->process_msg = rtsp_server_task_msg_process;
 	}
 
@@ -180,11 +182,20 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	return server;
 }
 
+static apt_bool_t rtsp_server_on_destroy(apt_task_t *task)
+{
+	apt_poller_task_t *poller_task = apt_task_object_get(task);
+	rtsp_server_t *server = apt_poller_task_object_get(poller_task);
+
+	rtsp_server_listening_socket_destroy(server);
+	apt_poller_task_cleanup(poller_task);
+	return TRUE;
+}
+
 /** Destroy RTSP server */
 RTSP_DECLARE(apt_bool_t) rtsp_server_destroy(rtsp_server_t *server)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy RTSP Server");
-	rtsp_server_listening_socket_destroy(server);
 	return apt_poller_task_destroy(server->task);
 }
 

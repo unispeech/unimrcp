@@ -42,7 +42,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *task);
 static apt_bool_t apt_poller_task_on_destroy(apt_task_t *task);
 
 
-/** Create connection task */
+/** Create poller task */
 APT_DECLARE(apt_poller_task_t*) apt_poller_task_create(
 										apr_size_t max_pollset_size,
 										apt_poll_signal_f signal_handler,
@@ -90,10 +90,15 @@ APT_DECLARE(apt_poller_task_t*) apt_poller_task_create(
 	return task;
 }
 
-/** Virtual destroy handler */
-static apt_bool_t apt_poller_task_on_destroy(apt_task_t *base)
+/** Destroy poller task */
+APT_DECLARE(apt_bool_t) apt_poller_task_destroy(apt_poller_task_t *task)
 {
-	apt_poller_task_t *task = apt_task_object_get(base);
+	return apt_task_destroy(task->base);
+}
+
+/** Cleanup poller task */
+APT_DECLARE(void) apt_poller_task_cleanup(apt_poller_task_t *task)
+{
 	if(task->pollset) {
 		apt_pollset_destroy(task->pollset);
 		task->pollset = NULL;
@@ -106,14 +111,16 @@ static apt_bool_t apt_poller_task_on_destroy(apt_task_t *base)
 		apt_cyclic_queue_destroy(task->msg_queue);
 		task->msg_queue = NULL;
 	}
+}
+
+/** Virtual destroy handler */
+static apt_bool_t apt_poller_task_on_destroy(apt_task_t *base)
+{
+	apt_poller_task_t *task = apt_task_object_get(base);
+	apt_poller_task_cleanup(task);
 	return TRUE;
 }
 
-/** Destroy connection task. */
-APT_DECLARE(apt_bool_t) apt_poller_task_destroy(apt_poller_task_t *task)
-{
-	return apt_task_destroy(task->base);
-}
 
 /** Start poller task */
 APT_DECLARE(apt_bool_t) apt_poller_task_start(apt_poller_task_t *task)

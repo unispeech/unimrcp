@@ -59,6 +59,15 @@ APT_DECLARE(apt_poller_task_t*) apt_poller_task_create(
 APT_DECLARE(apt_bool_t) apt_poller_task_destroy(apt_poller_task_t *task);
 
 /**
+ * Cleanup poller task.
+ * @param task the task to cleanup
+ *
+ * @remark This function should be considered in protected scope. 
+ * It will be called on task destroy unless you override the behavior.
+ */
+APT_DECLARE(void) apt_poller_task_cleanup(apt_poller_task_t *task);
+
+/**
  * Start poller task and wait for incoming messages.
  * @param task the task to start
  */
