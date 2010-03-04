@@ -407,6 +407,9 @@ static rtsp_server_session_t* rtsp_server_session_setup_process(rtsp_server_t *s
 	if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		/* create new session */
 		session = rtsp_server_session_create(server);
+		if(!session) {
+			return NULL;
+		}
 		session->connection = rtsp_connection;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session "APT_SID_FMT,session->id.buf);
 		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
@@ -414,6 +417,9 @@ static rtsp_server_session_t* rtsp_server_session_setup_process(rtsp_server_t *s
 	else if(message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
 		/* create new session as a communication object */
 		session = rtsp_server_session_create(server);
+		if(!session) {
+			return NULL;
+		}
 		session->connection = rtsp_connection;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session "APT_SID_FMT,session->id.buf);
 		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
@@ -445,6 +451,13 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 			if(rtsp_server_session_message_handle(server,session,message) != TRUE) {
 				rtsp_server_session_destroy(session);
 			}
+		}
+		else {
+			/* error case, failed to create a session */
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RTSP Session");
+			return rtsp_server_error_respond(server,rtsp_connection,message,
+									RTSP_STATUS_CODE_NOT_ACCEPTABLE,
+									RTSP_REASON_PHRASE_NOT_ACCEPTABLE);
 		}
 		return TRUE;
 	}
