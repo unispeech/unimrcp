@@ -52,6 +52,7 @@
       <offer-new-connection>false</offer-new-connection>
       <rx-buffer-size>1024</rx-buffer-size>
       <tx-buffer-size>1024</tx-buffer-size>
+      <!-- <request-timeout>5000</request-timeout> -->
     </mrcpv2-uac>
     
     <!-- Media processing engine -->

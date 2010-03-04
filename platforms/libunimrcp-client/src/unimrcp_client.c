@@ -398,8 +398,9 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 	mrcp_connection_agent_t *agent;
 	apr_size_t max_connection_count = 100;
 	apt_bool_t offer_new_connection = FALSE;
-	apr_size_t rx_buffer_size = 0;
-	apr_size_t tx_buffer_size = 0;
+	const char *rx_buffer_size = NULL;
+	const char *tx_buffer_size = NULL;
+	const char *request_timeout = NULL;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading MRCPv2 Agent <%s>",id);
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -416,12 +417,17 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 		}
 		else if(strcasecmp(elem->name,"rx-buffer-size") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
-				rx_buffer_size = atol(cdata_text_get(elem));
+				rx_buffer_size = cdata_text_get(elem);
 			}
 		}
 		else if(strcasecmp(elem->name,"tx-buffer-size") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
-				tx_buffer_size = atol(cdata_text_get(elem));
+				tx_buffer_size = cdata_text_get(elem);
+			}
+		}
+		else if(strcasecmp(elem->name,"request-timeout") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				request_timeout = cdata_text_get(elem);
 			}
 		}
 		else {
@@ -432,10 +438,13 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 	agent = mrcp_client_connection_agent_create(max_connection_count,offer_new_connection,loader->pool);
 	if(agent) {
 		if(rx_buffer_size) {
-			mrcp_client_connection_rx_size_set(agent,rx_buffer_size);
+			mrcp_client_connection_rx_size_set(agent,atol(rx_buffer_size));
 		}
 		if(tx_buffer_size) {
-			mrcp_client_connection_tx_size_set(agent,tx_buffer_size);
+			mrcp_client_connection_tx_size_set(agent,atol(tx_buffer_size));
+		}
+		if(request_timeout) {
+			mrcp_client_connection_timeout_set(agent,atol(request_timeout));
 		}
 	}
 	return mrcp_client_connection_agent_register(loader->client,agent,id);

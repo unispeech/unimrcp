@@ -26,6 +26,7 @@
 
 #include <apr_network_io.h>
 #include "apt_string.h"
+#include "apt_timer_queue.h"
 #include "mrcp_types.h"
 
 APT_BEGIN_EXTERN_C
@@ -65,6 +66,10 @@ struct mrcp_control_channel_t {
 	mrcp_connection_agent_t *agent;
 	/** MRCPv2 (shared) connection */
 	mrcp_connection_t       *connection;
+	/** Request sent to the server and waiting for a response */
+	mrcp_message_t          *active_request;
+	/** Timer used for request timeouts */
+	apt_timer_t             *request_timer;
 	/** Indicate removed connection (safe to destroy) */
 	apt_bool_t               removed;
 	/** External object associated with the channel */

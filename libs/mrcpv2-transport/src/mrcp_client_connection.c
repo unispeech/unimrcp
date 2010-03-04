@@ -35,6 +35,7 @@ struct mrcp_connection_agent_t {
 
 	apt_obj_list_t          *connection_list;
 
+	apr_uint32_t             request_timeout;
 	apt_bool_t               offer_new_connection;
 	apr_size_t               tx_buffer_size;
 	apr_size_t               rx_buffer_size;
@@ -62,6 +63,7 @@ struct connection_task_msg_t {
 
 static apt_bool_t mrcp_client_agent_msg_process(apt_task_t *task, apt_task_msg_t *task_msg);
 static apt_bool_t mrcp_client_poller_signal_process(void *obj, const apr_pollfd_t *descriptor);
+static void mrcp_client_timer_proc(apt_timer_t *timer, void *obj);
 
 /** Create connection agent. */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
@@ -77,6 +79,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "MRCPV2_CONNECTION_TASK_NAME" [%"APR_SIZE_T_FMT"]",max_connection_count);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
+	agent->request_timeout = 0;
 	agent->offer_new_connection = offer_new_connection;
 	agent->rx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 	agent->tx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
@@ -166,6 +169,14 @@ MRCP_DECLARE(void) mrcp_client_connection_tx_size_set(
 	agent->tx_buffer_size = size;
 }
 
+/** Set request timeout */
+MRCP_DECLARE(void) mrcp_client_connection_timeout_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t timeout)
+{
+	agent->request_timeout = timeout;
+}
+
 /** Get task */
 MRCP_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent)
 {
@@ -185,9 +196,17 @@ MRCP_DECLARE(mrcp_control_channel_t*) mrcp_client_control_channel_create(mrcp_co
 	mrcp_control_channel_t *channel = apr_palloc(pool,sizeof(mrcp_control_channel_t));
 	channel->agent = agent;
 	channel->connection = NULL;
+	channel->active_request = NULL;
+	channel->request_timer = NULL;
 	channel->removed = FALSE;
 	channel->obj = obj;
 	channel->pool = pool;
+
+	channel->request_timer = apt_poller_task_timer_create(
+								agent->task,
+								mrcp_client_timer_proc,
+								channel,
+								pool);
 	return channel;
 }
 
@@ -439,6 +458,45 @@ static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agen
 	return mrcp_control_channel_remove_respond(agent->vtable,channel,TRUE);
 }
 
+static apt_bool_t mrcp_client_agent_request_cancel(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_message_t *message)
+{
+	mrcp_message_t *response;
+	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cancel MRCP Request <%s@%s> [%d]",
+		message->channel_id.session_id.buf,
+		message->channel_id.resource_name.buf,
+		message->start_line.request_id);
+	response = mrcp_response_create(message,message->pool);
+	response->start_line.method_id = message->start_line.method_id;
+	response->start_line.method_name = message->start_line.method_name;
+	response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+	return mrcp_connection_message_receive(agent->vtable,channel,response);
+}
+
+static apt_bool_t mrcp_client_agent_disconnect_raise(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
+{
+	mrcp_control_channel_t *channel;
+	void *val;
+	apr_hash_index_t *it = apr_hash_first(connection->pool,connection->channel_table);
+	/* walk through the list of channels and raise disconnect event for them */
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		channel = val;
+		if(!channel) continue;
+
+		if(channel->active_request) {
+			mrcp_client_agent_request_cancel(channel->agent,channel,channel->active_request);
+			channel->active_request = NULL;
+			if(channel->request_timer) {
+				apt_timer_kill(channel->request_timer);
+			}
+		}
+		else if(agent->vtable->on_disconnect){
+			agent->vtable->on_disconnect(channel);
+		}
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_message_t *message)
 {
 	apt_bool_t status = FALSE;
@@ -476,12 +534,14 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 	}
 	while(result == MRCP_STREAM_STATUS_INCOMPLETE);
 
-	if(status == FALSE) {
-		mrcp_message_t *response = mrcp_response_create(message,message->pool);
-		response->start_line.method_id = message->start_line.method_id;
-		response->start_line.method_name = message->start_line.method_name;
-		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		mrcp_connection_message_receive(agent->vtable,channel,response);
+	if(status == TRUE) {
+		channel->active_request = message;
+		if(channel->request_timer && agent->request_timeout) {
+			apt_timer_set(channel->request_timer,agent->request_timeout);
+		}
+	}
+	else {
+		mrcp_client_agent_request_cancel(agent,channel,message);
 	}
 	return status;
 }
@@ -497,6 +557,21 @@ static apt_bool_t mrcp_client_message_handler(void *obj, mrcp_message_t *message
 		channel = mrcp_connection_channel_find(connection,&identifier);
 		if(channel) {
 			mrcp_connection_agent_t *agent = connection->agent;
+			if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
+				if(!channel->active_request || 
+					channel->active_request->start_line.request_id != message->start_line.request_id) {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected MRCP Response <%s@%s> [%d]",
+						message->channel_id.session_id.buf,
+						message->channel_id.resource_name.buf,
+						message->start_line.request_id);
+					return FALSE;
+				}
+				if(channel->request_timer) {
+					apt_timer_kill(channel->request_timer);
+				}
+				channel->active_request = NULL;
+			}
+
 			mrcp_connection_message_receive(agent->vtable,channel,message);
 		}
 		else {
@@ -545,7 +620,7 @@ static apt_bool_t mrcp_client_poller_signal_process(void *obj, const apr_pollfd_
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 
-		mrcp_connection_disconnect_raise(connection,agent->vtable);
+		mrcp_client_agent_disconnect_raise(agent,connection);
 		return TRUE;
 	}
 	/* calculate actual length of the stream */
@@ -585,4 +660,20 @@ static apt_bool_t mrcp_client_agent_msg_process(apt_task_t *task, apt_task_msg_t
 	}
 
 	return TRUE;
+}
+
+/* Timer callback */
+static void mrcp_client_timer_proc(apt_timer_t *timer, void *obj)
+{
+	mrcp_control_channel_t *channel = obj;
+	if(!channel) {
+		return;
+	}
+
+	if(channel->request_timer == timer) {
+		if(channel->active_request) {
+			mrcp_client_agent_request_cancel(channel->agent,channel,channel->active_request);
+			channel->active_request = NULL;
+		}
+	}
 }

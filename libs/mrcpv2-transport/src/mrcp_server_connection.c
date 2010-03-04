@@ -242,6 +242,8 @@ MRCP_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_co
 	mrcp_control_channel_t *channel = apr_palloc(pool,sizeof(mrcp_control_channel_t));
 	channel->agent = agent;
 	channel->connection = NULL;
+	channel->active_request = NULL;
+	channel->request_timer = NULL;
 	channel->removed = FALSE;
 	channel->obj = obj;
 	channel->pool = pool;

@@ -98,6 +98,7 @@
                     <xsd:element name="offer-new-connection" type="xsd:boolean" minOccurs="0" />
                     <xsd:element name="rx-buffer-size" type="xsd:long" minOccurs="0" />
                     <xsd:element name="tx-buffer-size" type="xsd:long" minOccurs="0" />
+                    <xsd:element name="request-timeout" type="xsd:long" minOccurs="0" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />
                   <xsd:attribute name="enable" type="xsd:boolean" use="optional" />

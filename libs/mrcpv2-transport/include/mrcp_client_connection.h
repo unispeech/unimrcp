@@ -95,6 +95,14 @@ MRCP_DECLARE(void) mrcp_client_connection_rx_size_set(
 MRCP_DECLARE(void) mrcp_client_connection_tx_size_set(
 								mrcp_connection_agent_t *agent,
 								apr_size_t size);
+/**
+ * Set request timeout.
+ * @param agent the agent to set timeout for
+ * @param timeout the timeout to set
+ */
+MRCP_DECLARE(void) mrcp_client_connection_timeout_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t timeout);
 
 /**
  * Get task.
