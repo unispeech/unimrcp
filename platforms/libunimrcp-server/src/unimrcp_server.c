@@ -48,7 +48,7 @@
 #define DEFAULT_SOFIASIP_UA_NAME  "UniMRCP SofiaSIP"
 #define DEFAULT_SDP_ORIGIN        "UniMRCPServer"
 
-#define XML_FILE_BUFFER_LENGTH    2000
+#define XML_FILE_BUFFER_LENGTH    16000
 
 /** UniMRCP server loader */
 typedef struct unimrcp_server_loader_t unimrcp_server_loader_t;

@@ -43,7 +43,7 @@
 #define DEFAULT_SDP_ORIGIN        "UniMRCPClient"
 #define DEFAULT_RESOURCE_LOCATION "media"
 
-#define XML_FILE_BUFFER_LENGTH    2000
+#define XML_FILE_BUFFER_LENGTH    16000
 
 /** UniMRCP client loader */
 typedef struct unimrcp_client_loader_t unimrcp_client_loader_t;
