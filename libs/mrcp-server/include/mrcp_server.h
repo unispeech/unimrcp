@@ -178,7 +178,7 @@ MRCP_DECLARE(mpf_termination_factory_t*) mrcp_server_rtp_factory_get(mrcp_server
 
 /** 
  * Get RTP settings by name
- * @param client the MRCP server to get from
+ * @param server the MRCP server to get from
  * @param name the name to lookup
  */
 MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_server_rtp_settings_get(mrcp_server_t *server, const char *name);
