@@ -39,7 +39,7 @@ typedef apt_bool_t (*apt_poll_signal_f)(void *obj, const apr_pollfd_t *descripto
 
 /**
  * Create poller task.
- * @param pollset_size the maximum number of descriptors pollset can hold
+ * @param max_pollset_size the maximum number of descriptors pollset can hold
  * @param signal_handler the handler of signalled descriptors
  * @param obj the external object to pass to callback
  * @param msg_pool the pool of task messages
