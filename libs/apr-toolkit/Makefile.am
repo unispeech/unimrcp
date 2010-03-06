@@ -12,8 +12,6 @@ include_HEADERS          = include/apt.h \
                            include/apt_task.h \
                            include/apt_task_msg.h \
                            include/apt_consumer_task.h \
-                           include/apt_net_server_task.h \
-                           include/apt_net_client_task.h \
                            include/apt_pollset.h \
                            include/apt_poller_task.h \
                            include/apt_pool.h \
@@ -34,8 +32,6 @@ libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
                            src/apt_task.c \
                            src/apt_task_msg.c \
                            src/apt_consumer_task.c \
-                           src/apt_net_server_task.c \
-                           src/apt_net_client_task.c \
                            src/apt_pollset.c \
                            src/apt_poller_task.c \
                            src/apt_pool.c \
