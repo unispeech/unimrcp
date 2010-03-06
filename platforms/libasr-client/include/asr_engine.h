@@ -25,7 +25,6 @@
  */ 
 
 #include "apt_log.h"
-#include "mpf_frame.h"
 
 /** Lib export/import defines (win32) */
 #ifdef WIN32
@@ -49,9 +48,6 @@ typedef struct asr_engine_t asr_engine_t;
 
 /** Opaque ASR session */
 typedef struct asr_session_t asr_session_t;
-
-/** Prototype of callback to get input frames to recognize */
-typedef apt_bool_t (*asr_session_callback_f)(void *obj, mpf_frame_t *frame);
 
 
 /**
@@ -99,12 +95,24 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
  * @param callback the callback to be called to get input media frames
  * @param obj the object to pass to the callback
  * @return the recognition result (input element of NLSML content)
+ *
+ * @remark Audio data should be streamed through 
+ *         asr_session_stream_write() function calls.
  */
 ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 									asr_session_t *session, 
-									const char *grammar_file, 
-									asr_session_callback_f callback, 
-									void *obj);
+									const char *grammar_file);
+
+/**
+ * Write audio data to recognize.
+ * @param session the session to write audio data for
+ * @param data the audio data
+ * @param size the size of data
+ */
+ASR_CLIENT_DECLARE(apt_bool_t) asr_session_stream_write(
+									asr_session_t *session,
+									char *data,
+									int size);
 
 /**
  * Destroy ASR session.

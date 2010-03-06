@@ -22,14 +22,16 @@
 #include <apr_thread_cond.h>
 #include <apr_thread_proc.h>
 
-/* common includes */
+/* Common includes */
 #include "unimrcp_client.h"
 #include "mrcp_application.h"
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
-/* recognizer includes */
+/* Recognizer includes */
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
+/* MPF includes */
+#include <mpf_frame_buffer.h>
 /* APT includes */
 #include "apt_nlsml_doc.h"
 #include "apt_log.h"
@@ -69,10 +71,8 @@ struct asr_session_t {
 	input_mode_e              input_mode;
 	/** File to read media frames from */
 	FILE                     *audio_in;
-	/** Callback to get media frames from */
-	asr_session_callback_f    callback;
-	/** Object to pass to callback */
-	void                     *obj;
+	/* Buffer of media frames */
+	mpf_frame_buffer_t       *media_buffer;
 	/** Streaming is in-progress */
 	apt_bool_t                streaming;
 
@@ -217,12 +217,12 @@ static apt_bool_t asr_session_destroy_ex(asr_session_t *asr_session, apt_bool_t 
 		apr_thread_cond_destroy(asr_session->wait_object);
 		asr_session->wait_object = NULL;
 	}
-	if(asr_session->mrcp_session) {
-		mrcp_application_session_destroy(asr_session->mrcp_session);
-		asr_session->mrcp_session = NULL;
+	if(asr_session->media_buffer) {
+		mpf_frame_buffer_destroy(asr_session->media_buffer);
+		asr_session->media_buffer = NULL;
 	}
-	free(asr_session);
-	return TRUE;
+	
+	return mrcp_application_session_destroy(asr_session->mrcp_session);
 }
 
 /** Open audio input file */
@@ -267,8 +267,8 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 			}
 		}
 		if(asr_session->input_mode == INPUT_MODE_STREAM) {
-			if(asr_session->callback) {
-				asr_session->callback(asr_session->obj,frame);
+			if(asr_session->media_buffer) {
+				mpf_frame_buffer_read(asr_session->media_buffer,frame);
 			}
 		}
 	}
@@ -460,23 +460,33 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	mrcp_session_t *session;
 	const mrcp_app_message_t *app_message;
 	apr_pool_t *pool;
-
-	asr_session_t *asr_session = malloc(sizeof(asr_session_t));
+	asr_session_t *asr_session;
+	mpf_stream_capabilities_t *capabilities;
 
 	/* create session */
-	session = mrcp_application_session_create(engine->mrcp_app,profile,asr_session);
+	session = mrcp_application_session_create(engine->mrcp_app,profile,NULL);
 	if(!session) {
-		free(asr_session);
 		return NULL;
 	}
 	pool = mrcp_application_session_pool_get(session);
+
+	asr_session = apr_palloc(pool,sizeof(asr_session_t));
+	mrcp_application_session_object_set(session,asr_session);
 	
-	termination = mrcp_application_source_termination_create(
+	/* create source stream capabilities */
+	capabilities = mpf_source_stream_capabilities_create(pool);
+	/* add codec capabilities (Linear PCM) */
+	mpf_codec_capabilities_add(
+			&capabilities->codecs,
+			MPF_SAMPLE_RATE_8000,
+			"LPCM");
+
+	termination = mrcp_application_audio_termination_create(
 			session,                   /* session, termination belongs to */
 			&audio_stream_vtable,      /* virtual methods table of audio stream */
-			NULL,                      /* codec descriptor of audio stream (NULL by default) */
-			asr_session);              /* object to associate */
-	
+			capabilities,              /* capabilities of audio stream */
+			asr_session);            /* object to associate */
+
 	channel = mrcp_application_channel_create(
 			session,                   /* session, channel belongs to */
 			MRCP_RECOGNIZER_RESOURCE,  /* MRCP resource identifier */
@@ -486,7 +496,6 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 
 	if(!channel) {
 		mrcp_application_session_destroy(session);
-		free(asr_session);
 		return NULL;
 	}
 	
@@ -497,8 +506,7 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	asr_session->input_mode = INPUT_MODE_NONE;
 	asr_session->streaming = FALSE;
 	asr_session->audio_in = NULL;
-	asr_session->callback = NULL;
-	asr_session->obj = NULL;
+	asr_session->media_buffer = NULL;
 	asr_session->mutex = NULL;
 	asr_session->wait_object = NULL;
 	asr_session->app_message = NULL;
@@ -506,6 +514,9 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	/* Create cond wait object and mutex */
 	apr_thread_mutex_create(&asr_session->mutex,APR_THREAD_MUTEX_DEFAULT,pool);
 	apr_thread_cond_create(&asr_session->wait_object,pool);
+
+	/* Create media buffer */
+	asr_session->media_buffer = mpf_frame_buffer_create(160,20,pool);
 
 	/* Send add channel request and wait for the response */
 	apr_thread_mutex_lock(asr_session->mutex);
@@ -609,9 +620,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 /** Initiate recognition based on specified grammar and input stream */
 ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 									asr_session_t *asr_session,
-									const char *grammar_file,
-									asr_session_callback_f callback,
-									void *obj)
+									const char *grammar_file)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
@@ -658,6 +667,9 @@ ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_INPROGRESS) == FALSE) {
 		return NULL;
 	}
+
+	/* Reset media buffer */
+	mpf_frame_buffer_restart(asr_session->media_buffer);
 	
 	/* Set input mode and start streaming */
 	asr_session->input_mode = INPUT_MODE_STREAM;
@@ -684,6 +696,25 @@ ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 
 	/* Get results */
 	return nlsml_input_get(asr_session->recog_complete);
+}
+
+/** Write audio frame to recognize */
+ASR_CLIENT_DECLARE(apt_bool_t) asr_session_stream_write(
+									asr_session_t *asr_session,
+									char *data,
+									int size)
+{
+	mpf_frame_t frame;
+	frame.type = MEDIA_FRAME_TYPE_AUDIO;
+	frame.marker = MPF_MARKER_NONE;
+	frame.codec_frame.buffer = data;
+	frame.codec_frame.size = size;
+
+	if(mpf_frame_buffer_write(asr_session->media_buffer,&frame) != TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Write Audio [%d]",size);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /** Destroy ASR session */
