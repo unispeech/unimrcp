@@ -41,7 +41,7 @@ APT_BEGIN_EXTERN_C
 typedef struct apt_pollset_t apt_pollset_t;
 
 /**
- * Create interruptable pollset on top of APR pollset
+ * Create interruptable pollset on top of APR pollset.
  * @param size the maximum number of descriptors pollset can hold
  * @param pool the pool to allocate memory from
  */
@@ -71,7 +71,7 @@ APT_DECLARE(apt_bool_t) apt_pollset_remove(apt_pollset_t *pollset, const apr_pol
  * Block for activity on the descriptor(s) in a pollset.
  * @param pollset the pollset to use
  * @param timeout the timeout in microseconds
- * @param num nthe umber of signalled descriptors (output parameter)
+ * @param num the number of signalled descriptors (output parameter)
  * @param descriptors the array of signalled descriptors (output parameter)
  */
 APT_DECLARE(apr_status_t) apt_pollset_poll(
