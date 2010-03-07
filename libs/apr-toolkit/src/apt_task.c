@@ -28,7 +28,7 @@ typedef enum {
 	TASK_STATE_START_REQUESTED,    /**< task start is requested and is in progress */
 	TASK_STATE_RUNNING,            /**< task is running */
 	TASK_STATE_TERMINATE_REQUESTED /**< task termination is requested and is in progress */
-} apt_task_state_t;
+} apt_task_state_e;
 
 struct apt_task_t {
 	void                *obj;           /* external object associated with the task */
@@ -36,7 +36,7 @@ struct apt_task_t {
 	apt_task_msg_pool_t *msg_pool;      /* message pool to allocate task messages from */
 	apr_thread_mutex_t  *data_guard;    /* mutex to protect task data */
 	apr_thread_t        *thread_handle; /* thread handle */
-	apt_task_state_t     state;         /* current task state */
+	apt_task_state_e     state;         /* current task state */
 	apt_task_vtable_t    vtable;        /* table of virtual methods */
 	apt_task_t          *parent_task;   /* parent (master) task */
 	apt_obj_list_t      *child_tasks;   /* list of the child (slave) tasks */
@@ -240,7 +240,7 @@ APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_ms
 }
 
 
-APT_DECLARE(apt_bool_t) apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
+static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_bool_t running = TRUE;
 	switch(msg->sub_type) {
