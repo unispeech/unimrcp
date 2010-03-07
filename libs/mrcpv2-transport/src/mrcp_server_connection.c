@@ -657,7 +657,6 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 		return mrcp_server_agent_connection_accept(agent);
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message");
 	if(!connection || !connection->sock) {
 		return FALSE;
 	}

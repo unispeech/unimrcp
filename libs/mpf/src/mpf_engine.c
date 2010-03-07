@@ -27,7 +27,7 @@
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
 
-#define MPF_TASK_NAME "Media Processing Engine"
+#define MPF_TASK_NAME "MPF Engine"
 
 #define MPF_TIMER_RESOLUTION 100 /* 100 ms */
 
@@ -304,7 +304,6 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	mpf_termination_t *termination;
 	const mpf_message_t *mpf_request;
 	const mpf_message_container_t *request = (const mpf_message_container_t*) msg->data;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Message");
 
 	response_msg = apt_task_msg_get(engine->task);
 	response_msg->type = engine->task_msg_type;

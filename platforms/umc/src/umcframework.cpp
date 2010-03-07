@@ -136,7 +136,7 @@ bool UmcFramework::CreateTask()
 		return false;
 
 	pTask = apt_consumer_task_base_get(m_pTask);
-	apt_task_name_set(pTask,"Framework Task");
+	apt_task_name_set(pTask,"Framework Agent");
 	pVtable = apt_consumer_task_vtable_get(m_pTask);
 	if(pVtable) 
 	{

@@ -23,7 +23,7 @@
 #include "apt_consumer_task.h"
 #include "apt_log.h"
 
-#define FRAMEWORK_TASK_NAME "Framework Task"
+#define FRAMEWORK_TASK_NAME "Framework Agent"
 
 #define MAX_APP_NAME_LENGTH     16
 #define MAX_PROFILE_NAME_LENGTH 16

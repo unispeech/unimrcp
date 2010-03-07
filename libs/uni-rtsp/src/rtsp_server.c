@@ -815,7 +815,6 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 		return rtsp_server_connection_accept(server);
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message");
 	if(!rtsp_connection || !rtsp_connection->sock) {
 		return FALSE;
 	}

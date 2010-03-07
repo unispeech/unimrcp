@@ -25,9 +25,9 @@
 /** Internal states of the task */
 typedef enum {
 	TASK_STATE_IDLE,               /**< no task activity */
-	TASK_STATE_START_REQUESTED,    /**< task start is requested and is in progress */
+	TASK_STATE_START_REQUESTED,    /**< start of the task has been requested, but it's not running yet */
 	TASK_STATE_RUNNING,            /**< task is running */
-	TASK_STATE_TERMINATE_REQUESTED /**< task termination is requested and is in progress */
+	TASK_STATE_TERMINATE_REQUESTED /**< termination of the task has been requested, but it's still running */
 } apt_task_state_e;
 
 struct apt_task_t {
@@ -100,7 +100,7 @@ APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 		apt_task_wait_till_complete(task);
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy %s",task->name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Destroy Task [%s]",task->name);
 	if(task->vtable.destroy) {
 		task->vtable.destroy(task);
 	}
@@ -122,7 +122,7 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 	if(task->state == TASK_STATE_IDLE) {
 		apr_status_t rv;
 		task->state = TASK_STATE_START_REQUESTED;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start %s",task->name);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task [%s]",task->name);
 		if(task->vtable.start) {
 			/* raise virtual start method */
 			task->vtable.start(task);
@@ -154,7 +154,7 @@ APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_til
 
 	if(task->state == TASK_STATE_TERMINATE_REQUESTED) {
 		/* raise virtual terminate method */
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate %s",task->name);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Task [%s]",task->name);
 		if(task->vtable.terminate) {
 			status = task->vtable.terminate(task);
 		}
@@ -222,6 +222,8 @@ APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task)
 
 APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 {
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] [%d;%d]",
+		task->name, msg->type, msg->sub_type);
 	if(task->vtable.signal_msg) {
 		return task->vtable.signal_msg(task,msg);
 	}
@@ -252,6 +254,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 			}
 			task->pending_start--;
 			if(!task->pending_start) {
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Started [%s]",task->name);
 				if(task->vtable.on_start_complete) {
 					task->vtable.on_start_complete(task);
 				}
@@ -278,6 +281,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 			}
 			task->pending_term--;
 			if(!task->pending_term) {
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Terminated [%s]",task->name);
 				if(task->vtable.on_terminate_complete) {
 					task->vtable.on_terminate_complete(task);
 				}
@@ -297,6 +301,8 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_bool_t running = TRUE;
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%s] [%d;%d]",
+		task->name, msg->type, msg->sub_type);
 	if(msg->type == TASK_MSG_CORE) {
 		running = apt_core_task_msg_process(task,msg);
 	}
@@ -340,6 +346,7 @@ APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task)
 
 	if(!task->pending_start) {
 		/* no child task to start, just raise start-complete event */
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Started [%s]",task->name);
 		if(task->vtable.on_start_complete) {
 			task->vtable.on_start_complete(task);
 		}
@@ -382,6 +389,7 @@ APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task)
 
 	if(!task->pending_term) {
 		/* no child task to terminate, just raise terminate-complete event */
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Terminated [%s]",task->name);
 		if(task->vtable.on_terminate_complete) {
 			task->vtable.on_terminate_complete(task);
 		}

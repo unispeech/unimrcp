@@ -88,7 +88,7 @@ static apt_bool_t apt_consumer_task_run(apt_task_t *task)
 	}
 
 	while(running) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Task Messages [%s]",apt_task_name_get(task));
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s]",apt_task_name_get(task));
 		rv = apr_queue_pop(consumer_task->msg_queue,&msg);
 		if(rv == APR_SUCCESS) {
 			if(msg) {

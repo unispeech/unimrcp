@@ -1000,7 +1000,6 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_CLIENT_SIGNALING_TASK_MSG:
 		{
 			const sig_agent_task_msg_data_t *sig_message = (const sig_agent_task_msg_data_t*)msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Signaling Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case SIG_AGENT_TASK_MSG_ANSWER:
 					mrcp_client_session_answer_process(sig_message->session,sig_message->descriptor);
@@ -1025,7 +1024,6 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_CLIENT_CONNECTION_TASK_MSG:
 		{
 			const connection_agent_task_msg_data_t *data = (const connection_agent_task_msg_data_t*)msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Connection Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_ADD_CHANNEL:
 					mrcp_client_on_channel_add(data->channel,data->descriptor,data->status);
@@ -1050,20 +1048,18 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_CLIENT_MEDIA_TASK_MSG:
 		{
 			mpf_message_container_t *container = (mpf_message_container_t*) msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Media Task Message");
 			mrcp_client_mpf_message_process(container);
 			break;
 		}
 		case MRCP_CLIENT_APPLICATION_TASK_MSG:
 		{
 			mrcp_app_message_t **app_message = (mrcp_app_message_t**) msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Application Task Message [%d]", (*app_message)->message_type);
 			mrcp_client_app_message_process(*app_message);
 			break;
 		}
 		default:
 		{
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Receive Unknown Task Message [%d]", msg->type);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Task Message Received [%d;%d]", msg->type,msg->sub_type);
 			break;
 		}
 	}
@@ -1089,7 +1085,6 @@ static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_
 		app_message->descriptor = NULL;
 		*slot = app_message;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Application Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 
@@ -1111,7 +1106,6 @@ static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp
 		app_message->control_message = message;
 		*slot = app_message;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Application Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 
@@ -1126,7 +1120,6 @@ static apt_bool_t mrcp_client_signaling_task_msg_signal(sig_agent_task_msg_type_
 	data->descriptor = descriptor;
 	data->message = message;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Signaling Task Message");
 	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
@@ -1155,7 +1148,6 @@ static apt_bool_t mrcp_client_connection_task_msg_signal(
 	data->message = message;
 	data->status = status;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Connection Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 

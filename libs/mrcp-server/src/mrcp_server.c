@@ -255,7 +255,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 	}
 	server->session_table = NULL;
 	uptime = apr_time_now() - server->start_time;
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Server Uptime [%d sec]", apr_time_sec(uptime));
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Server Uptime [%"APR_TIME_T_FMT" sec]", apr_time_sec(uptime));
 	return TRUE;
 }
 
@@ -613,14 +613,12 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_SIGNALING_TASK_MSG:
 		{
 			mrcp_signaling_message_t **signaling_message = (mrcp_signaling_message_t**) msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Signaling Task Message [%d]", (*signaling_message)->type);
 			mrcp_server_signaling_message_process(*signaling_message);
 			break;
 		}
 		case MRCP_SERVER_CONNECTION_TASK_MSG:
 		{
 			const connection_agent_task_msg_data_t *connection_message = (const connection_agent_task_msg_data_t*)msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Connection Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case CONNECTION_AGENT_TASK_MSG_ADD_CHANNEL:
 				{
@@ -655,7 +653,6 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_ENGINE_TASK_MSG:
 		{
 			engine_task_msg_data_t *data = (engine_task_msg_data_t*)msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Engine Task Message [%d]", msg->sub_type);
 			switch(msg->sub_type) {
 				case ENGINE_TASK_MSG_OPEN_CHANNEL:
 					mrcp_server_on_engine_channel_open(data->channel,data->status);
@@ -674,13 +671,12 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		case MRCP_SERVER_MEDIA_TASK_MSG:
 		{
 			mpf_message_container_t *mpf_message_container = (mpf_message_container_t*) msg->data;
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Receive Media Task Message");
 			mrcp_server_mpf_message_process(mpf_message_container);
 			break;
 		}
 		default:
 		{
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Receive Unknown Task Message [%d]", msg->type);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Task Message Received [%d;%d]", msg->type,msg->sub_type);
 			break;
 		}
 	}
@@ -703,7 +699,6 @@ static apt_bool_t mrcp_server_signaling_task_msg_signal(mrcp_signaling_message_t
 	signaling_message->message = message;
 	*slot = signaling_message;
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Signaling Task Message");
 	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
 }
 
@@ -727,7 +722,6 @@ static apt_bool_t mrcp_server_connection_task_msg_signal(
 	data->message = message;
 	data->status = status;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Connection Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 
@@ -750,7 +744,6 @@ static apt_bool_t mrcp_server_engine_task_msg_signal(
 	data->status = status;
 	data->mrcp_message = message;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Engine Task Message");
 	return apt_task_msg_signal(task,task_msg);
 }
 

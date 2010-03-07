@@ -200,24 +200,28 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 	apr_uint32_t queue_timeout;
 	apr_time_t time_now, time_last = 0;
 	int i;
+	const char *task_name;
 
 	if(!task) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Poller Task");
 		return FALSE;
 	}
+	task_name = apt_task_name_get(task->base),
 
 	/* explicitly indicate task is ready to process messages */
 	apt_task_ready(task->base);
 
 	while(running) {
-		timeout = -1;
 		if(apt_timer_queue_timeout_get(task->timer_queue,&queue_timeout) == TRUE) {
 			timeout = queue_timeout * 1000;
 			time_last = apr_time_now();
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s] timeout [%lu]",
+				task_name, queue_timeout);
 		}
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Task Messages [%s] timeout: %"APR_TIME_T_FMT,
-			apt_task_name_get(task->base),
-			timeout);
+		else {
+			timeout = -1;
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s]",task_name);
+		}
 		status = apt_pollset_poll(task->pollset, timeout, &num, &ret_pfd);
 		if(status != APR_SUCCESS && status != APR_TIMEUP) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Poll status: %d",status);
@@ -225,7 +229,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 		}
 		for(i = 0; i < num; i++) {
 			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Control Message");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Poller Wakeup [%s]",task_name);
 				if(apt_poller_task_wakeup_process(task) == FALSE) {
 					running = FALSE;
 					break;
@@ -233,7 +237,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 				continue;
 			}
 
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Signalled Descriptor [%s]",task_name);
 			task->signal_handler(task->obj,&ret_pfd[i]);
 		}
 
