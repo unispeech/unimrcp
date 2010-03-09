@@ -174,7 +174,7 @@ MRCP_DECLARE(void) mrcp_client_connection_timeout_set(
 								mrcp_connection_agent_t *agent,
 								apr_size_t timeout)
 {
-	agent->request_timeout = timeout;
+	agent->request_timeout = (apr_uint32_t)timeout;
 }
 
 /** Get task */

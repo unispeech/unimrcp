@@ -175,7 +175,7 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 
 	client->sub_pool = apt_subpool_create(pool);
 	client->connection_list = NULL;
-	client->request_timeout = request_timeout;
+	client->request_timeout = (apr_uint32_t)request_timeout;
 	return client;
 }
 
