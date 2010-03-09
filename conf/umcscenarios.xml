@@ -14,6 +14,7 @@ For instance,
 > run synth
 -->
 
+<?xml version="1.0" encoding="UTF-8"?>
 <umcscenarios>
   <scenario name="synth" class="Synthesizer" profile="MRCPv2-Default">
     <resource-discovery enable="0"/>
