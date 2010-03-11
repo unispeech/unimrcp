@@ -459,7 +459,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
 	if(apt_pollset_add(pollset, &connection->sock_pfd) != TRUE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
 		apr_socket_close(sock);
 		mrcp_connection_destroy(connection);
 		return FALSE;

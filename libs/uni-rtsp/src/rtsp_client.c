@@ -345,6 +345,7 @@ static apt_bool_t rtsp_client_connect(rtsp_client_connection_t *connection, apt_
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
 	if(apt_pollset_add(pollset,&connection->sock_pfd) != TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 		return FALSE;

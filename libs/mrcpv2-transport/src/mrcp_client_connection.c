@@ -314,6 +314,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
 	if(apt_pollset_add(pollset, &connection->sock_pfd) != TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
 		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
 		return NULL;
