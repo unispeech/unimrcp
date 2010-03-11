@@ -506,7 +506,10 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 	mrcp_stream_status_e result;
 
 	if(!connection || !connection->sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCPv2 Connection");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection <%s@%s>",
+			message->channel_id.session_id.buf,
+			message->channel_id.resource_name.buf);
+		mrcp_client_agent_request_cancel(agent,channel,message);
 		return FALSE;
 	}
 
@@ -526,11 +529,13 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 				status = TRUE;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Stream");
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Stream %s",
+					connection->id);
 			}
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Stream");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Stream %s",
+				connection->id);
 		}
 	}
 	while(result == MRCP_STREAM_STATUS_INCOMPLETE);
