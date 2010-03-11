@@ -561,8 +561,13 @@ static APR_INLINE void rtp_periodic_history_update(rtp_receiver_t *receiver)
 	apr_uint32_t lost_interval;
 
 	/* calculate expected packets */
-	expected_packets = receiver->history.seq_cycles + 
-		receiver->history.seq_num_max - receiver->history.seq_num_base + 1;
+	if(receiver->stat.received_packets) {
+		expected_packets = receiver->history.seq_cycles + 
+			receiver->history.seq_num_max - receiver->history.seq_num_base + 1;
+	}
+	else {
+		expected_packets = 0;
+	}
 
 	/* calculate expected interval */
 	expected_interval = expected_packets - receiver->periodic_history.expected_prior;
