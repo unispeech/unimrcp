@@ -63,6 +63,7 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 	else {
 		/* end of stream is reached, do not advance stream pos, but set is_eos flag */
 		stream->is_eos = TRUE;
+		line->length = pos - line->buf;
 	}
 	return status;
 }
