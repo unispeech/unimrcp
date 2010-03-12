@@ -39,6 +39,7 @@ public:
 protected:
 /* ============================ MANIPULATORS =============================== */
 	virtual bool Start();
+	virtual bool Stop();
 
 	RecogChannel* CreateRecogChannel();
 	bool StartRecognition(mrcp_channel_t* pMrcpChannel);
