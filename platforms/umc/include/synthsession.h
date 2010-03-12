@@ -39,6 +39,7 @@ public:
 protected:
 /* ============================ MANIPULATORS =============================== */
 	virtual bool Start();
+	virtual bool Stop();
 
 	SynthChannel* CreateSynthChannel();
 
@@ -52,7 +53,7 @@ protected:
 
 /* ============================ ACCESSORS ================================== */
 	const SynthScenario* GetScenario() const;
-	
+
 private:
 /* ============================ DATA ======================================= */
 	SynthChannel* m_pSynthChannel;
