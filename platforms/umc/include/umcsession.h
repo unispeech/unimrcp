@@ -84,6 +84,7 @@ protected:
 /* ============================ ACCESSORS ================================== */
 	apr_pool_t* GetSessionPool() const;
 	const char* GetMrcpSessionId() const;
+	mrcp_message_t* GetMrcpMessage() const;
 
 /* ============================ DATA ======================================= */
 	const UmcScenario*  m_pScenario;
@@ -94,6 +95,7 @@ private:
 /* ============================ DATA ======================================= */
 	mrcp_application_t* m_pMrcpApplication;
 	mrcp_session_t*     m_pMrcpSession;
+	mrcp_message_t*     m_pMrcpMessage; /* last message sent */
 	bool                m_Running;
 	bool                m_Terminating;
 };
@@ -118,6 +120,11 @@ inline void UmcSession::SetMrcpApplication(mrcp_application_t* pMrcpApplication)
 inline void UmcSession::SetMrcpProfile(const char* pMrcpProfile)
 {
 	m_pMrcpProfile = pMrcpProfile;
+}
+
+inline mrcp_message_t* UmcSession::GetMrcpMessage() const
+{
+	return m_pMrcpMessage;
 }
 
 #endif /* UMC_SESSION_H */

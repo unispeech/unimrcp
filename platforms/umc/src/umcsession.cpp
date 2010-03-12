@@ -18,12 +18,14 @@
 
 #include "umcsession.h"
 #include "umcscenario.h"
+#include "mrcp_message.h"
 
 UmcSession::UmcSession(const UmcScenario* pScenario) :
 	m_pScenario(pScenario),
 	m_pMrcpProfile(NULL),
 	m_pMrcpApplication(NULL),
 	m_pMrcpSession(NULL),
+	m_pMrcpMessage(NULL),
 	m_Running(false),
 	m_Terminating(false)
 {
@@ -107,7 +109,17 @@ bool UmcSession::OnChannelRemove(mrcp_channel_t *channel, mrcp_sig_status_code_e
 
 bool UmcSession::OnMessageReceive(mrcp_channel_t *channel, mrcp_message_t *message) 
 {
-	return m_Running;
+	if(!m_Running)
+		return false;
+
+	if(!m_pMrcpMessage)
+		return false;
+
+	/* match request identifiers */
+	if(m_pMrcpMessage->start_line.request_id != message->start_line.request_id)
+		return false;
+
+	return true;
 }
 
 bool UmcSession::OnTerminateEvent(mrcp_channel_t *channel)
@@ -165,6 +177,7 @@ bool UmcSession::SendMrcpRequest(mrcp_channel_t* pMrcpChannel, mrcp_message_t* p
 	if(!m_Running)
 		return false;
 
+	m_pMrcpMessage = pMrcpMessage;
 	return (mrcp_application_message_send(m_pMrcpSession,pMrcpChannel,pMrcpMessage) == TRUE);
 }
 
