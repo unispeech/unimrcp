@@ -37,6 +37,7 @@ public:
 
 /* ============================ MANIPULATORS =============================== */
 	virtual bool Run();
+	virtual bool Stop();
 	virtual bool Terminate();
 
 	void SetMrcpProfile(const char* pMrcpProfile);

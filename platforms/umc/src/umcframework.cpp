@@ -38,6 +38,7 @@ enum UmcTaskMsgType
 {
 	UMC_TASK_CLIENT_MSG,
 	UMC_TASK_RUN_SESSION_MSG,
+	UMC_TASK_STOP_SESSION_MSG,
 	UMC_TASK_KILL_SESSION_MSG,
 	UMC_TASK_SHOW_SCENARIOS_MSG,
 	UMC_TASK_SHOW_SESSIONS_MSG
@@ -337,6 +338,24 @@ bool UmcFramework::ProcessRunRequest(const char* pScenarioName, const char* pPro
 	return true;
 }
 
+void UmcFramework::ProcessStopRequest(const char* id)
+{
+	UmcSession* pSession;
+	void* pVal;
+	apr_hash_index_t* it = apr_hash_first(m_pPool,m_pSessionTable);
+	for(; it; it = apr_hash_next(it)) 
+	{
+		apr_hash_this(it,NULL,NULL,&pVal);
+		pSession = (UmcSession*) pVal;
+		if(pSession && strcasecmp(pSession->GetId(),id) == 0)
+		{
+			/* stop in-progress request */
+			pSession->Stop();
+			return;
+		}
+	}
+}
+
 void UmcFramework::ProcessKillRequest(const char* id)
 {
 	UmcSession* pSession;
@@ -348,7 +367,7 @@ void UmcFramework::ProcessKillRequest(const char* id)
 		pSession = (UmcSession*) pVal;
 		if(pSession && strcasecmp(pSession->GetId(),id) == 0)
 		{
-			/* first, terminate session */
+			/* terminate session */
 			pSession->Terminate();
 			return;
 		}
@@ -401,6 +420,22 @@ void UmcFramework::RunSession(const char* pScenarioName, const char* pProfileNam
 	UmcTaskMsg* pUmcMsg = (UmcTaskMsg*) pTaskMsg->data;
 	strncpy(pUmcMsg->m_ScenarioName,pScenarioName,sizeof(pUmcMsg->m_ScenarioName)-1);
 	strncpy(pUmcMsg->m_ProfileName,pProfileName,sizeof(pUmcMsg->m_ProfileName)-1);
+	pUmcMsg->m_pAppMessage = NULL;
+	apt_task_msg_signal(pTask,pTaskMsg);
+}
+
+void UmcFramework::StopSession(const char* id)
+{
+	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
+	apt_task_msg_t* pTaskMsg = apt_task_msg_get(pTask);
+	if(!pTaskMsg) 
+		return;
+
+	pTaskMsg->type = TASK_MSG_USER;
+	pTaskMsg->sub_type = UMC_TASK_STOP_SESSION_MSG;
+	
+	UmcTaskMsg* pUmcMsg = (UmcTaskMsg*) pTaskMsg->data;
+	strncpy(pUmcMsg->m_SessionId,id,sizeof(pUmcMsg->m_SessionId)-1);
 	pUmcMsg->m_pAppMessage = NULL;
 	apt_task_msg_signal(pTask,pTaskMsg);
 }
@@ -562,6 +597,11 @@ apt_bool_t UmcProcessMsg(apt_task_t *pTask, apt_task_msg_t *pMsg)
 		case UMC_TASK_RUN_SESSION_MSG:
 		{
 			pFramework->ProcessRunRequest(pUmcMsg->m_ScenarioName,pUmcMsg->m_ProfileName);
+			break;
+		}
+		case UMC_TASK_STOP_SESSION_MSG:
+		{
+			pFramework->ProcessStopRequest(pUmcMsg->m_SessionId);
 			break;
 		}
 		case UMC_TASK_KILL_SESSION_MSG:

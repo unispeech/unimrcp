@@ -135,6 +135,14 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 			m_pFramework->KillSession(pID);
 		}
 	}
+	else if(strcasecmp(name,"stop") == 0)
+	{
+		char* pID = apr_strtok(NULL, " ", &last);
+		if(pID) 
+		{
+			m_pFramework->StopSession(pID);
+		}
+	}
 	else if(strcasecmp(name,"show") == 0)
 	{
 		char* pWhat = apr_strtok(NULL, " ", &last);

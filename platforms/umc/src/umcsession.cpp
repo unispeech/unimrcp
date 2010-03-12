@@ -73,6 +73,14 @@ bool UmcSession::Run()
 	return ret;
 }
 
+bool UmcSession::Stop()
+{
+	if(m_Terminating)
+		return false;
+
+	return true;
+}
+
 bool UmcSession::Terminate()
 {
 	if(m_Terminating)

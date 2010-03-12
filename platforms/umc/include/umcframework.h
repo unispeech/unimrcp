@@ -44,6 +44,7 @@ public:
 	void Destroy();
 
 	void RunSession(const char* pScenarioName, const char* pProfileName);
+	void StopSession(const char* id);
 	void KillSession(const char* id);
 
 	void ShowScenarios();
@@ -63,6 +64,7 @@ protected:
 	void DestroyScenarios();
 
 	bool ProcessRunRequest(const char* pScenarioName, const char* pProfileName);
+	void ProcessStopRequest(const char* id);
 	void ProcessKillRequest(const char* id);
 	void ProcessShowScenarios();
 	void ProcessShowSessions();
