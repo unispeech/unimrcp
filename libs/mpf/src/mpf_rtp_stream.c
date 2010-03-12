@@ -167,21 +167,25 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 	}
 	if(local_media->port == 0) {
 		/* RTP port management */
-		apr_port_t first_port_in_search = rtp_stream->config->rtp_port_cur;
+		mpf_rtp_config_t *rtp_config = rtp_stream->config;
+		apr_port_t first_port_in_search = rtp_config->rtp_port_cur;
 		apt_bool_t is_port_ok = FALSE;
 
 		do {
-			local_media->port = rtp_stream->config->rtp_port_cur;
-			rtp_stream->config->rtp_port_cur += 2;
-			if(rtp_stream->config->rtp_port_cur == rtp_stream->config->rtp_port_max) {
-				rtp_stream->config->rtp_port_cur = rtp_stream->config->rtp_port_min;
+			local_media->port = rtp_config->rtp_port_cur;
+			rtp_config->rtp_port_cur += 2;
+			if(rtp_config->rtp_port_cur == rtp_config->rtp_port_max) {
+				rtp_config->rtp_port_cur = rtp_config->rtp_port_min;
 			}
 			if(mpf_rtp_socket_pair_create(rtp_stream,local_media) == TRUE) {
 				is_port_ok = TRUE;
 			}
-		} while((is_port_ok == FALSE) && (first_port_in_search != rtp_stream->config->rtp_port_cur));
+		} while((is_port_ok == FALSE) && (first_port_in_search != rtp_config->rtp_port_cur));
 		if(is_port_ok == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Free RTP Port");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Free RTP Port %s:[%hu,%hu]",
+									rtp_config->ip.buf,
+									rtp_config->rtp_port_min,
+									rtp_config->rtp_port_max);
 			local_media->state = MPF_MEDIA_DISABLED;
 			status = FALSE;
 		}
