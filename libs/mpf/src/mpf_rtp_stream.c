@@ -492,14 +492,16 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 	}
 
 	mpf_jitter_buffer_destroy(receiver->jb);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu d:%lu i:%lu]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
 			rtp_stream->rtp_r_sockaddr->port,
 			receiver->stat.received_packets,
 			receiver->stat.lost_packets,
-			receiver->rr_stat.jitter);
+			receiver->rr_stat.jitter,
+			receiver->stat.discarded_packets,
+			receiver->stat.ignored_packets);
 	return TRUE;
 }
 
