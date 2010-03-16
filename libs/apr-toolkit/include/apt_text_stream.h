@@ -24,6 +24,10 @@
  * @brief Text Stream Parse/Generate Routine
  */ 
 
+#ifdef WIN32
+#pragma warning(disable: 4127)
+#endif
+#include <apr_ring.h>
 #include "apt_string.h"
 #include "apt_pair.h"
 
@@ -40,6 +44,10 @@ APT_BEGIN_EXTERN_C
 
 /** Text stream declaration */
 typedef struct apt_text_stream_t apt_text_stream_t;
+/** Header field declaration */
+typedef struct apt_header_field_t apt_header_field_t;
+/** Header section declaration */
+typedef struct apt_header_section_t apt_header_section_t;
 
 /** Text stream is used for message parsing and generation */
 struct apt_text_stream_t {
@@ -53,6 +61,24 @@ struct apt_text_stream_t {
 	/** Is end of stream reached */
 	apt_bool_t  is_eos;
 };
+
+/** Header field */
+struct apt_header_field_t {
+	/** Ring entry */
+	APR_RING_ENTRY(apt_header_field_t) link;
+
+	/** Named of the header field */
+	apt_str_t name;
+	/** Value of the header field */
+	apt_str_t value;
+};
+
+/** Header section */
+struct apt_text_header_t {
+	/** Ring head */
+	APR_RING_HEAD(apt_head_t, apt_header_field_t) head;
+};
+
 
 /**
  * Navigate through the lines of the text stream (message).
@@ -80,6 +106,13 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
  */
 APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field);
 
+
+/**
+ * Parse header section (colleaction of header fields).
+ * @param stream the text stream to parse
+ * @param header the header section to return
+ */
+APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_text_stream_t *stream, apt_header_section_t *header);
 
 
 /** Generate header */

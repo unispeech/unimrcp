@@ -170,6 +170,32 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 	return field->length ? TRUE : FALSE;
 }
 
+/** Parse header section (colleaction of header fields) */
+APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_text_stream_t *stream, apt_header_section_t *header)
+{
+	apt_pair_t pair;
+	apt_bool_t result = FALSE;
+
+	do {
+		if(apt_text_header_read(stream,&pair) == TRUE) {
+			if(pair.name.length) {
+				/* normal header */
+			}
+			else {
+				/* empty header -> exit */
+				result = TRUE;
+				break;
+			}
+		}
+		else {
+			/* malformed header, skip to the next one */
+		}
+	}
+	while(apt_text_is_eos(stream) == FALSE);
+
+	return result;
+}
+
 /** Scroll text stream */
 APT_DECLARE(apt_bool_t) apt_text_stream_scroll(apt_text_stream_t *stream)
 {
