@@ -248,7 +248,7 @@ static apt_bool_t mrcp_speech_length_generate(mrcp_speech_length_value_t *speech
 			*stream->pos++ = '-';
 		}
 		apt_size_value_generate(speech_length->value.numeric.length,stream);
-		*stream->pos++ = ' ';
+		*stream->pos++ = APT_TOKEN_SP;
 		apt_string_table_value_generate(speech_unit_string_table,SPEECH_UNIT_COUNT,speech_length->value.numeric.unit,stream);
 	}
 	return TRUE;
