@@ -170,16 +170,77 @@ APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char sepa
 	return field->length ? TRUE : FALSE;
 }
 
-/** Parse header section (colleaction of header fields) */
-APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_text_stream_t *stream, apt_header_section_t *header)
+/** Parse individual header field (name-value pair) */
+APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *stream, apr_pool_t *pool)
 {
+	apr_size_t folding_length = 0;
+	apr_array_header_t *folded_lines = NULL;
+	apt_header_field_t *header_field;
+	apt_str_t *line;
 	apt_pair_t pair;
+	/* read name-value pair */
+	if(apt_text_header_read(stream,&pair) == FALSE) {
+		return NULL;
+	}
+
+	/* check folding lines (value spanning multiple lines) */
+	while(stream->pos < stream->end) {
+		if(*stream->pos == APT_TOKEN_SP) {
+			stream->pos++;
+
+			/* skip further spaces */
+			while(stream->pos < stream->end && *stream->pos == APT_TOKEN_SP) stream->pos++;
+
+			if(!folded_lines) {
+				folded_lines = apr_array_make(pool,1,sizeof(apt_str_t));
+			}
+			line = apr_array_push(folded_lines);
+			apt_text_line_read(stream,line);
+			folding_length += line->length;
+		}
+		else {
+			break;
+		}
+	};
+
+	header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	/* copy parsed name of the header field */
+	header_field->name.length = pair.name.length;
+	header_field->name.buf = apr_palloc(pool, pair.name.length + 1);
+	header_field->name.buf[header_field->name.length] = '\0';
+
+	/* copy parsed value of the header field */
+	header_field->value.length = pair.value.length + folding_length;
+	header_field->value.buf = apr_palloc(pool, header_field->value.length + 1);
+	memcpy(header_field->value.buf, pair.value.buf, pair.value.length);
+	if(folding_length) {
+		int i;
+		char *pos = header_field->value.buf + pair.value.length;
+		/* copy parsed folding lines */
+		for(i=0; i<folded_lines->nelts; i++) {
+			line = &APR_ARRAY_IDX(folded_lines,i,apt_str_t);
+
+			memcpy(pos,line->buf,line->length);
+			pos += line->length;
+		}
+	}
+	header_field->value.buf[header_field->value.length] = '\0';
+	
+	return header_field;
+}
+
+/** Parse header section (collection of header fields) */
+APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_text_stream_t *stream, apt_header_section_t *header, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field;
 	apt_bool_t result = FALSE;
 
 	do {
-		if(apt_text_header_read(stream,&pair) == TRUE) {
-			if(pair.name.length) {
+		header_field = apt_header_field_parse(stream,pool);
+		if(header_field) {
+			if(apt_string_is_empty(&header_field->name) == FALSE) {
 				/* normal header */
+				APR_RING_INSERT_TAIL(&header->ring,header_field,apt_header_field_t,link);
 			}
 			else {
 				/* empty header -> exit */
