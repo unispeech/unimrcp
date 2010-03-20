@@ -36,7 +36,9 @@ APT_BEGIN_EXTERN_C
 /** Named tokens */
 
 /** Space */
-#define APT_TOKEN_SP ' '
+#define APT_TOKEN_SP 0x20
+/** Horizontal tab */
+#define APT_TOKEN_HTAB 0x09
 /** Carrige return */
 #define APT_TOKEN_CR 0x0D
 /** Line feed */
@@ -201,32 +203,48 @@ static APR_INLINE void apt_text_space_insert(apt_text_stream_t *stream)
 	*stream->pos++ = APT_TOKEN_SP;
 }
 
-/** Skip spaces */
+/** Insert space */
+static APR_INLINE void apt_text_htab_insert(apt_text_stream_t *stream)
+{
+	*stream->pos++ = APT_TOKEN_HTAB;
+}
+
+/** Check whether specified character is a white space (WSP = SP / HTAB) */
+static APR_INLINE apt_bool_t apt_text_is_wsp(char ch)
+{
+	return (ch == APT_TOKEN_SP || ch == APT_TOKEN_HTAB) ? TRUE : FALSE;
+}
+
+/** Skip sequence of spaces */
 static APR_INLINE void apt_text_spaces_skip(apt_text_stream_t *stream)
 {
-	const char *end = stream->text.buf + stream->text.length;
-	while(stream->pos < end && *stream->pos == APT_TOKEN_SP) stream->pos++;
+	while(stream->pos < stream->end && *stream->pos == APT_TOKEN_SP) 
+		stream->pos++;
+}
+
+/** Skip sequence of white spaces (WSP = SP / HTAB) */
+static APR_INLINE void apt_text_white_spaces_skip(apt_text_stream_t *stream)
+{
+	while(stream->pos < stream->end && apt_text_is_wsp(*stream->pos) == TRUE)
+		stream->pos++;
 }
 
 /** Skip specified character */
 static APR_INLINE void apt_text_char_skip(apt_text_stream_t *stream, char ch)
 {
-	const char *end = stream->text.buf + stream->text.length;
-	if(stream->pos < end && *stream->pos == ch) stream->pos++;
+	if(stream->pos < stream->end && *stream->pos == ch) stream->pos++;
 }
 
-/** Skip specified characters */
+/** Skip sequence of specified characters */
 static APR_INLINE void apt_text_chars_skip(apt_text_stream_t *stream, char ch)
 {
-	const char *end = stream->text.buf + stream->text.length;
-	while(stream->pos < end && *stream->pos == ch) stream->pos++;
+	while(stream->pos < stream->end && *stream->pos == ch) stream->pos++;
 }
 
 /** Skip to specified character */
 static APR_INLINE void apt_text_skip_to_char(apt_text_stream_t *stream, char ch)
 {
-	const char *end = stream->text.buf + stream->text.length;
-	while(stream->pos < end && *stream->pos != ch) stream->pos++;
+	while(stream->pos < stream->end && *stream->pos != ch) stream->pos++;
 }
 
 /** Check whether end of stream is reached */

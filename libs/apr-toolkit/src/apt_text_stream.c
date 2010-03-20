@@ -112,8 +112,8 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
 			break;
 		}
 		else if(!pair->name.length) {
-			/* skip initial spaces and read name */
-			if(!pair->name.buf && *pos != APT_TOKEN_SP) {
+			/* skip preceding white spaces (SHOULD NOT be any WSP, though) and read name */
+			if(!pair->name.buf && apt_text_is_wsp(*pos) == FALSE) {
 				pair->name.buf = pos;
 			}
 			if(*pos == ':') {
@@ -122,8 +122,8 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
 			}
 		}
 		else if(!pair->value.length) {
-			/* skip initial spaces and read value */
-			if(!pair->value.buf && *pos != APT_TOKEN_SP) {
+			/* skip preceding white spaces and read value */
+			if(!pair->value.buf && apt_text_is_wsp(*pos) == FALSE) {
 				pair->value.buf = pos;
 			}
 		}
@@ -185,11 +185,11 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *strea
 
 	/* check folding lines (value spanning multiple lines) */
 	while(stream->pos < stream->end) {
-		if(*stream->pos == APT_TOKEN_SP) {
+		if(apt_text_is_wsp(*stream->pos) == TRUE) {
 			stream->pos++;
 
-			/* skip further spaces */
-			while(stream->pos < stream->end && *stream->pos == APT_TOKEN_SP) stream->pos++;
+			/* skip further white spaces (if any) */
+			apt_text_white_spaces_skip(stream);
 
 			if(!folded_lines) {
 				folded_lines = apr_array_make(pool,1,sizeof(apt_str_t));
@@ -313,7 +313,7 @@ APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt
 	memcpy(pos,name->buf,name->length);
 	pos += name->length;
 	*pos++ = ':';
-	*pos++ = ' ';
+	*pos++ = APT_TOKEN_SP;
 	stream->pos = pos;
 	return TRUE;
 }
