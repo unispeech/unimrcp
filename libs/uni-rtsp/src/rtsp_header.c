@@ -18,6 +18,7 @@
 
 #include "rtsp_header.h"
 #include "apt_string_table.h"
+#include "apt_text_stream.h"
 
 /** String table of RTSP header fields (rtsp_header_field_id) */
 static const apt_str_table_item_t rtsp_header_string_table[] = {
@@ -358,23 +359,6 @@ static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t i
 		default:
 			break;
 	}
-	return TRUE;
-}
-
-/** Generate RTSP header */
-RTSP_DECLARE(apt_bool_t) rtsp_header_generate(rtsp_header_t *header, apt_text_stream_t *text_stream)
-{
-	apt_header_field_t *header_field;
-	for(header_field = APR_RING_FIRST(&header->header_section.ring);
-			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
-				header_field = APR_RING_NEXT(header_field, link)) {
-		
-		apt_text_header_name_generate(&header_field->name,text_stream);
-		apt_string_value_generate(&header_field->value,text_stream);
-		apt_text_eol_insert(text_stream);
-	}
-
-	apt_text_eol_insert(text_stream);
 	return TRUE;
 }
 

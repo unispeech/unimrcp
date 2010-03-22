@@ -199,9 +199,6 @@ static APR_INLINE void rtsp_header_init(rtsp_header_t *header, apr_pool_t *pool)
 	apt_header_section_init(&header->header_section,RTSP_HEADER_FIELD_COUNT,pool);
 }
 
-/** Generate RTSP message */
-RTSP_DECLARE(apt_bool_t) rtsp_header_generate(rtsp_header_t *header, apt_text_stream_t *text_stream);
-
 
 /** Add RTSP header field */
 RTSP_DECLARE(apt_bool_t) rtsp_header_field_add(rtsp_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool);
