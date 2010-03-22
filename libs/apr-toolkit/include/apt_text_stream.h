@@ -24,16 +24,10 @@
  * @brief Text Stream Parse/Generate Routine
  */ 
 
-#ifdef WIN32
-#pragma warning(disable: 4127)
-#endif
-#include <apr_ring.h>
 #include "apt_string.h"
 #include "apt_pair.h"
 
 APT_BEGIN_EXTERN_C
-
-/** Named tokens */
 
 /** Space */
 #define APT_TOKEN_SP 0x20
@@ -46,10 +40,6 @@ APT_BEGIN_EXTERN_C
 
 /** Text stream declaration */
 typedef struct apt_text_stream_t apt_text_stream_t;
-/** Header field declaration */
-typedef struct apt_header_field_t apt_header_field_t;
-/** Header section declaration */
-typedef struct apt_header_section_t apt_header_section_t;
 
 /** Text stream is used for message parsing and generation */
 struct apt_text_stream_t {
@@ -64,72 +54,37 @@ struct apt_text_stream_t {
 	apt_bool_t  is_eos;
 };
 
-/** Header field */
-struct apt_header_field_t {
-	/** Ring entry */
-	APR_RING_ENTRY(apt_header_field_t) link;
-
-	/** Name of the header field */
-	apt_str_t name;
-	/** Value of the header field */
-	apt_str_t value;
-};
-
-/** Header section */
-struct apt_header_section_t {
-	/** Ring head */
-	APR_RING_HEAD(apt_head_t, apt_header_field_t) ring;
-};
-
 
 /**
- * Navigate through the lines of the text stream (message).
- * @param stream the text stream to navigate
+ * Read entire line of the text stream.
+ * @param stream the text stream to navigate on
  * @param line the read line to return
  * @return TRUE if the line is successfully read, otherwise FALSE
+ * @remark To be used to navigate through the lines of the text stream (message).
  */
 APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t *line);
 
 /**
- * Navigate through the headers (name:value pairs) of the text stream (message).
+ * Read header field (name-value pair) of the text stream by scanning entire line.
  * @param stream the text stream to navigate
  * @param pair the read pair to return
  * @return TRUE if the header is successfully read, otherwise FALSE
+ * @remark To be used to navigate through the lines and read header fields 
+ * (name:value pairs) of the text stream (message).
  */
 APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair_t *pair);
 
 /**
- * Navigate through the fields of the line.
+ * Read the field terminated with specified separator.
  * @param stream the text stream to navigate
  * @param separator the field separator
  * @param skip_spaces whether to skip spaces or not
  * @param field the read field to return
- * @return TRUE if the length of the field > 0, otherwise FALSE
+ * @return TRUE if the read field isn't empty, otherwise FALSE
+ * @remark To be used to navigate through the fields of the text stream (message).
  */
 APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field);
 
-/**
- * Parse individual header field (name-value pair).
- * @param stream the text stream to navigate on
- * @param pool the pool to allocate memory from
- * @return parsed header field on success, otherwise NULL
- */
-APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *stream, apr_pool_t *pool);
-
-/**
- * Parse header section (collection of header fields).
- * @param stream the text stream to navigate on
- * @param header the header section to return
- * @param pool the pool to allocate memory from
- */
-APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_text_stream_t *stream, apt_header_section_t *header, apr_pool_t *pool);
-
-
-
-
-
-/** Generate header */
-APT_DECLARE(apt_bool_t) apt_text_header_generate(const apt_pair_t *pair, apt_text_stream_t *text_stream);
 
 /** Generate only the name ("name:") of the header */
 APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt_text_stream_t *text_stream);
@@ -151,6 +106,9 @@ APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str);
 
 /** Generate apr_size_t value */
 APT_DECLARE(apt_bool_t) apt_size_value_generate(apr_size_t value, apt_text_stream_t *stream);
+
+/** Generate apr_size_t value from pool (buffer is allocated from pool) */
+APT_DECLARE(apt_bool_t) apt_size_value_pgenerate(apr_size_t value, apt_str_t *str, apr_pool_t *pool);
 
 /** Parse float value */
 APT_DECLARE(float) apt_float_value_parse(const apt_str_t *str);
