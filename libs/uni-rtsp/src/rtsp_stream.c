@@ -66,7 +66,7 @@ RTSP_DECLARE(rtsp_parser_t*) rtsp_parser_create(apr_pool_t *pool)
 /** Parse RTSP stream */
 RTSP_DECLARE(apt_message_status_e) rtsp_parser_run(rtsp_parser_t *parser, apt_text_stream_t *stream, rtsp_message_t **message)
 {
-	return apt_message_parser_run(parser->base,stream,message);
+	return apt_message_parser_run(parser->base,stream,(void**)message);
 }
 
 /** Start line handler */
