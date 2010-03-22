@@ -194,9 +194,9 @@ static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrc
 	apt_bool_t status = TRUE;
 
 	if(session && resource_name &&
-		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+		rtsp_header_property_check(&message->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 		message->header.content_type == RTSP_CONTENT_TYPE_MRCP &&
-		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		rtsp_header_property_check(&message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 		message->header.content_length > 0) {
 
 		apt_text_stream_t text_stream;
@@ -377,9 +377,9 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 	body->buf[body->length] = '\0';
 
 	rtsp_message->header.content_type = RTSP_CONTENT_TYPE_MRCP;
-	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+	rtsp_header_property_add(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_TYPE,rtsp_message->pool);
 	rtsp_message->header.content_length = body->length;
-	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+	rtsp_header_property_add(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH,rtsp_message->pool);
 
 	rtsp_server_session_respond(agent->rtsp_server,session->rtsp_session,rtsp_message);
 	return TRUE;

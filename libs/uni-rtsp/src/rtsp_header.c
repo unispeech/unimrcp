@@ -199,13 +199,12 @@ static apt_bool_t rtsp_transport_protocol_parse(rtsp_transport_t *transport, con
 }
 
 /** Parse RTSP transport */
-static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_str_t *line, apr_pool_t *pool)
+static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_str_t field;
 	apt_text_stream_t stream;
 
-	stream.text = *line;
-	apt_text_stream_reset(&stream);
+	apt_text_stream_init(&stream,value->buf,value->length);
 	/* read transport protocol (RTP/AVP[/UDP]) */
 	if(apt_text_field_read(&stream,';',TRUE,&field) == FALSE) {
 		return FALSE;
@@ -225,16 +224,20 @@ static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_st
 }
 
 /** Generate RTSP transport */
-static apt_bool_t rtsp_transport_generate(rtsp_transport_t *transport, apt_text_stream_t *text_stream)
+static apt_bool_t rtsp_transport_generate(rtsp_transport_t *transport, apt_str_t *value, apr_pool_t *pool)
 {
+	char buf[256];
+	apt_text_stream_t text_stream;
 	const apt_str_t *protocol = apt_string_table_str_get(rtsp_transport_string_table,RTSP_TRANSPORT_COUNT,transport->protocol);
 	const apt_str_t *profile = apt_string_table_str_get(rtsp_profile_string_table,RTSP_PROFILE_COUNT,transport->profile);
 	if(!protocol || !profile) {
 		return FALSE;
 	}
-	apt_string_value_generate(protocol,text_stream);
-	apt_text_char_insert(text_stream,'/');
-	apt_string_value_generate(profile,text_stream);
+
+	apt_text_stream_init(&text_stream,buf,sizeof(buf));
+	apt_string_value_generate(protocol,&text_stream);
+	apt_text_char_insert(&text_stream,'/');
+	apt_string_value_generate(profile,&text_stream);
 
 	if(transport->delivery != RTSP_DELIVERY_NONE) {
 		const apt_str_t *delivery = NULL;
@@ -250,29 +253,33 @@ static apt_bool_t rtsp_transport_generate(rtsp_transport_t *transport, apt_text_
 			return FALSE;
 		}
 	
-		apt_text_char_insert(text_stream,';');
-		apt_string_value_generate(delivery,text_stream);
+		apt_text_char_insert(&text_stream,';');
+		apt_string_value_generate(delivery,&text_stream);
 	}
 
 	if(rtsp_port_range_is_valid(&transport->client_port_range) == TRUE) {
-		apt_text_char_insert(text_stream,';');
-		rtsp_port_range_generate(RTSP_TRANSPORT_ATTRIB_CLIENT_PORT,&transport->client_port_range,text_stream);
+		apt_text_char_insert(&text_stream,';');
+		rtsp_port_range_generate(RTSP_TRANSPORT_ATTRIB_CLIENT_PORT,&transport->client_port_range,&text_stream);
 	}
 	if(rtsp_port_range_is_valid(&transport->server_port_range) == TRUE) {
-		apt_text_char_insert(text_stream,';');
-		rtsp_port_range_generate(RTSP_TRANSPORT_ATTRIB_SERVER_PORT,&transport->server_port_range,text_stream);
+		apt_text_char_insert(&text_stream,';');
+		rtsp_port_range_generate(RTSP_TRANSPORT_ATTRIB_SERVER_PORT,&transport->server_port_range,&text_stream);
 	}
 
 	if(transport->mode.length) {
 		const apt_str_t *str;
 		str = apt_string_table_str_get(rtsp_transport_attrib_string_table,RTSP_TRANSPORT_ATTRIB_COUNT,RTSP_TRANSPORT_ATTRIB_MODE);
 		if(str) {
-			apt_text_char_insert(text_stream,';');
-			apt_string_value_generate(str,text_stream);
-			apt_text_char_insert(text_stream,'=');
-			apt_string_value_generate(&transport->mode,text_stream);
+			apt_text_char_insert(&text_stream,';');
+			apt_string_value_generate(str,&text_stream);
+			apt_text_char_insert(&text_stream,'=');
+			apt_string_value_generate(&transport->mode,&text_stream);
 		}
 	}
+	value->length = text_stream.pos - text_stream.text.buf;
+	value->buf = apr_palloc(pool,value->length + 1);
+	memcpy(value->buf,text_stream.text.buf,value->length);
+	value->buf[value->length] = '\0';
 	return TRUE;
 }
 
@@ -307,7 +314,7 @@ static apt_bool_t rtsp_header_field_parse(rtsp_header_t *header, rtsp_header_fie
 			status = rtsp_session_id_parse(&header->session_id,value,pool);
 			break;
 		case RTSP_HEADER_FIELD_RTP_INFO:
-			apt_string_copy(&header->rtp_info,value,pool);
+			header->rtp_info = *value;
 			break;
 		case RTSP_HEADER_FIELD_CONTENT_TYPE:
 			header->content_type = apt_string_table_id_find(rtsp_content_type_string_table,RTSP_CONTENT_TYPE_COUNT,value);
@@ -322,31 +329,31 @@ static apt_bool_t rtsp_header_field_parse(rtsp_header_t *header, rtsp_header_fie
 }
 
 /** Generate RTSP header field */
-static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t id, apt_text_stream_t *value)
+static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	switch(id) {
 		case RTSP_HEADER_FIELD_CSEQ:
-			apt_size_value_generate(header->cseq,value);
+			apt_size_value_pgenerate(header->cseq,value,pool);
 			break;
 		case RTSP_HEADER_FIELD_TRANSPORT:
-			rtsp_transport_generate(&header->transport,value);
+			rtsp_transport_generate(&header->transport,value,pool);
 			break;
 		case RTSP_HEADER_FIELD_SESSION_ID:
-			apt_string_value_generate(&header->session_id,value);
+			*value = header->session_id;
 			break;
 		case RTSP_HEADER_FIELD_RTP_INFO:
-			apt_string_value_generate(&header->rtp_info,value);
+			*value = header->rtp_info;
 			break;
 		case RTSP_HEADER_FIELD_CONTENT_TYPE:
 		{
 			const apt_str_t *name = apt_string_table_str_get(rtsp_content_type_string_table,RTSP_CONTENT_TYPE_COUNT,header->content_type);
 			if(name) {
-				apt_string_value_generate(name,value);
+				*value = *name;
 			}
 			break;
 		}
 		case RTSP_HEADER_FIELD_CONTENT_LENGTH:
-			apt_size_value_generate(header->content_length,value);
+			apt_size_value_pgenerate(header->content_length,value,pool);
 			break;
 		default:
 			break;
@@ -354,58 +361,45 @@ static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t i
 	return TRUE;
 }
 
-/** Parse RTSP header */
-RTSP_DECLARE(apt_bool_t) rtsp_header_parse(rtsp_header_t *header, apt_text_stream_t *text_stream, apr_pool_t *pool)
-{
-	apt_pair_t pair;
-	apt_bool_t result = FALSE;
-
-	do {
-		if(apt_text_header_read(text_stream,&pair) == TRUE) {
-			if(pair.name.length) {
-				/* parse header_field (name/value) */
-				rtsp_header_field_id id = apt_string_table_id_find(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,&pair.name);
-				if(id < RTSP_HEADER_FIELD_COUNT) {
-					if(rtsp_header_field_parse(header,id,&pair.value,pool) == TRUE) {
-						rtsp_header_property_add(&header->property_set,id);
-					}
-				}
-			}
-			else {
-				/* empty header -> exit */
-				result = TRUE;
-				break;
-			}
-		}
-	}
-	while(apt_text_is_eos(text_stream) == FALSE);
-
-	return result;
-}
-
 /** Generate RTSP header */
 RTSP_DECLARE(apt_bool_t) rtsp_header_generate(rtsp_header_t *header, apt_text_stream_t *text_stream)
 {
-	const apt_str_t *name;
-	apr_size_t i;
-	rtsp_header_property_t property_set;
-
-	property_set = header->property_set;
-	for(i=0; i<RTSP_HEADER_FIELD_COUNT && property_set != 0; i++) {
-		if(rtsp_header_property_check(&property_set,i) == TRUE) {
-			name = apt_string_table_str_get(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,i);
-			if(!name) {
-				continue;
-			}
-			
-			apt_text_header_name_generate(name,text_stream);
-			rtsp_header_field_generate(header,i,text_stream);
-			apt_text_eol_insert(text_stream);
-			
-			rtsp_header_property_remove(&property_set,i);
-		}
+	apt_header_field_t *header_field;
+	for(header_field = APR_RING_FIRST(&header->header_section.ring);
+			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
+				header_field = APR_RING_NEXT(header_field, link)) {
+		
+		apt_text_header_name_generate(&header_field->name,text_stream);
+		apt_string_value_generate(&header_field->value,text_stream);
+		apt_text_eol_insert(text_stream);
 	}
 
 	apt_text_eol_insert(text_stream);
 	return TRUE;
+}
+
+/** Add RTSP header field */
+RTSP_DECLARE(apt_bool_t) rtsp_header_field_add(rtsp_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool)
+{
+	/* parse header field (name-value) */
+	rtsp_header_field_id id = apt_string_table_id_find(
+								rtsp_header_string_table,
+								RTSP_HEADER_FIELD_COUNT,
+								&header_field->name);
+	rtsp_header_field_parse(header,id,&header_field->value,pool);
+
+	return apt_header_section_field_add(&header->header_section,header_field,id);
+}
+
+/** Add property to property set */
+RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, apr_size_t id, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	if(rtsp_header_field_generate(header,id,&header_field->value,pool) == TRUE) {
+		const apt_str_t *name = apt_string_table_str_get(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,id);
+		if(name) {
+			header_field->name = *name;
+		}
+		apt_header_section_field_add(&header->header_section,header_field,id);
+	}
 }

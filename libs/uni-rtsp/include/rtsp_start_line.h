@@ -168,7 +168,7 @@ static APR_INLINE void rtsp_start_line_init(rtsp_start_line_t *start_line, rtsp_
 }
 
 /** Parse RTSP start-line */
-RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_text_stream_t *text_stream, apr_pool_t *pool);
+RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_str_t *str, apr_pool_t *pool);
 
 /** Generate RTSP start-line */
 RTSP_DECLARE(apt_bool_t) rtsp_start_line_generate(rtsp_start_line_t *start_line, apt_text_stream_t *text_stream);

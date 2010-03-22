@@ -192,8 +192,8 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 	}
 	
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
-		if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
-			rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		if(rtsp_header_property_check(&request->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+			rtsp_header_property_check(&request->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 			request->body.buf) {
 			
 			sdp_parser_t *parser;
@@ -218,7 +218,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			mpf_rtp_media_descriptor_init(media);
 			media->state = MPF_MEDIA_ENABLED;
 			media->id = mrcp_session_audio_media_add(descriptor,media);
-			if(rtsp_header_property_check(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
+			if(rtsp_header_property_check(&request->header,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {
 				media->port = request->header.transport.client_port_range.min;
 				media->ip = request->header.transport.destination;
 			}
@@ -255,8 +255,8 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 	}
 	
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
-		if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
-			rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		if(rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+			rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 			response->body.buf) {
 			
 			sdp_parser_t *parser;
@@ -350,14 +350,14 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_request_generate_by_mrcp_descriptor(const mrc
 	request->header.transport.protocol = RTSP_TRANSPORT_RTP;
 	request->header.transport.profile = RTSP_PROFILE_AVP;
 	request->header.transport.delivery = RTSP_DELIVERY_UNICAST;
-	rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+	rtsp_header_property_add(&request->header,RTSP_HEADER_FIELD_TRANSPORT,request->pool);
 
 	if(offset) {
 		apt_string_assign_n(&request->body,buffer,offset,pool);
 		request->header.content_type = RTSP_CONTENT_TYPE_SDP;
-		rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+		rtsp_header_property_add(&request->header,RTSP_HEADER_FIELD_CONTENT_TYPE,request->pool);
 		request->header.content_length = offset;
-		rtsp_header_property_add(&request->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+		rtsp_header_property_add(&request->header,RTSP_HEADER_FIELD_CONTENT_LENGTH,request->pool);
 	}
 	return request;
 }
@@ -436,14 +436,14 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_response_generate_by_mrcp_descriptor(const rt
 		response->header.transport.protocol = RTSP_TRANSPORT_RTP;
 		response->header.transport.profile = RTSP_PROFILE_AVP;
 		response->header.transport.delivery = RTSP_DELIVERY_UNICAST;
-		rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_TRANSPORT);
+		rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_TRANSPORT,response->pool);
 
 		if(offset) {
 			apt_string_assign_n(&response->body,buffer,offset,pool);
 			response->header.content_type = RTSP_CONTENT_TYPE_SDP;
-			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+			rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_CONTENT_TYPE,response->pool);
 			response->header.content_length = offset;
-			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+			rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_CONTENT_LENGTH,response->pool);
 		}
 	}
 	return response;
@@ -483,8 +483,8 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_genera
 	descriptor = mrcp_session_descriptor_create(pool);
 	apt_string_assign(&descriptor->resource_name,resource_name,pool);
 	
-	if(rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
-		rtsp_header_property_check(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+	if(rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+		rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 		response->body.buf) {
 			
 		sdp_parser_t *parser;
@@ -548,9 +548,9 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
 		if(offset) {
 			apt_string_assign_n(&response->body,buffer,offset,pool);
 			response->header.content_type = RTSP_CONTENT_TYPE_SDP;
-			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+			rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_CONTENT_TYPE,response->pool);
 			response->header.content_length = offset;
-			rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+			rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_CONTENT_LENGTH,response->pool);
 		}
 	}
 

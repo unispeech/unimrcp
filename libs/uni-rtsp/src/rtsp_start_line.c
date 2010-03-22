@@ -152,16 +152,12 @@ static apt_bool_t rtsp_status_line_generate(rtsp_status_line_t *start_line, apt_
 }
 
 /** Parse RTSP start-line */
-RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_text_stream_t *stream, apr_pool_t *pool)
+RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_str_t *str, apr_pool_t *pool)
 {
 	apt_text_stream_t line;
 	apt_str_t field;
-	if(apt_text_line_read(stream,&line.text) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse RTSP start-line");
-		return FALSE;
-	}
 
-	apt_text_stream_reset(&line);
+	apt_text_stream_init(&line,str->buf,str->length);
 	if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot read the first field in start-line");
 		return FALSE;
