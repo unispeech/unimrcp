@@ -254,6 +254,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_header_field.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_log.h"
 				>
 			</File>
@@ -310,6 +314,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\apt_text_message.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\apt_text_stream.h"
 				>
 			</File>
@@ -332,6 +340,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_dir_layout.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_header_field.c"
 				>
 			</File>
 			<File
@@ -384,6 +396,10 @@
 			</File>
 			<File
 				RelativePath=".\src\apt_test_suite.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\apt_text_message.c"
 				>
 			</File>
 			<File
