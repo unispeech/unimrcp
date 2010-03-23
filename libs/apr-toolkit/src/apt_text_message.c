@@ -120,7 +120,9 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *strea
 APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *header_field, apt_text_stream_t *stream)
 {
 	apt_text_header_name_generate(&header_field->name,stream);
-	apt_string_value_generate(&header_field->value,stream);
+	if(apt_string_is_empty(&header_field->value) == FALSE) {
+		apt_string_value_generate(&header_field->value,stream);
+	}
 	apt_text_eol_insert(stream);
 	return TRUE;
 }
