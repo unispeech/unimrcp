@@ -54,6 +54,9 @@ APT_DECLARE(apt_message_parser_t*) apt_message_parser_create(void *obj, const ap
 /** Parse message by raising corresponding event handlers */
 APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *parser, apt_text_stream_t *stream, void **message);
 
+/** Get external object associated with parser */
+APT_DECLARE(void*) apt_message_parser_object_get(apt_message_parser_t *parser);
+
 
 /** Create message generator */
 APT_DECLARE(apt_message_generator_t*) apt_message_generator_create(void *obj, const apt_message_generator_vtable_t *vtable, apr_pool_t *pool);
@@ -61,25 +64,33 @@ APT_DECLARE(apt_message_generator_t*) apt_message_generator_create(void *obj, co
 /** Generate message */
 APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream);
 
+/** Get external object associated with generator */
+APT_DECLARE(void*) apt_message_generator_object_get(apt_message_generator_t *generator);
+
+
+/** Parse individual header field (name-value pair) */
+APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *stream, apr_pool_t *pool);
+/** Generate individual header field (name-value pair) */
+APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *header_field, apt_text_stream_t *stream);
 
 /** Vtable of text message parser */
 struct apt_message_parser_vtable_t {
 	/** Start line handler */
-	void* (*on_start_line)(apt_str_t *start_line, apr_pool_t *pool);
+	void* (*on_start_line)(apt_message_parser_t *parser, apt_str_t *start_line, apr_pool_t *pool);
 	/** Header field handler */
-	apt_bool_t (*on_header_field)(void *message, apt_header_field_t *header_field);
+	apt_bool_t (*on_header_field)(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field);
 	/** Header separator handler */
-	apt_bool_t (*on_header_separator)(void *message, apr_size_t *content_length);
+	apt_bool_t (*on_header_separator)(apt_message_parser_t *parser, void *message, apr_size_t *content_length);
 	/** Body handler */
-	apt_bool_t (*on_body)(void *message, apt_str_t *body);
+	apt_bool_t (*on_body)(apt_message_parser_t *parser, void *message, apt_str_t *body);
 };
 
 /** Vtable of text message generator */
 struct apt_message_generator_vtable_t {
 	/** Initialize by generating message start line and return header section and body */
-	apt_bool_t (*initialize)(void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body);
+	apt_bool_t (*initialize)(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body);
 	/** Finalize message start-line and header generation */
-	apt_bool_t (*finalize)(void *message, apt_text_stream_t *stream);
+	apt_bool_t (*finalize)(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream);
 };
 
 

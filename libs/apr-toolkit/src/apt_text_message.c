@@ -53,7 +53,7 @@ struct apt_message_generator_t {
 };
 
 /** Parse individual header field (name-value pair) */
-static apt_header_field_t* apt_header_field_parse(apt_text_stream_t *stream, apr_pool_t *pool)
+APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	apr_size_t folding_length = 0;
 	apr_array_header_t *folded_lines = NULL;
@@ -116,6 +116,15 @@ static apt_header_field_t* apt_header_field_parse(apt_text_stream_t *stream, apr
 	return header_field;
 }
 
+/** Generate individual header field (name-value pair) */
+APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *header_field, apt_text_stream_t *stream)
+{
+	apt_text_header_name_generate(&header_field->name,stream);
+	apt_string_value_generate(&header_field->value,stream);
+	apt_text_eol_insert(stream);
+	return TRUE;
+}
+
 static apt_bool_t apt_header_section_parse(apt_message_parser_t *parser, apt_text_stream_t *stream)
 {
 	apt_header_field_t *header_field;
@@ -126,12 +135,12 @@ static apt_bool_t apt_header_section_parse(apt_message_parser_t *parser, apt_tex
 		if(header_field) {
 			if(apt_string_is_empty(&header_field->name) == FALSE) {
 				/* normal header */
-				parser->vtable->on_header_field(parser->message,header_field);
+				parser->vtable->on_header_field(parser,parser->message,header_field);
 			}
 			else {
 				/* empty header => exit */
 				parser->content_length = 0;
-				parser->vtable->on_header_separator(parser->message,&parser->content_length);
+				parser->vtable->on_header_separator(parser,parser->message,&parser->content_length);
 				result = TRUE;
 				break;
 			}
@@ -151,10 +160,7 @@ static apt_bool_t apt_header_section_generate(apt_header_section_t *header, apt_
 	for(header_field = APR_RING_FIRST(&header->ring);
 			header_field != APR_RING_SENTINEL(&header->ring, apt_header_field_t, link);
 				header_field = APR_RING_NEXT(header_field, link)) {
-		
-		apt_text_header_name_generate(&header_field->name,stream);
-		apt_string_value_generate(&header_field->value,stream);
-		apt_text_eol_insert(stream);
+		apt_header_field_generate(header_field,stream);
 	}
 
 	apt_text_eol_insert(stream);
@@ -239,7 +245,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 				status = APT_MESSAGE_STATUS_INVALID;
 				break;
 			}
-			parser->message = parser->vtable->on_start_line(&start_line,parser->pool);
+			parser->message = parser->vtable->on_start_line(parser,&start_line,parser->pool);
 			if(!parser->message) {
 				status = APT_MESSAGE_STATUS_INVALID;
 				break;
@@ -282,7 +288,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 				break;
 			}
 			
-			parser->vtable->on_body(parser->message,&parser->body);
+			parser->vtable->on_body(parser,parser->message,&parser->body);
 			status = APT_MESSAGE_STATUS_COMPLETE;
 			if(message) {
 				*message = parser->message;
@@ -293,6 +299,12 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 	while(apt_text_is_eos(stream) == FALSE);
 
 	return status;
+}
+
+/** Get external object associated with parser */
+APT_DECLARE(void*) apt_message_parser_object_get(apt_message_parser_t *parser)
+{
+	return parser->obj;
 }
 
 
@@ -337,7 +349,7 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 
 	if(generator->stage == APT_MESSAGE_STAGE_START_LINE) {
 		/* generate start-line */
-		if(generator->vtable->initialize(message,stream,&generator->header,&generator->body) == FALSE) {
+		if(generator->vtable->initialize(generator,message,stream,&generator->header,&generator->body) == FALSE) {
 			return apt_message_generator_break(generator,stream);
 		}
 
@@ -351,7 +363,7 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 		}
 
 		if(generator->vtable->finalize) {
-			generator->vtable->finalize(message,stream);
+			generator->vtable->finalize(generator,message,stream);
 		}
 
 		generator->stage = APT_MESSAGE_STAGE_START_LINE;
@@ -371,4 +383,10 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 	}
 
 	return APT_MESSAGE_STATUS_COMPLETE;
+}
+
+/** Get external object associated with generator */
+APT_DECLARE(void*) apt_message_generator_object_get(apt_message_generator_t *generator)
+{
+	return generator->obj;
 }
