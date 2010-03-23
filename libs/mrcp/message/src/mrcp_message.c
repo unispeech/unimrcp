@@ -19,6 +19,7 @@
 #include "mrcp_message.h"
 #include "mrcp_generic_header.h"
 #include "mrcp_resource.h"
+#include "apt_text_message.h"
 #include "apt_log.h"
 
 #define MRCP_CHANNEL_ID         "Channel-Identifier"
@@ -84,30 +85,36 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 /** Parse MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool)
 {
-	apt_pair_t pair;
+	apt_header_field_t *header_field;
+	apr_size_t id;
 	apt_bool_t result = FALSE;
 
 	mrcp_header_allocate(&message_header->generic_header_accessor,pool);
 	mrcp_header_allocate(&message_header->resource_header_accessor,pool);
 
 	do {
-		if(apt_text_header_read(text_stream,&pair) == TRUE) {
-			if(pair.name.length) {
+		header_field = apt_header_field_parse(text_stream,pool);
+		if(header_field) {
+			if(apt_string_is_empty(&header_field->name) == FALSE) {
 				/* normal header */
-				if(mrcp_header_parse(&message_header->resource_header_accessor,&pair,pool) != TRUE) {
-					if(mrcp_header_parse(&message_header->generic_header_accessor,&pair,pool) != TRUE) {
-						/* unknown MRCP header */
-					}
+				if(mrcp_header_field_parse(&message_header->resource_header_accessor,header_field,&id,pool) == TRUE) {
+					apt_header_section_field_add(&message_header->header_section,header_field,id + GENERIC_HEADER_COUNT);
+				}
+				else if(mrcp_header_field_parse(&message_header->generic_header_accessor,header_field,&id,pool) == TRUE) {
+					apt_header_section_field_add(&message_header->header_section,header_field,id);
+				}
+				else { 
+					/* unknown MRCP header */
 				}
 			}
 			else {
-				/* empty header -> exit */
+				/* empty header => exit */
 				result = TRUE;
 				break;
 			}
 		}
 		else {
-			/* malformed header, skip to the next one */
+			/* malformed header => skip to the next one */
 		}
 	}
 	while(apt_text_is_eos(text_stream) == FALSE);
@@ -118,8 +125,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *messag
 /** Generate MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_generate(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream)
 {
-	mrcp_header_generate(&message_header->resource_header_accessor,text_stream);
-	mrcp_header_generate(&message_header->generic_header_accessor,text_stream);
+	apt_header_field_t *header_field;
+	for(header_field = APR_RING_FIRST(&message_header->header_section.ring);
+			header_field != APR_RING_SENTINEL(&message_header->header_section.ring, apt_header_field_t, link);
+				header_field = APR_RING_NEXT(header_field, link)) {
+		
+		apt_header_field_generate(header_field,text_stream);
+	}
+
 	apt_text_eol_insert(text_stream);
 	return TRUE;
 }
@@ -127,38 +140,21 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_generate(mrcp_message_header_t *mes
 /** Set MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *message_header, const mrcp_message_header_t *src, apr_pool_t *pool)
 {
-	mrcp_header_set(
-		&message_header->resource_header_accessor,
-		&src->resource_header_accessor,
-		&src->resource_header_accessor,pool);
-	mrcp_header_set(
-		&message_header->generic_header_accessor,
-		&src->generic_header_accessor,
-		&src->generic_header_accessor,pool);
+	/* TBD */
 	return TRUE;
 }
 
 /** Get MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *message_header, const mrcp_message_header_t *src, apr_pool_t *pool)
 {
-	mrcp_header_set(
-		&message_header->resource_header_accessor,
-		&src->resource_header_accessor,
-		&message_header->resource_header_accessor,
-		pool);
-	mrcp_header_set(
-		&message_header->generic_header_accessor,
-		&src->generic_header_accessor,
-		&message_header->generic_header_accessor,
-		pool);
+	/* TBD */
 	return TRUE;
 }
 
 /** Inherit MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *message_header, const mrcp_message_header_t *parent, apr_pool_t *pool)
 {
-	mrcp_header_inherit(&message_header->resource_header_accessor,&parent->resource_header_accessor,pool);
-	mrcp_header_inherit(&message_header->generic_header_accessor,&parent->generic_header_accessor,pool);
+	/* TBD */
 	return TRUE;
 }
 
@@ -203,11 +199,20 @@ static void mrcp_message_init(mrcp_message_t *message, apr_pool_t *pool)
 	message->pool = pool;
 }
 
-/** Set header accessor interface */
-static APR_INLINE void mrcp_generic_header_accessor_set(mrcp_message_t *message)
+/** Set resource specific data in MRCP message-header */
+static void mrcp_message_header_resource_init(mrcp_message_t *message)
 {
-	message->header.generic_header_accessor.vtable = mrcp_generic_header_vtable_get(message->start_line.version);
+	mrcp_message_header_t *header = &message->header;
+	header->generic_header_accessor.vtable = mrcp_generic_header_vtable_get(message->start_line.version);
+	header->resource_header_accessor.vtable = message->resource->get_resource_header_vtable(message->start_line.version);
+
+	apt_header_section_init(
+		&header->header_section,
+		header->generic_header_accessor.vtable->field_count +
+		header->resource_header_accessor.vtable->field_count,
+		message->pool);
 }
+
 
 /** Associate MRCP resource specific data by resource identifier */
 MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set_by_id(mrcp_message_t *message, mrcp_resource_t *resource)
@@ -216,12 +221,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set_by_id(mrcp_message_t *message
 		return FALSE;
 	}
 	message->resource = resource;
-	
 	message->channel_id.resource_name = resource->name;
-
-	mrcp_generic_header_accessor_set(message);
-	message->header.resource_header_accessor.vtable = 
-		resource->get_resource_header_vtable(message->start_line.version);
+	mrcp_message_header_resource_init(message);
 
 	/* associate method_name and method_id */
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {
@@ -255,10 +256,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, mrcp
 		return FALSE;
 	}
 	message->resource = resource;
-
-	mrcp_generic_header_accessor_set(message);
-	message->header.resource_header_accessor.vtable = 
-		resource->get_resource_header_vtable(message->start_line.version);
+	mrcp_message_header_resource_init(message);
 	
 	/* associate method_name and method_id */
 	if(message->start_line.message_type == MRCP_MESSAGE_TYPE_REQUEST) {

@@ -383,7 +383,7 @@ RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, apr_size_t id
 		const apt_str_t *name = apt_string_table_str_get(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,id);
 		if(name) {
 			header_field->name = *name;
+			apt_header_section_field_add(&header->header_section,header_field,id);
 		}
-		apt_header_section_field_add(&header->header_section,header_field,id);
 	}
 }
