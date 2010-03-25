@@ -515,7 +515,6 @@ static apt_bool_t recog_state_deactivate(mrcp_state_machine_t *base)
 /** Create MRCP recognizer state machine */
 mrcp_state_machine_t* mrcp_recog_state_machine_create(void *obj, mrcp_version_e version, apr_pool_t *pool)
 {
-	mrcp_message_header_t *properties;
 	mrcp_recog_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_recog_state_machine_t));
 	mrcp_state_machine_init(&state_machine->base,obj);
 	state_machine->base.update = recog_state_update;
@@ -525,9 +524,10 @@ mrcp_state_machine_t* mrcp_recog_state_machine_create(void *obj, mrcp_version_e 
 	state_machine->active_request = NULL;
 	state_machine->recog = NULL;
 	state_machine->queue = apt_list_create(pool);
-	properties = &state_machine->properties;
-	mrcp_message_header_init(properties);
-	properties->generic_header_accessor.vtable = mrcp_generic_header_vtable_get(version);
-	properties->resource_header_accessor.vtable = mrcp_recog_header_vtable_get(version);
+	mrcp_message_header_allocate(
+		&state_machine->properties,
+		mrcp_generic_header_vtable_get(version),
+		mrcp_recog_header_vtable_get(version),
+		pool);
 	return &state_machine->base;
 }

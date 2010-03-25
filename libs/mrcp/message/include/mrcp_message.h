@@ -79,6 +79,13 @@ static APR_INLINE void mrcp_message_header_destroy(mrcp_message_header_t *messag
 	mrcp_header_destroy(&message_header->resource_header_accessor);
 }
 
+/** Allocate MRCP message-header */
+MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
+						mrcp_message_header_t *header,
+						const mrcp_header_vtable_t *generic_header_vtable,
+						const mrcp_header_vtable_t *resource_header_vtable,
+						apr_pool_t *pool);
+
 
 /** Parse MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool);
@@ -134,10 +141,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message);
 MRCP_DECLARE(void) mrcp_message_destroy(mrcp_message_t *message);
 
 
-/** Parse MRCP message-body */
-MRCP_DECLARE(apt_bool_t) mrcp_body_parse(mrcp_message_t *message, apt_text_stream_t *text_stream, apr_pool_t *pool);
-/** Generate MRCP message-body */
-MRCP_DECLARE(apt_bool_t) mrcp_body_generate(mrcp_message_t *message, apt_text_stream_t *text_stream);
 
 /** Get MRCP generic-header */
 static APR_INLINE void* mrcp_generic_header_get(mrcp_message_t *mrcp_message)
@@ -160,7 +163,8 @@ static APR_INLINE void mrcp_generic_header_property_add(mrcp_message_t *mrcp_mes
 										FALSE,
 										mrcp_message->pool);
 	if(header_field) {
-		apt_header_section_field_add(&mrcp_message->header.header_section,header_field,id);
+		header_field->id = id;
+		apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
 	}
 }
 
@@ -173,7 +177,8 @@ static APR_INLINE void mrcp_generic_header_name_property_add(mrcp_message_t *mrc
 										TRUE,
 										mrcp_message->pool);
 	if(header_field) {
-		apt_header_section_field_add(&mrcp_message->header.header_section,header_field,id);
+		header_field->id = id;
+		apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
 	}
 }
 
@@ -205,7 +210,8 @@ static APR_INLINE void mrcp_resource_header_property_add(mrcp_message_t *mrcp_me
 										FALSE,
 										mrcp_message->pool);
 	if(header_field) {
-		apt_header_section_field_add(&mrcp_message->header.header_section,header_field,id + GENERIC_HEADER_COUNT);
+		header_field->id = id + GENERIC_HEADER_COUNT;
+		apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
 	}
 }
 
@@ -218,7 +224,8 @@ static APR_INLINE void mrcp_resource_header_name_property_add(mrcp_message_t *mr
 										TRUE,
 										mrcp_message->pool);
 	if(header_field) {
-		apt_header_section_field_add(&mrcp_message->header.header_section,header_field,id + GENERIC_HEADER_COUNT);
+		header_field->id = id + GENERIC_HEADER_COUNT;
+		apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
 	}
 }
 
