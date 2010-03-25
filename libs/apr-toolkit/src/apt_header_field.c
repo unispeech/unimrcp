@@ -18,6 +18,28 @@
 
 #include "apt_header_field.h"
 
+/** Allocate an empty header field */
+APT_DECLARE(apt_header_field_t*) apt_header_field_alloc(apr_pool_t *pool)
+{
+	apt_header_field_t *header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	apt_string_reset(&header_field->name);
+	apt_string_reset(&header_field->value);
+	header_field->id = 0;
+	APR_RING_ELEM_INIT(header_field,link);
+	return header_field;
+}
+
+/** Copy specified header field */
+APT_DECLARE(apt_header_field_t*) apt_header_field_copy(const apt_header_field_t *src_header_field, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	apt_string_copy(&header_field->name,&src_header_field->name,pool);
+	apt_string_copy(&header_field->value,&src_header_field->value,pool);
+	header_field->id = src_header_field->id;
+	APR_RING_ELEM_INIT(header_field,link);
+	return header_field;
+}
+
 /** Initialize header section (collection of header fields) */
 APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, int max_field_count, apr_pool_t *pool)
 {
@@ -27,15 +49,15 @@ APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, int max_
 }
 
 /** Add header field to header section */
-APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *header, apt_header_field_t *header_field, int id)
+APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *header, apt_header_field_t *header_field)
 {
-	if(id >= header->arr_size) {
+	if(header_field->id >= header->arr_size) {
 		return FALSE;
 	}
-	if(header->arr[id]) {
+	if(header->arr[header_field->id]) {
 		return FALSE;
 	}
-	header->arr[id] = header_field;
+	header->arr[header_field->id] = header_field;
 	APR_RING_INSERT_TAIL(&header->ring,header_field,apt_header_field_t,link);
 	return TRUE;
 }

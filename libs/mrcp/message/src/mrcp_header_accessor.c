@@ -49,13 +49,10 @@ MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accesso
 		return NULL;
 	}
 	
-	header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	header_field = apt_header_field_alloc(pool);
 	name = apt_string_table_str_get(accessor->vtable->field_table,accessor->vtable->field_count,id);
 	if(name) {
 		header_field->name = *name;
-	}
-	else {
-		apt_string_reset(&header_field->name);
 	}
 
 	if(empty_value == FALSE) {
@@ -73,11 +70,22 @@ MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accesso
 		memcpy(value->buf,stream.text.buf,value->length);
 		value->buf[value->length] = '\0';
 	}
-	else {
-		apt_string_reset(&header_field->value);
-	}
 
 	return header_field;
+}
+
+/** Duplicate header field */
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool)
+{
+	if(!accessor->vtable) {
+		return FALSE;
+	}
+	
+	if(accessor->vtable->duplicate_field(accessor,src_accessor,id,pool) == FALSE) {
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 

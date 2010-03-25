@@ -46,6 +46,9 @@ struct apt_header_field_t {
 	apt_str_t name;
 	/** Value of the header field */
 	apt_str_t value;
+
+	/** Numeric identifier associated with name */
+	int       id;
 };
 
 /** 
@@ -57,12 +60,25 @@ struct apt_header_field_t {
 struct apt_header_section_t {
 	/** List of header fields (name-value pairs) */
 	APR_RING_HEAD(apt_head_t, apt_header_field_t) ring;
-	/** Array of pointers to header fields (for quick search)*/
+	/** Array of pointers to header fields */
 	apt_header_field_t **arr;
 	/** Max number of header fields */
 	int                  arr_size;
 };
 
+
+/**
+ * Allocate an empty header field.
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_header_field_t*) apt_header_field_alloc(apr_pool_t *pool);
+
+/**
+ * Copy specified header field.
+ * @param header_field the header field to copy
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_header_field_t*) apt_header_field_copy(const apt_header_field_t *src_header_field, apr_pool_t *pool);
 
 /**
  * Initialize header section (collection of header fields).
@@ -78,7 +94,7 @@ APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, int max_
  * @param header_field the header field to add
  * @param id the identifier associated with the header_field
  */
-APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *header, apt_header_field_t *header_field, int id);
+APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *header, apt_header_field_t *header_field);
 
 /**
  * Remove header field from header section.
@@ -98,6 +114,19 @@ static APR_INLINE apt_bool_t apt_header_section_field_check(const apt_header_sec
 		return header->arr[id] ? TRUE : FALSE;
 	}
 	return FALSE;
+}
+
+/**
+ * Get header field by specified identifier
+ * @param header the header section to use
+ * @param id the identifier associated with the header_field
+ */
+static APR_INLINE apt_header_field_t* apt_header_section_field_get(const apt_header_section_t *header, int id)
+{
+	if(id < header->arr_size) {
+		return header->arr[id];
+	}
+	return NULL;
 }
 
 APT_END_EXTERN_C

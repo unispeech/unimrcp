@@ -123,6 +123,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_parse(mrcp_header_accessor_t *accesso
 /** Generate header field */
 MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_bool_t empty_value, apr_pool_t *pool);
 
+/** Duplicate header field */
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool);
+
 
 /** Generate completion-cause */
 MRCP_DECLARE(apt_bool_t) mrcp_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_text_stream_t *stream);
