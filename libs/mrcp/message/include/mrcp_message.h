@@ -26,15 +26,13 @@
 
 #include "mrcp_types.h"
 #include "mrcp_start_line.h"
-#include "mrcp_header_accessor.h"
+#include "mrcp_header.h"
 #include "mrcp_generic_header.h"
 
 APT_BEGIN_EXTERN_C
 
 /** MRCP channel-id declaration */
 typedef struct mrcp_channel_id mrcp_channel_id;
-/** MRCP message header declaration */
-typedef struct mrcp_message_header_t mrcp_message_header_t;
 
 /** MRCP channel-identifier */
 struct mrcp_channel_id {
@@ -52,56 +50,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_
 
 /** Generate MRCP channel-identifier */
 MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream);
-
-
-/** MRCP message-header */
-struct mrcp_message_header_t {
-	/** MRCP generic-header */
-	mrcp_header_accessor_t generic_header_accessor;
-	/** MRCP resource specific header */
-	mrcp_header_accessor_t resource_header_accessor;
-
-	/** Header section (collection of header fields)*/
-	apt_header_section_t   header_section;
-};
-
-/** Initialize MRCP message-header */
-static APR_INLINE void mrcp_message_header_init(mrcp_message_header_t *message_header)
-{
-	mrcp_header_accessor_init(&message_header->generic_header_accessor);
-	mrcp_header_accessor_init(&message_header->resource_header_accessor);
-}
-
-/** Destroy MRCP message-header */
-static APR_INLINE void mrcp_message_header_destroy(mrcp_message_header_t *message_header)
-{
-	mrcp_header_destroy(&message_header->generic_header_accessor);
-	mrcp_header_destroy(&message_header->resource_header_accessor);
-}
-
-/** Allocate MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
-						mrcp_message_header_t *header,
-						const mrcp_header_vtable_t *generic_header_vtable,
-						const mrcp_header_vtable_t *resource_header_vtable,
-						apr_pool_t *pool);
-
-
-/** Parse MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream, apr_pool_t *pool);
-
-/** Generate MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_generate(mrcp_message_header_t *message_header, apt_text_stream_t *text_stream);
-
-/** Set MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *message_header, const mrcp_message_header_t *src, apr_pool_t *pool);
-
-/** Get MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *message_header, const mrcp_message_header_t *src, apr_pool_t *pool);
-
-/** Inherit MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *message_header, const mrcp_message_header_t *parent, apr_pool_t *pool);
-
 
 
 /** MRCP message */
@@ -188,7 +136,6 @@ static APR_INLINE apt_bool_t mrcp_generic_header_property_check(mrcp_message_t *
 	return apt_header_section_field_check(&mrcp_message->header.header_section,id);
 }
 
-
 /** Get MRCP resource-header */
 static APR_INLINE void* mrcp_resource_header_get(const mrcp_message_t *mrcp_message)
 {
@@ -234,7 +181,6 @@ static APR_INLINE apt_bool_t mrcp_resource_header_property_check(mrcp_message_t 
 {
 	return apt_header_section_field_check(&mrcp_message->header.header_section,id + GENERIC_HEADER_COUNT);
 }
-
 
 
 APT_END_EXTERN_C
