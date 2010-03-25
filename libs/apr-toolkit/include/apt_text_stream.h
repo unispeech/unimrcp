@@ -24,7 +24,7 @@
  * @brief Text Stream Parse/Generate Routine
  */ 
 
-#include "apt_string.h"
+#include "apt_string_table.h"
 #include "apt_pair.h"
 
 APT_BEGIN_EXTERN_C
@@ -223,6 +223,8 @@ APT_DECLARE(apt_bool_t) apt_id_resource_generate(const apt_str_t *id, const apt_
 /** Generate value plus the length (number of digits) of the value itself */
 APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_size_t max_count, apt_str_t *str);
 
+/** Generate completion-cause */
+APT_DECLARE(apt_bool_t) apt_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_text_stream_t *stream);
 
 /**
  * Generate unique identifier (hex string)

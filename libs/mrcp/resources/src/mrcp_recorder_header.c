@@ -146,7 +146,7 @@ static apt_bool_t mrcp_recorder_header_generate(mrcp_header_accessor_t *accessor
 			break;
 		case RECORDER_HEADER_COMPLETION_CAUSE:
 		{
-			mrcp_completion_cause_generate(
+			apt_completion_cause_generate(
 				completion_cause_string_table,
 				RECORDER_COMPLETION_CAUSE_COUNT,
 				recorder_header->completion_cause,

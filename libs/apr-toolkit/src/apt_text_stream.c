@@ -417,6 +417,24 @@ APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_siz
 	return TRUE;
 }
 
+/** Generate completion-cause */
+APT_DECLARE(apt_bool_t) apt_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_text_stream_t *stream)
+{
+	int length;
+	const apt_str_t *name = apt_string_table_str_get(table,size,cause);
+	if(!name) {
+		return FALSE;
+	}
+	length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT" ",cause);
+	if(length <= 0) {
+		return FALSE;
+	}
+	stream->pos += length;
+
+	memcpy(stream->pos,name->buf,name->length);
+	stream->pos += name->length;
+	return TRUE;
+}
 
 /** Generate unique identifier (hex string) */
 APT_DECLARE(apt_bool_t) apt_unique_id_generate(apt_str_t *id, apr_size_t length, apr_pool_t *pool)

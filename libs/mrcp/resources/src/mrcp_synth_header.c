@@ -380,7 +380,7 @@ static apt_bool_t mrcp_synth_header_generate(mrcp_header_accessor_t *accessor, s
 			apt_string_value_generate(&synth_header->speaker_profile,value);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
-			mrcp_completion_cause_generate(
+			apt_completion_cause_generate(
 				completion_cause_string_table,
 				SYNTHESIZER_COMPLETION_CAUSE_COUNT,
 				synth_header->completion_cause,

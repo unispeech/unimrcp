@@ -445,7 +445,7 @@ static apt_bool_t mrcp_v1_recog_header_generate(mrcp_header_accessor_t *accessor
 		return apt_size_value_generate_from_float(recog_header->speed_vs_accuracy,value);
 	}
 	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
-		return mrcp_completion_cause_generate(
+		return apt_completion_cause_generate(
 			v1_completion_cause_string_table,
 			RECOGNIZER_COMPLETION_CAUSE_COUNT,
 			recog_header->completion_cause,
@@ -468,7 +468,7 @@ static apt_bool_t mrcp_v2_recog_header_generate(mrcp_header_accessor_t *accessor
 		return apt_float_value_generate(recog_header->speed_vs_accuracy,value);
 	}
 	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
-		return mrcp_completion_cause_generate(
+		return apt_completion_cause_generate(
 			v2_completion_cause_string_table,
 			RECOGNIZER_COMPLETION_CAUSE_COUNT,
 			recog_header->completion_cause,

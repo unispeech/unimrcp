@@ -24,7 +24,6 @@
  * @brief Abstract MRCP Header Accessor
  */ 
 
-#include "apt_string_table.h"
 #include "apt_text_stream.h"
 #include "apt_header_field.h"
 #include "mrcp.h"
@@ -126,9 +125,6 @@ MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accesso
 /** Duplicate header field */
 MRCP_DECLARE(apt_bool_t) mrcp_header_field_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool);
 
-
-/** Generate completion-cause */
-MRCP_DECLARE(apt_bool_t) mrcp_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_text_stream_t *stream);
 
 APT_END_EXTERN_C
 
