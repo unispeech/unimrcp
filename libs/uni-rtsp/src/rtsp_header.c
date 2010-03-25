@@ -225,7 +225,7 @@ static apt_bool_t rtsp_transport_parse(rtsp_transport_t *transport, const apt_st
 }
 
 /** Generate RTSP transport */
-static apt_bool_t rtsp_transport_generate(rtsp_transport_t *transport, apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t rtsp_transport_generate(const rtsp_transport_t *transport, apt_str_t *value, apr_pool_t *pool)
 {
 	char buf[256];
 	apt_text_stream_t text_stream;
@@ -300,8 +300,8 @@ static apt_bool_t rtsp_session_id_parse(apt_str_t *session_id, const apt_str_t *
 	return TRUE;
 }
 
-/** Parse RTSP header field */
-static apt_bool_t rtsp_header_field_parse(rtsp_header_t *header, rtsp_header_field_id id, const apt_str_t *value, apr_pool_t *pool)
+/** Parse RTSP header field value */
+static apt_bool_t rtsp_header_field_value_parse(rtsp_header_t *header, rtsp_header_field_id id, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_bool_t status = TRUE;
 	switch(id) {
@@ -329,8 +329,8 @@ static apt_bool_t rtsp_header_field_parse(rtsp_header_t *header, rtsp_header_fie
 	return status;
 }
 
-/** Generate RTSP header field */
-static apr_size_t rtsp_header_field_generate(rtsp_header_t *header, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
+/** Generate RTSP header field value */
+static apr_size_t rtsp_header_field_value_generate(const rtsp_header_t *header, rtsp_header_field_id id, apt_str_t *value, apr_pool_t *pool)
 {
 	switch(id) {
 		case RTSP_HEADER_FIELD_CSEQ:
@@ -370,16 +370,16 @@ RTSP_DECLARE(apt_bool_t) rtsp_header_field_add(rtsp_header_t *header, apt_header
 								rtsp_header_string_table,
 								RTSP_HEADER_FIELD_COUNT,
 								&header_field->name);
-	rtsp_header_field_parse(header,header_field->id,&header_field->value,pool);
+	rtsp_header_field_value_parse(header,header_field->id,&header_field->value,pool);
 
 	return apt_header_section_field_add(&header->header_section,header_field);
 }
 
-/** Add property to property set */
-RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, apr_size_t id, apr_pool_t *pool)
+/** Add RTSP header field property */
+RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, rtsp_header_field_id id, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field = apt_header_field_alloc(pool);
-	if(rtsp_header_field_generate(header,id,&header_field->value,pool) == TRUE) {
+	if(rtsp_header_field_value_generate(header,id,&header_field->value,pool) == TRUE) {
 		const apt_str_t *name = apt_string_table_str_get(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,id);
 		if(name) {
 			header_field->name = *name;

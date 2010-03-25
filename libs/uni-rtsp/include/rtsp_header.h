@@ -203,17 +203,17 @@ static APR_INLINE void rtsp_header_init(rtsp_header_t *header, apr_pool_t *pool)
 /** Add RTSP header field */
 RTSP_DECLARE(apt_bool_t) rtsp_header_field_add(rtsp_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool);
 
-/** Add property to property set */
-RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, apr_size_t id, apr_pool_t *pool);
+/** Add RTSP header field property */
+RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, rtsp_header_field_id id, apr_pool_t *pool);
 
-/** Remove property from property set */
-static APR_INLINE void rtsp_header_property_remove(rtsp_header_t *header, apr_size_t id)
+/** Remove RTSP header field property */
+static APR_INLINE void rtsp_header_property_remove(rtsp_header_t *header, rtsp_header_field_id id)
 {
 	apt_header_section_field_remove(&header->header_section,id);
 }
 
-/** Check property in property set */
-static APR_INLINE apt_bool_t rtsp_header_property_check(const rtsp_header_t *header, apr_size_t id)
+/** Check RTSP header field property */
+static APR_INLINE apt_bool_t rtsp_header_property_check(const rtsp_header_t *header, rtsp_header_field_id id)
 {
 	return apt_header_section_field_check(&header->header_section,id);
 }

@@ -42,11 +42,11 @@ struct mrcp_header_vtable_t {
 	/** Destroy header data */
 	void (*destroy)(mrcp_header_accessor_t *accessor);
 
-	/** Parse header field */
+	/** Parse header field value */
 	apt_bool_t (*parse_field)(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool);
-	/** Generate header field */
+	/** Generate header field value */
 	apt_bool_t (*generate_field)(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value);
-	/** Duplicate header field */
+	/** Duplicate header field value */
 	apt_bool_t (*duplicate_field)(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool);
 
 	/** Table of fields  */

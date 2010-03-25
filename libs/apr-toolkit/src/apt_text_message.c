@@ -84,7 +84,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *strea
 		folding_length += line->length;
 	};
 
-	header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	header_field = apt_header_field_alloc(pool);
 	/* copy parsed name of the header field */
 	header_field->name.length = pair.name.length;
 	header_field->name.buf = apr_palloc(pool, pair.name.length + 1);
