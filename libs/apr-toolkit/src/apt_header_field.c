@@ -41,7 +41,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_copy(const apt_header_field_t 
 }
 
 /** Initialize header section (collection of header fields) */
-APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, int max_field_count, apr_pool_t *pool)
+APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, apr_size_t max_field_count, apr_pool_t *pool)
 {
 	APR_RING_INIT(&header->ring, apt_header_field_t, link);
 	header->arr = (apt_header_field_t**)apr_pcalloc(pool,sizeof(apt_header_field_t*) * max_field_count);
@@ -63,7 +63,7 @@ APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *heade
 }
 
 /** Remove header field from header section */
-APT_DECLARE(apt_bool_t) apt_header_section_field_remove(apt_header_section_t *header, int id)
+APT_DECLARE(apt_bool_t) apt_header_section_field_remove(apt_header_section_t *header, apr_size_t id)
 {
 	apt_header_field_t *header_field;
 	if(id >= header->arr_size) {

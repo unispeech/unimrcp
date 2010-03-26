@@ -43,12 +43,12 @@ struct apt_header_field_t {
 	APR_RING_ENTRY(apt_header_field_t) link;
 
 	/** Name of the header field */
-	apt_str_t name;
+	apt_str_t  name;
 	/** Value of the header field */
-	apt_str_t value;
+	apt_str_t  value;
 
 	/** Numeric identifier associated with name */
-	int       id;
+	apr_size_t id;
 };
 
 /** 
@@ -63,7 +63,7 @@ struct apt_header_section_t {
 	/** Array of pointers to header fields */
 	apt_header_field_t **arr;
 	/** Max number of header fields */
-	int                  arr_size;
+	apr_size_t           arr_size;
 };
 
 
@@ -86,7 +86,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_copy(const apt_header_field_t 
  * @param max_field_count the number of max header fields in a section (protocol dependent)
  * @param pool the pool to allocate memory from
  */
-APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, int max_field_count, apr_pool_t *pool);
+APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, apr_size_t max_field_count, apr_pool_t *pool);
 
 /**
  * Add header field to header section.
@@ -101,14 +101,14 @@ APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *heade
  * @param header the header section to remove field from
  * @param id the identifier associated with the header_field to use
  */
-APT_DECLARE(apt_bool_t) apt_header_section_field_remove(apt_header_section_t *header, int id);
+APT_DECLARE(apt_bool_t) apt_header_section_field_remove(apt_header_section_t *header, apr_size_t id);
 
 /**
  * Check whether specified header field is set
  * @param header the header section to use
  * @param id the identifier associated with the header_field to check
  */
-static APR_INLINE apt_bool_t apt_header_section_field_check(const apt_header_section_t *header, int id)
+static APR_INLINE apt_bool_t apt_header_section_field_check(const apt_header_section_t *header, apr_size_t id)
 {
 	if(id < header->arr_size) {
 		return header->arr[id] ? TRUE : FALSE;
@@ -121,7 +121,7 @@ static APR_INLINE apt_bool_t apt_header_section_field_check(const apt_header_sec
  * @param header the header section to use
  * @param id the identifier associated with the header_field
  */
-static APR_INLINE apt_header_field_t* apt_header_section_field_get(const apt_header_section_t *header, int id)
+static APR_INLINE apt_header_field_t* apt_header_section_field_get(const apt_header_section_t *header, apr_size_t id)
 {
 	if(id < header->arr_size) {
 		return header->arr[id];
