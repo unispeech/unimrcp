@@ -33,7 +33,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 
 	header->generic_header_accessor.data = NULL;
 	header->generic_header_accessor.vtable = generic_header_vtable;
-	
+
 	header->resource_header_accessor.data = NULL;
 	header->resource_header_accessor.vtable = resource_header_vtable;
 
@@ -52,7 +52,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *header, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
-	apr_size_t id;
 	apt_bool_t result = FALSE;
 
 	do {
@@ -60,12 +59,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *header
 		if(header_field) {
 			if(apt_string_is_empty(&header_field->name) == FALSE) {
 				/* normal header */
-				if(mrcp_header_field_parse(&header->resource_header_accessor,header_field,&id,pool) == TRUE) {
-					header_field->id = id + GENERIC_HEADER_COUNT;
+				if(mrcp_header_field_value_parse(&header->resource_header_accessor,header_field,pool) == TRUE) {
+					header_field->id += GENERIC_HEADER_COUNT;
 					apt_header_section_field_add(&header->header_section,header_field);
 				}
-				else if(mrcp_header_field_parse(&header->generic_header_accessor,header_field,&id,pool) == TRUE) {
-					header_field->id = id;
+				else if(mrcp_header_field_value_parse(&header->generic_header_accessor,header_field,pool) == TRUE) {
 					apt_header_section_field_add(&header->header_section,header_field);
 				}
 				else { 
@@ -113,12 +111,20 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *header, 
 
 		header_field = apt_header_field_copy(src_header_field,pool);
 		if(header_field->id < GENERIC_HEADER_COUNT) {
-			if(mrcp_header_field_duplicate(&header->generic_header_accessor,&src_header->generic_header_accessor,header_field->id,pool) == TRUE) {
+			if(mrcp_header_field_value_duplicate(
+					&header->generic_header_accessor,
+					&src_header->generic_header_accessor,
+					header_field->id,
+					pool) == TRUE) {
 				apt_header_section_field_add(&header->header_section,header_field);
 			}
 		}
 		else {
-			if(mrcp_header_field_duplicate(&header->resource_header_accessor,&src_header->resource_header_accessor,header_field->id - GENERIC_HEADER_COUNT,pool) == TRUE) {
+			if(mrcp_header_field_value_duplicate(
+					&header->resource_header_accessor,
+					&src_header->resource_header_accessor,
+					header_field->id - GENERIC_HEADER_COUNT,
+					pool) == TRUE) {
 				apt_header_section_field_add(&header->header_section,header_field);
 			}
 		}
@@ -139,12 +145,20 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *header, 
 		src_header_field = apt_header_section_field_get(&src_header->header_section,header_field->id);
 		if(src_header_field) {
 			if(header_field->id < GENERIC_HEADER_COUNT) {
-				if(mrcp_header_field_duplicate(&header->generic_header_accessor,&src_header->generic_header_accessor,header_field->id,pool) == TRUE) {
+				if(mrcp_header_field_value_duplicate(
+						&header->generic_header_accessor,
+						&src_header->generic_header_accessor,
+						header_field->id,
+						pool) == TRUE) {
 					apt_string_copy(&header_field->value,&src_header_field->value,pool);
 				}
 			}
 			else {
-				if(mrcp_header_field_duplicate(&header->resource_header_accessor,&src_header->resource_header_accessor,header_field->id - GENERIC_HEADER_COUNT,pool) == TRUE) {
+				if(mrcp_header_field_value_duplicate(
+						&header->resource_header_accessor,
+						&src_header->resource_header_accessor,
+						header_field->id - GENERIC_HEADER_COUNT,
+						pool) == TRUE) {
 					apt_string_copy(&header_field->value,&src_header_field->value,pool);
 				}
 			}
@@ -167,12 +181,20 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *head
 		if(!header_field) {
 			header_field = apt_header_field_copy(src_header_field,pool);
 			if(header_field->id < GENERIC_HEADER_COUNT) {
-				if(mrcp_header_field_duplicate(&header->generic_header_accessor,&src_header->generic_header_accessor,header_field->id,pool) == TRUE) {
+				if(mrcp_header_field_value_duplicate(
+						&header->generic_header_accessor,
+						&src_header->generic_header_accessor,
+						header_field->id,
+						pool) == TRUE) {
 					apt_header_section_field_add(&header->header_section,header_field);
 				}
 			}
 			else {
-				if(mrcp_header_field_duplicate(&header->resource_header_accessor,&src_header->resource_header_accessor,header_field->id - GENERIC_HEADER_COUNT,pool) == TRUE) {
+				if(mrcp_header_field_value_duplicate(
+						&header->resource_header_accessor,
+						&src_header->resource_header_accessor,
+						header_field->id - GENERIC_HEADER_COUNT,
+						pool) == TRUE) {
 					apt_header_section_field_add(&header->header_section,header_field);
 				}
 			}

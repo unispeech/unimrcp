@@ -58,15 +58,20 @@ static apt_bool_t mrcp_request_id_list_parse(mrcp_request_id_list_t *request_id_
 }
 
 /** Generate mrcp request-id list */
-static apt_bool_t mrcp_request_id_list_generate(mrcp_request_id_list_t *request_id_list, apt_text_stream_t *stream)
+static apt_bool_t mrcp_request_id_list_generate(mrcp_request_id_list_t *request_id_list, apt_str_t *str, apr_pool_t *pool)
 {
-	size_t i;
+	apr_size_t i;
+	char buf[256];
+	apt_text_stream_t stream;
+	apt_text_stream_init(&stream,buf,sizeof(buf));
 	for(i=0; i<request_id_list->count; i++) {
-		mrcp_request_id_generate(request_id_list->ids[i],stream);
+		mrcp_request_id_generate(request_id_list->ids[i],&stream);
 		if(i < request_id_list->count-1) {
-			*stream->pos++ = ',';
+			*stream.pos++ = ',';
 		}
 	}
+
+	apt_string_assign_n(str,stream.text.buf, stream.pos - stream.text.buf, pool);
 	return TRUE;
 }
 
@@ -167,57 +172,57 @@ static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, si
 }
 
 /** Generate generic-header */
-static apt_bool_t mrcp_generic_header_generate(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_generic_header_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_generic_header_t *generic_header = accessor->data;
 	switch(id) {
 		case GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST:
-			mrcp_request_id_list_generate(&generic_header->active_request_id_list,value);
+			mrcp_request_id_list_generate(&generic_header->active_request_id_list,value,pool);
 			break;
 		case GENERIC_HEADER_PROXY_SYNC_ID:
-			apt_string_value_generate(&generic_header->proxy_sync_id,value);
+			*value = generic_header->proxy_sync_id;
 			break;
 		case GENERIC_HEADER_ACCEPT_CHARSET:
-			apt_string_value_generate(&generic_header->accept_charset,value);
+			*value = generic_header->accept_charset;
 			break;
 		case GENERIC_HEADER_CONTENT_TYPE:
-			apt_string_value_generate(&generic_header->content_type,value);
+			*value = generic_header->content_type;
 			break;
 		case GENERIC_HEADER_CONTENT_ID:
-			apt_string_value_generate(&generic_header->content_id,value);
+			*value = generic_header->content_id;
 			break;
 		case GENERIC_HEADER_CONTENT_BASE:
-			apt_string_value_generate(&generic_header->content_base,value);
+			*value = generic_header->content_base;
 			break;
 		case GENERIC_HEADER_CONTENT_ENCODING:
-			apt_string_value_generate(&generic_header->content_encoding,value);
+			*value = generic_header->content_encoding;
 			break;
 		case GENERIC_HEADER_CONTENT_LOCATION:
-			apt_string_value_generate(&generic_header->content_location,value);
+			*value = generic_header->content_location;
 			break;
 		case GENERIC_HEADER_CONTENT_LENGTH:
-			apt_size_value_generate(generic_header->content_length,value);
+			apt_size_value_pgenerate(generic_header->content_length,value,pool);
 			break;
 		case GENERIC_HEADER_CACHE_CONTROL:
-			apt_string_value_generate(&generic_header->cache_control,value);
+			*value = generic_header->cache_control;
 			break;
 		case GENERIC_HEADER_LOGGING_TAG:
-			apt_string_value_generate(&generic_header->logging_tag,value);
+			*value = generic_header->logging_tag;
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
-			apt_pair_array_generate(generic_header->vendor_specific_params,value);
+			apt_pair_array_pgenerate(generic_header->vendor_specific_params,value,pool);
 			break;
 		case GENERIC_HEADER_ACCEPT:
-			apt_string_value_generate(&generic_header->accept,value);
+			*value = generic_header->accept;
 			break;
 		case GENERIC_HEADER_FETCH_TIMEOUT:
-			apt_size_value_generate(generic_header->fetch_timeout,value);
+			apt_size_value_pgenerate(generic_header->fetch_timeout,value,pool);
 			break;
 		case GENERIC_HEADER_SET_COOKIE:
-			apt_string_value_generate(&generic_header->set_cookie,value);
+			*value = generic_header->set_cookie;
 			break;
 		case GENERIC_HEADER_SET_COOKIE2:
-			apt_string_value_generate(&generic_header->set_cookie2,value);
+			*value = generic_header->set_cookie2;
 			break;
 		default:
 			break;
@@ -226,7 +231,7 @@ static apt_bool_t mrcp_generic_header_generate(mrcp_header_accessor_t *accessor,
 }
 
 /** Duplicate generic-header */
-static apt_bool_t mrcp_generic_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, size_t id, apr_pool_t *pool)
+static apt_bool_t mrcp_generic_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool)
 {
 	mrcp_generic_header_t *generic_header = accessor->data;
 	const mrcp_generic_header_t *src_generic_header = src->data;

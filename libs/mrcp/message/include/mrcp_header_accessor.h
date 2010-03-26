@@ -45,7 +45,7 @@ struct mrcp_header_vtable_t {
 	/** Parse header field value */
 	apt_bool_t (*parse_field)(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool);
 	/** Generate header field value */
-	apt_bool_t (*generate_field)(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value);
+	apt_bool_t (*generate_field)(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool);
 	/** Duplicate header field value */
 	apt_bool_t (*duplicate_field)(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool);
 
@@ -54,6 +54,15 @@ struct mrcp_header_vtable_t {
 	/** Number of fields  */
 	apr_size_t                  field_count;
 };
+
+/** MRCP header accessor */
+struct mrcp_header_accessor_t {
+	/** Actual header data allocated by accessor */
+	void                       *data;
+	/** Header accessor interface */
+	const mrcp_header_vtable_t *vtable;
+};
+
 
 
 /** Initialize header vtable */
@@ -78,21 +87,12 @@ static APR_INLINE apt_bool_t mrcp_header_vtable_validate(const mrcp_header_vtabl
 }
 
 
-/** MRCP header accessor */
-struct mrcp_header_accessor_t {
-	/** Actual header data allocated by accessor */
-	void                       *data;
-	/** Header accessor interface */
-	const mrcp_header_vtable_t *vtable;
-};
-
 /** Initialize header accessor */
 static APR_INLINE void mrcp_header_accessor_init(mrcp_header_accessor_t *accessor)
 {
 	accessor->data = NULL;
 	accessor->vtable = NULL;
 }
-
 
 /** Allocate header data */
 static APR_INLINE void* mrcp_header_allocate(mrcp_header_accessor_t *accessor, apr_pool_t *pool)
@@ -116,14 +116,14 @@ static APR_INLINE void mrcp_header_destroy(mrcp_header_accessor_t *accessor)
 }
 
 
-/** Parse header field */
-MRCP_DECLARE(apt_bool_t) mrcp_header_field_parse(mrcp_header_accessor_t *accessor, const apt_header_field_t *header_field, apr_size_t *id, apr_pool_t *pool);
+/** Parse header field value */
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_parse(mrcp_header_accessor_t *accessor, apt_header_field_t *header_field, apr_pool_t *pool);
 
-/** Generate header field */
-MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_bool_t empty_value, apr_pool_t *pool);
+/** Generate header field value */
+MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_value_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_bool_t empty_value, apr_pool_t *pool);
 
-/** Duplicate header field */
-MRCP_DECLARE(apt_bool_t) mrcp_header_field_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool);
+/** Duplicate header field value */
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

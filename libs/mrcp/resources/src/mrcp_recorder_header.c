@@ -134,60 +134,61 @@ static apt_bool_t mrcp_recorder_header_parse(mrcp_header_accessor_t *accessor, a
 }
 
 /** Generate MRCP recorder header */
-static apt_bool_t mrcp_recorder_header_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_recorder_header_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_recorder_header_t *recorder_header = accessor->data;
 	switch(id) {
 		case RECORDER_HEADER_SENSITIVITY_LEVEL:
-			apt_float_value_generate(recorder_header->sensitivity_level,value);
+			apt_float_value_pgenerate(recorder_header->sensitivity_level,value,pool);
 			break;
 		case RECORDER_HEADER_NO_INPUT_TIMEOUT:
-			apt_size_value_generate(recorder_header->no_input_timeout,value);
+			apt_size_value_pgenerate(recorder_header->no_input_timeout,value,pool);
 			break;
 		case RECORDER_HEADER_COMPLETION_CAUSE:
 		{
-			apt_completion_cause_generate(
+			apt_completion_cause_pgenerate(
 				completion_cause_string_table,
 				RECORDER_COMPLETION_CAUSE_COUNT,
 				recorder_header->completion_cause,
-				value);
+				value,
+				pool);
 			break;
 		}
 		case RECORDER_HEADER_COMPLETION_REASON:
-			apt_string_value_generate(&recorder_header->completion_reason,value);
+			*value = recorder_header->completion_reason;
 			break;
 		case RECORDER_HEADER_FAILED_URI:
-			apt_string_value_generate(&recorder_header->failed_uri,value);
+			*value = recorder_header->failed_uri;
 			break;
 		case RECORDER_HEADER_FAILED_URI_CAUSE:
-			apt_string_value_generate(&recorder_header->failed_uri_cause,value);
+			*value = recorder_header->failed_uri_cause;
 			break;
 		case RECORDER_HEADER_RECORD_URI:
-			apt_string_value_generate(&recorder_header->record_uri,value);
+			*value = recorder_header->record_uri;
 			break;
 		case RECORDER_HEADER_MEDIA_TYPE:
-			apt_string_value_generate(&recorder_header->media_type,value);
+			*value = recorder_header->media_type;
 			break;
 		case RECORDER_HEADER_MAX_TIME:
-			apt_size_value_generate(recorder_header->max_time,value);
+			apt_size_value_pgenerate(recorder_header->max_time,value,pool);
 			break;
 		case RECORDER_HEADER_TRIM_LENGTH:
-			apt_size_value_generate(recorder_header->trim_length,value);
+			apt_size_value_pgenerate(recorder_header->trim_length,value,pool);
 			break;
 		case RECORDER_HEADER_FINAL_SILENCE:
-			apt_size_value_generate(recorder_header->final_silence,value);
+			apt_size_value_pgenerate(recorder_header->final_silence,value,pool);
 			break;
 		case RECORDER_HEADER_CAPTURE_ON_SPEECH:
-			apt_boolean_value_generate(recorder_header->capture_on_speech,value);
+			apt_boolean_value_pgenerate(recorder_header->capture_on_speech,value,pool);
 			break;
 		case RECORDER_HEADER_VER_BUFFER_UTTERANCE:
-			apt_boolean_value_generate(recorder_header->ver_buffer_utterance,value);
+			apt_boolean_value_pgenerate(recorder_header->ver_buffer_utterance,value,pool);
 			break;
 		case RECORDER_HEADER_START_INPUT_TIMERS:
-			apt_boolean_value_generate(recorder_header->start_input_timers,value);
+			apt_boolean_value_pgenerate(recorder_header->start_input_timers,value,pool);
 			break;
 		case RECORDER_HEADER_NEW_AUDIO_CHANNEL:
-			apt_boolean_value_generate(recorder_header->new_audio_channel,value);
+			apt_boolean_value_pgenerate(recorder_header->new_audio_channel,value,pool);
 			break;
 		default:
 			break;

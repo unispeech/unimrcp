@@ -97,7 +97,7 @@ static APR_INLINE apr_size_t apt_string_table_value_parse(const apt_str_table_it
 	return apt_string_table_id_find(string_table,count,value);
 }
 
-static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *string_table, size_t count, size_t id, apt_text_stream_t *stream)
+static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *string_table, apr_size_t count, apr_size_t id, apt_text_stream_t *stream)
 {
 	const apt_str_t *name = apt_string_table_str_get(string_table,count,id);
 	if(!name) {
@@ -106,6 +106,17 @@ static apt_bool_t apt_string_table_value_generate(const apt_str_table_item_t *st
 
 	memcpy(stream->pos,name->buf,name->length);
 	stream->pos += name->length;
+	return TRUE;
+}
+
+static apt_bool_t apt_string_table_value_pgenerate(const apt_str_table_item_t *string_table, apr_size_t count, apr_size_t id, apt_str_t *str, apr_pool_t *pool)
+{
+	const apt_str_t *name = apt_string_table_str_get(string_table,count,id);
+	if(!name) {
+		return FALSE;
+	}
+
+	apt_string_copy(str,name,pool);
 	return TRUE;
 }
 
@@ -135,13 +146,18 @@ static apt_bool_t mrcp_prosody_param_rate_parse(mrcp_prosody_rate_t *prosody_rat
 }
 
 /** Generate MRCP prosody-rate value */
-static apt_bool_t mrcp_prosody_rate_generate(mrcp_prosody_rate_t *prosody_rate, apt_text_stream_t *stream)
+static apt_bool_t mrcp_prosody_rate_generate(mrcp_prosody_rate_t *prosody_rate, apt_str_t *str, apr_pool_t *pool)
 {
 	if(prosody_rate->type == PROSODY_RATE_TYPE_LABEL) {
-		apt_string_table_value_generate(prosody_rate_string_table,PROSODY_RATE_COUNT,prosody_rate->value.label,stream);
+		apt_string_table_value_pgenerate(
+			prosody_rate_string_table,
+			PROSODY_RATE_COUNT,
+			prosody_rate->value.label,
+			str,
+			pool);
 	}
 	else {
-		apt_float_value_generate(prosody_rate->value.relative, stream);
+		apt_float_value_pgenerate(prosody_rate->value.relative, str, pool);
 	}
 
 	return TRUE;
@@ -179,16 +195,21 @@ static apt_bool_t mrcp_prosody_param_volume_parse(mrcp_prosody_volume_t *prosody
 }
 
 /** Generate MRCP prosody-volume value */
-static apt_bool_t mrcp_prosody_volume_generate(mrcp_prosody_volume_t *prosody_volume, apt_text_stream_t *stream)
+static apt_bool_t mrcp_prosody_volume_generate(mrcp_prosody_volume_t *prosody_volume, apt_str_t *str, apr_pool_t *pool)
 {
 	if(prosody_volume->type == PROSODY_VOLUME_TYPE_LABEL) {
-		apt_string_table_value_generate(prosody_volume_string_table,PROSODY_VOLUME_COUNT,prosody_volume->value.label,stream);
+		apt_string_table_value_pgenerate(
+			prosody_volume_string_table,
+			PROSODY_VOLUME_COUNT,
+			prosody_volume->value.label,
+			str,
+			pool);
 	}
 	else if (prosody_volume->type == PROSODY_VOLUME_TYPE_NUMERIC) {
-		apt_float_value_generate(prosody_volume->value.numeric, stream);
+		apt_float_value_pgenerate(prosody_volume->value.numeric, str, pool);
 	}
 	else {
-		apt_float_value_generate(prosody_volume->value.relative, stream);
+		apt_float_value_pgenerate(prosody_volume->value.relative, str, pool);
 	}
 
 	return TRUE;
@@ -231,25 +252,29 @@ static apt_bool_t mrcp_speech_length_value_parse(mrcp_speech_length_value_t *spe
 }
 
 /** Generate MRCP speech-length value */
-static apt_bool_t mrcp_speech_length_generate(mrcp_speech_length_value_t *speech_length, apt_text_stream_t *stream)
+static apt_bool_t mrcp_speech_length_generate(mrcp_speech_length_value_t *speech_length, apt_str_t *str, apr_pool_t *pool)
 {
 	if(speech_length->type == SPEECH_LENGTH_TYPE_TEXT) {
 		apt_str_t *tag = &speech_length->value.tag;
 		if(tag->length) {
-			memcpy(stream->pos,tag->buf,tag->length);
-			stream->pos += tag->length;
+			apt_string_copy(str,tag,pool);
 		}
 	}
 	else {
+		char buf[256];
+		apt_text_stream_t stream;
+		apt_text_stream_init(&stream,buf,sizeof(buf));
 		if(speech_length->type == SPEECH_LENGTH_TYPE_NUMERIC_POSITIVE) {
-			*stream->pos++ = '+';
+			*stream.pos++ = '+';
 		}
 		else {
-			*stream->pos++ = '-';
+			*stream.pos++ = '-';
 		}
-		apt_size_value_generate(speech_length->value.numeric.length,stream);
-		*stream->pos++ = APT_TOKEN_SP;
-		apt_string_table_value_generate(speech_unit_string_table,SPEECH_UNIT_COUNT,speech_length->value.numeric.unit,stream);
+		apt_size_value_generate(speech_length->value.numeric.length,&stream);
+		*stream.pos++ = APT_TOKEN_SP;
+		apt_string_table_value_generate(speech_unit_string_table,SPEECH_UNIT_COUNT,speech_length->value.numeric.unit,&stream);
+
+		apt_string_assign_n(str,stream.text.buf, stream.pos - stream.text.buf, pool);
 	}
 	return TRUE;
 }
@@ -366,76 +391,82 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 }
 
 /** Generate MRCP synthesizer header */
-static apt_bool_t mrcp_synth_header_generate(mrcp_header_accessor_t *accessor, size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *accessor, size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_synth_header_t *synth_header = accessor->data;
 	switch(id) {
 		case SYNTHESIZER_HEADER_JUMP_SIZE:
-			mrcp_speech_length_generate(&synth_header->jump_size,value);
+			mrcp_speech_length_generate(&synth_header->jump_size,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_KILL_ON_BARGE_IN:
-			apt_boolean_value_generate(synth_header->kill_on_barge_in,value);
+			apt_boolean_value_pgenerate(synth_header->kill_on_barge_in,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEAKER_PROFILE:
-			apt_string_value_generate(&synth_header->speaker_profile,value);
+			*value = synth_header->speaker_profile,value;
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
-			apt_completion_cause_generate(
+			apt_completion_cause_pgenerate(
 				completion_cause_string_table,
 				SYNTHESIZER_COMPLETION_CAUSE_COUNT,
 				synth_header->completion_cause,
-				value);
+				value,
+				pool);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_REASON:
-			apt_string_value_generate(&synth_header->completion_reason,value);
+			*value = synth_header->completion_reason;
 			break;
 		case SYNTHESIZER_HEADER_VOICE_GENDER:
-			apt_string_table_value_generate(voice_gender_string_table,VOICE_GENDER_COUNT,synth_header->voice_param.gender,value);
+			apt_string_table_value_pgenerate(
+				voice_gender_string_table,
+				VOICE_GENDER_COUNT,
+				synth_header->voice_param.gender,
+				value,
+				pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_AGE:
-			apt_size_value_generate(synth_header->voice_param.age,value);
+			apt_size_value_pgenerate(synth_header->voice_param.age,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_VARIANT:
-			apt_size_value_generate(synth_header->voice_param.variant,value);
+			apt_size_value_pgenerate(synth_header->voice_param.variant,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_NAME:
-			apt_string_value_generate(&synth_header->voice_param.name,value);
+			*value = synth_header->voice_param.name,value;
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
-			mrcp_prosody_volume_generate(&synth_header->prosody_param.volume,value);
+			mrcp_prosody_volume_generate(&synth_header->prosody_param.volume,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_RATE:
-			mrcp_prosody_rate_generate(&synth_header->prosody_param.rate,value);
+			mrcp_prosody_rate_generate(&synth_header->prosody_param.rate,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_MARKER:
-			apt_string_value_generate(&synth_header->speech_marker,value);
+			*value = synth_header->speech_marker;
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_value_generate(&synth_header->speech_language,value);
+			*value = synth_header->speech_language;
 			break;
 		case SYNTHESIZER_HEADER_FETCH_HINT:
-			apt_string_value_generate(&synth_header->fetch_hint,value);
+			*value = synth_header->fetch_hint;
 			break;
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
-			apt_string_value_generate(&synth_header->audio_fetch_hint,value);
+			*value = synth_header->audio_fetch_hint;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI:
-			apt_string_value_generate(&synth_header->failed_uri,value);
+			*value = synth_header->failed_uri;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_value_generate(&synth_header->failed_uri_cause,value);
+			*value = synth_header->failed_uri_cause;
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_RESTART:
-			apt_boolean_value_generate(synth_header->speak_restart,value);
+			apt_boolean_value_pgenerate(synth_header->speak_restart,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_LENGTH:
-			mrcp_speech_length_generate(&synth_header->speak_length,value);
+			mrcp_speech_length_generate(&synth_header->speak_length,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_LOAD_LEXICON:
-			apt_boolean_value_generate(synth_header->load_lexicon,value);
+			apt_boolean_value_pgenerate(synth_header->load_lexicon,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_LEXICON_SEARCH_ORDER:
-			apt_string_value_generate(&synth_header->lexicon_search_order,value);
+			*value = synth_header->lexicon_search_order;
 			break;
 		default:
 			break;

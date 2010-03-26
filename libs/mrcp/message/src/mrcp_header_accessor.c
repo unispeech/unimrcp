@@ -19,19 +19,20 @@
 #include "mrcp_header_accessor.h"
 
 
-MRCP_DECLARE(apt_bool_t) mrcp_header_field_parse(mrcp_header_accessor_t *accessor, const apt_header_field_t *header_field, apr_size_t *id, apr_pool_t *pool)
+/** Parse header field value */
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_parse(mrcp_header_accessor_t *accessor, apt_header_field_t *header_field, apr_pool_t *pool)
 {
-	if(!accessor->vtable || !id) {
+	if(!accessor->vtable) {
 		return FALSE;
 	}
 
-	*id = apt_string_table_id_find(accessor->vtable->field_table,accessor->vtable->field_count,&header_field->name);
-	if(*id >= accessor->vtable->field_count) {
+	header_field->id = apt_string_table_id_find(accessor->vtable->field_table,accessor->vtable->field_count,&header_field->name);
+	if(header_field->id >= accessor->vtable->field_count) {
 		return FALSE;
 	}
 
 	if(header_field->value.length) {
-		if(accessor->vtable->parse_field(accessor,*id,&header_field->value,pool) == FALSE) {
+		if(accessor->vtable->parse_field(accessor,header_field->id,&header_field->value,pool) == FALSE) {
 			return FALSE;
 		}
 	}
@@ -39,7 +40,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_parse(mrcp_header_accessor_t *accesso
 	return TRUE;
 }
 
-MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_bool_t empty_value, apr_pool_t *pool)
+/** Generate header field value */
+MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_value_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_bool_t empty_value, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
 	const apt_str_t *name;
@@ -55,26 +57,16 @@ MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_generate(mrcp_header_accesso
 	}
 
 	if(empty_value == FALSE) {
-		char buffer[256];
-		apt_str_t *value;
-		apt_text_stream_t stream;
-		apt_text_stream_init(&stream,buffer,sizeof(buffer));
-		if(accessor->vtable->generate_field(accessor,id,&stream) == FALSE) {
+		if(accessor->vtable->generate_field(accessor,id,&header_field->value,pool) == FALSE) {
 			return NULL;
 		}
-	
-		value = &header_field->value;
-		value->length = stream.pos - stream.text.buf;
-		value->buf = apr_palloc(pool,value->length + 1);
-		memcpy(value->buf,stream.text.buf,value->length);
-		value->buf[value->length] = '\0';
 	}
 
 	return header_field;
 }
 
-/** Duplicate header field */
-MRCP_DECLARE(apt_bool_t) mrcp_header_field_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool)
+/** Duplicate header field value */
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool)
 {
 	if(!accessor->vtable) {
 		return FALSE;
