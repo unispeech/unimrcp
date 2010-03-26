@@ -300,6 +300,19 @@ APT_DECLARE(apt_bool_t) apt_pair_array_generate(apt_pair_arr_t *arr, apt_text_st
 	return TRUE;
 }
 
+/** Generate array of name-value pairs */
+APT_DECLARE(apt_bool_t) apt_pair_array_pgenerate(apt_pair_arr_t *arr, apt_str_t *str, apr_pool_t *pool)
+{
+	char buf[512];
+	apt_text_stream_t stream;
+	apt_text_stream_init(&stream,buf,sizeof(buf));
+	if(apt_pair_array_generate(arr,&stream) == FALSE) {
+		return FALSE;
+	}
+	apt_string_assign_n(str, stream.text.buf, stream.pos - stream.text.buf, pool);
+	return TRUE;
+}
+
 /** Parse boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value)
 {
@@ -330,6 +343,23 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_text_st
 	}
 	return TRUE;
 }
+
+/** Generate apr_size_t value from pool (buffer is allocated from pool) */
+APT_DECLARE(apt_bool_t) apt_boolean_value_pgenerate(apt_bool_t value, apt_str_t *str, apr_pool_t *pool)
+{
+	if(value == TRUE) {
+		str->length = TOKEN_TRUE_LENGTH;
+		str->buf = apr_palloc(pool,str->length);
+		memcpy(str->buf,TOKEN_TRUE,str->length);
+	}
+	else {
+		str->length = TOKEN_FALSE_LENGTH;
+		str->buf = apr_palloc(pool,str->length);
+		memcpy(str->buf,TOKEN_FALSE,str->length);
+	}
+	return TRUE;
+}
+
 
 /** Parse size_t value */
 APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str)
@@ -377,6 +407,21 @@ APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_text_stream_t 
 	while(*end == 0x30 && end != stream->pos) end--;
 
 	stream->pos = end + 1;
+	return TRUE;
+}
+
+/** Generate float value (buffer is allocated from pool) */
+APT_DECLARE(apt_bool_t) apt_float_value_pgenerate(float value, apt_str_t *str, apr_pool_t *pool)
+{
+	char *end;
+	str->buf = apr_psprintf(pool, "%"APR_SIZE_T_FMT, value);
+	str->length = strlen(str->buf);
+
+	/* remove trailing 0s (if any) */
+	end = str->buf + str->length - 1;
+	while(*end == 0x30 && end != str->buf) end--;
+
+	str->length = end - str->buf + 1;
 	return TRUE;
 }
 
@@ -435,6 +480,25 @@ APT_DECLARE(apt_bool_t) apt_completion_cause_generate(const apt_str_table_item_t
 	stream->pos += name->length;
 	return TRUE;
 }
+
+APT_DECLARE(apt_bool_t) apt_completion_cause_pgenerate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_str_t *str, apr_pool_t *pool)
+{
+	char buf[256];
+	int length;
+	const apt_str_t *name = apt_string_table_str_get(table,size,cause);
+	if(!name) {
+		return FALSE;
+	}
+	length = sprintf(buf,"%03"APR_SIZE_T_FMT" ",cause);
+	if(length <= 0) {
+		return FALSE;
+	}
+
+	memcpy(buf+length,name->buf,name->length);
+	apt_string_assign_n(str,buf,name->length + length,pool);
+	return TRUE;
+}
+
 
 /** Generate unique identifier (hex string) */
 APT_DECLARE(apt_bool_t) apt_unique_id_generate(apt_str_t *id, apr_size_t length, apr_pool_t *pool)
