@@ -201,7 +201,7 @@ static apt_bool_t mrcp_generic_header_generate(const mrcp_header_accessor_t *acc
 			*value = generic_header->content_location;
 			break;
 		case GENERIC_HEADER_CONTENT_LENGTH:
-			apt_size_value_pgenerate(generic_header->content_length,value,pool);
+			apt_size_value_generate(generic_header->content_length,value,pool);
 			break;
 		case GENERIC_HEADER_CACHE_CONTROL:
 			*value = generic_header->cache_control;
@@ -210,13 +210,13 @@ static apt_bool_t mrcp_generic_header_generate(const mrcp_header_accessor_t *acc
 			*value = generic_header->logging_tag;
 			break;
 		case GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS:
-			apt_pair_array_pgenerate(generic_header->vendor_specific_params,value,pool);
+			apt_pair_array_generate(generic_header->vendor_specific_params,value,pool);
 			break;
 		case GENERIC_HEADER_ACCEPT:
 			*value = generic_header->accept;
 			break;
 		case GENERIC_HEADER_FETCH_TIMEOUT:
-			apt_size_value_pgenerate(generic_header->fetch_timeout,value,pool);
+			apt_size_value_generate(generic_header->fetch_timeout,value,pool);
 			break;
 		case GENERIC_HEADER_SET_COOKIE:
 			*value = generic_header->set_cookie;

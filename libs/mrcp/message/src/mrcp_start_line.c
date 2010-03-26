@@ -70,7 +70,7 @@ static apt_bool_t mrcp_version_generate(mrcp_version_e version, apt_text_stream_
 	memcpy(stream->pos,MRCP_NAME,MRCP_NAME_LENGTH);
 	stream->pos += MRCP_NAME_LENGTH;
 	*stream->pos++ = MRCP_NAME_VERSION_SEPARATOR;
-	apt_size_value_generate(version,stream);
+	apt_text_size_value_insert(stream,version);
 	*stream->pos++ = MRCP_VERSION_MAJOR_MINOR_SEPARATOR;
 	*stream->pos++ = '0';
 	return TRUE;
@@ -104,7 +104,7 @@ static APR_INLINE mrcp_status_code_e mrcp_status_code_parse(const apt_str_t *fie
 /** Generate MRCP status-code */
 static APR_INLINE size_t  mrcp_status_code_generate(mrcp_status_code_e status_code, apt_text_stream_t *stream)
 {
-	return apt_size_value_generate(status_code,stream);
+	return apt_text_size_value_insert(stream,status_code);
 }
 
 

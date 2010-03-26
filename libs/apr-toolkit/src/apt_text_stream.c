@@ -219,8 +219,8 @@ APT_DECLARE(apt_bool_t) apt_id_resource_generate(const apt_str_t *id, const apt_
 	return TRUE;
 }
 
-/** Generate only the name ("name":) of the header */
-APT_DECLARE(apt_bool_t) apt_text_header_name_generate(const apt_str_t *name, apt_text_stream_t *stream)
+/** Generate only the name ("name":) of the header field */
+APT_DECLARE(apt_bool_t) apt_text_header_name_insert(apt_text_stream_t *stream, const apt_str_t *name)
 {
 	char *pos = stream->pos;
 	memcpy(pos,name->buf,name->length);
@@ -272,7 +272,21 @@ APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_
 }
 
 /** Generate array of name-value pairs */
-APT_DECLARE(apt_bool_t) apt_pair_array_generate(apt_pair_arr_t *arr, apt_text_stream_t *stream)
+APT_DECLARE(apt_bool_t) apt_pair_array_generate(const apt_pair_arr_t *arr, apt_str_t *str, apr_pool_t *pool)
+{
+	char buf[512];
+	apt_text_stream_t stream;
+	apt_text_stream_init(&stream,buf,sizeof(buf));
+	if(apt_text_pair_array_insert(&stream,arr) == FALSE) {
+		return FALSE;
+	}
+	apt_string_assign_n(str, stream.text.buf, stream.pos - stream.text.buf, pool);
+	return TRUE;
+}
+
+
+/** Insert array of name-value pairs */
+APT_DECLARE(apt_bool_t) apt_text_pair_array_insert(apt_text_stream_t *stream, const apt_pair_arr_t *arr)
 {
 	int i;
 	apt_pair_t *pair;
@@ -300,19 +314,6 @@ APT_DECLARE(apt_bool_t) apt_pair_array_generate(apt_pair_arr_t *arr, apt_text_st
 	return TRUE;
 }
 
-/** Generate array of name-value pairs */
-APT_DECLARE(apt_bool_t) apt_pair_array_pgenerate(apt_pair_arr_t *arr, apt_str_t *str, apr_pool_t *pool)
-{
-	char buf[512];
-	apt_text_stream_t stream;
-	apt_text_stream_init(&stream,buf,sizeof(buf));
-	if(apt_pair_array_generate(arr,&stream) == FALSE) {
-		return FALSE;
-	}
-	apt_string_assign_n(str, stream.text.buf, stream.pos - stream.text.buf, pool);
-	return TRUE;
-}
-
 /** Parse boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value)
 {
@@ -330,22 +331,8 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t
 	return FALSE;
 }
 
-/** Generate boolean-value */
-APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_text_stream_t *stream)
-{
-	if(value == TRUE) {
-		memcpy(stream->pos,TOKEN_TRUE,TOKEN_TRUE_LENGTH);
-		stream->pos += TOKEN_TRUE_LENGTH;
-	}
-	else {
-		memcpy(stream->pos,TOKEN_FALSE,TOKEN_FALSE_LENGTH);
-		stream->pos += TOKEN_FALSE_LENGTH;
-	}
-	return TRUE;
-}
-
 /** Generate apr_size_t value from pool (buffer is allocated from pool) */
-APT_DECLARE(apt_bool_t) apt_boolean_value_pgenerate(apt_bool_t value, apt_str_t *str, apr_pool_t *pool)
+APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_str_t *str, apr_pool_t *pool)
 {
 	if(value == TRUE) {
 		str->length = TOKEN_TRUE_LENGTH;
@@ -360,6 +347,20 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_pgenerate(apt_bool_t value, apt_str_t 
 	return TRUE;
 }
 
+/** Generate boolean-value */
+APT_DECLARE(apt_bool_t) apt_boolean_value_insert(apt_text_stream_t *stream, apt_bool_t value)
+{
+	if(value == TRUE) {
+		memcpy(stream->pos,TOKEN_TRUE,TOKEN_TRUE_LENGTH);
+		stream->pos += TOKEN_TRUE_LENGTH;
+	}
+	else {
+		memcpy(stream->pos,TOKEN_FALSE,TOKEN_FALSE_LENGTH);
+		stream->pos += TOKEN_FALSE_LENGTH;
+	}
+	return TRUE;
+}
+
 
 /** Parse size_t value */
 APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str)
@@ -367,8 +368,16 @@ APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str)
 	return str->buf ? atol(str->buf) : 0;
 }
 
-/** Generate apr_size_t value */
-APT_DECLARE(apt_bool_t) apt_size_value_generate(apr_size_t value, apt_text_stream_t *stream)
+/** Generate apr_size_t value (buffer is allocated from pool) */
+APT_DECLARE(apt_bool_t) apt_size_value_generate(apr_size_t value, apt_str_t *str, apr_pool_t *pool)
+{
+	str->buf = apr_psprintf(pool, "%"APR_SIZE_T_FMT, value);
+	str->length = strlen(str->buf);
+	return TRUE;
+}
+
+/** Insert apr_size_t value */
+APT_DECLARE(apt_bool_t) apt_text_size_value_insert(apt_text_stream_t *stream, apr_size_t value)
 {
 	int length = sprintf(stream->pos, "%"APR_SIZE_T_FMT, value);
 	if(length <= 0) {
@@ -379,22 +388,29 @@ APT_DECLARE(apt_bool_t) apt_size_value_generate(apr_size_t value, apt_text_strea
 }
 
 
-/** Generate apr_size_t value (buffer is allocated from pool) */
-APT_DECLARE(apt_bool_t) apt_size_value_pgenerate(apr_size_t value, apt_str_t *str, apr_pool_t *pool)
-{
-	str->buf = apr_psprintf(pool, "%"APR_SIZE_T_FMT, value);
-	str->length = strlen(str->buf);
-	return TRUE;
-}
-
 /** Parse float value */
 APT_DECLARE(float) apt_float_value_parse(const apt_str_t *str)
 {
 	return str->buf ? (float)atof(str->buf) : 0;
 }
 
+/** Generate float value (buffer is allocated from pool) */
+APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_str_t *str, apr_pool_t *pool)
+{
+	char *end;
+	str->buf = apr_psprintf(pool,"%f",value);
+	str->length = strlen(str->buf);
+
+	/* remove trailing 0s (if any) */
+	end = str->buf + str->length - 1;
+	while(*end == 0x30 && end != str->buf) end--;
+
+	str->length = end - str->buf + 1;
+	return TRUE;
+}
+
 /** Generate float value */
-APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_text_stream_t *stream)
+APT_DECLARE(apt_bool_t) apt_text_float_value_insert(apt_text_stream_t *stream, float value)
 {
 	char *end;
 	int length = sprintf(stream->pos,"%f",value);
@@ -407,21 +423,6 @@ APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_text_stream_t 
 	while(*end == 0x30 && end != stream->pos) end--;
 
 	stream->pos = end + 1;
-	return TRUE;
-}
-
-/** Generate float value (buffer is allocated from pool) */
-APT_DECLARE(apt_bool_t) apt_float_value_pgenerate(float value, apt_str_t *str, apr_pool_t *pool)
-{
-	char *end;
-	str->buf = apr_psprintf(pool,"%f",value);
-	str->length = strlen(str->buf);
-
-	/* remove trailing 0s (if any) */
-	end = str->buf + str->length - 1;
-	while(*end == 0x30 && end != str->buf) end--;
-
-	str->length = end - str->buf + 1;
 	return TRUE;
 }
 
@@ -463,25 +464,7 @@ APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_siz
 }
 
 /** Generate completion-cause */
-APT_DECLARE(apt_bool_t) apt_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_text_stream_t *stream)
-{
-	int length;
-	const apt_str_t *name = apt_string_table_str_get(table,size,cause);
-	if(!name) {
-		return FALSE;
-	}
-	length = sprintf(stream->pos,"%03"APR_SIZE_T_FMT" ",cause);
-	if(length <= 0) {
-		return FALSE;
-	}
-	stream->pos += length;
-
-	memcpy(stream->pos,name->buf,name->length);
-	stream->pos += name->length;
-	return TRUE;
-}
-
-APT_DECLARE(apt_bool_t) apt_completion_cause_pgenerate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_str_t *str, apr_pool_t *pool)
+APT_DECLARE(apt_bool_t) apt_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_str_t *str, apr_pool_t *pool)
 {
 	char buf[256];
 	int length;

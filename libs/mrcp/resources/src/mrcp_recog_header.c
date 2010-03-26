@@ -293,7 +293,7 @@ static APR_INLINE float apt_size_value_parse_as_float(const apt_str_t *value)
 static APR_INLINE apt_bool_t apt_size_value_generate_from_float(float value, apt_str_t *str, apr_pool_t *pool)
 {
 	apr_size_t s = (apr_size_t)((value + 0.001f) * 100);
-	return apt_size_value_pgenerate(s,str,pool);
+	return apt_size_value_generate(s,str,pool);
 }
 
 /** Parse MRCPv1 recognizer header */
@@ -339,13 +339,13 @@ static apt_bool_t mrcp_recog_header_generate(const mrcp_recog_header_t *recog_he
 {
 	switch(id) {
 		case RECOGNIZER_HEADER_N_BEST_LIST_LENGTH:
-			apt_size_value_pgenerate(recog_header->n_best_list_length,value,pool);
+			apt_size_value_generate(recog_header->n_best_list_length,value,pool);
 			break;
 		case RECOGNIZER_HEADER_NO_INPUT_TIMEOUT:
-			apt_size_value_pgenerate(recog_header->no_input_timeout,value,pool);
+			apt_size_value_generate(recog_header->no_input_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_RECOGNITION_TIMEOUT:
-			apt_size_value_pgenerate(recog_header->recognition_timeout,value,pool);
+			apt_size_value_generate(recog_header->recognition_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_WAVEFORM_URI:
 			*value = recog_header->waveform_uri;
@@ -354,19 +354,19 @@ static apt_bool_t mrcp_recog_header_generate(const mrcp_recog_header_t *recog_he
 			*value = recog_header->recognizer_context_block;
 			break;
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
-			apt_boolean_value_pgenerate(recog_header->start_input_timers,value,pool);
+			apt_boolean_value_generate(recog_header->start_input_timers,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT:
-			apt_size_value_pgenerate(recog_header->speech_complete_timeout,value,pool);
+			apt_size_value_generate(recog_header->speech_complete_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_INCOMPLETE_TIMEOUT:
-			apt_size_value_pgenerate(recog_header->speech_incomplete_timeout,value,pool);
+			apt_size_value_generate(recog_header->speech_incomplete_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_DTMF_INTERDIGIT_TIMEOUT:
-			apt_size_value_pgenerate(recog_header->dtmf_interdigit_timeout,value,pool);
+			apt_size_value_generate(recog_header->dtmf_interdigit_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_DTMF_TERM_TIMEOUT:
-			apt_size_value_pgenerate(recog_header->dtmf_term_timeout,value,pool);
+			apt_size_value_generate(recog_header->dtmf_term_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_DTMF_TERM_CHAR:
 			value->length = 1;
@@ -380,10 +380,10 @@ static apt_bool_t mrcp_recog_header_generate(const mrcp_recog_header_t *recog_he
 			*value = recog_header->failed_uri_cause;
 			break;
 		case RECOGNIZER_HEADER_SAVE_WAVEFORM:
-			apt_boolean_value_pgenerate(recog_header->save_waveform,value,pool);
+			apt_boolean_value_generate(recog_header->save_waveform,value,pool);
 			break;
 		case RECOGNIZER_HEADER_NEW_AUDIO_CHANNEL:
-			apt_boolean_value_pgenerate(recog_header->new_audio_channel,value,pool);
+			apt_boolean_value_generate(recog_header->new_audio_channel,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_LANGUAGE:
 			*value = recog_header->speech_language;
@@ -401,31 +401,31 @@ static apt_bool_t mrcp_recog_header_generate(const mrcp_recog_header_t *recog_he
 			*value = recog_header->media_type;
 			break;
 		case RECOGNIZER_HEADER_VER_BUFFER_UTTERANCE:
-			apt_boolean_value_pgenerate(recog_header->ver_buffer_utterance,value,pool);
+			apt_boolean_value_generate(recog_header->ver_buffer_utterance,value,pool);
 			break;
 		case RECOGNIZER_HEADER_RECOGNITION_MODE:
 			*value = recog_header->recognition_mode;
 			break;
 		case RECOGNIZER_HEADER_CANCEL_IF_QUEUE:
-			apt_boolean_value_pgenerate(recog_header->cancel_if_queue,value,pool);
+			apt_boolean_value_generate(recog_header->cancel_if_queue,value,pool);
 			break;
 		case RECOGNIZER_HEADER_HOTWORD_MAX_DURATION:
-			apt_size_value_pgenerate(recog_header->hotword_max_duration,value,pool);
+			apt_size_value_generate(recog_header->hotword_max_duration,value,pool);
 			break;
 		case RECOGNIZER_HEADER_HOTWORD_MIN_DURATION:
-			apt_size_value_pgenerate(recog_header->hotword_min_duration,value,pool);
+			apt_size_value_generate(recog_header->hotword_min_duration,value,pool);
 			break;
 		case RECOGNIZER_HEADER_INTERPRET_TEXT:
 			*value = recog_header->interpret_text;
 			break;
 		case RECOGNIZER_HEADER_DTMF_BUFFER_TIME:
-			apt_size_value_pgenerate(recog_header->dtmf_buffer_time,value,pool);
+			apt_size_value_generate(recog_header->dtmf_buffer_time,value,pool);
 			break;
 		case RECOGNIZER_HEADER_CLEAR_DTMF_BUFFER:
-			apt_boolean_value_pgenerate(recog_header->clear_dtmf_buffer,value,pool);
+			apt_boolean_value_generate(recog_header->clear_dtmf_buffer,value,pool);
 			break;
 		case RECOGNIZER_HEADER_EARLY_NO_MATCH:
-			apt_boolean_value_pgenerate(recog_header->early_no_match,value,pool);
+			apt_boolean_value_generate(recog_header->early_no_match,value,pool);
 			break;
 		default:
 			break;
@@ -447,7 +447,7 @@ static apt_bool_t mrcp_v1_recog_header_generate(const mrcp_header_accessor_t *ac
 		return apt_size_value_generate_from_float(recog_header->speed_vs_accuracy,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
-		return apt_completion_cause_pgenerate(
+		return apt_completion_cause_generate(
 			v1_completion_cause_string_table,
 			RECOGNIZER_COMPLETION_CAUSE_COUNT,
 			recog_header->completion_cause,
@@ -462,16 +462,16 @@ static apt_bool_t mrcp_v2_recog_header_generate(const mrcp_header_accessor_t *ac
 {
 	mrcp_recog_header_t *recog_header = accessor->data;
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
-		return apt_float_value_pgenerate(recog_header->confidence_threshold,value,pool);
+		return apt_float_value_generate(recog_header->confidence_threshold,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
-		return apt_float_value_pgenerate(recog_header->sensitivity_level,value,pool);
+		return apt_float_value_generate(recog_header->sensitivity_level,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
-		return apt_float_value_pgenerate(recog_header->speed_vs_accuracy,value,pool);
+		return apt_float_value_generate(recog_header->speed_vs_accuracy,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
-		return apt_completion_cause_pgenerate(
+		return apt_completion_cause_generate(
 			v2_completion_cause_string_table,
 			RECOGNIZER_COMPLETION_CAUSE_COUNT,
 			recog_header->completion_cause,

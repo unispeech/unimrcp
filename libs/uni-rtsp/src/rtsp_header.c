@@ -90,12 +90,12 @@ static apt_bool_t rtsp_port_range_generate(rtsp_transport_attrib_e attrib, const
 	if(!str) {
 		return FALSE;
 	}
-	apt_string_value_generate(str,text_stream);
+	apt_text_string_insert(text_stream,str);
 	apt_text_char_insert(text_stream,'=');
-	apt_size_value_generate(port_range->min,text_stream);
+	apt_text_size_value_insert(text_stream,port_range->min);
 	if(port_range->max > port_range->min) {
 		apt_text_char_insert(text_stream,'-');
-		apt_size_value_generate(port_range->max,text_stream);
+		apt_text_size_value_insert(text_stream,port_range->max);
 	}
 	return TRUE;
 }
@@ -236,9 +236,9 @@ static apt_bool_t rtsp_transport_generate(const rtsp_transport_t *transport, apt
 	}
 
 	apt_text_stream_init(&text_stream,buf,sizeof(buf));
-	apt_string_value_generate(protocol,&text_stream);
+	apt_text_string_insert(&text_stream,protocol);
 	apt_text_char_insert(&text_stream,'/');
-	apt_string_value_generate(profile,&text_stream);
+	apt_text_string_insert(&text_stream,profile);
 
 	if(transport->delivery != RTSP_DELIVERY_NONE) {
 		const apt_str_t *delivery = NULL;
@@ -255,7 +255,7 @@ static apt_bool_t rtsp_transport_generate(const rtsp_transport_t *transport, apt
 		}
 	
 		apt_text_char_insert(&text_stream,';');
-		apt_string_value_generate(delivery,&text_stream);
+		apt_text_string_insert(&text_stream,delivery);
 	}
 
 	if(rtsp_port_range_is_valid(&transport->client_port_range) == TRUE) {
@@ -272,9 +272,9 @@ static apt_bool_t rtsp_transport_generate(const rtsp_transport_t *transport, apt
 		str = apt_string_table_str_get(rtsp_transport_attrib_string_table,RTSP_TRANSPORT_ATTRIB_COUNT,RTSP_TRANSPORT_ATTRIB_MODE);
 		if(str) {
 			apt_text_char_insert(&text_stream,';');
-			apt_string_value_generate(str,&text_stream);
+			apt_text_string_insert(&text_stream,str);
 			apt_text_char_insert(&text_stream,'=');
-			apt_string_value_generate(&transport->mode,&text_stream);
+			apt_text_string_insert(&text_stream,&transport->mode);
 		}
 	}
 	value->length = text_stream.pos - text_stream.text.buf;
@@ -334,7 +334,7 @@ static apr_size_t rtsp_header_field_value_generate(const rtsp_header_t *header, 
 {
 	switch(id) {
 		case RTSP_HEADER_FIELD_CSEQ:
-			apt_size_value_pgenerate(header->cseq,value,pool);
+			apt_size_value_generate(header->cseq,value,pool);
 			break;
 		case RTSP_HEADER_FIELD_TRANSPORT:
 			rtsp_transport_generate(&header->transport,value,pool);
@@ -354,7 +354,7 @@ static apr_size_t rtsp_header_field_value_generate(const rtsp_header_t *header, 
 			break;
 		}
 		case RTSP_HEADER_FIELD_CONTENT_LENGTH:
-			apt_size_value_pgenerate(header->content_length,value,pool);
+			apt_size_value_generate(header->content_length,value,pool);
 			break;
 		default:
 			break;

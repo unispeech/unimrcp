@@ -157,7 +157,7 @@ static apt_bool_t mrcp_prosody_rate_generate(mrcp_prosody_rate_t *prosody_rate, 
 			pool);
 	}
 	else {
-		apt_float_value_pgenerate(prosody_rate->value.relative, str, pool);
+		apt_float_value_generate(prosody_rate->value.relative,str,pool);
 	}
 
 	return TRUE;
@@ -206,10 +206,10 @@ static apt_bool_t mrcp_prosody_volume_generate(mrcp_prosody_volume_t *prosody_vo
 			pool);
 	}
 	else if (prosody_volume->type == PROSODY_VOLUME_TYPE_NUMERIC) {
-		apt_float_value_pgenerate(prosody_volume->value.numeric, str, pool);
+		apt_float_value_generate(prosody_volume->value.numeric,str,pool);
 	}
 	else {
-		apt_float_value_pgenerate(prosody_volume->value.relative, str, pool);
+		apt_float_value_generate(prosody_volume->value.relative,str,pool);
 	}
 
 	return TRUE;
@@ -270,7 +270,7 @@ static apt_bool_t mrcp_speech_length_generate(mrcp_speech_length_value_t *speech
 		else {
 			*stream.pos++ = '-';
 		}
-		apt_size_value_generate(speech_length->value.numeric.length,&stream);
+		apt_text_size_value_insert(&stream,speech_length->value.numeric.length);
 		*stream.pos++ = APT_TOKEN_SP;
 		apt_string_table_value_generate(speech_unit_string_table,SPEECH_UNIT_COUNT,speech_length->value.numeric.unit,&stream);
 
@@ -399,13 +399,13 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 			mrcp_speech_length_generate(&synth_header->jump_size,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_KILL_ON_BARGE_IN:
-			apt_boolean_value_pgenerate(synth_header->kill_on_barge_in,value,pool);
+			apt_boolean_value_generate(synth_header->kill_on_barge_in,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEAKER_PROFILE:
 			*value = synth_header->speaker_profile,value;
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
-			apt_completion_cause_pgenerate(
+			apt_completion_cause_generate(
 				completion_cause_string_table,
 				SYNTHESIZER_COMPLETION_CAUSE_COUNT,
 				synth_header->completion_cause,
@@ -424,10 +424,10 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 				pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_AGE:
-			apt_size_value_pgenerate(synth_header->voice_param.age,value,pool);
+			apt_size_value_generate(synth_header->voice_param.age,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_VARIANT:
-			apt_size_value_pgenerate(synth_header->voice_param.variant,value,pool);
+			apt_size_value_generate(synth_header->voice_param.variant,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_NAME:
 			*value = synth_header->voice_param.name,value;
@@ -457,13 +457,13 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 			*value = synth_header->failed_uri_cause;
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_RESTART:
-			apt_boolean_value_pgenerate(synth_header->speak_restart,value,pool);
+			apt_boolean_value_generate(synth_header->speak_restart,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_LENGTH:
 			mrcp_speech_length_generate(&synth_header->speak_length,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_LOAD_LEXICON:
-			apt_boolean_value_pgenerate(synth_header->load_lexicon,value,pool);
+			apt_boolean_value_generate(synth_header->load_lexicon,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_LEXICON_SEARCH_ORDER:
 			*value = synth_header->lexicon_search_order;

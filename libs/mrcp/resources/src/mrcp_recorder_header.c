@@ -139,14 +139,14 @@ static apt_bool_t mrcp_recorder_header_generate(const mrcp_header_accessor_t *ac
 	mrcp_recorder_header_t *recorder_header = accessor->data;
 	switch(id) {
 		case RECORDER_HEADER_SENSITIVITY_LEVEL:
-			apt_float_value_pgenerate(recorder_header->sensitivity_level,value,pool);
+			apt_float_value_generate(recorder_header->sensitivity_level,value,pool);
 			break;
 		case RECORDER_HEADER_NO_INPUT_TIMEOUT:
-			apt_size_value_pgenerate(recorder_header->no_input_timeout,value,pool);
+			apt_size_value_generate(recorder_header->no_input_timeout,value,pool);
 			break;
 		case RECORDER_HEADER_COMPLETION_CAUSE:
 		{
-			apt_completion_cause_pgenerate(
+			apt_completion_cause_generate(
 				completion_cause_string_table,
 				RECORDER_COMPLETION_CAUSE_COUNT,
 				recorder_header->completion_cause,
@@ -170,25 +170,25 @@ static apt_bool_t mrcp_recorder_header_generate(const mrcp_header_accessor_t *ac
 			*value = recorder_header->media_type;
 			break;
 		case RECORDER_HEADER_MAX_TIME:
-			apt_size_value_pgenerate(recorder_header->max_time,value,pool);
+			apt_size_value_generate(recorder_header->max_time,value,pool);
 			break;
 		case RECORDER_HEADER_TRIM_LENGTH:
-			apt_size_value_pgenerate(recorder_header->trim_length,value,pool);
+			apt_size_value_generate(recorder_header->trim_length,value,pool);
 			break;
 		case RECORDER_HEADER_FINAL_SILENCE:
-			apt_size_value_pgenerate(recorder_header->final_silence,value,pool);
+			apt_size_value_generate(recorder_header->final_silence,value,pool);
 			break;
 		case RECORDER_HEADER_CAPTURE_ON_SPEECH:
-			apt_boolean_value_pgenerate(recorder_header->capture_on_speech,value,pool);
+			apt_boolean_value_generate(recorder_header->capture_on_speech,value,pool);
 			break;
 		case RECORDER_HEADER_VER_BUFFER_UTTERANCE:
-			apt_boolean_value_pgenerate(recorder_header->ver_buffer_utterance,value,pool);
+			apt_boolean_value_generate(recorder_header->ver_buffer_utterance,value,pool);
 			break;
 		case RECORDER_HEADER_START_INPUT_TIMERS:
-			apt_boolean_value_pgenerate(recorder_header->start_input_timers,value,pool);
+			apt_boolean_value_generate(recorder_header->start_input_timers,value,pool);
 			break;
 		case RECORDER_HEADER_NEW_AUDIO_CHANNEL:
-			apt_boolean_value_pgenerate(recorder_header->new_audio_channel,value,pool);
+			apt_boolean_value_generate(recorder_header->new_audio_channel,value,pool);
 			break;
 		default:
 			break;

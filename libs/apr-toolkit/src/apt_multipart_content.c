@@ -94,26 +94,26 @@ APT_DECLARE(apt_bool_t) apt_multipart_content_add(apt_multipart_content_t *multi
 	/* insert preceding end-of-line */
 	apt_text_eol_insert(&multipart_content->stream);
 	/* insert hyphens */
-	apt_string_value_generate(&multipart_content->hyphens,&multipart_content->stream);
+	apt_text_string_insert(&multipart_content->stream,&multipart_content->hyphens);
 	/* insert boundary */
-	apt_string_value_generate(&multipart_content->boundary,&multipart_content->stream);
+	apt_text_string_insert(&multipart_content->stream,&multipart_content->boundary);
 	apt_text_eol_insert(&multipart_content->stream);
 
 	/* insert content-type */
-	apt_text_header_name_generate(&multipart_content->content_type_header,&multipart_content->stream);
-	apt_string_value_generate(content_type,&multipart_content->stream);
+	apt_text_header_name_insert(&multipart_content->stream,&multipart_content->content_type_header);
+	apt_text_string_insert(&multipart_content->stream,content_type);
 	apt_text_eol_insert(&multipart_content->stream);
 
 	/* insert content-lebgth */
-	apt_text_header_name_generate(&multipart_content->content_length_header,&multipart_content->stream);
-	apt_size_value_generate(content->length,&multipart_content->stream);
+	apt_text_header_name_insert(&multipart_content->stream,&multipart_content->content_length_header);
+	apt_text_size_value_insert(&multipart_content->stream,content->length);
 	apt_text_eol_insert(&multipart_content->stream);
 
 	/* insert empty line */
 	apt_text_eol_insert(&multipart_content->stream);
 
 	/* insert content */
-	apt_string_value_generate(content, &multipart_content->stream);
+	apt_text_string_insert(&multipart_content->stream,content);
 	return TRUE;
 }
 
@@ -129,11 +129,11 @@ APT_DECLARE(apt_str_t*) apt_multipart_content_finalize(apt_multipart_content_t *
 	/* insert preceding end-of-line */
 	apt_text_eol_insert(&multipart_content->stream);
 	/* insert hyphens */
-	apt_string_value_generate(&multipart_content->hyphens,&multipart_content->stream);
+	apt_text_string_insert(&multipart_content->stream,&multipart_content->hyphens);
 	/* insert boundary */
-	apt_string_value_generate(&multipart_content->boundary,&multipart_content->stream);
+	apt_text_string_insert(&multipart_content->stream,&multipart_content->boundary);
 	/* insert final hyphens */
-	apt_string_value_generate(&multipart_content->hyphens,&multipart_content->stream);
+	apt_text_string_insert(&multipart_content->stream,&multipart_content->hyphens);
 	apt_text_eol_insert(&multipart_content->stream);
 
 	stream->text.length = stream->pos - stream->text.buf;
