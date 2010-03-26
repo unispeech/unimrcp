@@ -414,7 +414,7 @@ APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_text_stream_t 
 APT_DECLARE(apt_bool_t) apt_float_value_pgenerate(float value, apt_str_t *str, apr_pool_t *pool)
 {
 	char *end;
-	str->buf = apr_psprintf(pool, "%"APR_SIZE_T_FMT, value);
+	str->buf = apr_psprintf(pool,"%f",value);
 	str->length = strlen(str->buf);
 
 	/* remove trailing 0s (if any) */
