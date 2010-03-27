@@ -39,10 +39,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_factory_destroy(mrcp_resource_factory_t *
 MRCP_DECLARE(apt_bool_t) mrcp_resource_register(mrcp_resource_factory_t *resource_factory, mrcp_resource_t *resource);
 
 /** Get MRCP resource by resource id */
-MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_get(mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id);
+MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_get(const mrcp_resource_factory_t *resource_factory, mrcp_resource_id resource_id);
 
 /** Find MRCP resource by resource name */
-MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_find(mrcp_resource_factory_t *resource_factory, const apt_str_t *name);
+MRCP_DECLARE(mrcp_resource_t*) mrcp_resource_find(const mrcp_resource_factory_t *resource_factory, const apt_str_t *name);
 
 
 APT_END_EXTERN_C
