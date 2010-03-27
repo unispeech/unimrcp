@@ -30,6 +30,9 @@ APT_BEGIN_EXTERN_C
 
 /** MRCP message header declaration */
 typedef struct mrcp_message_header_t mrcp_message_header_t;
+/** MRCP channel-id declaration */
+typedef struct mrcp_channel_id mrcp_channel_id;
+
 
 /** MRCP message-header */
 struct mrcp_message_header_t {
@@ -41,6 +44,15 @@ struct mrcp_message_header_t {
 	/** Header section (collection of header fields)*/
 	apt_header_section_t   header_section;
 };
+
+/** MRCP channel-identifier */
+struct mrcp_channel_id {
+	/** Unambiguous string identifying the MRCP session */
+	apt_str_t        session_id;
+	/** MRCP resource name */
+	apt_str_t        resource_name;
+};
+
 
 /** Initialize MRCP message-header */
 static APR_INLINE void mrcp_message_header_init(mrcp_message_header_t *header)
@@ -64,11 +76,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 						apr_pool_t *pool);
 
 
-/** Parse MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_parse(mrcp_message_header_t *header, apt_text_stream_t *stream, apr_pool_t *pool);
+/** Add MRCP header field */
+MRCP_DECLARE(apt_bool_t) mrcp_message_header_field_add(mrcp_message_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool);
 
-/** Generate MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_generate(mrcp_message_header_t *header, apt_text_stream_t *stream);
 
 /** Set MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool);
@@ -78,6 +88,17 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *header, 
 
 /** Inherit MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool);
+
+
+/** Initialize MRCP channel-identifier */
+MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id);
+
+/** Parse MRCP channel-identifier */
+MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, const apt_header_field_t *header_field, apr_pool_t *pool);
+
+/** Generate MRCP channel-identifier */
+MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream);
+
 
 
 APT_END_EXTERN_C

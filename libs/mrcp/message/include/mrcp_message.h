@@ -31,26 +31,6 @@
 
 APT_BEGIN_EXTERN_C
 
-/** MRCP channel-id declaration */
-typedef struct mrcp_channel_id mrcp_channel_id;
-
-/** MRCP channel-identifier */
-struct mrcp_channel_id {
-	/** Unambiguous string identifying the MRCP session */
-	apt_str_t        session_id;
-	/** MRCP resource name */
-	apt_str_t        resource_name;
-};
-
-/** Initialize MRCP channel-identifier */
-MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id);
-
-/** Parse MRCP channel-identifier */
-MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream, apr_pool_t *pool);
-
-/** Generate MRCP channel-identifier */
-MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream);
-
 
 /** MRCP message */
 struct mrcp_message_t {

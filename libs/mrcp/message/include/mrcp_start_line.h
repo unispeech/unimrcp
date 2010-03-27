@@ -100,7 +100,7 @@ struct mrcp_start_line_t {
 /** Initialize MRCP start-line */
 MRCP_DECLARE(void) mrcp_start_line_init(mrcp_start_line_t *start_line);
 /** Parse MRCP start-line */
-MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, apt_text_stream_t *text_stream, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, apt_str_t *str, apr_pool_t *pool);
 /** Generate MRCP start-line */
 MRCP_DECLARE(apt_bool_t) mrcp_start_line_generate(mrcp_start_line_t *start_line, apt_text_stream_t *text_stream);
 /** Finalize MRCP start-line generation */

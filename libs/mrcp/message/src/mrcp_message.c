@@ -22,66 +22,6 @@
 #include "apt_text_message.h"
 #include "apt_log.h"
 
-#define MRCP_CHANNEL_ID         "Channel-Identifier"
-#define MRCP_CHANNEL_ID_LENGTH  (sizeof(MRCP_CHANNEL_ID)-1)
-
-/** Initialize MRCP channel-identifier */
-MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)
-{
-	apt_string_reset(&channel_id->session_id);
-	apt_string_reset(&channel_id->resource_name);
-}
-
-/** Parse MRCP channel-identifier */
-MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream, apr_pool_t *pool)
-{
-	apt_bool_t match = FALSE;
-	apt_pair_t pair;
-	do {
-		if(apt_text_header_read(text_stream,&pair) == TRUE) {
-			if(pair.name.length) {
-				if(pair.value.length && strncasecmp(pair.name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
-					match = TRUE;
-					apt_id_resource_parse(&pair.value,'@',&channel_id->session_id,&channel_id->resource_name,pool);
-					break;
-				}
-				/* skip this header, expecting channel identifier first */
-			}
-			else {
-				/* empty header */
-				break;
-			}
-		}
-	}
-	while(apt_text_is_eos(text_stream) == FALSE);
-	return match;
-}
-
-/** Generate MRCP channel-identifier */
-MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, apt_text_stream_t *text_stream)
-{
-	apt_str_t *str;
-	char *pos = text_stream->pos;
-
-	memcpy(pos,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH);
-	pos += MRCP_CHANNEL_ID_LENGTH;
-	*pos++ = ':';
-	*pos++ = APT_TOKEN_SP;
-	
-	str = &channel_id->session_id;
-	memcpy(pos,str->buf,str->length);
-	pos += str->length;
-	*pos++ = '@';
-
-	str = &channel_id->resource_name;
-	memcpy(pos,str->buf,str->length);
-	pos += str->length;
-
-	text_stream->pos = pos;
-	apt_text_eol_insert(text_stream);
-	return TRUE;
-}
-
 /** Associate MRCP resource specific data by resource identifier */
 MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set_by_id(mrcp_message_t *message, mrcp_resource_t *resource)
 {

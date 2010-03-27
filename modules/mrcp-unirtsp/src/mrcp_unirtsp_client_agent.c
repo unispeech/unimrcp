@@ -210,9 +210,8 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		apt_string_set(&resource_name_str,resource_name);
 
 		parser = mrcp_parser_create(agent->sig_agent->resource_factory,session->mrcp_session->pool);
-		mrcp_parser_resource_name_set(parser,&resource_name_str);
-		if(mrcp_parser_run(parser,&text_stream) == MRCP_STREAM_STATUS_COMPLETE) {
-			mrcp_message = mrcp_parser_message_get(parser);
+		mrcp_parser_resource_set(parser,&resource_name_str);
+		if(mrcp_parser_run(parser,&text_stream,&mrcp_message) == APT_MESSAGE_STATUS_COMPLETE) {
 			mrcp_message->channel_id.session_id = message->header.session_id;
 		}
 		else {
