@@ -20,6 +20,10 @@
 #include "mrcp_generic_header.h"
 #include "apt_text_message.h"
 
+#define MRCP_CHANNEL_ID         "Channel-Identifier"
+#define MRCP_CHANNEL_ID_LENGTH  (sizeof(MRCP_CHANNEL_ID)-1)
+
+
 /** Allocate MRCP message-header */
 MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 						mrcp_message_header_t *header,
@@ -82,6 +86,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *header, 
 					&header->generic_header_accessor,
 					&src_header->generic_header_accessor,
 					header_field->id,
+					&header_field->value,
 					pool) == TRUE) {
 				apt_header_section_field_add(&header->header_section,header_field);
 			}
@@ -91,6 +96,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *header, 
 					&header->resource_header_accessor,
 					&src_header->resource_header_accessor,
 					header_field->id - GENERIC_HEADER_COUNT,
+					&header_field->value,
 					pool) == TRUE) {
 				apt_header_section_field_add(&header->header_section,header_field);
 			}
@@ -112,22 +118,22 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *header, 
 		src_header_field = apt_header_section_field_get(&src_header->header_section,header_field->id);
 		if(src_header_field) {
 			if(header_field->id < GENERIC_HEADER_COUNT) {
-				if(mrcp_header_field_value_duplicate(
+				apt_string_copy(&header_field->value,&src_header_field->value,pool);
+				mrcp_header_field_value_duplicate(
 						&header->generic_header_accessor,
 						&src_header->generic_header_accessor,
 						header_field->id,
-						pool) == TRUE) {
-					apt_string_copy(&header_field->value,&src_header_field->value,pool);
-				}
+						&header_field->value,
+						pool);
 			}
 			else {
-				if(mrcp_header_field_value_duplicate(
+				apt_string_copy(&header_field->value,&src_header_field->value,pool);
+				mrcp_header_field_value_duplicate(
 						&header->resource_header_accessor,
 						&src_header->resource_header_accessor,
 						header_field->id - GENERIC_HEADER_COUNT,
-						pool) == TRUE) {
-					apt_string_copy(&header_field->value,&src_header_field->value,pool);
-				}
+						&header_field->value,
+						pool);
 			}
 		}
 	}
@@ -152,6 +158,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *head
 						&header->generic_header_accessor,
 						&src_header->generic_header_accessor,
 						header_field->id,
+						&header_field->value,
 						pool) == TRUE) {
 					apt_header_section_field_add(&header->header_section,header_field);
 				}
@@ -161,6 +168,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *head
 						&header->resource_header_accessor,
 						&src_header->resource_header_accessor,
 						header_field->id - GENERIC_HEADER_COUNT,
+						&header_field->value,
 						pool) == TRUE) {
 					apt_header_section_field_add(&header->header_section,header_field);
 				}
@@ -170,9 +178,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *head
 	return TRUE;
 }
 
-
-#define MRCP_CHANNEL_ID         "Channel-Identifier"
-#define MRCP_CHANNEL_ID_LENGTH  (sizeof(MRCP_CHANNEL_ID)-1)
 
 /** Initialize MRCP channel-identifier */
 MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)

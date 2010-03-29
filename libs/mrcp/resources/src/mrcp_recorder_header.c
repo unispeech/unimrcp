@@ -92,19 +92,19 @@ static apt_bool_t mrcp_recorder_header_parse(mrcp_header_accessor_t *accessor, a
 			recorder_header->completion_cause = apt_size_value_parse(value);
 			break;
 		case RECORDER_HEADER_COMPLETION_REASON:
-			apt_string_copy(&recorder_header->completion_reason,value,pool);
+			recorder_header->completion_reason = *value;
 			break;
 		case RECORDER_HEADER_FAILED_URI:
-			apt_string_copy(&recorder_header->failed_uri,value,pool);
+			recorder_header->failed_uri = *value;
 			break;
 		case RECORDER_HEADER_FAILED_URI_CAUSE:
-			apt_string_copy(&recorder_header->failed_uri_cause,value,pool);
+			recorder_header->failed_uri_cause = *value;
 			break;
 		case RECORDER_HEADER_RECORD_URI:
-			apt_string_copy(&recorder_header->record_uri,value,pool);
+			recorder_header->record_uri = *value;
 			break;
 		case RECORDER_HEADER_MEDIA_TYPE:
-			apt_string_copy(&recorder_header->media_type,value,pool);
+			recorder_header->media_type = *value;
 			break;
 		case RECORDER_HEADER_MAX_TIME:
 			recorder_header->max_time = apt_size_value_parse(value);
@@ -197,7 +197,7 @@ static apt_bool_t mrcp_recorder_header_generate(const mrcp_header_accessor_t *ac
 }
 
 /** Duplicate MRCP recorder header */
-static apt_bool_t mrcp_recorder_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool)
+static apt_bool_t mrcp_recorder_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_recorder_header_t *recorder_header = accessor->data;
 	const mrcp_recorder_header_t *src_recorder_header = src->data;
@@ -218,19 +218,19 @@ static apt_bool_t mrcp_recorder_header_duplicate(mrcp_header_accessor_t *accesso
 			recorder_header->completion_cause = src_recorder_header->completion_cause;
 			break;
 		case RECORDER_HEADER_COMPLETION_REASON:
-			apt_string_copy(&recorder_header->completion_reason,&src_recorder_header->completion_reason,pool);
+			recorder_header->completion_reason = *value;
 			break;
 		case RECORDER_HEADER_FAILED_URI:
-			apt_string_copy(&recorder_header->failed_uri,&src_recorder_header->failed_uri,pool);
+			recorder_header->failed_uri = *value;
 			break;
 		case RECORDER_HEADER_FAILED_URI_CAUSE:
-			apt_string_copy(&recorder_header->failed_uri_cause,&src_recorder_header->failed_uri_cause,pool);
+			recorder_header->failed_uri_cause = *value;
 			break;
 		case RECORDER_HEADER_RECORD_URI:
-			apt_string_copy(&recorder_header->record_uri,&src_recorder_header->record_uri,pool);
+			recorder_header->record_uri = *value;
 			break;
 		case RECORDER_HEADER_MEDIA_TYPE:
-			apt_string_copy(&recorder_header->media_type,&src_recorder_header->media_type,pool);
+			recorder_header->media_type = *value;
 			break;
 		case RECORDER_HEADER_MAX_TIME:
 			recorder_header->max_time = src_recorder_header->max_time;

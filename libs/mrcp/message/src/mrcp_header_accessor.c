@@ -66,14 +66,16 @@ MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_value_generate(const mrcp_he
 }
 
 /** Duplicate header field value */
-MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	if(!accessor->vtable) {
 		return FALSE;
 	}
 	
-	if(accessor->vtable->duplicate_field(accessor,src_accessor,id,pool) == FALSE) {
-		return FALSE;
+	if(value->length) {
+		if(accessor->vtable->duplicate_field(accessor,src_accessor,id,value,pool) == FALSE) {
+			return FALSE;
+		}
 	}
 
 	return TRUE;

@@ -67,7 +67,7 @@ struct mrcp_request_id_list_t {
 	/** Array of request identifiers */
 	mrcp_request_id ids[MAX_ACTIVE_REQUEST_ID_COUNT];
 	/** Number of request identifiers */
-	size_t          count;
+	apr_size_t          count;
 };
 
 

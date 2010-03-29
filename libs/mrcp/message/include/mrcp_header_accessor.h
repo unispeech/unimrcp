@@ -47,7 +47,7 @@ struct mrcp_header_vtable_t {
 	/** Generate header field value */
 	apt_bool_t (*generate_field)(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool);
 	/** Duplicate header field value */
-	apt_bool_t (*duplicate_field)(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool);
+	apt_bool_t (*duplicate_field)(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, const apt_str_t *value, apr_pool_t *pool);
 
 	/** Table of fields  */
 	const apt_str_table_item_t *field_table;
@@ -123,7 +123,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_parse(mrcp_header_accessor_t *a
 MRCP_DECLARE(apt_header_field_t*) mrcp_header_field_value_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_bool_t empty_value, apr_pool_t *pool);
 
 /** Duplicate header field value */
-MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src_accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool);
 
 
 APT_END_EXTERN_C

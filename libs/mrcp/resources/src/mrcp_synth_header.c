@@ -328,13 +328,13 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			apt_boolean_value_parse(value,&synth_header->kill_on_barge_in);
 			break;
 		case SYNTHESIZER_HEADER_SPEAKER_PROFILE:
-			apt_string_copy(&synth_header->speaker_profile,value,pool);
+			synth_header->speaker_profile = *value;
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
 			synth_header->completion_cause = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_REASON:
-			apt_string_copy(&synth_header->completion_reason,value,pool);
+			synth_header->completion_reason = *value;
 			break;
 		case SYNTHESIZER_HEADER_VOICE_GENDER:
 			synth_header->voice_param.gender = apt_string_table_value_parse(voice_gender_string_table,VOICE_GENDER_COUNT,value);
@@ -346,7 +346,7 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			synth_header->voice_param.variant = apt_size_value_parse(value);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_NAME:
-			apt_string_copy(&synth_header->voice_param.name,value,pool);
+			synth_header->voice_param.name = *value;
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
 			mrcp_prosody_param_volume_parse(&synth_header->prosody_param.volume,value,pool);
@@ -355,22 +355,22 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			mrcp_prosody_param_rate_parse(&synth_header->prosody_param.rate,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_MARKER:
-			apt_string_copy(&synth_header->speech_marker,value,pool);
+			synth_header->speech_marker = *value;
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_copy(&synth_header->speech_language,value,pool);
+			synth_header->speech_language = *value;
 			break;
 		case SYNTHESIZER_HEADER_FETCH_HINT:
-			apt_string_copy(&synth_header->fetch_hint,value,pool);
+			synth_header->fetch_hint = *value;
 			break;
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
-			apt_string_copy(&synth_header->audio_fetch_hint,value,pool);
+			synth_header->audio_fetch_hint = *value;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI:
-			apt_string_copy(&synth_header->failed_uri,value,pool);
+			synth_header->failed_uri = *value;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_copy(&synth_header->failed_uri_cause,value,pool);
+			synth_header->failed_uri_cause = *value;
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_RESTART:
 			apt_boolean_value_parse(value,&synth_header->speak_restart);
@@ -382,7 +382,7 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 			apt_boolean_value_parse(value,&synth_header->load_lexicon);
 			break;
 		case SYNTHESIZER_HEADER_LEXICON_SEARCH_ORDER:
-			apt_string_copy(&synth_header->lexicon_search_order,value,pool);
+			synth_header->lexicon_search_order = *value;
 			break;
 		default:
 			status = FALSE;
@@ -475,7 +475,7 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 }
 
 /** Duplicate MRCP synthesizer header */
-static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, size_t id, apr_pool_t *pool)
+static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_synth_header_t *synth_header = accessor->data;
 	const mrcp_synth_header_t *src_synth_header = src->data;
@@ -493,13 +493,13 @@ static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, 
 			synth_header->kill_on_barge_in = src_synth_header->kill_on_barge_in;
 			break;
 		case SYNTHESIZER_HEADER_SPEAKER_PROFILE:
-			apt_string_copy(&synth_header->speaker_profile,&src_synth_header->speaker_profile,pool);
+			synth_header->speaker_profile = *value;
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
 			synth_header->completion_cause = src_synth_header->completion_cause;
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_REASON:
-			apt_string_copy(&synth_header->completion_reason,&src_synth_header->completion_reason,pool);
+			synth_header->completion_reason = *value;
 			break;
 		case SYNTHESIZER_HEADER_VOICE_GENDER:
 			synth_header->voice_param.gender = src_synth_header->voice_param.gender;
@@ -511,7 +511,7 @@ static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, 
 			synth_header->voice_param.variant = src_synth_header->voice_param.variant;
 			break;
 		case SYNTHESIZER_HEADER_VOICE_NAME:
-			apt_string_copy(&synth_header->voice_param.name,&src_synth_header->voice_param.name,pool);
+			synth_header->voice_param.name = *value;
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
 			synth_header->prosody_param.volume = src_synth_header->prosody_param.volume;
@@ -520,22 +520,22 @@ static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, 
 			synth_header->prosody_param.rate = src_synth_header->prosody_param.rate;
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_MARKER:
-			apt_string_copy(&synth_header->speech_marker,&src_synth_header->speech_marker,pool);
+			synth_header->speech_marker = *value;
 			break;
 		case SYNTHESIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_copy(&synth_header->speech_language,&src_synth_header->speech_language,pool);
+			synth_header->speech_language = *value;
 			break;
 		case SYNTHESIZER_HEADER_FETCH_HINT:
-			apt_string_copy(&synth_header->fetch_hint,&src_synth_header->fetch_hint,pool);
+			synth_header->fetch_hint = *value;
 			break;
 		case SYNTHESIZER_HEADER_AUDIO_FETCH_HINT:
-			apt_string_copy(&synth_header->audio_fetch_hint,&src_synth_header->audio_fetch_hint,pool);
+			synth_header->audio_fetch_hint = *value;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI:
-			apt_string_copy(&synth_header->failed_uri,&src_synth_header->failed_uri,pool);
+			synth_header->failed_uri = *value;
 			break;
 		case SYNTHESIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_copy(&synth_header->failed_uri_cause,&src_synth_header->failed_uri_cause,pool);
+			synth_header->failed_uri_cause = *value;
 			break;
 		case SYNTHESIZER_HEADER_SPEAK_RESTART:
 			synth_header->speak_restart = src_synth_header->speak_restart;
@@ -547,7 +547,7 @@ static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, 
 			synth_header->load_lexicon = src_synth_header->load_lexicon;
 			break;
 		case SYNTHESIZER_HEADER_LEXICON_SEARCH_ORDER:
-			apt_string_copy(&synth_header->lexicon_search_order,&src_synth_header->lexicon_search_order,pool);
+			synth_header->lexicon_search_order = *value;
 			break;
 		default:
 			status = FALSE;
