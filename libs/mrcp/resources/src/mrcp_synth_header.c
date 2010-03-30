@@ -18,7 +18,7 @@
 
 #include "mrcp_synth_header.h"
 
-/** String table of MRCP synthesizer headers (mrcp_synthesizer_header_id) */
+/** String table of MRCP synthesizer header fields (mrcp_synthesizer_header_id) */
 static const apt_str_table_item_t synth_header_string_table[] = {
 	{{"Jump-Size",            9},0},
 	{{"Kill-On-Barge-In",    16},0},

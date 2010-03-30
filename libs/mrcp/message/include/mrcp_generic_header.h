@@ -29,7 +29,7 @@
 
 APT_BEGIN_EXTERN_C
 
-/** Enumeration of MRCP generic headers */
+/** Enumeration of MRCP generic header fields */
 typedef enum {
 	GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST,
 	GENERIC_HEADER_PROXY_SYNC_ID,
@@ -44,7 +44,7 @@ typedef enum {
 	GENERIC_HEADER_LOGGING_TAG,
 	GENERIC_HEADER_VENDOR_SPECIFIC_PARAMS,
 	
-	/** Additional headers for MRCP v2 */
+	/** Additional header fields for MRCP v2 */
 	GENERIC_HEADER_ACCEPT,
 	GENERIC_HEADER_FETCH_TIMEOUT,
 	GENERIC_HEADER_SET_COOKIE,
@@ -99,7 +99,7 @@ struct mrcp_generic_header_t {
 	/** Specifies the vendor specific parameters used by the media server */
 	apt_pair_arr_t        *vendor_specific_params;
 
-	/** Additional headers for MRCP v2 */
+	/** Additional header fields for MRCP v2 */
 	/** Specifies the acceptable media types set for entities returned in the response or events associated with this request */
 	apt_str_t              accept;
 	/** Defines the timeout for content that the server may need to fetch over the network */

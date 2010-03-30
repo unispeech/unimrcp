@@ -91,7 +91,7 @@ static void mrcp_generic_header_init(mrcp_generic_header_t *generic_header)
 	apt_string_reset(&generic_header->cache_control);
 	apt_string_reset(&generic_header->logging_tag);
 	generic_header->vendor_specific_params = NULL;
-	/* initializes additionnal MRCP v2 generic headers */
+	/* initializes additionnal MRCP v2 generic header fields */
 	apt_string_reset(&generic_header->accept);
 	generic_header->fetch_timeout = 0;
 	apt_string_reset(&generic_header->set_cookie);

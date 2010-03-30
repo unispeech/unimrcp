@@ -22,8 +22,8 @@
 #include "apt_text_message.h"
 #include "apt_log.h"
 
-/** Associate MRCP resource specific data by resource identifier */
-MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set_by_id(mrcp_message_t *message, mrcp_resource_t *resource)
+/** Associate MRCP resource with message */
+static apt_bool_t mrcp_message_resource_set_by_id(mrcp_message_t *message, const mrcp_resource_t *resource)
 {
 	if(!resource) {
 		return FALSE;
@@ -62,7 +62,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set_by_id(mrcp_message_t *message
 }
 
 /** Associate MRCP resource specific data by resource name */
-MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, mrcp_resource_t *resource)
+MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, const mrcp_resource_t *resource)
 {
 	if(!resource) {
 		return FALSE;
@@ -111,7 +111,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool)
 }
 
 /** Create MRCP request message */
-MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(mrcp_resource_t *resource, mrcp_version_e version, mrcp_method_id method_id, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(const mrcp_resource_t *resource, mrcp_version_e version, mrcp_method_id method_id, apr_pool_t *pool)
 {
 	mrcp_message_t *request_message = mrcp_message_create(pool);
 	request_message->start_line.message_type = MRCP_MESSAGE_TYPE_REQUEST;
@@ -179,7 +179,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message)
 	return TRUE;
 }
 
-/** Add MRCP generic-header proprerty */
+/** Add MRCP generic-header property */
 MRCP_DECLARE(void) mrcp_generic_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
@@ -193,7 +193,7 @@ MRCP_DECLARE(void) mrcp_generic_header_property_add(mrcp_message_t *mrcp_message
 	}
 }
 
-/** Add MRCP generic-header name only proprerty (should be used to construct empty headers in case of GET-PARAMS request) */
+/** Add MRCP generic-header name only property (should be used to construct empty header fields for GET-PARAMS request) */
 MRCP_DECLARE(void) mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
@@ -207,7 +207,7 @@ MRCP_DECLARE(void) mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_me
 	}
 }
 
-/** Add MRCP resource-header proprerty */
+/** Add MRCP resource-header property */
 MRCP_DECLARE(void) mrcp_resource_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
@@ -221,7 +221,7 @@ MRCP_DECLARE(void) mrcp_resource_header_property_add(mrcp_message_t *mrcp_messag
 	}
 }
 
-/** Add MRCP resource-header name only proprerty (should be used to construct empty headers in case of GET-PARAMS request) */
+/** Add MRCP resource-header name only property (should be used to construct empty header fields for GET-PARAMS request) */
 MRCP_DECLARE(void) mrcp_resource_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(

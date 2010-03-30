@@ -18,7 +18,7 @@
 
 #include "mrcp_recorder_header.h"
 
-/** String table of recorder headers (mrcp_recorder_header_id) */
+/** String table of recorder header fields (mrcp_recorder_header_id) */
 static const apt_str_table_item_t recorder_header_string_table[] = {
 	{{"Sensitivity-Level",    17},3},
 	{{"No-Input-Timeout",     16},2},

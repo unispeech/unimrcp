@@ -18,7 +18,7 @@
 
 #include "mrcp_recog_header.h"
 
-/** String table of MRCPv1 recognizer headers (mrcp_recog_header_id) */
+/** String table of MRCPv1 recognizer header fields (mrcp_recog_header_id) */
 static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},7},
 	{{"Sensitivity-Level",          17},3},
@@ -55,7 +55,7 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Early-No-Match",             14},0}
 };
 
-/** String table of MRCPv2 recognizer headers (mrcp_recog_header_id) */
+/** String table of MRCPv2 recognizer header fields (mrcp_recog_header_id) */
 static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},8},
 	{{"Sensitivity-Level",          17},3},
@@ -158,7 +158,7 @@ static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 	recog_header->save_waveform = FALSE;
 	recog_header->new_audio_channel = FALSE;
 	apt_string_reset(&recog_header->speech_language);
-	/* initializes additionnal MRCPV2 recog headers */
+	/* initializes additionnal MRCPV2 recog header fields */
 	apt_string_reset(&recog_header->input_type);
 	apt_string_reset(&recog_header->input_waveform_uri);
 	apt_string_reset(&recog_header->completion_reason);

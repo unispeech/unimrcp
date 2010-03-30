@@ -29,7 +29,7 @@
 
 APT_BEGIN_EXTERN_C
 
-/** MRCP synthesizer headers */
+/** MRCP synthesizer header fields */
 typedef enum {
 	SYNTHESIZER_HEADER_JUMP_SIZE,
 	SYNTHESIZER_HEADER_KILL_ON_BARGE_IN,
@@ -250,9 +250,9 @@ struct mrcp_synth_header_t {
 	/** MAY be specified in a "SPEAK-COMPLETE" event coming from
     the synthesizer resource to the client */
 	apt_str_t                     completion_reason;
-	/** This set of headers defines the voice of the speaker */
+	/** This set of header fields defines the voice of the speaker */
 	mrcp_voice_param_t            voice_param;
-	/** This set of headers defines the prosody of the speech */
+	/** This set of header fields defines the prosody of the speech */
 	mrcp_prosody_param_t          prosody_param;
 	/** Contains timestamp information in a "timestamp" field */
 	apt_str_t                     speech_marker;

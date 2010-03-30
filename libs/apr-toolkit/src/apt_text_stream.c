@@ -68,15 +68,15 @@ APT_DECLARE(apt_bool_t) apt_text_line_read(apt_text_stream_t *stream, apt_str_t 
 	return status;
 }
 
-/** Navigate through the headers (name:value pairs) of the text stream (message) 
-	Valid headers are:
+/** To be used to navigate through the header fields (name:value pairs) of the text stream (message) 
+	Valid header fields are:
 		name:value<CRLF>
 		name: value<CRLF>
 		name:    value<CRLF>
 		name: value<LF>
 		name:<CRLF>              (only name, no value)
 		<CRLF>                   (empty header)
-	Malformed headers are:
+	Malformed header fields are:
 		name:value               (missing end of line <CRLF>)
 		name<CRLF>               (missing separator ':')
 */
