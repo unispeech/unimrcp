@@ -28,6 +28,12 @@
 
 APT_BEGIN_EXTERN_C
 
+/** 
+ * Allows external applications to trigger whether 
+ * transaprent header fields are supported or not
+ */
+#define TRANSPARENT_HEADER_FIELDS_SUPPORT
+
 /** MRCP message header declaration */
 typedef struct mrcp_message_header_t mrcp_message_header_t;
 /** MRCP channel-id declaration */
