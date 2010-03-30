@@ -241,13 +241,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 
 	do {
 		if(parser->stage == APT_MESSAGE_STAGE_START_LINE) {
-			apt_str_t start_line;
-			/* read start line */
-			if(apt_text_line_read(stream,&start_line) == FALSE) {
-				status = APT_MESSAGE_STATUS_INVALID;
-				break;
-			}
-			parser->message = parser->vtable->on_start_line(parser,&start_line,parser->pool);
+			parser->message = parser->vtable->create_message(parser,stream,parser->pool);
 			if(!parser->message) {
 				status = APT_MESSAGE_STATUS_INVALID;
 				break;

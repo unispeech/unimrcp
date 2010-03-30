@@ -75,8 +75,8 @@ APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *head
 
 /** Vtable of text message parser */
 struct apt_message_parser_vtable_t {
-	/** Start line handler */
-	void* (*on_start_line)(apt_message_parser_t *parser, apt_str_t *start_line, apr_pool_t *pool);
+	/** Create message and read start line if applicable */
+	void* (*create_message)(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool);
 	/** Header field handler */
 	apt_bool_t (*on_header_field)(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field);
 	/** Header separator handler */

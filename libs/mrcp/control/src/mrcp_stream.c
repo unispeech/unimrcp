@@ -36,8 +36,8 @@ struct mrcp_generator_t {
 	const mrcp_resource_factory_t *resource_factory;
 };
 
-/** Start line handler */
-static void* mrcp_parser_on_start_line(apt_message_parser_t *parser, apt_str_t *start_line, apr_pool_t *pool);
+/** Create message and read start line */
+static void* mrcp_parser_message_create(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool);
 /** Header field handler */
 static apt_bool_t mrcp_parser_on_header_field(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field);
 /** Header separator handler */
@@ -46,7 +46,7 @@ static apt_bool_t mrcp_parser_on_header_separator(apt_message_parser_t *parser, 
 static apt_bool_t mrcp_parser_on_body(apt_message_parser_t *parser, void *message, apt_str_t *body);
 
 static const apt_message_parser_vtable_t parser_vtable = {
-	mrcp_parser_on_start_line,
+	mrcp_parser_message_create,
 	mrcp_parser_on_header_field,
 	mrcp_parser_on_header_separator,
 	mrcp_parser_on_body,
@@ -87,15 +87,22 @@ MRCP_DECLARE(apt_message_status_e) mrcp_parser_run(mrcp_parser_t *parser, apt_te
 	return apt_message_parser_run(parser->base,stream,(void**)message);
 }
 
-
-/** Start line handler */
-static void* mrcp_parser_on_start_line(apt_message_parser_t *parser, apt_str_t *start_line, apr_pool_t *pool)
+/** Create message and read start line */
+static void* mrcp_parser_message_create(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool)
 {
+	mrcp_parser_t *mrcp_parser;
+	mrcp_message_t *mrcp_message;
+	apt_str_t start_line;
+	/* read start line */
+	if(apt_text_line_read(stream,&start_line) == FALSE) {
+		return NULL;
+	}
+
 	/* create new MRCP message */
-	mrcp_parser_t *mrcp_parser = apt_message_parser_object_get(parser);
-	mrcp_message_t *mrcp_message = mrcp_message_create(pool);
+	mrcp_parser = apt_message_parser_object_get(parser);
+	mrcp_message = mrcp_message_create(pool);
 	/* parse start-line */
-	if(mrcp_start_line_parse(&mrcp_message->start_line,start_line,mrcp_message->pool) == FALSE) {
+	if(mrcp_start_line_parse(&mrcp_message->start_line,&start_line,mrcp_message->pool) == FALSE) {
 		return NULL;
 	}
 
