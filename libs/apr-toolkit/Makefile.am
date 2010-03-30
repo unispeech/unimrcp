@@ -19,7 +19,9 @@ include_HEADERS          = include/apt.h \
                            include/apt_pair.h \
                            include/apt_string.h \
                            include/apt_string_table.h \
+                           include/apt_header_field.h \
                            include/apt_text_stream.h \
+                           include/apt_text_message.h \
                            include/apt_net.h \
                            include/apt_nlsml_doc.h \
                            include/apt_multipart_content.h \
@@ -38,7 +40,9 @@ libaprtoolkit_la_SOURCES = src/apt_obj_list.c \
                            src/apt_log.c \
                            src/apt_pair.c \
                            src/apt_string_table.c \
+                           src/apt_header_field.c \
                            src/apt_text_stream.c \
+                           src/apt_text_message.c \
                            src/apt_net.c \
                            src/apt_nlsml_doc.c \
                            src/apt_multipart_content.c \

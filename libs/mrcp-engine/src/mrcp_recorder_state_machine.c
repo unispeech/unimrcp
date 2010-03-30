@@ -378,7 +378,6 @@ static apt_bool_t recorder_state_deactivate(mrcp_state_machine_t *base)
 /** Create MRCP recorder state machine */
 mrcp_state_machine_t* mrcp_recorder_state_machine_create(void *obj, mrcp_version_e version, apr_pool_t *pool)
 {
-	mrcp_message_header_t *properties;
 	mrcp_recorder_state_machine_t *state_machine = apr_palloc(pool,sizeof(mrcp_recorder_state_machine_t));
 	mrcp_state_machine_init(&state_machine->base,obj);
 	state_machine->base.update = recorder_state_update;
@@ -386,9 +385,10 @@ mrcp_state_machine_t* mrcp_recorder_state_machine_create(void *obj, mrcp_version
 	state_machine->state = RECORDER_STATE_IDLE;
 	state_machine->active_request = NULL;
 	state_machine->record = NULL;
-	properties = &state_machine->properties;
-	mrcp_message_header_init(properties);
-	properties->generic_header_accessor.vtable = mrcp_generic_header_vtable_get(version);
-	properties->resource_header_accessor.vtable = mrcp_recorder_header_vtable_get(version);
+	mrcp_message_header_allocate(
+		&state_machine->properties,
+		mrcp_generic_header_vtable_get(version),
+		mrcp_recorder_header_vtable_get(version),
+		pool);
 	return &state_machine->base;
 }

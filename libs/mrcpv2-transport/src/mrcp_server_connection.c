@@ -576,17 +576,16 @@ static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent
 {
 	apt_bool_t status = FALSE;
 	apt_text_stream_t stream;
-	mrcp_stream_status_e result;
+	apt_message_status_e result;
 	if(!connection || !connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCPv2 Connection");
 		return FALSE;
 	}
 
-	mrcp_generator_message_set(connection->generator,message);
 	do {
 		apt_text_stream_init(&stream,connection->tx_buffer,connection->tx_buffer_size);
-		result = mrcp_generator_run(connection->generator,&stream);
-		if(result != MRCP_STREAM_STATUS_INVALID) {
+		result = mrcp_generator_run(connection->generator,message,&stream);
+		if(result != APT_MESSAGE_STATUS_INVALID) {
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
 
@@ -605,16 +604,15 @@ static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Stream");
 		}
 	}
-	while(result == MRCP_STREAM_STATUS_INCOMPLETE);
+	while(result == APT_MESSAGE_STATUS_INCOMPLETE);
 
 	return status;
 }
 
-static apt_bool_t mrcp_server_message_handler(void *obj, mrcp_message_t *message, mrcp_stream_status_e status)
+static apt_bool_t mrcp_server_message_handler(mrcp_connection_t *connection, mrcp_message_t *message, apt_message_status_e status)
 {
-	mrcp_connection_t *connection = obj;
 	mrcp_connection_agent_t *agent = connection->agent;
-	if(status == MRCP_STREAM_STATUS_COMPLETE) {
+	if(status == APT_MESSAGE_STATUS_COMPLETE) {
 		/* message is completely parsed */
 		mrcp_control_channel_t *channel = mrcp_connection_channel_associate(agent,connection,message);
 		if(channel) {
@@ -627,7 +625,7 @@ static apt_bool_t mrcp_server_message_handler(void *obj, mrcp_message_t *message
 				connection->id);
 		}
 	}
-	else if(status == MRCP_STREAM_STATUS_INVALID) {
+	else if(status == APT_MESSAGE_STATUS_INVALID) {
 		/* error case */
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv2 Stream");
 		if(message->resource) {
@@ -651,6 +649,8 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 	apr_size_t offset;
 	apr_size_t length;
 	apt_text_stream_t *stream;
+	mrcp_message_t *message;
+	apt_message_status_e msg_status;
 
 	if(descriptor->desc.s == agent->listen_sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Accept Connection");
@@ -662,20 +662,16 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 	}
 	stream = &connection->rx_stream;
 
-	/* init length of the buffer to read */
-	offset = 0;
-	length = connection->rx_buffer_size;
-	if(stream->pos > stream->text.buf) {
-		/* calculate offset remaining from the previous receive / if any */
-		offset = stream->pos - stream->text.buf;
-		/* calculate available length */
-		length -= offset;
-	}
+	/* calculate offset remaining from the previous receive / if any */
+	offset = stream->pos - stream->text.buf;
+	/* calculate available length */
+	length = connection->rx_buffer_size - offset;
 
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
 		return mrcp_server_agent_connection_close(agent,connection);
 	}
+
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
@@ -686,8 +682,18 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 
 	/* reset pos */
 	apt_text_stream_reset(stream);
-	/* walk through the stream parsing MRCP messages */
-	return mrcp_stream_walk(connection->parser,stream,mrcp_server_message_handler,connection);
+
+	do {
+		msg_status = mrcp_parser_run(connection->parser,stream,&message);
+		if(mrcp_server_message_handler(connection,message,msg_status) == FALSE) {
+			return FALSE;
+		}
+	}
+	while(apt_text_is_eos(stream) == FALSE);
+
+	/* scroll remaining stream */
+	apt_text_stream_scroll(stream);
+	return TRUE;
 }
 
 /* Process task message */

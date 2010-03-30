@@ -18,7 +18,7 @@
 
 #include "mrcp_recog_header.h"
 
-/** String table of MRCPv1 recognizer headers (mrcp_recog_header_id) */
+/** String table of MRCPv1 recognizer header fields (mrcp_recog_header_id) */
 static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},7},
 	{{"Sensitivity-Level",          17},3},
@@ -55,7 +55,7 @@ static const apt_str_table_item_t v1_recog_header_string_table[] = {
 	{{"Early-No-Match",             14},0}
 };
 
-/** String table of MRCPv2 recognizer headers (mrcp_recog_header_id) */
+/** String table of MRCPv2 recognizer header fields (mrcp_recog_header_id) */
 static const apt_str_table_item_t v2_recog_header_string_table[] = {
 	{{"Confidence-Threshold",       20},8},
 	{{"Sensitivity-Level",          17},3},
@@ -158,7 +158,7 @@ static void mrcp_recog_header_init(mrcp_recog_header_t *recog_header)
 	recog_header->save_waveform = FALSE;
 	recog_header->new_audio_channel = FALSE;
 	apt_string_reset(&recog_header->speech_language);
-	/* initializes additionnal MRCPV2 recog headers */
+	/* initializes additionnal MRCPV2 recog header fields */
 	apt_string_reset(&recog_header->input_type);
 	apt_string_reset(&recog_header->input_waveform_uri);
 	apt_string_reset(&recog_header->completion_reason);
@@ -198,13 +198,13 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_recog_header_t *recog_header, apr
 			recog_header->recognition_timeout = apt_size_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_WAVEFORM_URI:
-			apt_string_copy(&recog_header->waveform_uri,value,pool);
+			recog_header->waveform_uri = *value;
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
 			recog_header->completion_cause = apt_size_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
-			apt_string_copy(&recog_header->recognizer_context_block,value,pool);
+			recog_header->recognizer_context_block = *value;
 			break;
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
 			apt_boolean_value_parse(value,&recog_header->start_input_timers);
@@ -225,10 +225,10 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_recog_header_t *recog_header, apr
 			recog_header->dtmf_term_char = *value->buf;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI:
-			apt_string_copy(&recog_header->failed_uri,value,pool);
+			recog_header->failed_uri = *value;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_copy(&recog_header->failed_uri_cause,value,pool);
+			recog_header->failed_uri_cause = *value;
 			break;
 		case RECOGNIZER_HEADER_SAVE_WAVEFORM:
 			apt_boolean_value_parse(value,&recog_header->save_waveform);
@@ -237,25 +237,25 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_recog_header_t *recog_header, apr
 			apt_boolean_value_parse(value,&recog_header->new_audio_channel);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_copy(&recog_header->speech_language,value,pool);
+			recog_header->speech_language = *value;
 			break;
 		case RECOGNIZER_HEADER_INPUT_TYPE:
-			apt_string_copy(&recog_header->input_type,value,pool);
+			recog_header->input_type = *value;
 			break;
 		case RECOGNIZER_HEADER_MEDIA_TYPE:
-			apt_string_copy(&recog_header->media_type,value,pool);
+			recog_header->media_type = *value;
 			break;
 		case RECOGNIZER_HEADER_INPUT_WAVEFORM_URI:
-			apt_string_copy(&recog_header->input_waveform_uri,value,pool);
+			recog_header->input_waveform_uri = *value;
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_REASON:
-			apt_string_copy(&recog_header->completion_reason,value,pool);
+			recog_header->completion_reason = *value;
 			break;
 		case RECOGNIZER_HEADER_VER_BUFFER_UTTERANCE:
 			apt_boolean_value_parse(value,&recog_header->ver_buffer_utterance);
 			break;
 		case RECOGNIZER_HEADER_RECOGNITION_MODE:
-			apt_string_copy(&recog_header->recognition_mode,value,pool);
+			recog_header->recognition_mode = *value;
 			break;
 		case RECOGNIZER_HEADER_CANCEL_IF_QUEUE:
 			apt_boolean_value_parse(value,&recog_header->cancel_if_queue);
@@ -267,7 +267,7 @@ static apt_bool_t mrcp_recog_header_parse(mrcp_recog_header_t *recog_header, apr
 			recog_header->hotword_min_duration = apt_size_value_parse(value);
 			break;
 		case RECOGNIZER_HEADER_INTERPRET_TEXT:
-			apt_string_copy(&recog_header->interpret_text,value,pool);
+			recog_header->interpret_text = *value;
 			break;
 		case RECOGNIZER_HEADER_DTMF_BUFFER_TIME:
 			recog_header->dtmf_buffer_time = apt_size_value_parse(value);
@@ -290,10 +290,10 @@ static APR_INLINE float apt_size_value_parse_as_float(const apt_str_t *value)
 	return f / 100;
 }
 
-static APR_INLINE apt_bool_t apt_size_value_generate_from_float(float value, apt_text_stream_t *stream)
+static APR_INLINE apt_bool_t apt_size_value_generate_from_float(float value, apt_str_t *str, apr_pool_t *pool)
 {
 	apr_size_t s = (apr_size_t)((value + 0.001f) * 100);
-	return apt_size_value_generate(s,stream);
+	return apt_size_value_generate(s,str,pool);
 }
 
 /** Parse MRCPv1 recognizer header */
@@ -335,95 +335,97 @@ static apt_bool_t mrcp_v2_recog_header_parse(mrcp_header_accessor_t *accessor, a
 }
 
 /** Generate MRCP recognizer header */
-static apt_bool_t mrcp_recog_header_generate(mrcp_recog_header_t *recog_header, apr_size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_recog_header_generate(const mrcp_recog_header_t *recog_header, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	switch(id) {
 		case RECOGNIZER_HEADER_N_BEST_LIST_LENGTH:
-			apt_size_value_generate(recog_header->n_best_list_length,value);
+			apt_size_value_generate(recog_header->n_best_list_length,value,pool);
 			break;
 		case RECOGNIZER_HEADER_NO_INPUT_TIMEOUT:
-			apt_size_value_generate(recog_header->no_input_timeout,value);
+			apt_size_value_generate(recog_header->no_input_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_RECOGNITION_TIMEOUT:
-			apt_size_value_generate(recog_header->recognition_timeout,value);
+			apt_size_value_generate(recog_header->recognition_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_WAVEFORM_URI:
-			apt_string_value_generate(&recog_header->waveform_uri,value);
+			*value = recog_header->waveform_uri;
 			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
-			apt_string_value_generate(&recog_header->recognizer_context_block,value);
+			*value = recog_header->recognizer_context_block;
 			break;
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
-			apt_boolean_value_generate(recog_header->start_input_timers,value);
+			apt_boolean_value_generate(recog_header->start_input_timers,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_COMPLETE_TIMEOUT:
-			apt_size_value_generate(recog_header->speech_complete_timeout,value);
+			apt_size_value_generate(recog_header->speech_complete_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_INCOMPLETE_TIMEOUT:
-			apt_size_value_generate(recog_header->speech_incomplete_timeout,value);
+			apt_size_value_generate(recog_header->speech_incomplete_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_DTMF_INTERDIGIT_TIMEOUT:
-			apt_size_value_generate(recog_header->dtmf_interdigit_timeout,value);
+			apt_size_value_generate(recog_header->dtmf_interdigit_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_DTMF_TERM_TIMEOUT:
-			apt_size_value_generate(recog_header->dtmf_term_timeout,value);
+			apt_size_value_generate(recog_header->dtmf_term_timeout,value,pool);
 			break;
 		case RECOGNIZER_HEADER_DTMF_TERM_CHAR:
-			*value->pos++ = recog_header->dtmf_term_char;
+			value->length = 1;
+			value->buf = apr_palloc(pool,value->length);
+			*value->buf	= recog_header->dtmf_term_char;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI:
-			apt_string_value_generate(&recog_header->failed_uri,value);
+			*value = recog_header->failed_uri;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_value_generate(&recog_header->failed_uri_cause,value);
+			*value = recog_header->failed_uri_cause;
 			break;
 		case RECOGNIZER_HEADER_SAVE_WAVEFORM:
-			apt_boolean_value_generate(recog_header->save_waveform,value);
+			apt_boolean_value_generate(recog_header->save_waveform,value,pool);
 			break;
 		case RECOGNIZER_HEADER_NEW_AUDIO_CHANNEL:
-			apt_boolean_value_generate(recog_header->new_audio_channel,value);
+			apt_boolean_value_generate(recog_header->new_audio_channel,value,pool);
 			break;
 		case RECOGNIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_value_generate(&recog_header->speech_language,value);
+			*value = recog_header->speech_language;
 			break;
 		case RECOGNIZER_HEADER_INPUT_TYPE:
-			apt_string_value_generate(&recog_header->input_type,value);
+			*value = recog_header->input_type;
 			break;
 		case RECOGNIZER_HEADER_INPUT_WAVEFORM_URI:
-			apt_string_value_generate(&recog_header->input_waveform_uri,value);
+			*value = recog_header->input_waveform_uri;
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_REASON:
-			apt_string_value_generate(&recog_header->completion_reason,value);
+			*value = recog_header->completion_reason;
 			break;
 		case RECOGNIZER_HEADER_MEDIA_TYPE:
-			apt_string_value_generate(&recog_header->media_type,value);
+			*value = recog_header->media_type;
 			break;
 		case RECOGNIZER_HEADER_VER_BUFFER_UTTERANCE:
-			apt_boolean_value_generate(recog_header->ver_buffer_utterance,value);
+			apt_boolean_value_generate(recog_header->ver_buffer_utterance,value,pool);
 			break;
 		case RECOGNIZER_HEADER_RECOGNITION_MODE:
-			apt_string_value_generate(&recog_header->recognition_mode,value);
+			*value = recog_header->recognition_mode;
 			break;
 		case RECOGNIZER_HEADER_CANCEL_IF_QUEUE:
-			apt_boolean_value_generate(recog_header->cancel_if_queue,value);
+			apt_boolean_value_generate(recog_header->cancel_if_queue,value,pool);
 			break;
 		case RECOGNIZER_HEADER_HOTWORD_MAX_DURATION:
-			apt_size_value_generate(recog_header->hotword_max_duration,value);
+			apt_size_value_generate(recog_header->hotword_max_duration,value,pool);
 			break;
 		case RECOGNIZER_HEADER_HOTWORD_MIN_DURATION:
-			apt_size_value_generate(recog_header->hotword_min_duration,value);
+			apt_size_value_generate(recog_header->hotword_min_duration,value,pool);
 			break;
 		case RECOGNIZER_HEADER_INTERPRET_TEXT:
-			apt_string_value_generate(&recog_header->interpret_text,value);
+			*value = recog_header->interpret_text;
 			break;
 		case RECOGNIZER_HEADER_DTMF_BUFFER_TIME:
-			apt_size_value_generate(recog_header->dtmf_buffer_time,value);
+			apt_size_value_generate(recog_header->dtmf_buffer_time,value,pool);
 			break;
 		case RECOGNIZER_HEADER_CLEAR_DTMF_BUFFER:
-			apt_boolean_value_generate(recog_header->clear_dtmf_buffer,value);
+			apt_boolean_value_generate(recog_header->clear_dtmf_buffer,value,pool);
 			break;
 		case RECOGNIZER_HEADER_EARLY_NO_MATCH:
-			apt_boolean_value_generate(recog_header->early_no_match,value);
+			apt_boolean_value_generate(recog_header->early_no_match,value,pool);
 			break;
 		default:
 			break;
@@ -432,53 +434,55 @@ static apt_bool_t mrcp_recog_header_generate(mrcp_recog_header_t *recog_header, 
 }
 
 /** Generate MRCPv1 recognizer header */
-static apt_bool_t mrcp_v1_recog_header_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_v1_recog_header_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_recog_header_t *recog_header = accessor->data;
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
-		return apt_size_value_generate_from_float(recog_header->confidence_threshold,value);
+		return apt_size_value_generate_from_float(recog_header->confidence_threshold,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
-		return apt_size_value_generate_from_float(recog_header->sensitivity_level,value);
+		return apt_size_value_generate_from_float(recog_header->sensitivity_level,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
-		return apt_size_value_generate_from_float(recog_header->speed_vs_accuracy,value);
+		return apt_size_value_generate_from_float(recog_header->speed_vs_accuracy,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
-		return mrcp_completion_cause_generate(
+		return apt_completion_cause_generate(
 			v1_completion_cause_string_table,
 			RECOGNIZER_COMPLETION_CAUSE_COUNT,
 			recog_header->completion_cause,
-			value);
+			value,
+			pool);
 	}
-	return mrcp_recog_header_generate(recog_header,id,value);
+	return mrcp_recog_header_generate(recog_header,id,value,pool);
 }
 
 /** Generate MRCPv2 recognizer header */
-static apt_bool_t mrcp_v2_recog_header_generate(mrcp_header_accessor_t *accessor, apr_size_t id, apt_text_stream_t *value)
+static apt_bool_t mrcp_v2_recog_header_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_recog_header_t *recog_header = accessor->data;
 	if(id == RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD) {
-		return apt_float_value_generate(recog_header->confidence_threshold,value);
+		return apt_float_value_generate(recog_header->confidence_threshold,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_SENSITIVITY_LEVEL) {
-		return apt_float_value_generate(recog_header->sensitivity_level,value);
+		return apt_float_value_generate(recog_header->sensitivity_level,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_SPEED_VS_ACCURACY) {
-		return apt_float_value_generate(recog_header->speed_vs_accuracy,value);
+		return apt_float_value_generate(recog_header->speed_vs_accuracy,value,pool);
 	}
 	else if(id == RECOGNIZER_HEADER_COMPLETION_CAUSE) {
-		return mrcp_completion_cause_generate(
+		return apt_completion_cause_generate(
 			v2_completion_cause_string_table,
 			RECOGNIZER_COMPLETION_CAUSE_COUNT,
 			recog_header->completion_cause,
-			value);
+			value,
+			pool);
 	}
-	return mrcp_recog_header_generate(recog_header,id,value);
+	return mrcp_recog_header_generate(recog_header,id,value,pool);
 }
 
 /** Duplicate MRCP recognizer header */
-static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, apr_pool_t *pool)
+static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_recog_header_t *recog_header = accessor->data;
 	const mrcp_recog_header_t *src_recog_header = src->data;
@@ -508,13 +512,13 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			recog_header->recognition_timeout = src_recog_header->recognition_timeout;
 			break;
 		case RECOGNIZER_HEADER_WAVEFORM_URI:
-			apt_string_copy(&recog_header->waveform_uri,&src_recog_header->waveform_uri,pool);
+			recog_header->waveform_uri = *value;
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_CAUSE:
 			recog_header->completion_cause = src_recog_header->completion_cause;
 			break;
 		case RECOGNIZER_HEADER_RECOGNIZER_CONTEXT_BLOCK:
-			apt_string_copy(&recog_header->recognizer_context_block,&src_recog_header->recognizer_context_block,pool);
+			recog_header->recognizer_context_block = *value;
 			break;
 		case RECOGNIZER_HEADER_START_INPUT_TIMERS:
 			recog_header->start_input_timers = src_recog_header->start_input_timers;
@@ -535,10 +539,10 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			recog_header->dtmf_term_char = src_recog_header->dtmf_term_char;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI:
-			apt_string_copy(&recog_header->failed_uri,&src_recog_header->failed_uri,pool);
+			recog_header->failed_uri = *value;
 			break;
 		case RECOGNIZER_HEADER_FAILED_URI_CAUSE:
-			apt_string_copy(&recog_header->failed_uri_cause,&src_recog_header->failed_uri_cause,pool);
+			recog_header->failed_uri_cause = *value;
 			break;
 		case RECOGNIZER_HEADER_SAVE_WAVEFORM:
 			recog_header->save_waveform = src_recog_header->save_waveform;
@@ -547,25 +551,25 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			recog_header->new_audio_channel = src_recog_header->new_audio_channel;
 			break;
 		case RECOGNIZER_HEADER_SPEECH_LANGUAGE:
-			apt_string_copy(&recog_header->speech_language,&src_recog_header->speech_language,pool);
+			recog_header->speech_language = *value;
 			break;
 		case RECOGNIZER_HEADER_INPUT_TYPE:
-			apt_string_copy(&recog_header->input_type,&src_recog_header->input_type,pool);
+			recog_header->input_type = *value;
 			break;
 		case RECOGNIZER_HEADER_INPUT_WAVEFORM_URI:
-			apt_string_copy(&recog_header->input_waveform_uri,&src_recog_header->input_waveform_uri,pool);
+			recog_header->input_waveform_uri = *value;
 			break;
 		case RECOGNIZER_HEADER_COMPLETION_REASON:
-			apt_string_copy(&recog_header->completion_reason,&src_recog_header->completion_reason,pool);
+			recog_header->completion_reason = *value;
 			break;
 		case RECOGNIZER_HEADER_MEDIA_TYPE:
-			apt_string_copy(&recog_header->media_type,&src_recog_header->media_type,pool);
+			recog_header->media_type = *value;
 			break;
 		case RECOGNIZER_HEADER_VER_BUFFER_UTTERANCE:
 			recog_header->ver_buffer_utterance = src_recog_header->ver_buffer_utterance;
 			break;
 		case RECOGNIZER_HEADER_RECOGNITION_MODE:
-			apt_string_copy(&recog_header->recognition_mode,&src_recog_header->recognition_mode,pool);
+			recog_header->recognition_mode = *value;
 			break;
 		case RECOGNIZER_HEADER_CANCEL_IF_QUEUE:
 			recog_header->cancel_if_queue = src_recog_header->cancel_if_queue;
@@ -577,7 +581,7 @@ static apt_bool_t mrcp_recog_header_duplicate(mrcp_header_accessor_t *accessor, 
 			recog_header->hotword_min_duration = src_recog_header->hotword_min_duration;
 			break;
 		case RECOGNIZER_HEADER_INTERPRET_TEXT:
-			apt_string_copy(&recog_header->interpret_text,&src_recog_header->interpret_text,pool);
+			recog_header->interpret_text = *value;
 			break;
 		case RECOGNIZER_HEADER_DTMF_BUFFER_TIME:
 			recog_header->dtmf_buffer_time = src_recog_header->dtmf_buffer_time;

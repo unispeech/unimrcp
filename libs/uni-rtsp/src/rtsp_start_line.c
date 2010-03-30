@@ -102,7 +102,7 @@ static apt_bool_t rtsp_version_generate(rtsp_version_e version, apt_text_stream_
 	memcpy(stream->pos,RTSP_NAME,RTSP_NAME_LENGTH);
 	stream->pos += RTSP_NAME_LENGTH;
 	*stream->pos++ = RTSP_NAME_VERSION_SEPARATOR;
-	apt_size_value_generate(version,stream);
+	apt_text_size_value_insert(stream,version);
 	*stream->pos++ = RTSP_VERSION_MAJOR_MINOR_SEPARATOR;
 	*stream->pos++ = '0';
 	return TRUE;
@@ -117,7 +117,7 @@ static APR_INLINE rtsp_status_code_e rtsp_status_code_parse(const apt_str_t *fie
 /** Generate RTSP status-code */
 static APR_INLINE apt_bool_t rtsp_status_code_generate(rtsp_status_code_e status_code, apt_text_stream_t *stream)
 {
-	return apt_size_value_generate(status_code,stream);
+	return apt_text_size_value_insert(stream,status_code);
 }
 
 /** Generate RTSP request-line */
@@ -128,10 +128,10 @@ static apt_bool_t rtsp_request_line_generate(rtsp_request_line_t *start_line, ap
 		return FALSE;
 	}
 	start_line->method_name = *method_name;
-	apt_string_value_generate(&start_line->method_name,stream);
+	apt_text_string_insert(stream,&start_line->method_name);
 	apt_text_space_insert(stream);
 
-	apt_string_value_generate(&start_line->url,stream);
+	apt_text_string_insert(stream,&start_line->url);
 	apt_text_space_insert(stream);
 
 	rtsp_version_generate(start_line->version,stream);
@@ -147,21 +147,17 @@ static apt_bool_t rtsp_status_line_generate(rtsp_status_line_t *start_line, apt_
 	rtsp_status_code_generate(start_line->status_code,stream);
 	apt_text_space_insert(stream);
 
-	apt_string_value_generate(&start_line->reason,stream);
+	apt_text_string_insert(stream,&start_line->reason);
 	return TRUE;
 }
 
 /** Parse RTSP start-line */
-RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_text_stream_t *stream, apr_pool_t *pool)
+RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, apt_str_t *str, apr_pool_t *pool)
 {
 	apt_text_stream_t line;
 	apt_str_t field;
-	if(apt_text_line_read(stream,&line.text) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse RTSP start-line");
-		return FALSE;
-	}
 
-	apt_text_stream_reset(&line);
+	apt_text_stream_init(&line,str->buf,str->length);
 	if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot read the first field in start-line");
 		return FALSE;

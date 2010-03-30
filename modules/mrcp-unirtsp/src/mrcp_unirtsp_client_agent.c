@@ -196,9 +196,9 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		return FALSE;
 	}
 	
-	if(rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
+	if(rtsp_header_property_check(&message->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 		message->header.content_type == RTSP_CONTENT_TYPE_MRCP &&
-		rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
+		rtsp_header_property_check(&message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 		message->header.content_length > 0) {
 
 		apt_text_stream_t text_stream;
@@ -210,9 +210,8 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		apt_string_set(&resource_name_str,resource_name);
 
 		parser = mrcp_parser_create(agent->sig_agent->resource_factory,session->mrcp_session->pool);
-		mrcp_parser_resource_name_set(parser,&resource_name_str);
-		if(mrcp_parser_run(parser,&text_stream) == MRCP_STREAM_STATUS_COMPLETE) {
-			mrcp_message = mrcp_parser_message_get(parser);
+		mrcp_parser_resource_set(parser,&resource_name_str);
+		if(mrcp_parser_run(parser,&text_stream,&mrcp_message) == APT_MESSAGE_STATUS_COMPLETE) {
 			mrcp_message->channel_id.session_id = message->header.session_id;
 		}
 		else {
@@ -387,9 +386,9 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 	body->buf[body->length] = '\0';
 
 	rtsp_message->header.content_type = RTSP_CONTENT_TYPE_MRCP;
-	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_TYPE);
+	rtsp_header_property_add(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_TYPE,rtsp_message->pool);
 	rtsp_message->header.content_length = body->length;
-	rtsp_header_property_add(&rtsp_message->header.property_set,RTSP_HEADER_FIELD_CONTENT_LENGTH);
+	rtsp_header_property_add(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH,rtsp_message->pool);
 
 	session->mrcp_message = mrcp_message;
 	rtsp_client_session_request(agent->rtsp_client,session->rtsp_session,rtsp_message);

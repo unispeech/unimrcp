@@ -29,7 +29,7 @@
 
 APT_BEGIN_EXTERN_C
 
-/** MRCP recognizer headers */
+/** MRCP recognizer header fields */
 typedef enum {
 	RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD,
 	RECOGNIZER_HEADER_SENSITIVITY_LEVEL,
@@ -52,7 +52,7 @@ typedef enum {
 	RECOGNIZER_HEADER_NEW_AUDIO_CHANNEL,
 	RECOGNIZER_HEADER_SPEECH_LANGUAGE,
 
-	/** Additional headers for MRCP v2 */
+	/** Additional header fields for MRCP v2 */
 	RECOGNIZER_HEADER_INPUT_TYPE,
 	RECOGNIZER_HEADER_INPUT_WAVEFORM_URI,
 	RECOGNIZER_HEADER_COMPLETION_REASON,
@@ -162,7 +162,7 @@ struct mrcp_recog_header_t {
     a session or request, if it is not specified within the data */
 	apt_str_t                     speech_language;
 
-	/** Additional headers for MRCP v2 */
+	/** Additional header fields for MRCP v2 */
 	/** Specifies if the input that caused a barge-in was DTMF or speech */
 	apt_str_t                     input_type;
 	/** Optional header specifies a URI pointing to audio content to be

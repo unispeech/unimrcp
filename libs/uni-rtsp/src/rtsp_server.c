@@ -338,7 +338,7 @@ static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_s
 		if(response) {
 			if(session->id.buf) {
 				response->header.session_id = session->id;
-				rtsp_header_property_add(&response->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
+				rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_SESSION_ID,response->pool);
 			}
 
 			if(rtsp_connection) {
@@ -443,7 +443,7 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 		return TRUE;
 	}
 
-	if(rtsp_header_property_check(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID) != TRUE) {
+	if(rtsp_header_property_check(&message->header,RTSP_HEADER_FIELD_SESSION_ID) != TRUE) {
 		/* no session-id specified */
 		session = rtsp_server_session_setup_process(server,rtsp_connection,message);
 		if(session) {
@@ -511,11 +511,11 @@ static apt_bool_t rtsp_server_session_response_process(rtsp_server_t *server, rt
 		}
 		message->start_line.common.request_line.url = request->start_line.common.request_line.url;
 		message->header.cseq = session->last_cseq;
-		rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_CSEQ);
+		rtsp_header_property_add(&message->header,RTSP_HEADER_FIELD_CSEQ,message->pool);
 		
 		if(session->id.buf) {
 			message->header.session_id = session->id;
-			rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
+			rtsp_header_property_add(&message->header,RTSP_HEADER_FIELD_SESSION_ID,message->pool);
 		}
 		rtsp_server_message_send(server,session->connection,message);
 		return TRUE;
@@ -533,7 +533,7 @@ static apt_bool_t rtsp_server_session_response_process(rtsp_server_t *server, rt
 	else {
 		if(session->id.buf) {
 			message->header.session_id = session->id;
-			rtsp_header_property_add(&message->header.property_set,RTSP_HEADER_FIELD_SESSION_ID);
+			rtsp_header_property_add(&message->header,RTSP_HEADER_FIELD_SESSION_ID,message->pool);
 		}
 		if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 			if(message->start_line.common.status_line.status_code == RTSP_STATUS_CODE_OK) {
@@ -568,7 +568,7 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_co
 {
 	apt_bool_t status = FALSE;
 	apt_text_stream_t *stream;
-	rtsp_stream_status_e result;
+	apt_message_status_e result;
 
 	if(!rtsp_connection || !rtsp_connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No RTSP Connection");
@@ -576,12 +576,11 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_co
 	}
 	stream = &rtsp_connection->tx_stream;
 		
-	rtsp_generator_message_set(rtsp_connection->generator,message);
 	do {
 		stream->text.length = sizeof(rtsp_connection->tx_buffer)-1;
 		apt_text_stream_reset(stream);
-		result = rtsp_generator_run(rtsp_connection->generator,stream);
-		if(result != RTSP_STREAM_STATUS_INVALID) {
+		result = rtsp_generator_run(rtsp_connection->generator,message,stream);
+		if(result != APT_MESSAGE_STATUS_INVALID) {
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
@@ -600,25 +599,23 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_co
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Stream");
 		}
 	}
-	while(result == RTSP_STREAM_STATUS_INCOMPLETE);
+	while(result == APT_MESSAGE_STATUS_INCOMPLETE);
 
 	return status;
 }
 
-static apt_bool_t rtsp_server_message_handler(void *obj, rtsp_message_t *message, rtsp_stream_status_e status)
+static apt_bool_t rtsp_server_message_handler(rtsp_server_connection_t *rtsp_connection, rtsp_message_t *message, apt_message_status_e status)
 {
-	rtsp_server_connection_t *rtsp_connection = obj;
-	if(status == RTSP_STREAM_STATUS_COMPLETE) {
+	if(status == APT_MESSAGE_STATUS_COMPLETE) {
 		/* message is completely parsed */
 		apt_str_t *destination;
-		rtsp_message_t *message = rtsp_parser_message_get(rtsp_connection->parser);
 		destination = &message->header.transport.destination;
 		if(!destination->buf && rtsp_connection->client_ip) {
 			apt_string_assign(destination,rtsp_connection->client_ip,rtsp_connection->pool);
 		}
 		rtsp_server_session_request_process(rtsp_connection->server,rtsp_connection,message);
 	}
-	else if(status == RTSP_STREAM_STATUS_INVALID) {
+	else if(status == APT_MESSAGE_STATUS_INVALID) {
 		/* error case */
 		rtsp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse RTSP Stream");
@@ -809,6 +806,8 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 	apr_size_t offset;
 	apr_size_t length;
 	apt_text_stream_t *stream;
+	rtsp_message_t *message;
+	apt_message_status_e msg_status;
 
 	if(descriptor->desc.s == server->listen_sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Accept Connection");
@@ -820,17 +819,17 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 	}
 	stream = &rtsp_connection->rx_stream;
 
-	/* init length of the stream */
-	stream->text.length = sizeof(rtsp_connection->rx_buffer)-1;
 	/* calculate offset remaining from the previous receive / if any */
 	offset = stream->pos - stream->text.buf;
 	/* calculate available length */
-	length = stream->text.length - offset;
+	length = sizeof(rtsp_connection->rx_buffer) - 1 - offset;
+
 	status = apr_socket_recv(rtsp_connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"RTSP Peer Disconnected %s",rtsp_connection->id);
 		return rtsp_server_connection_close(server,rtsp_connection);
 	}
+
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
@@ -841,8 +840,16 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 
 	/* reset pos */
 	apt_text_stream_reset(stream);
-	/* walk through the stream parsing RTSP messages */
-	return rtsp_stream_walk(rtsp_connection->parser,stream,rtsp_server_message_handler,rtsp_connection);
+
+	do {
+		msg_status = rtsp_parser_run(rtsp_connection->parser,stream,&message);
+		rtsp_server_message_handler(rtsp_connection,message,msg_status);
+	}
+	while(apt_text_is_eos(stream) == FALSE);
+
+	/* scroll remaining stream */
+	apt_text_stream_scroll(stream);
+	return TRUE;
 }
 
 /* Process task message */

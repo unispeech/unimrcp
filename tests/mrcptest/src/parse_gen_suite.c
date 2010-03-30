@@ -29,25 +29,24 @@ static apt_bool_t test_stream_generate(mrcp_generator_t *generator, mrcp_message
 {
 	char buffer[500];
 	apt_text_stream_t stream;
-	mrcp_stream_status_e status;
+	apt_message_status_e status;
 	apt_bool_t continuation;
 
-	mrcp_generator_message_set(generator,message);
 	do {
 		apt_text_stream_init(&stream,buffer,sizeof(buffer)-1);
 		continuation = FALSE;
-		status = mrcp_generator_run(generator,&stream);
-		if(status == MRCP_STREAM_STATUS_COMPLETE) {
+		status = mrcp_generator_run(generator,message,&stream);
+		if(status == APT_MESSAGE_STATUS_COMPLETE) {
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
 			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated MRCP Stream [%lu bytes]\n%s",stream.text.length,stream.text.buf);
 		}
-		else if(status == MRCP_STREAM_STATUS_INCOMPLETE) {
+		else if(status == APT_MESSAGE_STATUS_INCOMPLETE) {
 			*stream.pos = '\0';
 			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated MRCP Stream [%lu bytes] continuation awaited\n%s",stream.text.length,stream.text.buf);
 			continuation = TRUE;
 		}
-		else if(status == MRCP_STREAM_STATUS_INVALID) {
+		else if(status == APT_MESSAGE_STATUS_INVALID) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCP Stream");
 		}
 	}
@@ -55,11 +54,10 @@ static apt_bool_t test_stream_generate(mrcp_generator_t *generator, mrcp_message
 	return TRUE;
 }
 
-static apt_bool_t mrcp_message_handler(void *obj, mrcp_message_t *message, mrcp_stream_status_e status)
+static apt_bool_t mrcp_message_handler(mrcp_generator_t *generator, mrcp_message_t *message, apt_message_status_e status)
 {
-	if(status == MRCP_STREAM_STATUS_COMPLETE) {
+	if(status == APT_MESSAGE_STATUS_COMPLETE) {
 		/* message is completely parsed */
-		mrcp_generator_t *generator = obj;
 		test_stream_generate(generator,message);
 	}
 	return TRUE;
@@ -82,7 +80,7 @@ static apt_bool_t resource_name_read(apr_file_t *file, mrcp_parser_t *parser)
 		if(apt_text_line_read(&stream,&line) == TRUE) {
 			apr_off_t offset = stream.pos - stream.text.buf;
 			apr_file_seek(file,APR_SET,&offset);
-			mrcp_parser_resource_name_set(parser,&line);
+			mrcp_parser_resource_set(parser,&line);
 			status = TRUE;
 		}
 	}
@@ -99,6 +97,8 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 	apr_size_t length;
 	apr_size_t offset;
 	apt_str_t resource_name;
+	mrcp_message_t *message;
+	apt_message_status_e msg_status;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s]",file_path);
 	if(apr_file_open(&file,file_path,APR_FOPEN_READ | APR_FOPEN_BINARY,APR_OS_DEFAULT,suite->pool) != APR_SUCCESS) {
@@ -115,13 +115,12 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 	}
 
 	apt_text_stream_init(&stream,buffer,sizeof(buffer)-1);
+
 	do {
-		/* init length of the stream */
-		stream.text.length = sizeof(buffer)-1;
 		/* calculate offset remaining from the previous receive / if any */
 		offset = stream.pos - stream.text.buf;
 		/* calculate available length */
-		length = stream.text.length - offset;
+		length = sizeof(buffer) - 1 - offset;
 
 		if(apr_file_read(file,stream.pos,&length) != APR_SUCCESS) {
 			break;
@@ -130,10 +129,18 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 		stream.text.length = offset + length;
 		stream.pos[length] = '\0';
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse MRCP Stream [%lu bytes]\n%s",length,stream.pos);
-		
+
 		/* reset pos */
 		apt_text_stream_reset(&stream);
-		mrcp_stream_walk(parser,&stream,mrcp_message_handler,generator);
+		
+		do {
+			msg_status = mrcp_parser_run(parser,&stream,&message);
+			mrcp_message_handler(generator,message,msg_status);
+		}
+		while(apt_text_is_eos(&stream) == FALSE);
+
+		/* scroll remaining stream */
+		apt_text_stream_scroll(&stream);
 	}
 	while(apr_file_eof(file) != APR_EOF);
 

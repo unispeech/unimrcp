@@ -70,7 +70,7 @@ static apt_bool_t mrcp_version_generate(mrcp_version_e version, apt_text_stream_
 	memcpy(stream->pos,MRCP_NAME,MRCP_NAME_LENGTH);
 	stream->pos += MRCP_NAME_LENGTH;
 	*stream->pos++ = MRCP_NAME_VERSION_SEPARATOR;
-	apt_size_value_generate(version,stream);
+	apt_text_size_value_insert(stream,version);
 	*stream->pos++ = MRCP_VERSION_MAJOR_MINOR_SEPARATOR;
 	*stream->pos++ = '0';
 	return TRUE;
@@ -104,7 +104,7 @@ static APR_INLINE mrcp_status_code_e mrcp_status_code_parse(const apt_str_t *fie
 /** Generate MRCP status-code */
 static APR_INLINE size_t  mrcp_status_code_generate(mrcp_status_code_e status_code, apt_text_stream_t *stream)
 {
-	return apt_size_value_generate(status_code,stream);
+	return apt_text_size_value_insert(stream,status_code);
 }
 
 
@@ -320,18 +320,14 @@ MRCP_DECLARE(void) mrcp_start_line_init(mrcp_start_line_t *start_line)
 }
 
 /** Parse MRCP start-line */
-MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, apt_text_stream_t *text_stream, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_start_line_parse(mrcp_start_line_t *start_line, apt_str_t *str, apr_pool_t *pool)
 {
 	apt_text_stream_t line;
 	apt_str_t field;
 	apt_bool_t status = TRUE;
+
 	start_line->message_type = MRCP_MESSAGE_TYPE_UNKNOWN;
-	if(apt_text_line_read(text_stream,&line.text) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse MRCP start-line");
-		return FALSE;
-	}
-	
-	apt_text_stream_reset(&line);
+	apt_text_stream_init(&line,str->buf,str->length);
 	if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot read the first field in start-line");
 		return FALSE;
