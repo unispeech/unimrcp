@@ -106,13 +106,8 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 		}
 		while(apt_text_is_eos(&stream) == FALSE);
 
-		if(stream.pos != stream.end) {
-			/* scroll remaining stream */
-			apt_text_stream_scroll(&stream);
-		}
-		else {
-			stream.pos = stream.text.buf;
-		}
+		/* scroll remaining stream */
+		apt_text_stream_scroll(&stream);
 	}
 	while(apr_file_eof(file) != APR_EOF);
 

@@ -847,14 +847,8 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 	}
 	while(apt_text_is_eos(stream) == FALSE);
 
-	if(stream->pos != stream->end) {
-		/* scroll remaining stream */
-		apt_text_stream_scroll(stream);
-	}
-	else {
-		stream->pos = stream->text.buf;
-	}
-
+	/* scroll remaining stream */
+	apt_text_stream_scroll(stream);
 	return TRUE;
 }
 
