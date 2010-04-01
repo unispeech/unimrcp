@@ -93,7 +93,7 @@ static apt_bool_t recorder_request_set_params(mrcp_recorder_state_machine_t *sta
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Request [%"MRCP_REQUEST_ID_FMT"]",
 		message->start_line.request_id);
-	mrcp_message_header_set(&state_machine->properties,&message->header,message->pool);
+	mrcp_header_fields_set(&state_machine->properties,&message->header,message->pool);
 	return recorder_request_dispatch(state_machine,message);
 }
 
@@ -115,14 +115,14 @@ static apt_bool_t recorder_response_get_params(mrcp_recorder_state_machine_t *st
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Response [%"MRCP_REQUEST_ID_FMT"]",
 		message->start_line.request_id);
-	mrcp_message_header_set(&message->header,&state_machine->active_request->header,message->pool);
-	mrcp_message_header_get(&message->header,&state_machine->properties,message->pool);
+	mrcp_header_fields_set(&message->header,&state_machine->active_request->header,message->pool);
+	mrcp_header_fields_get(&message->header,&state_machine->properties,message->pool);
 	return recorder_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t recorder_request_record(mrcp_recorder_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_message_header_inherit(&message->header,&state_machine->properties,message->pool);
+	mrcp_header_fields_inherit(&message->header,&state_machine->properties,message->pool);
 	if(state_machine->state == RECORDER_STATE_RECORDING) {
 		mrcp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Reject RECORD Request [%"MRCP_REQUEST_ID_FMT"]",

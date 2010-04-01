@@ -83,10 +83,16 @@ static APR_INLINE void* mrcp_generic_header_prepare(mrcp_message_t *mrcp_message
 }
 
 /** Add MRCP generic-header property */
-MRCP_DECLARE(void) mrcp_generic_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
+MRCP_DECLARE(apt_bool_t) mrcp_generic_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
 
 /** Add MRCP generic-header name only property (should be used to construct empty header fiedls for GET-PARAMS request) */
-MRCP_DECLARE(void) mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
+MRCP_DECLARE(apt_bool_t) mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
+
+/** Remove MRCP generic-header property */
+static APR_INLINE apt_bool_t mrcp_generic_header_property_remove(mrcp_message_t *mrcp_message, apr_size_t id)
+{
+	return apt_header_section_field_remove(&mrcp_message->header.header_section,id);
+}
 
 /** Check MRCP generic-header property */
 static APR_INLINE apt_bool_t mrcp_generic_header_property_check(mrcp_message_t *mrcp_message, apr_size_t id)
@@ -108,16 +114,27 @@ static APR_INLINE void* mrcp_resource_header_prepare(mrcp_message_t *mrcp_messag
 }
 
 /** Add MRCP resource-header property */
-MRCP_DECLARE(void) mrcp_resource_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
+MRCP_DECLARE(apt_bool_t) mrcp_resource_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
 
 /** Add MRCP resource-header name only property (should be used to construct empty header fields for GET-PARAMS request) */
-MRCP_DECLARE(void) mrcp_resource_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
+MRCP_DECLARE(apt_bool_t) mrcp_resource_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id);
 
+/** Remove MRCP resource-header property */
+static APR_INLINE apt_bool_t mrcp_resource_header_property_remove(mrcp_message_t *mrcp_message, apr_size_t id)
+{
+	return apt_header_section_field_remove(&mrcp_message->header.header_section,id + GENERIC_HEADER_COUNT);
+}
 
 /** Check MRCP resource-header property */
 static APR_INLINE apt_bool_t mrcp_resource_header_property_check(mrcp_message_t *mrcp_message, apr_size_t id)
 {
 	return apt_header_section_field_check(&mrcp_message->header.header_section,id + GENERIC_HEADER_COUNT);
+}
+
+/** Add MRCP header field */
+static APR_INLINE apt_bool_t mrcp_message_header_field_add(mrcp_message_t *message, apt_header_field_t *header_field)
+{
+	return mrcp_header_field_add(&message->header,header_field,message->pool);
 }
 
 

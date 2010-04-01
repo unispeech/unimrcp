@@ -144,7 +144,7 @@ static apt_bool_t mrcp_parser_on_header_field(apt_message_parser_t *parser, void
 		}
 	}
 
-	return mrcp_message_header_field_add(&mrcp_message->header,header_field,mrcp_message->pool);
+	return mrcp_message_header_field_add(mrcp_message,header_field);
 }
 
 /** Header separator handler */

@@ -53,7 +53,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 }
 
 /** Add MRCP header field */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_field_add(mrcp_message_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_header_field_add(mrcp_message_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool)
 {
 	if(apt_string_is_empty(&header_field->name) == FALSE) {
 		/* normal header */
@@ -71,8 +71,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_field_add(mrcp_message_header_t *he
 	return TRUE;
 }
 
-/** Set MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
+/** Set (copy) MRCP header fields */
+MRCP_DECLARE(apt_bool_t) mrcp_header_fields_set(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
 	const apt_header_field_t *src_header_field;
@@ -106,8 +106,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_set(mrcp_message_header_t *header, 
 	return TRUE;
 }
 
-/** Get MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
+/** Get (copy) MRCP header fields */
+MRCP_DECLARE(apt_bool_t) mrcp_header_fields_get(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
 	const apt_header_field_t *src_header_field;
@@ -141,8 +141,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_get(mrcp_message_header_t *header, 
 	return TRUE;
 }
 
-/** Inherit MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_inherit(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
+/** Inherit (copy) MRCP header fields */
+MRCP_DECLARE(apt_bool_t) mrcp_header_fields_inherit(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
 	const apt_header_field_t *src_header_field;
