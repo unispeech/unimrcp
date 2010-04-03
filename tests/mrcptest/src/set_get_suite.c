@@ -321,6 +321,6 @@ static apt_bool_t set_get_test_run(apt_test_suite_t *suite, int argc, const char
 
 apt_test_suite_t* set_get_test_suite_create(apr_pool_t *pool)
 {
-	apt_test_suite_t *suite = apt_test_suite_create(pool,"set-gen",NULL,set_get_test_run);
+	apt_test_suite_t *suite = apt_test_suite_create(pool,"set-get",NULL,set_get_test_run);
 	return suite;
 }
