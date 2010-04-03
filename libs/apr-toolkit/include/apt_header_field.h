@@ -74,6 +74,30 @@ struct apt_header_section_t {
 APT_DECLARE(apt_header_field_t*) apt_header_field_alloc(apr_pool_t *pool);
 
 /**
+ * Create a header field using given name and value APT strings.
+ * @param name the name of the header field
+ * @param name the value of the header field
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_header_field_t*) apt_header_field_create(const apt_str_t *name, const apt_str_t *value, apr_pool_t *pool);
+
+/**
+ * Create a header field using given name and value C strings.
+ * @param name the name of the header field
+ * @param name the value of the header field
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_header_field_t*) apt_header_field_create_c(const char *name, const char *value, apr_pool_t *pool);
+
+/**
+ * Create a header field from entire line consisting of a name and value pair.
+ * @param line the line, which consists of a name and value pair
+ * @param separator the name and value separator
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_header_field_t*) apt_header_field_create_from_line(const apt_str_t *line, char separator, apr_pool_t *pool);
+
+/**
  * Copy specified header field.
  * @param header_field the header field to copy
  * @param pool the pool to allocate memory from

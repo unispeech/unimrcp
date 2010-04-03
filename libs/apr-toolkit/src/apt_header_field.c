@@ -17,6 +17,7 @@
  */
 
 #include "apt_header_field.h"
+#include "apt_text_stream.h"
 
 /** Allocate an empty header field */
 APT_DECLARE(apt_header_field_t*) apt_header_field_alloc(apr_pool_t *pool)
@@ -24,6 +25,65 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_alloc(apr_pool_t *pool)
 	apt_header_field_t *header_field = apr_palloc(pool,sizeof(apt_header_field_t));
 	apt_string_reset(&header_field->name);
 	apt_string_reset(&header_field->value);
+	header_field->id = 0;
+	APR_RING_ELEM_INIT(header_field,link);
+	return header_field;
+}
+
+/** Create a header field using given name and value APT strings */
+APT_DECLARE(apt_header_field_t*) apt_header_field_create(const apt_str_t *name, const apt_str_t *value, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field;
+	if(!name || !value) {
+		return NULL;
+	}
+	header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	apt_string_copy(&header_field->name,name,pool);
+	apt_string_copy(&header_field->value,value,pool);
+	header_field->id = 0;
+	APR_RING_ELEM_INIT(header_field,link);
+	return header_field;
+}
+
+/** Create a header field using given name and value C strings */
+APT_DECLARE(apt_header_field_t*) apt_header_field_create_c(const char *name, const char *value, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field;
+	if(!name || !value) {
+		return NULL;
+	}
+	header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	apt_string_assign(&header_field->name,name,pool);
+	apt_string_assign(&header_field->value,value,pool);
+	header_field->id = 0;
+	APR_RING_ELEM_INIT(header_field,link);
+	return header_field;
+}
+
+/* Create a header field from entire line consisting of a name and value pair */
+APT_DECLARE(apt_header_field_t*) apt_header_field_create_from_line(const apt_str_t *line, char separator, apr_pool_t *pool)
+{
+	apt_str_t item;
+	apt_text_stream_t stream;
+	apt_header_field_t *header_field;
+	if(!line) {
+		return NULL;
+	}
+	
+	header_field = apr_palloc(pool,sizeof(apt_header_field_t));
+	stream.text = *line;
+	apt_text_stream_reset(&stream);
+
+	/* read name */
+	if(apt_text_field_read(&stream,separator,TRUE,&item) == FALSE) {
+		return NULL;
+	}
+	apt_string_copy(&header_field->name,&item,pool);
+
+	/* read value */
+	apt_text_field_read(&stream,';',TRUE,&item);
+	apt_string_copy(&header_field->value,&item,pool);
+	
 	header_field->id = 0;
 	APR_RING_ELEM_INIT(header_field,link);
 	return header_field;
