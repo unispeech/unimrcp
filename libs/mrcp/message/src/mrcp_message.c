@@ -238,3 +238,21 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_header_name_property_add(mrcp_message_t *
 	header_field->id = id + GENERIC_HEADER_COUNT;
 	return apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
 }
+
+/** Get next MRCP header field */
+MRCP_DECLARE(apt_header_field_t*) mrcp_message_next_header_field_get(const mrcp_message_t *message, apt_header_field_t *header_field)
+{
+	const apt_header_section_t *header_section = &message->header.header_section;
+	if(header_field) {
+		apt_header_field_t *next = APR_RING_NEXT(header_field,link);
+		if(next == APR_RING_SENTINEL(&header_section->ring,apt_header_field_t,link)) {
+			return NULL;
+		}
+		return next;
+	}
+	
+	if(APR_RING_EMPTY(&header_section->ring,apt_header_field_t,link)) {
+		return NULL;
+	}
+	return APR_RING_FIRST(&header_section->ring);
+}

@@ -137,6 +137,8 @@ static APR_INLINE apt_bool_t mrcp_message_header_field_add(mrcp_message_t *messa
 	return mrcp_header_field_add(&message->header,header_field,message->pool);
 }
 
+/** Get next MRCP header field */
+MRCP_DECLARE(apt_header_field_t*) mrcp_message_next_header_field_get(const mrcp_message_t *message, apt_header_field_t *header_field);
 
 APT_END_EXTERN_C
 
