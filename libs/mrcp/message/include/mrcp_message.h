@@ -103,18 +103,18 @@ MRCP_DECLARE(void) mrcp_message_destroy(mrcp_message_t *message);
  * Get MRCP generic header.
  * @param message the message to get generic header from
  */
-static APR_INLINE void* mrcp_generic_header_get(const mrcp_message_t *message)
+static APR_INLINE mrcp_generic_header_t* mrcp_generic_header_get(const mrcp_message_t *message)
 {
-	return message->header.generic_header_accessor.data;
+	return (mrcp_generic_header_t*) message->header.generic_header_accessor.data;
 }
 
 /**
  * Allocate (if not allocated) and get MRCP generic header.
  * @param message the message to prepare generic header for
  */
-static APR_INLINE void* mrcp_generic_header_prepare(mrcp_message_t *message)
+static APR_INLINE mrcp_generic_header_t* mrcp_generic_header_prepare(mrcp_message_t *message)
 {
-	return mrcp_header_allocate(&message->header.generic_header_accessor,message->pool);
+	return (mrcp_generic_header_t*) mrcp_header_allocate(&message->header.generic_header_accessor,message->pool);
 }
 
 /**
