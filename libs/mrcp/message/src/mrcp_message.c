@@ -97,7 +97,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, cons
 	return TRUE;
 }
 
-/** Create MRCP message */
+/** Create an MRCP message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool)
 {
 	mrcp_message_t *message = apr_palloc(pool,sizeof(mrcp_message_t));
@@ -110,7 +110,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool)
 	return message;
 }
 
-/** Create MRCP request message */
+/** Create an MRCP request message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(const mrcp_resource_t *resource, mrcp_version_e version, mrcp_method_id method_id, apr_pool_t *pool)
 {
 	mrcp_message_t *request_message = mrcp_message_create(pool);
@@ -121,7 +121,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(const mrcp_resource_t *resourc
 	return request_message;
 }
 
-/** Create MRCP response message */
+/** Create an MRCP response message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request_message, apr_pool_t *pool)
 {
 	mrcp_message_t *response_message = mrcp_message_create(pool);
@@ -138,7 +138,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request
 	return response_message;
 }
 
-/** Create MRCP event message */
+/** Create an MRCP event message */
 MRCP_DECLARE(mrcp_message_t*) mrcp_event_create(const mrcp_message_t *request_message, mrcp_method_id event_id, apr_pool_t *pool)
 {
 	mrcp_message_t *event_message = mrcp_message_create(pool);
@@ -179,67 +179,67 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_validate(mrcp_message_t *message)
 	return TRUE;
 }
 
-/** Add MRCP generic-header property */
-MRCP_DECLARE(apt_bool_t) mrcp_generic_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
+/** Add MRCP generic header field by specified property (numeric identifier) */
+MRCP_DECLARE(apt_bool_t) mrcp_generic_header_property_add(mrcp_message_t *message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
-										&mrcp_message->header.generic_header_accessor,
+										&message->header.generic_header_accessor,
 										id,
 										FALSE,
-										mrcp_message->pool);
+										message->pool);
 	if(!header_field) {
 		return FALSE;
 	}
 	header_field->id = id;
-	return apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
+	return apt_header_section_field_add(&message->header.header_section,header_field);
 }
 
-/** Add MRCP generic-header name only property (should be used to construct empty header fields for GET-PARAMS request) */
-MRCP_DECLARE(apt_bool_t) mrcp_generic_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
+/** Add only the name of MRCP generic header field specified by property (numeric identifier) */
+MRCP_DECLARE(apt_bool_t) mrcp_generic_header_name_property_add(mrcp_message_t *message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
-										&mrcp_message->header.generic_header_accessor,
+										&message->header.generic_header_accessor,
 										id,
 										TRUE,
-										mrcp_message->pool);
+										message->pool);
 	if(!header_field) {
 		return FALSE;
 	}
 	header_field->id = id;
-	return apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
+	return apt_header_section_field_add(&message->header.header_section,header_field);
 }
 
-/** Add MRCP resource-header property */
-MRCP_DECLARE(apt_bool_t) mrcp_resource_header_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
+/** Add MRCP resource header field by specified property (numeric identifier) */
+MRCP_DECLARE(apt_bool_t) mrcp_resource_header_property_add(mrcp_message_t *message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
-										&mrcp_message->header.resource_header_accessor,
+										&message->header.resource_header_accessor,
 										id,
 										FALSE,
-										mrcp_message->pool);
+										message->pool);
 	if(!header_field) {
 		return FALSE;
 	}
 	header_field->id = id + GENERIC_HEADER_COUNT;
-	return apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
+	return apt_header_section_field_add(&message->header.header_section,header_field);
 }
 
-/** Add MRCP resource-header name only property (should be used to construct empty header fields for GET-PARAMS request) */
-MRCP_DECLARE(apt_bool_t) mrcp_resource_header_name_property_add(mrcp_message_t *mrcp_message, apr_size_t id)
+/** Add only the name of MRCP resource header field specified by property (numeric identifier) */
+MRCP_DECLARE(apt_bool_t) mrcp_resource_header_name_property_add(mrcp_message_t *message, apr_size_t id)
 {
 	apt_header_field_t *header_field = mrcp_header_field_value_generate(
-										&mrcp_message->header.resource_header_accessor,
+										&message->header.resource_header_accessor,
 										id,
 										TRUE,
-										mrcp_message->pool);
+										message->pool);
 	if(!header_field) {
 		return FALSE;
 	}
 	header_field->id = id + GENERIC_HEADER_COUNT;
-	return apt_header_section_field_add(&mrcp_message->header.header_section,header_field);
+	return apt_header_section_field_add(&message->header.header_section,header_field);
 }
 
-/** Get next MRCP header field */
+/** Get the next MRCP header field */
 MRCP_DECLARE(apt_header_field_t*) mrcp_message_next_header_field_get(const mrcp_message_t *message, apt_header_field_t *header_field)
 {
 	const apt_header_section_t *header_section = &message->header.header_section;
