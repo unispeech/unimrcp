@@ -55,20 +55,21 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 /** Add MRCP header field */
 MRCP_DECLARE(apt_bool_t) mrcp_header_field_add(mrcp_message_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool)
 {
+	apt_bool_t status = FALSE;
 	if(apt_string_is_empty(&header_field->name) == FALSE) {
 		/* normal header */
 		if(mrcp_header_field_value_parse(&header->resource_header_accessor,header_field,pool) == TRUE) {
 			header_field->id += GENERIC_HEADER_COUNT;
-			apt_header_section_field_add(&header->header_section,header_field);
+			status = apt_header_section_field_add(&header->header_section,header_field);
 		}
 		else if(mrcp_header_field_value_parse(&header->generic_header_accessor,header_field,pool) == TRUE) {
-			apt_header_section_field_add(&header->header_section,header_field);
+			status = apt_header_section_field_add(&header->header_section,header_field);
 		}
 		else { 
 			/* unknown MRCP header */
 		}
 	}
-	return TRUE;
+	return status;
 }
 
 /** Set (copy) MRCP header fields */
