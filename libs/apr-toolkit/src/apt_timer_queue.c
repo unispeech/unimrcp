@@ -102,13 +102,13 @@ APT_DECLARE(void) apt_timer_queue_advance(apt_timer_queue_t *timer_queue, apr_ui
 }
 
 /** Is timer queue empty */
-APT_DECLARE(apt_bool_t) apt_timer_queue_is_empty(apt_timer_queue_t *timer_queue)
+APT_DECLARE(apt_bool_t) apt_timer_queue_is_empty(const apt_timer_queue_t *timer_queue)
 {
 	return APR_RING_EMPTY(&timer_queue->head, apt_timer_t, link) ? TRUE : FALSE;
 }
 
 /** Get current timeout */
-APT_DECLARE(apt_bool_t) apt_timer_queue_timeout_get(apt_timer_queue_t *timer_queue, apr_uint32_t *timeout)
+APT_DECLARE(apt_bool_t) apt_timer_queue_timeout_get(const apt_timer_queue_t *timer_queue, apr_uint32_t *timeout)
 {
 	apt_timer_t *timer;
 	/* is queue empty */
