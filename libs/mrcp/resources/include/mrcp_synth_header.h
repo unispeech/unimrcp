@@ -287,7 +287,7 @@ struct mrcp_synth_header_t {
 	mrcp_speech_length_value_t    speak_length;
 	/** Used to indicate whether a lexicon has to be loaded or unloaded */
 	apt_bool_t                    load_lexicon;
-	/** used to specify a list of active Lexicon URIs and the
+	/** Used to specify a list of active Lexicon URIs and the
     search order among the active lexicons */
 	apt_str_t                     lexicon_search_order;
 };
