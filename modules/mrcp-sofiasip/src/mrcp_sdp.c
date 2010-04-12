@@ -333,7 +333,7 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 	apt_string_set(&name,sdp_media->m_proto_name);
 	control_media->proto = mrcp_proto_find(&name);
 	if(control_media->proto != MRCP_PROTO_TCP) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]",sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP));
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]",sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP)->buf);
 		return FALSE;
 	}
 	
