@@ -90,8 +90,8 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_create(const apt_str_t *name, 
 APT_DECLARE(apt_header_field_t*) apt_header_field_create_c(const char *name, const char *value, apr_pool_t *pool);
 
 /**
- * Create a header field from entire line consisting of a name and value pair.
- * @param line the line, which consists of a name and value pair
+ * Create a header field from entire text line consisting of a name and value pair.
+ * @param line the text line, which consists of a name and value pair
  * @param separator the name and value separator
  * @param pool the pool to allocate memory from
  */
@@ -107,28 +107,48 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_copy(const apt_header_field_t 
 /**
  * Initialize header section (collection of header fields).
  * @param header the header section to initialize
- * @param max_field_count the number of max header fields in a section (protocol dependent)
- * @param pool the pool to allocate memory from
  */
-APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header, apr_size_t max_field_count, apr_pool_t *pool);
+APT_DECLARE(void) apt_header_section_init(apt_header_section_t *header);
 
 /**
- * Add header field to header section.
+ * Allocate header section to set/get header fields by numeric identifiers.
+ * @param header the header section to allocate
+ * @param max_field_count the max number of header fields in the section (protocol dependent)
+ * @param pool the pool to allocate memory from
+ */
+APT_DECLARE(apt_bool_t) apt_header_section_array_alloc(apt_header_section_t *header, apr_size_t max_field_count, apr_pool_t *pool);
+
+/**
+ * Add (append) header field to header section.
  * @param header the header section to add field to
  * @param header_field the header field to add
- * @param id the identifier associated with the header_field
  */
 APT_DECLARE(apt_bool_t) apt_header_section_field_add(apt_header_section_t *header, apt_header_field_t *header_field);
 
 /**
- * Remove header field from header section.
- * @param header the header section to remove field from
- * @param id the identifier associated with the header_field to use
+ * Insert header field to header section based on numreic identifier if specified.
+ * @param header the header section to insert field into
+ * @param header_field the header field to insert
  */
-APT_DECLARE(apt_bool_t) apt_header_section_field_remove(apt_header_section_t *header, apr_size_t id);
+APT_DECLARE(apt_bool_t) apt_header_section_field_insert(apt_header_section_t *header, apt_header_field_t *header_field);
 
 /**
- * Check whether specified header field is set
+ * Set header field in the array of header fields using associated numeric identifier.
+ * @param header the header section to set field for
+ * @param header_field the header field to set
+ * @remark Typically, the header field should be already added to the header section using apt_header_section_field_add()
+ */
+APT_DECLARE(apt_bool_t) apt_header_section_field_set(apt_header_section_t *header, apt_header_field_t *header_field);
+
+/**
+ * Remove header field from header section.
+ * @param header the header section to remove field from
+ * @param header_field the header field to remove
+ */
+APT_DECLARE(apt_bool_t) apt_header_section_field_remove(apt_header_section_t *header, apt_header_field_t *header_field);
+
+/**
+ * Check whether specified header field is set.
  * @param header the header section to use
  * @param id the identifier associated with the header_field to check
  */
@@ -141,7 +161,7 @@ static APR_INLINE apt_bool_t apt_header_section_field_check(const apt_header_sec
 }
 
 /**
- * Get header field by specified identifier
+ * Get header field by specified identifier.
  * @param header the header section to use
  * @param id the identifier associated with the header_field
  */

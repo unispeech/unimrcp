@@ -43,19 +43,19 @@ static const char * state_names[SYNTHESIZER_STATE_COUNT] = {
 typedef struct mrcp_synth_state_machine_t mrcp_synth_state_machine_t;
 struct mrcp_synth_state_machine_t {
 	/** state machine base */
-	mrcp_state_machine_t  base;
+	mrcp_state_machine_t   base;
 	/** synthesizer state */
-	mrcp_synth_state_e    state;
+	mrcp_synth_state_e     state;
 	/** indicate whether active_request was processed from pending request queue */
-	apt_bool_t            is_pending;
+	apt_bool_t             is_pending;
 	/** request sent to synthesizer engine and waiting for the response to be received */
-	mrcp_message_t       *active_request;
+	mrcp_message_t        *active_request;
 	/** in-progress speak request */
-	mrcp_message_t       *speaker;
+	mrcp_message_t        *speaker;
 	/** queue of pending speak requests */
-	apt_obj_list_t       *queue;
+	apt_obj_list_t        *queue;
 	/** properties used in set/get params */
-	mrcp_message_header_t properties;
+	mrcp_message_header_t *properties;
 };
 
 typedef apt_bool_t (*synth_method_f)(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message);
@@ -99,7 +99,7 @@ static apt_bool_t synth_request_set_params(mrcp_synth_state_machine_t *state_mac
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Request [%"MRCP_REQUEST_ID_FMT"]",
 		message->start_line.request_id);
-	mrcp_header_fields_set(&state_machine->properties,&message->header,message->pool);
+	mrcp_header_fields_set(state_machine->properties,&message->header,message->pool);
 	return synth_request_dispatch(state_machine,message);
 }
 
@@ -122,13 +122,13 @@ static apt_bool_t synth_response_get_params(mrcp_synth_state_machine_t *state_ma
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Response [%"MRCP_REQUEST_ID_FMT"]",
 		message->start_line.request_id);
 	mrcp_header_fields_set(&message->header,&state_machine->active_request->header,message->pool);
-	mrcp_header_fields_get(&message->header,&state_machine->properties,message->pool);
+	mrcp_header_fields_get(&message->header,state_machine->properties,message->pool);
 	return synth_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t synth_request_speak(mrcp_synth_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_header_fields_inherit(&message->header,&state_machine->properties,message->pool);
+	mrcp_header_fields_inherit(&message->header,state_machine->properties,message->pool);
 	if(state_machine->speaker) {
 		mrcp_message_t *response;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up SPEAK Request [%"MRCP_REQUEST_ID_FMT"]",
@@ -613,10 +613,9 @@ mrcp_state_machine_t* mrcp_synth_state_machine_create(void *obj, mrcp_version_e 
 	state_machine->active_request = NULL;
 	state_machine->speaker = NULL;
 	state_machine->queue = apt_list_create(pool);
-	mrcp_message_header_allocate(
-		&state_machine->properties,
-		mrcp_generic_header_vtable_get(version),
-		mrcp_synth_header_vtable_get(version),
-		pool);
+	state_machine->properties = mrcp_message_header_create(
+			mrcp_generic_header_vtable_get(version),
+			mrcp_synth_header_vtable_get(version),
+			pool);
 	return &state_machine->base;
 }

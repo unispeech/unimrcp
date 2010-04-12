@@ -30,27 +30,23 @@ struct rtsp_generator_t {
 };
 
 /** Create message and read start line */
-static void* rtsp_parser_message_create(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool);
-/** Header field handler */
-static apt_bool_t rtsp_parser_on_header_field(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field);
-/** Header separator handler */
-static apt_bool_t rtsp_parser_on_header_separator(apt_message_parser_t *parser, void *message, apr_size_t *content_length);
-/** Body handler */
-static apt_bool_t rtsp_parser_on_body(apt_message_parser_t *parser, void *message, apt_str_t *body);
+static apt_bool_t rtsp_parser_on_start(apt_message_parser_t *parser, apt_message_context_t *context, apt_text_stream_t *stream, apr_pool_t *pool);
+/** Header section handler */
+static apt_bool_t rtsp_parser_on_header_complete(apt_message_parser_t *parser, apt_message_context_t *context);
 
 static const apt_message_parser_vtable_t parser_vtable = {
-	rtsp_parser_message_create,
-	rtsp_parser_on_header_field,
-	rtsp_parser_on_header_separator,
-	rtsp_parser_on_body,
+	rtsp_parser_on_start,
+	rtsp_parser_on_header_complete,
+	NULL
 };
 
 
 /** Initialize by generating message start line and return header section and body */
-apt_bool_t rtsp_generator_message_initialize(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body);
+apt_bool_t rtsp_generator_on_start(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream);
 
 static const apt_message_generator_vtable_t generator_vtable = {
-	rtsp_generator_message_initialize,
+	rtsp_generator_on_start,
+	NULL,
 	NULL
 };
 
@@ -70,49 +66,38 @@ RTSP_DECLARE(apt_message_status_e) rtsp_parser_run(rtsp_parser_t *parser, apt_te
 }
 
 /** Create message and read start line */
-static void* rtsp_parser_message_create(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool)
+static apt_bool_t rtsp_parser_on_start(apt_message_parser_t *parser, apt_message_context_t *context, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	rtsp_message_t *message;
 	apt_str_t start_line;
 	/* read start line */
 	if(apt_text_line_read(stream,&start_line) == FALSE) {
-		return NULL;
+		return FALSE;
 	}
 	
 	message = rtsp_message_create(RTSP_MESSAGE_TYPE_UNKNOWN,pool);
 	if(rtsp_start_line_parse(&message->start_line,&start_line,message->pool) == FALSE) {
-		return NULL;
+		return FALSE;
 	}
 	
-	return message;
+	context->message = message;
+	context->header = &message->header.header_section;
+	context->body = &message->body;
+	return TRUE;
 }
 
-/** Header field handler */
-static apt_bool_t rtsp_parser_on_header_field(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field)
+/** Header section handler */
+static apt_bool_t rtsp_parser_on_header_complete(apt_message_parser_t *parser, apt_message_context_t *context)
 {
-	rtsp_message_t *rtsp_message = message;
-	return rtsp_header_field_add(&rtsp_message->header,header_field,rtsp_message->pool);
-}
+	rtsp_message_t *rtsp_message = context->message;
+	rtsp_header_fields_parse(&rtsp_message->header,rtsp_message->pool);
 
-/** Header separator handler */
-static apt_bool_t rtsp_parser_on_header_separator(apt_message_parser_t *parser, void *message, apr_size_t *content_length)
-{
-	rtsp_message_t *rtsp_message = message;
-	if(rtsp_header_property_check(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE) {
-		*content_length = rtsp_message->header.content_length;
+	if(context->body && rtsp_header_property_check(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE) {
+		context->body->length = rtsp_message->header.content_length;
 	}
 
 	return TRUE;
 }
-
-/** Body handler */
-static apt_bool_t rtsp_parser_on_body(apt_message_parser_t *parser, void *message, apt_str_t *body)
-{
-	rtsp_message_t *rtsp_message = message;
-	rtsp_message->body = *body;
-	return TRUE;
-}
-
 
 /** Create RTSP stream generator */
 RTSP_DECLARE(rtsp_generator_t*) rtsp_generator_create(apr_pool_t *pool)
@@ -130,14 +115,10 @@ RTSP_DECLARE(apt_message_status_e) rtsp_generator_run(rtsp_generator_t *generato
 }
 
 /** Initialize by generating message start line and return header section and body */
-apt_bool_t rtsp_generator_message_initialize(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body)
+apt_bool_t rtsp_generator_on_start(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream)
 {
-	rtsp_message_t *rtsp_message = message;
-	if(header) {
-		*header = &rtsp_message->header.header_section;
-	}
-	if(body) {
-		*body = &rtsp_message->body;
-	}
+	rtsp_message_t *rtsp_message = context->message;
+	context->header = &rtsp_message->header.header_section;
+	context->body = &rtsp_message->body;
 	return rtsp_start_line_generate(&rtsp_message->start_line,stream);
 }

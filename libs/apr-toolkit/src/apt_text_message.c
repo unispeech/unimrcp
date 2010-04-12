@@ -29,27 +29,22 @@ typedef enum {
 /** Text message parser */
 struct apt_message_parser_t {
 	const apt_message_parser_vtable_t *vtable;
-	void               *obj;
-	apr_pool_t         *pool;
-
-	void               *message;
-	apr_size_t          content_length;
-	apt_str_t           body;
-	apt_message_stage_e stage;
-	apt_bool_t          skip_lf;
+	void                              *obj;
+	apr_pool_t                        *pool;
+	apt_message_context_t              context;
+	apr_size_t                         content_length;
+	apt_message_stage_e                stage;
+	apt_bool_t                         skip_lf;
 };
 
 /** Text message generator */
 struct apt_message_generator_t {
 	const apt_message_generator_vtable_t *vtable;
-	void                 *obj;
-	apr_pool_t           *pool;
-
-	void                 *message;
-	apt_header_section_t *header;
-	apt_str_t            *body;
-	apr_size_t            content_length;
-	apt_message_stage_e   stage;
+	void                                 *obj;
+	apr_pool_t                           *pool;
+	apt_message_context_t                 context;
+	apr_size_t                            content_length;
+	apt_message_stage_e                   stage;
 };
 
 /** Parse individual header field (name-value pair) */
@@ -127,22 +122,21 @@ APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *head
 	return TRUE;
 }
 
-static apt_bool_t apt_header_section_parse(apt_message_parser_t *parser, apt_text_stream_t *stream)
+/** Parse header section */
+APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_header_section_t *header, apt_text_stream_t *stream, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
 	apt_bool_t result = FALSE;
 
 	do {
-		header_field = apt_header_field_parse(stream,parser->pool);
+		header_field = apt_header_field_parse(stream,pool);
 		if(header_field) {
 			if(apt_string_is_empty(&header_field->name) == FALSE) {
 				/* normal header */
-				parser->vtable->on_header_field(parser,parser->message,header_field);
+				apt_header_section_field_add(header,header_field);
 			}
 			else {
 				/* empty header => exit */
-				parser->content_length = 0;
-				parser->vtable->on_header_separator(parser,parser->message,&parser->content_length);
 				result = TRUE;
 				break;
 			}
@@ -156,7 +150,8 @@ static apt_bool_t apt_header_section_parse(apt_message_parser_t *parser, apt_tex
 	return result;
 }
 
-static apt_bool_t apt_header_section_generate(apt_header_section_t *header, apt_text_stream_t *stream)
+/** Generate header section */
+APT_DECLARE(apt_bool_t) apt_header_section_generate(apt_header_section_t *header, apt_text_stream_t *stream)
 {
 	apt_header_field_t *header_field;
 	for(header_field = APR_RING_FIRST(&header->ring);
@@ -172,7 +167,7 @@ static apt_bool_t apt_header_section_generate(apt_header_section_t *header, apt_
 static apt_bool_t apt_message_body_read(apt_message_parser_t *parser, apt_text_stream_t *stream)
 {
 	apt_bool_t status = TRUE;
-	apt_str_t *body = &parser->body;
+	apt_str_t *body = parser->context.body;
 	if(body->buf) {
 		/* stream length available to read */
 		apr_size_t stream_length = stream->text.length - (stream->pos - stream->text.buf);
@@ -194,19 +189,20 @@ static apt_bool_t apt_message_body_read(apt_message_parser_t *parser, apt_text_s
 static apt_bool_t apt_message_body_write(apt_message_generator_t *generator, apt_text_stream_t *stream)
 {
 	apt_bool_t status = TRUE;
-	if(generator->body && generator->body->length < generator->content_length) {
+	apt_str_t *body = generator->context.body;
+	if(body && body->length < generator->content_length) {
 		/* stream length available to write */
 		apr_size_t stream_length = stream->text.length - (stream->pos - stream->text.buf);
 		/* required/remaining length to write */
-		apr_size_t required_length = generator->content_length - generator->body->length;
+		apr_size_t required_length = generator->content_length - body->length;
 		if(required_length > stream_length) {
 			required_length = stream_length;
 			/* incomplete */
 			status = FALSE;
 		}
 
-		memcpy(stream->pos, generator->body->buf + generator->body->length, required_length);
-		generator->body->length += required_length;
+		memcpy(stream->pos, body->buf + body->length, required_length);
+		body->length += required_length;
 		stream->pos += required_length;
 	}
 
@@ -221,9 +217,10 @@ APT_DECLARE(apt_message_parser_t*) apt_message_parser_create(void *obj, const ap
 	parser->obj = obj;
 	parser->vtable = vtable;
 	parser->pool = pool;
-	parser->message = NULL;
+	parser->context.message = NULL;
+	parser->context.body = NULL;
+	parser->context.header = NULL;
 	parser->content_length = 0;
-	apt_string_reset(&parser->body);
 	parser->stage = APT_MESSAGE_STAGE_START_LINE;
 	parser->skip_lf = FALSE;
 	return parser;
@@ -241,8 +238,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 
 	do {
 		if(parser->stage == APT_MESSAGE_STAGE_START_LINE) {
-			parser->message = parser->vtable->create_message(parser,stream,parser->pool);
-			if(!parser->message) {
+			if(parser->vtable->on_start(parser,&parser->context,stream,parser->pool) == FALSE) {
 				status = APT_MESSAGE_STATUS_INVALID;
 				break;
 			}
@@ -251,12 +247,20 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 
 		if(parser->stage == APT_MESSAGE_STAGE_HEADER) {
 			/* read header section */
-			if(apt_header_section_parse(parser,stream) == FALSE) {
+			if(apt_header_section_parse(parser->context.header,stream,parser->pool) == FALSE) {
 				break;
 			}
+
+			if(parser->vtable->on_header_complete) {
+				if(parser->vtable->on_header_complete(parser,&parser->context) == FALSE) {
+					status = APT_MESSAGE_STATUS_INVALID;
+					break;
+				}
+			}
 			
-			if(parser->content_length) {
-				apt_str_t *body = &parser->body;
+			if(parser->context.body && parser->context.body->length) {
+				apt_str_t *body = parser->context.body;
+				parser->content_length = body->length;
 				body->buf = apr_palloc(parser->pool,parser->content_length+1);
 				body->buf[parser->content_length] = '\0';
 				body->length = 0;
@@ -265,7 +269,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 			else {
 				status = APT_MESSAGE_STATUS_COMPLETE;
 				if(message) {
-					*message = parser->message;
+					*message = parser->context.message;
 				}
 				parser->stage = APT_MESSAGE_STAGE_START_LINE;
 			}
@@ -284,10 +288,12 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 				break;
 			}
 			
-			parser->vtable->on_body(parser,parser->message,&parser->body);
+			if(parser->vtable->on_body_complete) {
+				parser->vtable->on_body_complete(parser,&parser->context);
+			}
 			status = APT_MESSAGE_STATUS_COMPLETE;
 			if(message) {
-				*message = parser->message;
+				*message = parser->context.message;
 			}
 			parser->stage = APT_MESSAGE_STAGE_START_LINE;
 		}
@@ -311,9 +317,9 @@ APT_DECLARE(apt_message_generator_t*) apt_message_generator_create(void *obj, co
 	generator->obj = obj;
 	generator->vtable = vtable;
 	generator->pool = pool;
-	generator->message = NULL;
-	generator->header = NULL;
-	generator->body = NULL;
+	generator->context.message = NULL;
+	generator->context.header = NULL;
+	generator->context.body = NULL;
 	generator->content_length = 0;
 	generator->stage = APT_MESSAGE_STAGE_START_LINE;
 	return generator;
@@ -338,34 +344,36 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 		return APT_MESSAGE_STATUS_INVALID;
 	}
 
-	if(message != generator->message) {
+	if(message != generator->context.message) {
 		generator->stage = APT_MESSAGE_STAGE_START_LINE;
-		generator->message = message;
+		generator->context.message = message;
+		generator->context.header = NULL;
+		generator->context.body = NULL;
 	}
 
 	if(generator->stage == APT_MESSAGE_STAGE_START_LINE) {
 		/* generate start-line */
-		if(generator->vtable->initialize(generator,message,stream,&generator->header,&generator->body) == FALSE) {
+		if(generator->vtable->on_start(generator,&generator->context,stream) == FALSE) {
 			return apt_message_generator_break(generator,stream);
 		}
 
-		if(!generator->header || !generator->body) {
+		if(!generator->context.header || !generator->context.body) {
 			return APT_MESSAGE_STATUS_INVALID;
 		}
 
 		/* generate header */
-		if(apt_header_section_generate(generator->header,stream) == FALSE) {
+		if(apt_header_section_generate(generator->context.header,stream) == FALSE) {
 			return apt_message_generator_break(generator,stream);
 		}
 
-		if(generator->vtable->finalize) {
-			generator->vtable->finalize(generator,message,stream);
+		if(generator->vtable->on_header_complete) {
+			generator->vtable->on_header_complete(generator,&generator->context,stream);
 		}
 
 		generator->stage = APT_MESSAGE_STAGE_START_LINE;
-		generator->content_length = generator->body->length;
+		generator->content_length = generator->context.body->length;
 		if(generator->content_length) {
-			generator->body->length = 0;
+			generator->context.body->length = 0;
 			generator->stage = APT_MESSAGE_STAGE_BODY;
 		}
 	}

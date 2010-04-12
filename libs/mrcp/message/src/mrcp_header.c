@@ -19,13 +19,14 @@
 #include "mrcp_header.h"
 #include "mrcp_generic_header.h"
 #include "apt_text_message.h"
+#include "apt_log.h"
 
 #define MRCP_CHANNEL_ID         "Channel-Identifier"
 #define MRCP_CHANNEL_ID_LENGTH  (sizeof(MRCP_CHANNEL_ID)-1)
 
 
-/** Allocate MRCP message-header */
-MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
+/** Allocate MRCP message-header data */
+MRCP_DECLARE(apt_bool_t) mrcp_message_header_data_alloc(
 						mrcp_message_header_t *header,
 						const mrcp_header_vtable_t *generic_header_vtable,
 						const mrcp_header_vtable_t *resource_header_vtable,
@@ -41,7 +42,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 	header->resource_header_accessor.data = NULL;
 	header->resource_header_accessor.vtable = resource_header_vtable;
 
-	apt_header_section_init(
+	apt_header_section_array_alloc(
 		&header->header_section,
 		header->generic_header_accessor.vtable->field_count +
 		header->resource_header_accessor.vtable->field_count,
@@ -50,6 +51,17 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_header_allocate(
 	mrcp_header_allocate(&header->generic_header_accessor,pool);
 	mrcp_header_allocate(&header->resource_header_accessor,pool);
 	return TRUE;
+}
+
+MRCP_DECLARE(mrcp_message_header_t*) mrcp_message_header_create(
+						const mrcp_header_vtable_t *generic_header_vtable,
+						const mrcp_header_vtable_t *resource_header_vtable,
+						apr_pool_t *pool)
+{
+	mrcp_message_header_t *header = apr_palloc(pool,sizeof(mrcp_message_header_t));
+	apt_header_section_init(&header->header_section);
+	mrcp_message_header_data_alloc(header,generic_header_vtable,resource_header_vtable,pool);
+	return header;
 }
 
 /** Add MRCP header field */
@@ -66,10 +78,33 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_add(mrcp_message_header_t *header, ap
 			status = apt_header_section_field_add(&header->header_section,header_field);
 		}
 		else { 
-			/* unknown MRCP header */
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Uknown MRCP header field: %s",header_field->name.buf);
 		}
 	}
 	return status;
+}
+
+/** Parse MRCP header fields */
+MRCP_DECLARE(apt_bool_t) mrcp_header_fields_parse(mrcp_message_header_t *header, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field;
+	for(header_field = APR_RING_FIRST(&header->header_section.ring);
+			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
+				header_field = APR_RING_NEXT(header_field, link)) {
+
+		if(mrcp_header_field_value_parse(&header->resource_header_accessor,header_field,pool) == TRUE) {
+			header_field->id += GENERIC_HEADER_COUNT;
+			apt_header_section_field_set(&header->header_section,header_field);
+		}
+		else if(mrcp_header_field_value_parse(&header->generic_header_accessor,header_field,pool) == TRUE) {
+			apt_header_section_field_set(&header->header_section,header_field);
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Uknown MRCP header field: %s",header_field->name.buf);
+		}
+	}
+
+	return TRUE;
 }
 
 /** Set (copy) MRCP header fields */
@@ -188,16 +223,20 @@ MRCP_DECLARE(void) mrcp_channel_id_init(mrcp_channel_id *channel_id)
 }
 
 /** Parse MRCP channel-identifier */
-MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, const apt_header_field_t *header_field, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_channel_id_parse(mrcp_channel_id *channel_id, mrcp_message_header_t *header, apr_pool_t *pool)
 {
-	apt_bool_t match = FALSE;
-	if(header_field->name.length) {
+	apt_header_field_t *header_field;
+	for(header_field = APR_RING_FIRST(&header->header_section.ring);
+			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
+				header_field = APR_RING_NEXT(header_field, link)) {
+
 		if(header_field->value.length && strncasecmp(header_field->name.buf,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH) == 0) {
-			match = TRUE;
 			apt_id_resource_parse(&header_field->value,'@',&channel_id->session_id,&channel_id->resource_name,pool);
+			apt_header_section_field_remove(&header->header_section,header_field);
+			return TRUE;
 		}
 	}
-	return match;
+	return FALSE;
 }
 
 /** Generate MRCP channel-identifier */

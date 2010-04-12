@@ -67,7 +67,6 @@ RTSP_DECLARE(rtsp_message_t*) rtsp_response_create(const rtsp_message_t *request
 		rtsp_transport_t *res_transport = &response->header.transport;
 		if(req_transport->mode.length) {
 			apt_string_copy(&res_transport->mode,&req_transport->mode,pool);
-			rtsp_header_property_add(&response->header,RTSP_HEADER_FIELD_TRANSPORT,response->pool);
 		}
 	}
 

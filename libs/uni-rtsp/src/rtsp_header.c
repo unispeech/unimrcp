@@ -370,21 +370,51 @@ RTSP_DECLARE(apt_bool_t) rtsp_header_field_add(rtsp_header_t *header, apt_header
 								rtsp_header_string_table,
 								RTSP_HEADER_FIELD_COUNT,
 								&header_field->name);
-	rtsp_header_field_value_parse(header,header_field->id,&header_field->value,pool);
+	if(apt_string_is_empty(&header_field->value) == FALSE) {
+		rtsp_header_field_value_parse(header,header_field->id,&header_field->value,pool);
+	}
 
 	return apt_header_section_field_add(&header->header_section,header_field);
 }
 
-/** Add RTSP header field property */
-RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, rtsp_header_field_id id, apr_pool_t *pool)
+/** Parse RTSP header fields */
+RTSP_DECLARE(apt_bool_t) rtsp_header_fields_parse(rtsp_header_t *header, apr_pool_t *pool)
 {
-	apt_header_field_t *header_field = apt_header_field_alloc(pool);
+	apt_header_field_t *header_field;
+	for(header_field = APR_RING_FIRST(&header->header_section.ring);
+			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
+				header_field = APR_RING_NEXT(header_field, link)) {
+
+		header_field->id = apt_string_table_id_find(
+								rtsp_header_string_table,
+								RTSP_HEADER_FIELD_COUNT,
+								&header_field->name);
+		if(apt_string_is_empty(&header_field->value) == FALSE) {
+			rtsp_header_field_value_parse(header,header_field->id,&header_field->value,pool);
+		}
+		apt_header_section_field_set(&header->header_section,header_field);
+	}
+	return TRUE;
+}
+
+/** Add RTSP header field property */
+RTSP_DECLARE(apt_bool_t) rtsp_header_property_add(rtsp_header_t *header, rtsp_header_field_id id, apr_pool_t *pool)
+{
+	apt_header_field_t *header_field;
+	header_field = apt_header_section_field_get(&header->header_section,id);
+	if(header_field) {
+		/* such header field already exists, just (re)generate value */
+		return rtsp_header_field_value_generate(header,id,&header_field->value,pool);
+	}
+
+	header_field = apt_header_field_alloc(pool);
 	if(rtsp_header_field_value_generate(header,id,&header_field->value,pool) == TRUE) {
 		const apt_str_t *name = apt_string_table_str_get(rtsp_header_string_table,RTSP_HEADER_FIELD_COUNT,id);
 		if(name) {
 			header_field->name = *name;
 			header_field->id = id;
-			apt_header_section_field_add(&header->header_section,header_field);
+			return apt_header_section_field_insert(&header->header_section,header_field);
 		}
 	}
+	return FALSE;
 }

@@ -37,29 +37,25 @@ struct mrcp_generator_t {
 };
 
 /** Create message and read start line */
-static void* mrcp_parser_message_create(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool);
-/** Header field handler */
-static apt_bool_t mrcp_parser_on_header_field(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field);
-/** Header separator handler */
-static apt_bool_t mrcp_parser_on_header_separator(apt_message_parser_t *parser, void *message, apr_size_t *content_length);
-/** Body handler */
-static apt_bool_t mrcp_parser_on_body(apt_message_parser_t *parser, void *message, apt_str_t *body);
+static apt_bool_t mrcp_parser_on_start(apt_message_parser_t *parser, apt_message_context_t *context, apt_text_stream_t *stream, apr_pool_t *pool);
+/** Header section handler */
+static apt_bool_t mrcp_parser_on_header_complete(apt_message_parser_t *parser, apt_message_context_t *context);
 
 static const apt_message_parser_vtable_t parser_vtable = {
-	mrcp_parser_message_create,
-	mrcp_parser_on_header_field,
-	mrcp_parser_on_header_separator,
-	mrcp_parser_on_body,
+	mrcp_parser_on_start,
+	mrcp_parser_on_header_complete,
+	NULL
 };
 
-/** Initialize by generating message start line and return header section and body */
-apt_bool_t mrcp_generator_message_initialize(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body);
+/** Start message generation  */
+apt_bool_t mrcp_generator_on_start(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream);
 /** Finalize by setting overall message length in start line */
-apt_bool_t mrcp_generator_message_finalize(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream);
+apt_bool_t mrcp_generator_on_header_complete(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream);
 
 static const apt_message_generator_vtable_t generator_vtable = {
-	mrcp_generator_message_initialize,
-	mrcp_generator_message_finalize
+	mrcp_generator_on_start,
+	mrcp_generator_on_header_complete,
+	NULL
 };
 
 
@@ -88,27 +84,26 @@ MRCP_DECLARE(apt_message_status_e) mrcp_parser_run(mrcp_parser_t *parser, apt_te
 }
 
 /** Create message and read start line */
-static void* mrcp_parser_message_create(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool)
+static apt_bool_t mrcp_parser_on_start(apt_message_parser_t *parser, apt_message_context_t *context, apt_text_stream_t *stream, apr_pool_t *pool)
 {
-	mrcp_parser_t *mrcp_parser;
 	mrcp_message_t *mrcp_message;
 	apt_str_t start_line;
 	/* read start line */
 	if(apt_text_line_read(stream,&start_line) == FALSE) {
-		return NULL;
+		return FALSE;
 	}
 
 	/* create new MRCP message */
-	mrcp_parser = apt_message_parser_object_get(parser);
 	mrcp_message = mrcp_message_create(pool);
 	/* parse start-line */
 	if(mrcp_start_line_parse(&mrcp_message->start_line,&start_line,mrcp_message->pool) == FALSE) {
-		return NULL;
+		return FALSE;
 	}
 
 	if(mrcp_message->start_line.version == MRCP_VERSION_1) {
+		mrcp_parser_t *mrcp_parser = apt_message_parser_object_get(parser);
 		if(!mrcp_parser->resource) {
-			return NULL;
+			return FALSE;
 		}
 		apt_string_copy(
 			&mrcp_message->channel_id.resource_name,
@@ -120,54 +115,46 @@ static void* mrcp_parser_message_create(apt_message_parser_t *parser, apt_text_s
 		}
 	}
 
-	return mrcp_message;
+	context->message = mrcp_message;
+	context->header = &mrcp_message->header.header_section;
+	context->body = &mrcp_message->body;
+	return TRUE;
 }
 
-/** Header field handler */
-static apt_bool_t mrcp_parser_on_header_field(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field)
+/** Header section handler */
+static apt_bool_t mrcp_parser_on_header_complete(apt_message_parser_t *parser, apt_message_context_t *context)
 {
-	mrcp_message_t *mrcp_message = message;
-	if(!mrcp_message->resource && mrcp_message->start_line.version == MRCP_VERSION_2) {
-		if(mrcp_channel_id_parse(&mrcp_message->channel_id,header_field,mrcp_message->pool) == TRUE) {
-			mrcp_resource_t *resource;
-			mrcp_parser_t *mrcp_parser = apt_message_parser_object_get(parser);
-			/* find resource */
-			resource = mrcp_resource_find(mrcp_parser->resource_factory,&mrcp_message->channel_id.resource_name);
-			if(!resource) {
-				return FALSE;
-			}
+	mrcp_message_t *mrcp_message = context->message;
+	if(mrcp_message->start_line.version == MRCP_VERSION_2) {
+		mrcp_resource_t *resource;
+		mrcp_parser_t *mrcp_parser;
+		if(mrcp_channel_id_parse(&mrcp_message->channel_id,&mrcp_message->header,mrcp_message->pool) == FALSE) {
+			return FALSE;
+		}
+		mrcp_parser = apt_message_parser_object_get(parser);
+		/* find resource */
+		resource = mrcp_resource_find(mrcp_parser->resource_factory,&mrcp_message->channel_id.resource_name);
+		if(!resource) {
+			return FALSE;
+		}
 
-			if(mrcp_message_resource_set(mrcp_message,resource) == FALSE) {
-				return FALSE;
-			}
-			return TRUE;
+		if(mrcp_message_resource_set(mrcp_message,resource) == FALSE) {
+			return FALSE;
 		}
 	}
 
-	return mrcp_message_header_field_add(mrcp_message,header_field);
-}
+	if(mrcp_header_fields_parse(&mrcp_message->header,mrcp_message->pool) == FALSE) {
+		return FALSE;
+	}
 
-/** Header separator handler */
-static apt_bool_t mrcp_parser_on_header_separator(apt_message_parser_t *parser, void *message, apr_size_t *content_length)
-{
-	mrcp_message_t *mrcp_message = message;
-	if(mrcp_generic_header_property_check(mrcp_message,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
-		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
+	if(context->body && mrcp_generic_header_property_check(mrcp_message,GENERIC_HEADER_CONTENT_LENGTH) == TRUE) {
+		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(mrcp_message);
 		if(generic_header && generic_header->content_length) {
-			*content_length = generic_header->content_length;
+			context->body->length = generic_header->content_length;
 		}
 	}
 	return TRUE;
 }
-
-/** Body handler */
-static apt_bool_t mrcp_parser_on_body(apt_message_parser_t *parser, void *message, apt_str_t *body)
-{
-	mrcp_message_t *mrcp_message = message;
-	mrcp_message->body = *body;
-	return TRUE;
-}
-
 
 
 /** Create MRCP stream generator */
@@ -186,9 +173,9 @@ MRCP_DECLARE(apt_message_status_e) mrcp_generator_run(mrcp_generator_t *generato
 }
 
 /** Initialize by generating message start line and return header section and body */
-apt_bool_t mrcp_generator_message_initialize(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body)
+apt_bool_t mrcp_generator_on_start(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream)
 {
-	mrcp_message_t *mrcp_message = message;
+	mrcp_message_t *mrcp_message = context->message;
 	/* validate message */
 	if(mrcp_message_validate(mrcp_message) == FALSE) {
 		return FALSE;
@@ -202,24 +189,17 @@ apt_bool_t mrcp_generator_message_initialize(apt_message_generator_t *generator,
 		mrcp_channel_id_generate(&mrcp_message->channel_id,stream);
 	}
 
-	if(header) {
-		*header = &mrcp_message->header.header_section;
-	}
-	if(body) {
-		*body = &mrcp_message->body;
-	}
+	context->header = &mrcp_message->header.header_section;
+	context->body = &mrcp_message->body;
 	return TRUE;
 }
 
 /** Finalize by setting overall message length in start line */
-apt_bool_t mrcp_generator_message_finalize(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream)
+apt_bool_t mrcp_generator_on_header_complete(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream)
 {
-	mrcp_message_t *mrcp_message = message;
+	mrcp_message_t *mrcp_message = context->message;
 	/* finalize start-line generation */
-	if(mrcp_start_line_finalize(&mrcp_message->start_line,mrcp_message->body.length,stream) == FALSE) {
-		return FALSE;
-	}
-	return TRUE;
+	return mrcp_start_line_finalize(&mrcp_message->start_line,mrcp_message->body.length,stream);
 }
 
 /** Generate MRCP message (excluding message body) */

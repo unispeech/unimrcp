@@ -196,20 +196,28 @@ static APR_INLINE void rtsp_header_init(rtsp_header_t *header, apr_pool_t *pool)
 	header->content_type = RTSP_CONTENT_TYPE_NONE;
 	header->content_length = 0;
 
-	apt_header_section_init(&header->header_section,RTSP_HEADER_FIELD_COUNT,pool);
+	apt_header_section_init(&header->header_section);
+	apt_header_section_array_alloc(&header->header_section,RTSP_HEADER_FIELD_COUNT,pool);
 }
 
 
 /** Add RTSP header field */
 RTSP_DECLARE(apt_bool_t) rtsp_header_field_add(rtsp_header_t *header, apt_header_field_t *header_field, apr_pool_t *pool);
 
+/** Parse RTSP header fields */
+RTSP_DECLARE(apt_bool_t) rtsp_header_fields_parse(rtsp_header_t *header, apr_pool_t *pool);
+
 /** Add RTSP header field property */
-RTSP_DECLARE(void) rtsp_header_property_add(rtsp_header_t *header, rtsp_header_field_id id, apr_pool_t *pool);
+RTSP_DECLARE(apt_bool_t) rtsp_header_property_add(rtsp_header_t *header, rtsp_header_field_id id, apr_pool_t *pool);
 
 /** Remove RTSP header field property */
-static APR_INLINE void rtsp_header_property_remove(rtsp_header_t *header, rtsp_header_field_id id)
+static APR_INLINE apt_bool_t rtsp_header_property_remove(rtsp_header_t *header, rtsp_header_field_id id)
 {
-	apt_header_section_field_remove(&header->header_section,id);
+	apt_header_field_t *header_field = apt_header_section_field_get(&header->header_section,id);
+	if(header_field) {
+		return apt_header_section_field_remove(&header->header_section,header_field);
+	}
+	return FALSE;
 }
 
 /** Check RTSP header field property */

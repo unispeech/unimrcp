@@ -47,6 +47,8 @@ typedef struct apt_message_generator_t apt_message_generator_t;
 /** Vtable of text message generator */
 typedef struct apt_message_generator_vtable_t apt_message_generator_vtable_t;
 
+/** Temporary context associated with message and used for its parsing or generation */
+typedef struct apt_message_context_t apt_message_context_t;
 
 /** Create message parser */
 APT_DECLARE(apt_message_parser_t*) apt_message_parser_create(void *obj, const apt_message_parser_vtable_t *vtable, apr_pool_t *pool);
@@ -70,27 +72,42 @@ APT_DECLARE(void*) apt_message_generator_object_get(apt_message_generator_t *gen
 
 /** Parse individual header field (name-value pair) */
 APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *stream, apr_pool_t *pool);
+
 /** Generate individual header field (name-value pair) */
 APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *header_field, apt_text_stream_t *stream);
 
+/** Parse header section */
+APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_header_section_t *header, apt_text_stream_t *stream, apr_pool_t *pool);
+
+/** Generate header section */
+APT_DECLARE(apt_bool_t) apt_header_section_generate(apt_header_section_t *header, apt_text_stream_t *stream);
+
+
+/** Temporary context associated with message and used for its parsing or generation */
+struct apt_message_context_t {
+	void                 *message;
+	apt_header_section_t *header;
+	apt_str_t            *body;
+};
+
 /** Vtable of text message parser */
 struct apt_message_parser_vtable_t {
-	/** Create message and read start line if applicable */
-	void* (*create_message)(apt_message_parser_t *parser, apt_text_stream_t *stream, apr_pool_t *pool);
-	/** Header field handler */
-	apt_bool_t (*on_header_field)(apt_message_parser_t *parser, void *message, apt_header_field_t *header_field);
-	/** Header separator handler */
-	apt_bool_t (*on_header_separator)(apt_message_parser_t *parser, void *message, apr_size_t *content_length);
-	/** Body handler */
-	apt_bool_t (*on_body)(apt_message_parser_t *parser, void *message, apt_str_t *body);
+	/** Start new message parsing by associating corresponding context and reading its start-line if applicable */
+	apt_bool_t (*on_start)(apt_message_parser_t *parser, apt_message_context_t *context, apt_text_stream_t *stream, apr_pool_t *pool);
+	/** Header section handler is invoked when entire header section has been read and parsed into header fields */
+	apt_bool_t (*on_header_complete)(apt_message_parser_t *parser, apt_message_context_t *context);
+	/** Body handler is invoked when entire body has been read */
+	apt_bool_t (*on_body_complete)(apt_message_parser_t *parser, apt_message_context_t *context);
 };
 
 /** Vtable of text message generator */
 struct apt_message_generator_vtable_t {
-	/** Initialize by generating message start line and return header section and body */
-	apt_bool_t (*initialize)(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream, apt_header_section_t **header, apt_str_t **body);
-	/** Finalize message start-line and header generation */
-	apt_bool_t (*finalize)(apt_message_generator_t *generator, void *message, apt_text_stream_t *stream);
+	/** Start message generation by associating corresponding context and generating message start-line if applicable */
+	apt_bool_t (*on_start)(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream);
+	/** Header section handler is invoked to notify header section has been generated */
+	apt_bool_t (*on_header_complete)(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream);
+	/** Body handler is invoked to notify body has been generated */
+	apt_bool_t (*on_body_complete)(apt_message_generator_t *generator, apt_message_context_t *context, apt_text_stream_t *stream);
 };
 
 

@@ -30,7 +30,7 @@ static apt_bool_t mrcp_message_resource_set_by_id(mrcp_message_t *message, const
 	}
 	message->resource = resource;
 	message->channel_id.resource_name = resource->name;
-	mrcp_message_header_allocate(
+	mrcp_message_header_data_alloc(
 		&message->header,
 		mrcp_generic_header_vtable_get(message->start_line.version),
 		resource->get_resource_header_vtable(message->start_line.version),
@@ -68,7 +68,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_resource_set(mrcp_message_t *message, cons
 		return FALSE;
 	}
 	message->resource = resource;
-	mrcp_message_header_allocate(
+	mrcp_message_header_data_alloc(
 		&message->header,
 		mrcp_generic_header_vtable_get(message->start_line.version),
 		resource->get_resource_header_vtable(message->start_line.version),

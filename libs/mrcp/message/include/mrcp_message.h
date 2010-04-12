@@ -139,7 +139,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_generic_header_name_property_add(mrcp_message_t *m
  */
 static APR_INLINE apt_bool_t mrcp_generic_header_property_remove(mrcp_message_t *message, apr_size_t id)
 {
-	return apt_header_section_field_remove(&message->header.header_section,id);
+	apt_header_field_t *header_field = apt_header_section_field_get(&message->header.header_section,id);
+	if(header_field) {
+		return apt_header_section_field_remove(&message->header.header_section,header_field);
+	}
+	return FALSE;
 }
 
 /**
@@ -193,7 +197,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_header_name_property_add(mrcp_message_t *
  */
 static APR_INLINE apt_bool_t mrcp_resource_header_property_remove(mrcp_message_t *message, apr_size_t id)
 {
-	return apt_header_section_field_remove(&message->header.header_section,id + GENERIC_HEADER_COUNT);
+	apt_header_field_t *header_field = apt_header_section_field_get(&message->header.header_section,id + GENERIC_HEADER_COUNT);
+	if(header_field) {
+		return apt_header_section_field_remove(&message->header.header_section,header_field);
+	}
+	return FALSE;
 }
 
 /**
