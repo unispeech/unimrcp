@@ -34,6 +34,7 @@ mrcp_connection_t* mrcp_connection_create()
 	connection->r_sockaddr = NULL;
 	connection->sock = NULL;
 	connection->id = NULL;
+	connection->verbose = TRUE;
 	connection->access_count = 0;
 	connection->it = NULL;
 	connection->channel_table = apr_hash_make(pool);

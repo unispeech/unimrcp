@@ -52,6 +52,9 @@ struct mrcp_connection_t {
 	apt_str_t         remote_ip;
 	/** String identifier used for traces */
 	const char       *id;
+	/** Transparently dump whatever received/sent on transport layer, 
+	if verbose is set to TRUE (default) */
+	apt_bool_t        verbose;
 
 	/** Reference count */
 	apr_size_t        access_count;
