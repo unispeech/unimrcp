@@ -28,17 +28,16 @@
 #define MRCPV2_CONNECTION_TASK_NAME "TCP/MRCPv2 Agent"
 
 struct mrcp_connection_agent_t {
-	apr_pool_t              *pool;
-	apt_poller_task_t       *task;
+	apr_pool_t                           *pool;
+	apt_poller_task_t                    *task;
+	const mrcp_resource_factory_t        *resource_factory;
 
-	mrcp_resource_factory_t *resource_factory;
+	apt_obj_list_t                       *connection_list;
 
-	apt_obj_list_t          *connection_list;
-
-	apr_uint32_t             request_timeout;
-	apt_bool_t               offer_new_connection;
-	apr_size_t               tx_buffer_size;
-	apr_size_t               rx_buffer_size;
+	apr_uint32_t                          request_timeout;
+	apt_bool_t                            offer_new_connection;
+	apr_size_t                            tx_buffer_size;
+	apr_size_t                            rx_buffer_size;
 
 	void                                 *obj;
 	const mrcp_connection_event_vtable_t *vtable;
@@ -141,8 +140,8 @@ MRCP_DECLARE(void) mrcp_client_connection_agent_handler_set(
 
 /** Set MRCP resource factory */
 MRCP_DECLARE(void) mrcp_client_connection_resource_factory_set(
-								mrcp_connection_agent_t *agent, 
-								mrcp_resource_factory_t *resource_factroy)
+								mrcp_connection_agent_t *agent,
+								const mrcp_resource_factory_t *resource_factroy)
 {
 	agent->resource_factory = resource_factroy;
 }

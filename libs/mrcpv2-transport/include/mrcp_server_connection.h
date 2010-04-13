@@ -79,8 +79,8 @@ MRCP_DECLARE(void) mrcp_server_connection_agent_handler_set(
  * @param resource_factory the MRCP resource factory to set
  */
 MRCP_DECLARE(void) mrcp_server_connection_resource_factory_set(
-								mrcp_connection_agent_t *agent, 
-								mrcp_resource_factory_t *resource_factory);
+								mrcp_connection_agent_t *agent,
+								const mrcp_resource_factory_t *resource_factory);
 
 /**
  * Set rx buffer size.
