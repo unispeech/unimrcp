@@ -17,6 +17,7 @@
  */
 
 #include "apt_text_message.h"
+#include "apt_log.h"
 
 /** Stage of text message processing (parsing/generation) */
 typedef enum {
@@ -35,6 +36,7 @@ struct apt_message_parser_t {
 	apr_size_t                         content_length;
 	apt_message_stage_e                stage;
 	apt_bool_t                         skip_lf;
+	apt_bool_t                         verbose;
 };
 
 /** Text message generator */
@@ -45,6 +47,7 @@ struct apt_message_generator_t {
 	apt_message_context_t                 context;
 	apr_size_t                            content_length;
 	apt_message_stage_e                   stage;
+	apt_bool_t                            verbose;
 };
 
 /** Parse individual header field (name-value pair) */
@@ -223,12 +226,14 @@ APT_DECLARE(apt_message_parser_t*) apt_message_parser_create(void *obj, const ap
 	parser->content_length = 0;
 	parser->stage = APT_MESSAGE_STAGE_START_LINE;
 	parser->skip_lf = FALSE;
+	parser->verbose = FALSE;
 	return parser;
 }
 
 /** Parse message by raising corresponding event handlers */
 APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *parser, apt_text_stream_t *stream, void **message)
 {
+	const char *pos;
 	apt_message_status_e status = APT_MESSAGE_STATUS_INCOMPLETE;
 	if(parser->skip_lf == TRUE) {
 		/* skip <LF> occurred as a result of message segmentation between <CR> and <LF> */
@@ -237,6 +242,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 	}
 
 	do {
+		pos = stream->pos;
 		if(parser->stage == APT_MESSAGE_STAGE_START_LINE) {
 			if(parser->vtable->on_start(parser,&parser->context,stream,parser->pool) == FALSE) {
 				status = APT_MESSAGE_STATUS_INVALID;
@@ -248,9 +254,20 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 		if(parser->stage == APT_MESSAGE_STAGE_HEADER) {
 			/* read header section */
 			if(apt_header_section_parse(parser->context.header,stream,parser->pool) == FALSE) {
+				if(parser->verbose) {
+					apr_size_t length = stream->pos - pos;
+					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Header [%lu bytes]\n%.*s",
+							length, length, pos);
+				}
 				break;
 			}
 
+			if(parser->verbose) {
+				apr_size_t length = stream->pos - pos;
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Header [%lu bytes]\n%.*s",
+						length, length, pos);
+				pos = stream->pos;
+			}
 			if(parser->vtable->on_header_complete) {
 				if(parser->vtable->on_header_complete(parser,&parser->context) == FALSE) {
 					status = APT_MESSAGE_STATUS_INVALID;
@@ -285,9 +302,20 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 
 		if(parser->stage == APT_MESSAGE_STAGE_BODY) {
 			if(apt_message_body_read(parser,stream) == FALSE) {
+				if(parser->verbose) {
+					apr_size_t length = stream->pos - pos;
+					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Body [%lu bytes]\n%.*s",
+							length, length, pos);
+				}
 				break;
 			}
 			
+			if(parser->verbose) {
+				apr_size_t length = stream->pos - pos;
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Body [%lu bytes]\n%.*s",
+						length, length, pos);
+				pos = stream->pos;
+			}
 			if(parser->vtable->on_body_complete) {
 				parser->vtable->on_body_complete(parser,&parser->context);
 			}
@@ -322,6 +350,7 @@ APT_DECLARE(apt_message_generator_t*) apt_message_generator_create(void *obj, co
 	generator->context.body = NULL;
 	generator->content_length = 0;
 	generator->stage = APT_MESSAGE_STAGE_START_LINE;
+	generator->verbose = FALSE;
 	return generator;
 }
 
