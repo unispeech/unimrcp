@@ -435,6 +435,11 @@ static apt_bool_t mrcp_response_check(const mrcp_app_message_t *app_message, mrc
 	if(!mrcp_message || mrcp_message->start_line.message_type != MRCP_MESSAGE_TYPE_RESPONSE ) {
 		return FALSE;
 	}
+
+	if(mrcp_message->start_line.status_code != MRCP_STATUS_CODE_SUCCESS && 
+		mrcp_message->start_line.status_code != MRCP_STATUS_CODE_SUCCESS_WITH_IGNORE) {
+		return FALSE;
+	}
 	return (mrcp_message->start_line.request_state == state) ? TRUE : FALSE;
 }
 
