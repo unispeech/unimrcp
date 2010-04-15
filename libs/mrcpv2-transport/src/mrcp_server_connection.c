@@ -589,12 +589,12 @@ static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
 
-			if(connection->verbose == TRUE) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %s [%lu bytes]\n%s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %s [%lu bytes]\n%.*s",
 					connection->id,
 					stream.text.length,
+					connection->verbose == TRUE ? stream.text.length : 0,
 					stream.text.buf);
-			}
+
 			if(apr_socket_send(connection->sock,stream.text.buf,&stream.text.length) == APR_SUCCESS) {
 				status = TRUE;
 			}
@@ -677,12 +677,12 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	if(connection->verbose == TRUE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream %s [%lu bytes]\n%s",
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive MRCPv2 Stream %s [%lu bytes]\n%.*s",
 			connection->id,
 			length,
+			connection->verbose == TRUE ? length : 0,
 			stream->pos);
-	}
 
 	/* reset pos */
 	apt_text_stream_reset(stream);
