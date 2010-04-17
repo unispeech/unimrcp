@@ -224,7 +224,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 		}
 		status = apt_pollset_poll(task->pollset, timeout, &num, &ret_pfd);
 		if(status != APR_SUCCESS && status != APR_TIMEUP) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Poll status: %d",status);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Poll [%s] status: %d",task_name,status);
 			continue;
 		}
 		for(i = 0; i < num; i++) {
