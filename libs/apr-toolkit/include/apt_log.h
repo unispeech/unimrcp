@@ -76,14 +76,14 @@ typedef enum {
 	APT_LOG_HEADER_DEFAULT  = APT_LOG_HEADER_DATE | APT_LOG_HEADER_TIME | APT_LOG_HEADER_PRIORITY
 } apt_log_header_e;
 
-/** Log output modes */
+/** Mode of log output */
 typedef enum {
 	APT_LOG_OUTPUT_NONE     = 0x00, /**< disable logging */
 	APT_LOG_OUTPUT_CONSOLE  = 0x01, /**< enable console output */
 	APT_LOG_OUTPUT_FILE     = 0x02  /**< enable log file output */
 } apt_log_output_e;
 
-/** Log masking modes */
+/** Masking mode of private data */
 typedef enum {
 	APT_LOG_MASKING_NONE,      /**< log everything as is */
 	APT_LOG_MASKING_COMPLETE,  /**< mask private data completely */
@@ -190,18 +190,18 @@ APT_DECLARE(apt_bool_t) apt_log_header_set(int header);
 APT_DECLARE(int) apt_log_header_translate(char *str);
 
 /**
- * Set the log masking mode.
- * @param the log masking mode to set
+ * Set the masking mode of private data.
+ * @param the masking mode to set
  */
 APT_DECLARE(apt_bool_t) apt_log_masking_set(apt_log_masking_e masking);
 
 /**
- * Get current log masking mode.
+ * Get the current masking mode of private data.
  */
 APT_DECLARE(apt_log_masking_e) apt_log_masking_get();
 
 /**
- * Translate the log masking mode string to enum.
+ * Translate the masking mode string to enum.
  * @param str the string to translate
  */
 APT_DECLARE(apt_log_masking_e) apt_log_masking_translate(const char *str);
