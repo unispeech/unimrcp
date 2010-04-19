@@ -31,8 +31,8 @@
 
   <!--  Set the log masking mode
     NONE          log everything as is
-    COMPLETE      mask privacy data completely
-    ENCRYPTED     enrcypt privacy data
+    COMPLETE      mask private data completely
+    ENCRYPTED     enrcypt private data
   -->
   <masking>NONE</masking>
 </aptlogger>

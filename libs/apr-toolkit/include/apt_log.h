@@ -86,8 +86,8 @@ typedef enum {
 /** Log masking modes */
 typedef enum {
 	APT_LOG_MASKING_NONE,      /**< log everything as is */
-	APT_LOG_MASKING_COMPLETE,  /**< mask privacy data completely */
-	APT_LOG_MASKING_ENCRYPTED  /**< encrypt privacy data */
+	APT_LOG_MASKING_COMPLETE,  /**< mask private data completely */
+	APT_LOG_MASKING_ENCRYPTED  /**< encrypt private data */
 } apt_log_masking_e;
 
 /** Opaque logger declaration */
@@ -207,7 +207,7 @@ APT_DECLARE(apt_log_masking_e) apt_log_masking_get();
 APT_DECLARE(apt_log_masking_e) apt_log_masking_translate(const char *str);
 
 /**
- * Mask privacy data based on the masking mode
+ * Mask private data based on the masking mode
  * @param data the data to mask
  * @param length the length of the data to mask on input, the length of the masked data on output
  * @param pool the memory pool to use if needed
