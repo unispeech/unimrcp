@@ -28,4 +28,11 @@
     THREAD        calling thread identifier output
   -->
   <headers>DATE,TIME,PRIORITY</headers>
+
+  <!--  Set the log masking mode
+    NONE          log everything as is
+    COMPLETE      mask privacy data completely
+    ENCRYPTED     enrcypt privacy data
+  -->
+  <masking>NONE</masking>
 </aptlogger>
