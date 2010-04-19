@@ -289,6 +289,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 					*message = parser->context.message;
 				}
 				parser->stage = APT_MESSAGE_STAGE_START_LINE;
+				break;
 			}
 
 			/* in the worst case message segmentation may occur between <CR> and <LF> 
@@ -324,6 +325,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 				*message = parser->context.message;
 			}
 			parser->stage = APT_MESSAGE_STAGE_START_LINE;
+			break;
 		}
 	}
 	while(apt_text_is_eos(stream) == FALSE);
