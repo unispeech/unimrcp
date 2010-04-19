@@ -479,6 +479,11 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection->rx_buffer = apr_palloc(connection->pool,connection->rx_buffer_size+1);
 	apt_text_stream_init(&connection->rx_stream,connection->rx_buffer,connection->rx_buffer_size);
 	
+	if(apt_log_masking_get() != APT_LOG_MASKING_NONE) {
+		connection->verbose = FALSE;
+		mrcp_parser_verbose_set(connection->parser,TRUE);
+		mrcp_generator_verbose_set(connection->generator,TRUE);
+	}
 	return TRUE;
 }
 

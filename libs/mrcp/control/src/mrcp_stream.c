@@ -69,12 +69,18 @@ MRCP_DECLARE(mrcp_parser_t*) mrcp_parser_create(const mrcp_resource_factory_t *r
 	return parser;
 }
 
-/** Set resource by name to be used for parsing MRCPv1 messages */
-MRCP_DECLARE(void) mrcp_parser_resource_set(mrcp_parser_t *mrcp_parser, const apt_str_t *resource_name)
+/** Set resource by name to be used for parsing of MRCPv1 messages */
+MRCP_DECLARE(void) mrcp_parser_resource_set(mrcp_parser_t *parser, const apt_str_t *resource_name)
 {
 	if(resource_name) {
-		mrcp_parser->resource = mrcp_resource_find(mrcp_parser->resource_factory,resource_name);
+		parser->resource = mrcp_resource_find(parser->resource_factory,resource_name);
 	}
+}
+
+/** Set verbose mode for the parser */
+MRCP_DECLARE(void) mrcp_parser_verbose_set(mrcp_parser_t *parser, apt_bool_t verbose)
+{
+	apt_message_parser_verbose_set(parser->base,verbose);
 }
 
 /** Parse MRCP stream */
@@ -164,6 +170,12 @@ MRCP_DECLARE(mrcp_generator_t*) mrcp_generator_create(const mrcp_resource_factor
 	generator->base = apt_message_generator_create(generator,&generator_vtable,pool);
 	generator->resource_factory = resource_factory;
 	return generator;
+}
+
+/** Set verbose mode for the generator */
+MRCP_DECLARE(void) mrcp_generator_verbose_set(mrcp_generator_t *generator, apt_bool_t verbose)
+{
+	apt_message_generator_verbose_set(generator->base,verbose);
 }
 
 /** Generate MRCP stream */

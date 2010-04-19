@@ -59,6 +59,9 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 /** Get external object associated with parser */
 APT_DECLARE(void*) apt_message_parser_object_get(apt_message_parser_t *parser);
 
+/** Set verbose mode for the parser */
+APT_DECLARE(void) apt_message_parser_verbose_set(apt_message_parser_t *parser, apt_bool_t verbose);
+
 
 /** Create message generator */
 APT_DECLARE(apt_message_generator_t*) apt_message_generator_create(void *obj, const apt_message_generator_vtable_t *vtable, apr_pool_t *pool);
@@ -68,6 +71,9 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 
 /** Get external object associated with generator */
 APT_DECLARE(void*) apt_message_generator_object_get(apt_message_generator_t *generator);
+
+/** Set verbose mode for the parser */
+APT_DECLARE(void) apt_message_generator_verbose_set(apt_message_generator_t *generator, apt_bool_t verbose);
 
 
 /** Parse individual header field (name-value pair) */

@@ -184,6 +184,12 @@ static apt_bool_t apt_message_body_read(apt_message_parser_t *parser, apt_text_s
 		memcpy(body->buf + body->length, stream->pos, required_length);
 		body->length += required_length;
 		stream->pos += required_length;
+		if(parser->verbose == TRUE) {
+			apr_size_t length = required_length;
+			const char *masked_data = apt_log_data_mask(stream->pos,&length,parser->pool);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Body [%lu bytes]\n%.*s",
+					required_length, length, masked_data);
+		}
 	}
 
 	return status;
@@ -205,6 +211,14 @@ static apt_bool_t apt_message_body_write(apt_message_generator_t *generator, apt
 		}
 
 		memcpy(stream->pos, body->buf + body->length, required_length);
+
+		if(generator->verbose == TRUE) {
+			apr_size_t length = required_length;
+			const char *masked_data = apt_log_data_mask(stream->pos,&length,generator->pool);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Message Body [%lu bytes]\n%.*s",
+					required_length, length, masked_data);
+		}
+
 		body->length += required_length;
 		stream->pos += required_length;
 	}
@@ -254,7 +268,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 		if(parser->stage == APT_MESSAGE_STAGE_HEADER) {
 			/* read header section */
 			if(apt_header_section_parse(parser->context.header,stream,parser->pool) == FALSE) {
-				if(parser->verbose) {
+				if(parser->verbose == TRUE) {
 					apr_size_t length = stream->pos - pos;
 					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Header [%lu bytes]\n%.*s",
 							length, length, pos);
@@ -262,7 +276,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 				break;
 			}
 
-			if(parser->verbose) {
+			if(parser->verbose == TRUE) {
 				apr_size_t length = stream->pos - pos;
 				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Header [%lu bytes]\n%.*s",
 						length, length, pos);
@@ -303,20 +317,9 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 
 		if(parser->stage == APT_MESSAGE_STAGE_BODY) {
 			if(apt_message_body_read(parser,stream) == FALSE) {
-				if(parser->verbose) {
-					apr_size_t length = stream->pos - pos;
-					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Body [%lu bytes]\n%.*s",
-							length, length, pos);
-				}
 				break;
 			}
 			
-			if(parser->verbose) {
-				apr_size_t length = stream->pos - pos;
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Body [%lu bytes]\n%.*s",
-						length, length, pos);
-				pos = stream->pos;
-			}
 			if(parser->vtable->on_body_complete) {
 				parser->vtable->on_body_complete(parser,&parser->context);
 			}
@@ -337,6 +340,12 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 APT_DECLARE(void*) apt_message_parser_object_get(apt_message_parser_t *parser)
 {
 	return parser->obj;
+}
+
+/** Set verbose mode for the parser */
+APT_DECLARE(void) apt_message_parser_verbose_set(apt_message_parser_t *parser, apt_bool_t verbose)
+{
+	parser->verbose = verbose;
 }
 
 
@@ -400,6 +409,11 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 		if(generator->vtable->on_header_complete) {
 			generator->vtable->on_header_complete(generator,&generator->context,stream);
 		}
+		if(generator->verbose == TRUE) {
+			apr_size_t length = stream->pos - stream->text.buf;
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Message Header [%lu bytes]\n%.*s",
+					length, length, stream->text.buf);
+		}
 
 		generator->stage = APT_MESSAGE_STAGE_START_LINE;
 		generator->content_length = generator->context.body->length;
@@ -424,4 +438,10 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 APT_DECLARE(void*) apt_message_generator_object_get(apt_message_generator_t *generator)
 {
 	return generator->obj;
+}
+
+/** Set verbose mode for the parser */
+APT_DECLARE(void) apt_message_generator_verbose_set(apt_message_generator_t *generator, apt_bool_t verbose)
+{
+	generator->verbose = verbose;
 }
