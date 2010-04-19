@@ -83,6 +83,13 @@ typedef enum {
 	APT_LOG_OUTPUT_FILE     = 0x02  /**< enable log file output */
 } apt_log_output_e;
 
+/** Log masking modes */
+typedef enum {
+	APT_LOG_MASKING_NONE,      /**< log everything as is */
+	APT_LOG_MASKING_COMPLETE,  /**< mask privacy data completely */
+	APT_LOG_MASKING_ENCRYPTED  /**< encrypt privacy data */
+} apt_log_masking_e;
+
 /** Opaque logger declaration */
 typedef struct apt_logger_t apt_logger_t;
 
@@ -181,6 +188,32 @@ APT_DECLARE(apt_bool_t) apt_log_header_set(int header);
  * @param str the string to translate
  */
 APT_DECLARE(int) apt_log_header_translate(char *str);
+
+/**
+ * Set the log masking mode.
+ * @param the log masking mode to set
+ */
+APT_DECLARE(apt_bool_t) apt_log_masking_set(apt_log_masking_e masking);
+
+/**
+ * Get current log masking mode.
+ */
+APT_DECLARE(apt_log_masking_e) apt_log_masking_get();
+
+/**
+ * Translate the log masking mode string to enum.
+ * @param str the string to translate
+ */
+APT_DECLARE(apt_log_masking_e) apt_log_masking_translate(const char *str);
+
+/**
+ * Mask privacy data based on the masking mode
+ * @param data the data to mask
+ * @param length the length of the data to mask on input, the length of the masked data on output
+ * @param pool the memory pool to use if needed
+ * @return The masked data.
+ */
+APT_DECLARE(const char*) apt_log_data_mask(const char *data_in, apr_size_t *length, apr_pool_t *pool);
 
 /**
  * Set the extended external log handler.

@@ -57,6 +57,7 @@ struct apt_logger_t {
 	int                   header;
 	apt_log_ext_handler_f ext_handler;
 	apt_log_file_data_t  *file_data;
+	apt_log_masking_e     masking;
 };
 
 static apt_logger_t *apt_logger = NULL;
@@ -67,18 +68,26 @@ static const char* apt_log_file_path_make(apt_log_file_data_t *file_data);
 static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *log_entry, apr_size_t size);
 static apr_xml_doc* apt_log_doc_parse(const char *file_path, apr_pool_t *pool);
 
+static apt_logger_t* apt_log_instance_alloc(apr_pool_t *pool)
+{
+	apt_logger_t *logger = apr_palloc(pool,sizeof(apt_logger_t));
+	logger->mode = APT_LOG_OUTPUT_CONSOLE;
+	logger->priority = APT_PRIO_INFO;
+	logger->header = APT_LOG_HEADER_DEFAULT;
+	logger->ext_handler = NULL;
+	logger->file_data = NULL;
+	logger->masking = APT_LOG_MASKING_NONE;
+	return logger;
+}
 
 APT_DECLARE(apt_bool_t) apt_log_instance_create(apt_log_output_e mode, apt_log_priority_e priority, apr_pool_t *pool)
 {
 	if(apt_logger) {
 		return FALSE;
 	}
-	apt_logger = apr_palloc(pool,sizeof(apt_logger_t));
+	apt_logger = apt_log_instance_alloc(pool);
 	apt_logger->mode = mode;
 	apt_logger->priority = priority;
-	apt_logger->header = APT_LOG_HEADER_DEFAULT;
-	apt_logger->ext_handler = NULL;
-	apt_logger->file_data = NULL;
 	return TRUE;
 }
 
@@ -92,13 +101,7 @@ APT_DECLARE(apt_bool_t) apt_log_instance_load(const char *config_file, apr_pool_
 	if(apt_logger) {
 		return FALSE;
 	}
-	apt_logger = apr_palloc(pool,sizeof(apt_logger_t));
-	apt_logger->mode = APT_LOG_OUTPUT_CONSOLE;
-	apt_logger->priority = APT_PRIO_INFO;
-	apt_logger->header = APT_LOG_HEADER_DEFAULT;
-	apt_logger->ext_handler = NULL;
-	apt_logger->file_data = NULL;
-
+	apt_logger = apt_log_instance_alloc(pool);
 
 	/* Parse XML document */
 	doc = apt_log_doc_parse(config_file,pool);
@@ -130,6 +133,9 @@ APT_DECLARE(apt_bool_t) apt_log_instance_load(const char *config_file, apr_pool_
 		}
 		else if(strcasecmp(elem->name,"headers") == 0) {
 			apt_logger->header = apt_log_header_translate(text);
+		}
+		else if(strcasecmp(elem->name,"masking") == 0) {
+			apt_logger->masking = apt_log_masking_translate(text);
 		}
 		else {
 			/* Unknown element */
@@ -324,6 +330,46 @@ APT_DECLARE(int) apt_log_header_translate(char *str)
 		name = apr_strtok(NULL, ",", &last);
 	}
 	return header;
+}
+
+APT_DECLARE(apt_bool_t) apt_log_masking_set(apt_log_masking_e masking)
+{
+	if(!apt_logger) {
+		return FALSE;
+	}
+	apt_logger->masking = masking;
+	return TRUE;
+}
+
+APT_DECLARE(apt_log_masking_e) apt_log_masking_get()
+{
+	if(!apt_logger) {
+		return APT_LOG_MASKING_NONE;
+	}
+	return apt_logger->masking;
+}
+
+APT_DECLARE(apt_log_masking_e) apt_log_masking_translate(const char *str)
+{
+	if(strcasecmp(str, "COMPLETE") == 0)
+		return APT_LOG_MASKING_COMPLETE;
+	else if(strcasecmp(str, "ENCRYPTED") == 0)
+		return APT_LOG_MASKING_ENCRYPTED;
+	return APT_LOG_MASKING_NONE;
+}
+
+#define APT_MASKED_CONTENT "*** masked ***"
+
+APT_DECLARE(const char*) apt_log_data_mask(const char *data_in, apr_size_t *length, apr_pool_t *pool)
+{
+	if(!apt_logger) {
+		return NULL;
+	}
+	if(apt_logger->masking == APT_LOG_MASKING_COMPLETE) {
+		*length = sizeof(APT_MASKED_CONTENT) - 1;
+		return APT_MASKED_CONTENT;
+	}
+	return data_in;
 }
 
 APT_DECLARE(apt_bool_t) apt_log_ext_handler_set(apt_log_ext_handler_f handler)
