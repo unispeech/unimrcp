@@ -259,7 +259,9 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 		pos = stream->pos;
 		if(parser->stage == APT_MESSAGE_STAGE_START_LINE) {
 			if(parser->vtable->on_start(parser,&parser->context,stream,parser->pool) == FALSE) {
-				status = APT_MESSAGE_STATUS_INVALID;
+				if(apt_text_is_eos(stream) == FALSE) {
+					status = APT_MESSAGE_STATUS_INVALID;
+				}
 				break;
 			}
 			parser->stage = APT_MESSAGE_STAGE_HEADER;
