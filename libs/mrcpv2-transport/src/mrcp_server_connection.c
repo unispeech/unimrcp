@@ -635,7 +635,7 @@ static apt_bool_t mrcp_server_message_handler(mrcp_connection_t *connection, mrc
 	else if(status == APT_MESSAGE_STATUS_INVALID) {
 		/* error case */
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv2 Stream");
-		if(message->resource) {
+		if(message && message->resource) {
 			mrcp_message_t *response;
 			response = mrcp_response_create(message,message->pool);
 			response->start_line.status_code = MRCP_STATUS_CODE_UNRECOGNIZED_MESSAGE;

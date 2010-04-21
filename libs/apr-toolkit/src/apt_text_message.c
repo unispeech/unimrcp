@@ -254,6 +254,9 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 		apt_text_char_skip(stream,APT_TOKEN_LF);
 		parser->skip_lf = FALSE;
 	}
+	if(message) {
+		*message = NULL;
+	}
 
 	do {
 		pos = stream->pos;
