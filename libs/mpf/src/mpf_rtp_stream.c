@@ -492,7 +492,7 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 	}
 
 	mpf_jitter_buffer_destroy(receiver->jb);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%lu l:%lu j:%lu d:%lu i:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%u l:%u j:%u d:%u i:%u]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
@@ -748,7 +748,7 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 
 	time = apr_time_now();
 
-	RTP_TRACE("RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u size=%lu\n",
+	RTP_TRACE("RTP time=%6u ssrc=%8x pt=%3u %cts=%9u seq=%5u size=%lu\n",
 					(apr_uint32_t)apr_time_usec(time),
 					header->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
 					header->timestamp, header->sequence, size);
@@ -872,7 +872,7 @@ static apt_bool_t mpf_rtp_tx_stream_close(mpf_audio_stream_t *stream)
 	if(!rtp_stream->rtp_l_sockaddr || !rtp_stream->rtp_r_sockaddr) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmitter %s:%hu -> %s:%hu [s:%lu o:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Transmitter %s:%hu -> %s:%hu [s:%u o:%u]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
@@ -1104,7 +1104,7 @@ static APR_INLINE void rtcp_sr_generate(mpf_rtp_stream_t *rtp_stream, rtcp_sr_st
 	apt_ntp_time_get(&sr_stat->ntp_sec, &sr_stat->ntp_frac);
 	sr_stat->rtp_ts = rtp_stream->transmitter.timestamp;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generate RTCP SR [ssrc:%lu s:%lu o:%lu ts:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generate RTCP SR [ssrc:%u s:%u o:%u ts:%u]",
 				sr_stat->ssrc,
 				sr_stat->sent_packets,
 				sr_stat->sent_octets,
@@ -1117,7 +1117,7 @@ static APR_INLINE void rtcp_rr_generate(mpf_rtp_stream_t *rtp_stream, rtcp_rr_st
 	*rr_stat = rtp_stream->receiver.rr_stat;
 	rr_stat->last_seq =	rtp_stream->receiver.history.seq_num_max;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generate RTCP RR [ssrc:%lu last_seq:%lu j:%lu lost:%lu frac:%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generate RTCP RR [ssrc:%u last_seq:%u j:%u lost:%u frac:%d]",
 				rr_stat->ssrc,
 				rr_stat->last_seq,
 				rr_stat->jitter,
@@ -1317,7 +1317,7 @@ static apt_bool_t mpf_rtcp_bye_send(mpf_rtp_stream_t *rtp_stream, apt_str_t *rea
 static APR_INLINE void rtcp_sr_get(mpf_rtp_stream_t *rtp_stream, rtcp_sr_stat_t *sr_stat)
 {
 	rtcp_sr_ntoh(sr_stat);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get RTCP SR [ssrc:%lu s:%lu o:%lu ts:%lu]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get RTCP SR [ssrc:%u s:%u o:%u ts:%u]",
 				sr_stat->ssrc,
 				sr_stat->sent_packets,
 				sr_stat->sent_octets,
@@ -1327,7 +1327,7 @@ static APR_INLINE void rtcp_sr_get(mpf_rtp_stream_t *rtp_stream, rtcp_sr_stat_t 
 static APR_INLINE void rtcp_rr_get(mpf_rtp_stream_t *rtp_stream, rtcp_rr_stat_t *rr_stat)
 {
 	rtcp_rr_ntoh(rr_stat);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get RTCP RR [ssrc:%lu last_seq:%lu j:%lu lost:%lu frac:%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get RTCP RR [ssrc:%u last_seq:%u j:%u lost:%u frac:%d]",
 				rr_stat->ssrc,
 				rr_stat->last_seq,
 				rr_stat->jitter,

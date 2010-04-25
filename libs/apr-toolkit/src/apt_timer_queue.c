@@ -77,7 +77,7 @@ APT_DECLARE(void) apt_timer_queue_advance(apt_timer_queue_t *timer_queue, apr_ui
 	/* increment elapsed time */
 	timer_queue->elapsed_time += elapsed_time;
 	if(timer_queue->elapsed_time >= 0xFFFF) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Reschedule Timers [%lu]",timer_queue->elapsed_time);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Reschedule Timers [%u]",timer_queue->elapsed_time);
 		apt_timers_reschedule(timer_queue);
 	}
 
@@ -91,7 +91,7 @@ APT_DECLARE(void) apt_timer_queue_advance(apt_timer_queue_t *timer_queue, apr_ui
 			break;
 		}
 		
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Timer Elapsed 0x%x [%lu]",timer,timer->scheduled_time);
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Timer Elapsed 0x%x [%u]",timer,timer->scheduled_time);
 		/* remove the elapsed timer from the list */
 		APR_RING_REMOVE(timer, link);
 		timer->scheduled_time = 0;
@@ -166,7 +166,7 @@ APT_DECLARE(apt_bool_t) apt_timer_set(apt_timer_t *timer, apr_uint32_t timeout)
 	
 	/* calculate time to elapse */
 	timer->scheduled_time = queue->elapsed_time + timeout;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Set Timer 0x%x [%lu]",timer,timer->scheduled_time);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Set Timer 0x%x [%u]",timer,timer->scheduled_time);
 
 	if(APR_RING_EMPTY(&queue->head, apt_timer_t, link)) {
 		APR_RING_INSERT_TAIL(&queue->head,timer,apt_timer_t,link);
@@ -186,7 +186,7 @@ APT_DECLARE(apt_bool_t) apt_timer_kill(apt_timer_t *timer)
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Kill Timer 0x%x [%lu]",timer,timer->scheduled_time);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Kill Timer 0x%x [%u]",timer,timer->scheduled_time);
 	/* remove node (timer) from the list */
 	APR_RING_REMOVE(timer,link);
 	timer->scheduled_time = 0;
