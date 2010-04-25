@@ -832,7 +832,7 @@ static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, rtsp_client_co
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream %s [%lu bytes]\n%s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send RTSP Stream %s [%"APR_SIZE_T_FMT" bytes]\n%s",
 				rtsp_connection->id,
 				stream->text.length,
 				stream->text.buf);
@@ -930,7 +930,7 @@ static apt_bool_t rtsp_client_poller_signal_process(void *obj, const apr_pollfd_
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream %s [%lu bytes]\n%s",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Stream %s [%"APR_SIZE_T_FMT" bytes]\n%s",
 		rtsp_connection->id,
 		length,
 		stream->pos);

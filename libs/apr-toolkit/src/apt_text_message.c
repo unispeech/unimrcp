@@ -187,7 +187,7 @@ static apt_bool_t apt_message_body_read(apt_message_parser_t *parser, apt_text_s
 		if(parser->verbose == TRUE) {
 			apr_size_t length = required_length;
 			const char *masked_data = apt_log_data_mask(stream->pos,&length,parser->pool);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Body [%lu bytes]\n%.*s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Body [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 					required_length, length, masked_data);
 		}
 	}
@@ -215,7 +215,7 @@ static apt_bool_t apt_message_body_write(apt_message_generator_t *generator, apt
 		if(generator->verbose == TRUE) {
 			apr_size_t length = required_length;
 			const char *masked_data = apt_log_data_mask(stream->pos,&length,generator->pool);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Message Body [%lu bytes]\n%.*s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Message Body [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 					required_length, length, masked_data);
 		}
 
@@ -275,7 +275,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 			if(apt_header_section_parse(parser->context.header,stream,parser->pool) == FALSE) {
 				if(parser->verbose == TRUE) {
 					apr_size_t length = stream->pos - pos;
-					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Header [%lu bytes]\n%.*s",
+					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Header [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 							length, length, pos);
 				}
 				break;
@@ -283,7 +283,7 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 
 			if(parser->verbose == TRUE) {
 				apr_size_t length = stream->pos - pos;
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Header [%lu bytes]\n%.*s",
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Header [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 						length, length, pos);
 				pos = stream->pos;
 			}
@@ -416,7 +416,7 @@ APT_DECLARE(apt_message_status_e) apt_message_generator_run(apt_message_generato
 		}
 		if(generator->verbose == TRUE) {
 			apr_size_t length = stream->pos - stream->text.buf;
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Message Header [%lu bytes]\n%.*s",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Generated Message Header [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 					length, length, stream->text.buf);
 		}
 
