@@ -748,7 +748,7 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 
 	time = apr_time_now();
 
-	RTP_TRACE("RTP time=%6u ssrc=%8x pt=%3u %cts=%9u seq=%5u size=%lu\n",
+	RTP_TRACE("RTP time=%6u ssrc=%8x pt=%3u %cts=%9u seq=%5u size=%"APR_SIZE_T_FMT"\n",
 					(apr_uint32_t)apr_time_usec(time),
 					header->ssrc, header->type, (header->marker == 1) ? '*' : ' ',
 					header->timestamp, header->sequence, size);
