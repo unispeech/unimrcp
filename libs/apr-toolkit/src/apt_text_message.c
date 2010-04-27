@@ -244,6 +244,15 @@ APT_DECLARE(apt_message_parser_t*) apt_message_parser_create(void *obj, const ap
 	return parser;
 }
 
+static APR_INLINE void apt_crlf_segmentation_test(apt_message_parser_t *parser, apt_text_stream_t *stream)
+{
+	/* in the worst case message segmentation may occur between <CR> and <LF> */
+	if(stream->pos == stream->end && *(stream->pos-1)== APT_TOKEN_CR) {
+		/* if this is the case be prepared to skip <LF> with the next attempt */
+		parser->skip_lf = TRUE;
+	}
+}
+
 /** Parse message by raising corresponding event handlers */
 APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *parser, apt_text_stream_t *stream, void **message)
 {
@@ -267,26 +276,27 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 				}
 				break;
 			}
+			
+			apt_crlf_segmentation_test(parser,stream);
+
 			parser->stage = APT_MESSAGE_STAGE_HEADER;
 		}
 
 		if(parser->stage == APT_MESSAGE_STAGE_HEADER) {
 			/* read header section */
-			if(apt_header_section_parse(parser->context.header,stream,parser->pool) == FALSE) {
-				if(parser->verbose == TRUE) {
-					apr_size_t length = stream->pos - pos;
-					apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Partially Parsed Message Header [%"APR_SIZE_T_FMT" bytes]\n%.*s",
-							length, length, pos);
-				}
-				break;
-			}
-
+			apt_bool_t res = apt_header_section_parse(parser->context.header,stream,parser->pool);
 			if(parser->verbose == TRUE) {
 				apr_size_t length = stream->pos - pos;
 				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parsed Message Header [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 						length, length, pos);
-				pos = stream->pos;
 			}
+			
+			apt_crlf_segmentation_test(parser,stream);
+
+			if(res == FALSE) {
+				break;
+			}
+
 			if(parser->vtable->on_header_complete) {
 				if(parser->vtable->on_header_complete(parser,&parser->context) == FALSE) {
 					status = APT_MESSAGE_STATUS_INVALID;
@@ -308,14 +318,6 @@ APT_DECLARE(apt_message_status_e) apt_message_parser_run(apt_message_parser_t *p
 					*message = parser->context.message;
 				}
 				parser->stage = APT_MESSAGE_STAGE_START_LINE;
-				break;
-			}
-
-			/* in the worst case message segmentation may occur between <CR> and <LF> 
-			   of the final empty header */
-			if(stream->pos == stream->end && *(stream->pos-1)== APT_TOKEN_CR) {
-				/* if this is the case be prepared to skip <LF> */
-				parser->skip_lf = TRUE;
 				break;
 			}
 		}
