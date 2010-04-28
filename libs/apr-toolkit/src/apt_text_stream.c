@@ -224,10 +224,32 @@ APT_DECLARE(apt_bool_t) apt_id_resource_generate(const apt_str_t *id, const apt_
 	return TRUE;
 }
 
+/** Generate name-value pair line */
+APT_DECLARE(apt_bool_t) apt_text_name_value_insert(apt_text_stream_t *stream, const apt_str_t *name, const apt_str_t *value)
+{
+	char *pos = stream->pos;
+	if(pos + name->length + value->length + 2 >= stream->end) {
+		return FALSE;
+	}
+	memcpy(pos,name->buf,name->length);
+	pos += name->length;
+	*pos++ = ':';
+	*pos++ = APT_TOKEN_SP;
+	if(apt_string_is_empty(value) == FALSE) {
+		memcpy(pos,value->buf,value->length);
+		pos += value->length;
+	}
+	stream->pos = pos;
+	return apt_text_eol_insert(stream);
+}
+
 /** Generate only the name ("name":) of the header field */
 APT_DECLARE(apt_bool_t) apt_text_header_name_insert(apt_text_stream_t *stream, const apt_str_t *name)
 {
 	char *pos = stream->pos;
+	if(pos + name->length + 2 >= stream->end) {
+		return FALSE;
+	}
 	memcpy(pos,name->buf,name->length);
 	pos += name->length;
 	*pos++ = ':';
@@ -356,10 +378,16 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_str_t *
 APT_DECLARE(apt_bool_t) apt_boolean_value_insert(apt_text_stream_t *stream, apt_bool_t value)
 {
 	if(value == TRUE) {
+		if(stream->pos + TOKEN_TRUE_LENGTH >= stream->end) {
+			return FALSE;
+		}
 		memcpy(stream->pos,TOKEN_TRUE,TOKEN_TRUE_LENGTH);
 		stream->pos += TOKEN_TRUE_LENGTH;
 	}
 	else {
+		if(stream->pos + TOKEN_FALSE_LENGTH >= stream->end) {
+			return FALSE;
+		}
 		memcpy(stream->pos,TOKEN_FALSE,TOKEN_FALSE_LENGTH);
 		stream->pos += TOKEN_FALSE_LENGTH;
 	}
@@ -384,7 +412,7 @@ APT_DECLARE(apt_bool_t) apt_size_value_generate(apr_size_t value, apt_str_t *str
 /** Insert apr_size_t value */
 APT_DECLARE(apt_bool_t) apt_text_size_value_insert(apt_text_stream_t *stream, apr_size_t value)
 {
-	int length = sprintf(stream->pos, "%"APR_SIZE_T_FMT, value);
+	int length = apr_snprintf(stream->pos, stream->end - stream->pos, "%"APR_SIZE_T_FMT, value);
 	if(length <= 0) {
 		return FALSE;
 	}
@@ -418,7 +446,7 @@ APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_str_t *str, ap
 APT_DECLARE(apt_bool_t) apt_text_float_value_insert(apt_text_stream_t *stream, float value)
 {
 	char *end;
-	int length = sprintf(stream->pos,"%f",value);
+	int length = apr_snprintf(stream->pos, stream->end - stream->pos, "%f", value);
 	if(length <= 0) {
 		return FALSE;
 	}

@@ -85,6 +85,8 @@ APT_DECLARE(apt_bool_t) apt_text_header_read(apt_text_stream_t *stream, apt_pair
  */
 APT_DECLARE(apt_bool_t) apt_text_field_read(apt_text_stream_t *stream, char separator, apt_bool_t skip_spaces, apt_str_t *field);
 
+/** Generate name-value pair line */
+APT_DECLARE(apt_bool_t) apt_text_name_value_insert(apt_text_stream_t *stream, const apt_str_t *name, const apt_str_t *value);
 
 /** Generate only the name ("name:") of the header field */
 APT_DECLARE(apt_bool_t) apt_text_header_name_insert(apt_text_stream_t *stream, const apt_str_t *name);
@@ -150,28 +152,36 @@ static APR_INLINE void apt_text_stream_init(apt_text_stream_t *stream, char *buf
 }
 
 /** Insert end of the line symbol(s) */
-static APR_INLINE void apt_text_eol_insert(apt_text_stream_t *stream)
+static APR_INLINE apt_bool_t apt_text_eol_insert(apt_text_stream_t *stream)
 {
-	*stream->pos++ = APT_TOKEN_CR;
-	*stream->pos++ = APT_TOKEN_LF;
+	if(stream->pos + 2 < stream->end) {
+		*stream->pos++ = APT_TOKEN_CR;
+		*stream->pos++ = APT_TOKEN_LF;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 /** Insert character */
-static APR_INLINE void apt_text_char_insert(apt_text_stream_t *stream, char ch)
+static APR_INLINE apt_bool_t apt_text_char_insert(apt_text_stream_t *stream, char ch)
 {
-	*stream->pos++ = ch;
+	if(stream->pos + 1 < stream->end) {
+		*stream->pos++ = ch;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 /** Insert space */
-static APR_INLINE void apt_text_space_insert(apt_text_stream_t *stream)
+static APR_INLINE apt_bool_t apt_text_space_insert(apt_text_stream_t *stream)
 {
-	*stream->pos++ = APT_TOKEN_SP;
+	return apt_text_char_insert(stream,APT_TOKEN_SP);
 }
 
 /** Insert space */
-static APR_INLINE void apt_text_htab_insert(apt_text_stream_t *stream)
+static APR_INLINE apt_bool_t apt_text_htab_insert(apt_text_stream_t *stream)
 {
-	*stream->pos++ = APT_TOKEN_HTAB;
+	return apt_text_char_insert(stream,APT_TOKEN_HTAB);
 }
 
 /** Check whether specified character is a white space (WSP = SP / HTAB) */
