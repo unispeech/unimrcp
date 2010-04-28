@@ -123,17 +123,8 @@ APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_str_t *str, ap
 
 /** Insert float value */
 APT_DECLARE(apt_bool_t) apt_text_float_value_insert(apt_text_stream_t *stream, float value);
-
-
 /** Insert string value */
-static APR_INLINE apt_bool_t apt_text_string_insert(apt_text_stream_t *stream, const apt_str_t *str)
-{
-	if(str->length) {
-		memcpy(stream->pos,str->buf,str->length);
-		stream->pos += str->length;
-	}
-	return TRUE;
-}
+APT_DECLARE(apt_bool_t) apt_text_string_insert(apt_text_stream_t *stream, const apt_str_t *str);
 
 /** Reset navigation related data of the text stream */
 static APR_INLINE void apt_text_stream_reset(apt_text_stream_t *stream)

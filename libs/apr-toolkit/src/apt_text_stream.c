@@ -459,6 +459,19 @@ APT_DECLARE(apt_bool_t) apt_text_float_value_insert(apt_text_stream_t *stream, f
 	return TRUE;
 }
 
+/** Insert string value */
+APT_DECLARE(apt_bool_t) apt_text_string_insert(apt_text_stream_t *stream, const apt_str_t *str)
+{
+	if(stream->pos + str->length >= stream->end) {
+		return FALSE;
+	}
+	if(str->length) {
+		memcpy(stream->pos,str->buf,str->length);
+		stream->pos += str->length;
+	}
+	return TRUE;
+}
+
 /** Generate value plus the length (number of digits) of the value itself. */
 APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_size_t max_count, apt_str_t *str)
 {
