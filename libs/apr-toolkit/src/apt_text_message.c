@@ -154,7 +154,7 @@ APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_header_section_t *header, a
 }
 
 /** Generate header section */
-APT_DECLARE(apt_bool_t) apt_header_section_generate(apt_header_section_t *header, apt_text_stream_t *stream)
+APT_DECLARE(apt_bool_t) apt_header_section_generate(const apt_header_section_t *header, apt_text_stream_t *stream)
 {
 	apt_header_field_t *header_field;
 	for(header_field = APR_RING_FIRST(&header->ring);

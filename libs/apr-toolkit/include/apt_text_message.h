@@ -86,7 +86,7 @@ APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *head
 APT_DECLARE(apt_bool_t) apt_header_section_parse(apt_header_section_t *header, apt_text_stream_t *stream, apr_pool_t *pool);
 
 /** Generate header section */
-APT_DECLARE(apt_bool_t) apt_header_section_generate(apt_header_section_t *header, apt_text_stream_t *stream);
+APT_DECLARE(apt_bool_t) apt_header_section_generate(const apt_header_section_t *header, apt_text_stream_t *stream);
 
 
 /** Temporary context associated with message and used for its parsing or generation */
