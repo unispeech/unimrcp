@@ -244,12 +244,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 {
 	apt_str_t *str;
 	char *pos = stream->pos;
-
+	if(pos + MRCP_CHANNEL_ID_LENGTH + 2 + channel_id->session_id.length + 1 + 
+		channel_id->resource_name.length >= stream->end) {
+		return FALSE;
+	}
 	memcpy(pos,MRCP_CHANNEL_ID,MRCP_CHANNEL_ID_LENGTH);
 	pos += MRCP_CHANNEL_ID_LENGTH;
 	*pos++ = ':';
 	*pos++ = APT_TOKEN_SP;
-	
+		
 	str = &channel_id->session_id;
 	memcpy(pos,str->buf,str->length);
 	pos += str->length;
@@ -260,6 +263,5 @@ MRCP_DECLARE(apt_bool_t) mrcp_channel_id_generate(mrcp_channel_id *channel_id, a
 	pos += str->length;
 
 	stream->pos = pos;
-	apt_text_eol_insert(stream);
-	return TRUE;
+	return apt_text_eol_insert(stream);
 }

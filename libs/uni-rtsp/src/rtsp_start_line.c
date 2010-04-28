@@ -99,10 +99,20 @@ static rtsp_version_e rtsp_version_parse(const apt_str_t *field)
 /** Generate RTSP version */
 static apt_bool_t rtsp_version_generate(rtsp_version_e version, apt_text_stream_t *stream)
 {
+	if(stream->pos + RTSP_NAME_LENGTH + 1 >= stream->end) {
+		return FALSE;
+	}
 	memcpy(stream->pos,RTSP_NAME,RTSP_NAME_LENGTH);
 	stream->pos += RTSP_NAME_LENGTH;
 	*stream->pos++ = RTSP_NAME_VERSION_SEPARATOR;
-	apt_text_size_value_insert(stream,version);
+
+	if(apt_text_size_value_insert(stream,version) == FALSE) {
+		return FALSE;
+	}
+
+	if(stream->pos + 2 >= stream->end) {
+		return FALSE;
+	}
 	*stream->pos++ = RTSP_VERSION_MAJOR_MINOR_SEPARATOR;
 	*stream->pos++ = '0';
 	return TRUE;
@@ -128,27 +138,41 @@ static apt_bool_t rtsp_request_line_generate(rtsp_request_line_t *start_line, ap
 		return FALSE;
 	}
 	start_line->method_name = *method_name;
-	apt_text_string_insert(stream,&start_line->method_name);
-	apt_text_space_insert(stream);
+	if(apt_text_string_insert(stream,&start_line->method_name) == FALSE) {
+		return FALSE;
+	}
+	if(apt_text_space_insert(stream) == FALSE) {
+		return FALSE;
+	}
 
-	apt_text_string_insert(stream,&start_line->url);
-	apt_text_space_insert(stream);
+	if(apt_text_string_insert(stream,&start_line->url) == FALSE) {
+		return FALSE;
+	}
+	if(apt_text_space_insert(stream) == FALSE) {
+		return FALSE;
+	}
 
-	rtsp_version_generate(start_line->version,stream);
-	return TRUE;
+	return rtsp_version_generate(start_line->version,stream);
 }
 
 /** Generate RTSP status-line */
 static apt_bool_t rtsp_status_line_generate(rtsp_status_line_t *start_line, apt_text_stream_t *stream)
 {
-	rtsp_version_generate(start_line->version,stream);
-	apt_text_space_insert(stream);
+	if(rtsp_version_generate(start_line->version,stream) == FALSE) {
+		return FALSE;
+	}
+	if(apt_text_space_insert(stream) == FALSE) {
+		return FALSE;
+	}
 
-	rtsp_status_code_generate(start_line->status_code,stream);
-	apt_text_space_insert(stream);
+	if(rtsp_status_code_generate(start_line->status_code,stream) == FALSE) {
+		return FALSE;
+	}
+	if(apt_text_space_insert(stream) == FALSE) {
+		return FALSE;
+	}
 
-	apt_text_string_insert(stream,&start_line->reason);
-	return TRUE;
+	return apt_text_string_insert(stream,&start_line->reason);
 }
 
 /** Parse RTSP start-line */
@@ -223,11 +247,11 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_generate(rtsp_start_line_t *start_line,
 			break;
 	}
 
-	if(status == TRUE) {
-		apt_text_eol_insert(stream);
+	if(status == FALSE) {
+		return FALSE;
 	}
-	
-	return status;
+		
+	return apt_text_eol_insert(stream);
 }
 
 /** Get reason phrase by status code */

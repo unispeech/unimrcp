@@ -217,7 +217,6 @@ apt_bool_t mrcp_generator_on_header_complete(apt_message_generator_t *generator,
 /** Generate MRCP message (excluding message body) */
 MRCP_DECLARE(apt_bool_t) mrcp_message_generate(const mrcp_resource_factory_t *resource_factory, mrcp_message_t *message, apt_text_stream_t *stream)
 {
-	apt_header_field_t *header_field;
 	/* validate message */
 	if(mrcp_message_validate(message) == FALSE) {
 		return FALSE;
@@ -233,13 +232,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_message_generate(const mrcp_resource_factory_t *re
 	}
 
 	/* generate header section */
-	for(header_field = APR_RING_FIRST(&message->header.header_section.ring);
-			header_field != APR_RING_SENTINEL(&message->header.header_section.ring, apt_header_field_t, link);
-				header_field = APR_RING_NEXT(header_field, link)) {
-		
-		apt_header_field_generate(header_field,stream);
+	if(apt_header_section_generate(&message->header.header_section,stream) == FALSE) {
+		return FALSE;
 	}
-	apt_text_eol_insert(stream);
 
 	/* finalize start-line generation */
 	if(mrcp_start_line_finalize(&message->start_line,message->body.length,stream) == FALSE) {

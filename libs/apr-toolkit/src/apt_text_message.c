@@ -117,12 +117,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *strea
 /** Generate individual header field (name-value pair) */
 APT_DECLARE(apt_bool_t) apt_header_field_generate(const apt_header_field_t *header_field, apt_text_stream_t *stream)
 {
-	apt_text_header_name_insert(stream,&header_field->name);
-	if(apt_string_is_empty(&header_field->value) == FALSE) {
-		apt_text_string_insert(stream,&header_field->value);
-	}
-	apt_text_eol_insert(stream);
-	return TRUE;
+	return apt_text_name_value_insert(stream,&header_field->name,&header_field->value);
 }
 
 /** Parse header section */
@@ -163,8 +158,7 @@ APT_DECLARE(apt_bool_t) apt_header_section_generate(const apt_header_section_t *
 		apt_header_field_generate(header_field,stream);
 	}
 
-	apt_text_eol_insert(stream);
-	return TRUE;
+	return apt_text_eol_insert(stream);
 }
 
 static apt_bool_t apt_message_body_read(apt_message_parser_t *parser, apt_text_stream_t *stream)

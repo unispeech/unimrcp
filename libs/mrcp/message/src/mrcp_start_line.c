@@ -67,10 +67,20 @@ static mrcp_version_e mrcp_version_parse(const apt_str_t *field)
 /** Generate MRCP version */
 static apt_bool_t mrcp_version_generate(mrcp_version_e version, apt_text_stream_t *stream)
 {
+	if(stream->pos + MRCP_NAME_LENGTH + 1 >= stream->end) {
+		return FALSE;
+	}
 	memcpy(stream->pos,MRCP_NAME,MRCP_NAME_LENGTH);
 	stream->pos += MRCP_NAME_LENGTH;
 	*stream->pos++ = MRCP_NAME_VERSION_SEPARATOR;
-	apt_text_size_value_insert(stream,version);
+
+	if(apt_text_size_value_insert(stream,version) == FALSE) {
+		return FALSE;
+	}
+
+	if(stream->pos + 2 >= stream->end) {
+		return FALSE;
+	}
 	*stream->pos++ = MRCP_VERSION_MAJOR_MINOR_SEPARATOR;
 	*stream->pos++ = '0';
 	return TRUE;
@@ -381,11 +391,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_start_line_generate(mrcp_start_line_t *start_line,
 		status = mrcp_v2_start_line_generate(start_line,text_stream);
 	}
 
-	if(status == TRUE) {
-		apt_text_eol_insert(text_stream);
+	if(status == FALSE) {
+		return FALSE;
 	}
-	
-	return status;
+
+	return apt_text_eol_insert(text_stream);
 }
 
 /** Finalize MRCP start-line generation */
