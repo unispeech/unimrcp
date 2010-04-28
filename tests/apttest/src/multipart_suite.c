@@ -29,15 +29,15 @@ static apt_str_t* multipart_content_generate(apt_test_suite_t *suite)
 
 	apt_string_set(&content_type,"text/plain");
 	apt_string_set(&content,"This is the content of the first part");
-	apt_multipart_content_add(multipart,&content_type,&content);
+	apt_multipart_content_add2(multipart,&content_type,NULL,&content);
 
 	apt_string_set(&content_type,"application/ssml+xml");
 	apt_string_set(&content,
 		"<?xml version=\"1.0\"?>\r\n"
-        "<speak version=\"1.0\"\r\n"
-        "<p> <s>You have 4 new messages.</s> </p>\r\n"
-        "</speak>");
-	apt_multipart_content_add(multipart,&content_type,&content);
+		"<speak version=\"1.0\"\r\n"
+		"<p> <s>You have 4 new messages.</s> </p>\r\n"
+		"</speak>");
+	apt_multipart_content_add2(multipart,&content_type,NULL,&content);
 
 	body = apt_multipart_content_finalize(multipart);
 	if(body) {
@@ -52,17 +52,28 @@ static apt_bool_t multipart_content_parse(apt_test_suite_t *suite, apt_str_t *bo
 {
 	apt_multipart_content_t *multipart = apt_multipart_content_assign(body,NULL,suite->pool);
 	if(multipart) {
-		apt_str_t content_type;
-		apt_str_t content;
-		while(apt_multipart_content_get(multipart,&content_type,&content) == TRUE) {
-			if(content.length == 0) {
+		apt_bool_t is_final;
+		apt_content_part_t content_part;
+		while(apt_multipart_content_get(multipart,&content_part,&is_final) == TRUE) {
+			if(is_final == TRUE) {
 				break;
 			}
-			if(content_type.buf && content.buf) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Content Part type: %s length: %lu\n%s",
-					content_type.buf,
-					content.length,
-					content.buf);
+			if(content_part.type && apt_string_is_empty(content_part.type) == FALSE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Content Part Type: %.*s",
+					content_part.type->length,
+					content_part.type->buf);
+			}
+			if(content_part.id && apt_string_is_empty(content_part.id) == FALSE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Content Part Id: %.*s",
+					content_part.id->length,
+					content_part.id->buf);
+			}
+			if(content_part.length && apt_string_is_empty(content_part.length) == FALSE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Content Part Length: %.*s\n%.*s",
+					content_part.length->length,
+					content_part.length->buf,
+					content_part.body.length,
+					content_part.body.buf);
 			}
 		}
 	}

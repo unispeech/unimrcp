@@ -24,12 +24,30 @@
  * @brief Multipart Content Routine
  */ 
 
-#include "apt_string.h"
+#include "apt_header_field.h"
 
 APT_BEGIN_EXTERN_C
 
 /** Opaque multipart content declaration */
 typedef struct apt_multipart_content_t apt_multipart_content_t;
+
+/** Content part declaration */
+typedef struct apt_content_part_t apt_content_part_t;
+
+/** Content part */
+struct apt_content_part_t {
+	/** Header section */
+	apt_header_section_t header;
+	/** Body */
+	apt_str_t            body;
+
+	/* Pointer to parsed content-type header field */
+	apt_str_t           *type;
+	/* Pointer to parsed content-id header field */
+	apt_str_t           *id;
+	/* Pointer to parsed content-length header field */
+	apt_str_t           *length;
+};
 
 /**
  * Create an empty multipart content
@@ -43,11 +61,20 @@ APT_DECLARE(apt_multipart_content_t*) apt_multipart_content_create(apr_size_t ma
 /** 
  * Add content part to multipart content
  * @param multipart_content the multipart content to add content part to
- * @param content_type the type of content part to add
- * @param content the content part to add
+ * @param content_part the content part to add
  * @return TRUE on success
  */
-APT_DECLARE(apt_bool_t) apt_multipart_content_add(apt_multipart_content_t *multipart_content, const apt_str_t *content_type, const apt_str_t *content);
+APT_DECLARE(apt_bool_t) apt_multipart_content_add(apt_multipart_content_t *multipart_content, const apt_content_part_t *content_part);
+
+/** 
+ * Add content part to multipart content by specified header fields and body
+ * @param multipart_content the multipart content to add content part to
+ * @param content_type the type of content part
+ * @param content_id the identifier of content part
+ * @param body the body of content part
+ * @return TRUE on success
+ */
+APT_DECLARE(apt_bool_t) apt_multipart_content_add2(apt_multipart_content_t *multipart_content, const apt_str_t *content_type, const apt_str_t *content_id, const apt_str_t *body);
 
 /** 
  * Finalize multipart content generation 
@@ -73,7 +100,7 @@ APT_DECLARE(apt_multipart_content_t*) apt_multipart_content_assign(const apt_str
  * @param content the parsed content part
  * @return TRUE on success
  */
-APT_DECLARE(apt_bool_t) apt_multipart_content_get(apt_multipart_content_t *multipart_content, apt_str_t *content_type, apt_str_t *content);
+APT_DECLARE(apt_bool_t) apt_multipart_content_get(apt_multipart_content_t *multipart_content, apt_content_part_t *content_part, apt_bool_t *is_final);
 
 
 APT_END_EXTERN_C
