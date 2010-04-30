@@ -47,6 +47,7 @@ struct apt_task_t {
 };
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
+static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable);
 static apt_bool_t apt_task_terminate_request(apt_task_t *task);
 
 
@@ -246,7 +247,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 {
 	apt_bool_t running = TRUE;
 	switch(msg->sub_type) {
-		case CORE_TASK_MSG_START_COMPLETE: 
+		case CORE_TASK_MSG_START_COMPLETE:
 		{
 			if(!task->pending_start) {
 				/* error case, no pending start */
@@ -333,6 +334,9 @@ APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task)
 	apt_task_t *child_task = NULL;
 	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
 	task->pending_start = 0;
+	if(task->vtable.on_start_request) {
+		task->vtable.on_start_request(task);
+	}
 	/* walk through the list of the child tasks and start them */
 	while(elem) {
 		child_task = apt_list_elem_object_get(elem);
@@ -368,6 +372,9 @@ APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task)
 	apt_task_t *child_task = NULL;
 	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
 	task->pending_term = 0;
+	if(task->vtable.on_terminate_request) {
+		task->vtable.on_terminate_request(task);
+	}
 	/* walk through the list of the child tasks and terminate them */
 	while(elem) {
 		child_task = apt_list_elem_object_get(elem);
@@ -424,7 +431,6 @@ APT_DECLARE(apt_bool_t) apt_task_ready(apt_task_t *task)
 	return TRUE;
 }
 
-
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data)
 {
 	apt_task_t *task = data;
@@ -457,4 +463,20 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 
 	apr_thread_exit(thread_handle,APR_SUCCESS);
 	return NULL;
+}
+
+static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
+{
+	vtable->destroy = NULL;
+	vtable->start = NULL;
+	vtable->terminate = NULL;
+	vtable->run = NULL;
+	vtable->signal_msg = NULL;
+	vtable->process_msg = NULL;
+	vtable->on_pre_run = NULL;
+	vtable->on_post_run = NULL;
+	vtable->on_start_request = NULL;
+	vtable->on_start_complete = NULL;
+	vtable->on_terminate_request = NULL;
+	vtable->on_terminate_complete = NULL;
 }

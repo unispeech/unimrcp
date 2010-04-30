@@ -199,25 +199,15 @@ struct apt_task_vtable_t {
 	apt_task_event_f on_pre_run;
 	/** Virtual post-run event handler */
 	apt_task_event_f on_post_run;
+	/** Virtual start-request event handler */
+	apt_task_event_f on_start_request;
 	/** Virtual start-complete event handler */
 	apt_task_event_f on_start_complete;
+	/** Virtual terminate-request event handler */
+	apt_task_event_f on_terminate_request;
 	/** Virtual terminate-complete event handler */
 	apt_task_event_f on_terminate_complete;
 };
-
-static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
-{
-	vtable->destroy = NULL;
-	vtable->start = NULL;
-	vtable->terminate = NULL;
-	vtable->run = NULL;
-	vtable->signal_msg = NULL;
-	vtable->process_msg = NULL;
-	vtable->on_pre_run = NULL;
-	vtable->on_post_run = NULL;
-	vtable->on_start_complete = NULL;
-	vtable->on_terminate_complete = NULL;
-}
 
 APT_END_EXTERN_C
 
