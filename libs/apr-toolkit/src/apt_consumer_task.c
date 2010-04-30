@@ -80,22 +80,25 @@ static apt_bool_t apt_consumer_task_run(apt_task_t *task)
 {
 	apr_status_t rv;
 	void *msg;
-	apt_bool_t running = TRUE;
+	apt_bool_t *running;
 	apt_consumer_task_t *consumer_task;
 	consumer_task = apt_task_object_get(task);
 	if(!consumer_task) {
 		return FALSE;
 	}
 
-	while(running) {
+	running = apt_task_running_flag_get(task);
+	if(!running) {
+		return FALSE;
+	}
+
+	while(*running) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s]",apt_task_name_get(task));
 		rv = apr_queue_pop(consumer_task->msg_queue,&msg);
 		if(rv == APR_SUCCESS) {
 			if(msg) {
 				apt_task_msg_t *task_msg = msg;
-				if(apt_task_msg_process(consumer_task->base,task_msg) == FALSE) {
-					running = FALSE;
-				}
+				apt_task_msg_process(consumer_task->base,task_msg);
 			}
 		}
 	}

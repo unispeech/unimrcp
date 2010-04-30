@@ -170,7 +170,6 @@ APT_DECLARE(apt_timer_t*) apt_poller_task_timer_create(
 
 static apt_bool_t apt_poller_task_wakeup_process(apt_poller_task_t *task)
 {
-	apt_bool_t status = TRUE;
 	apt_bool_t running = TRUE;
 	apt_task_msg_t *msg;
 
@@ -179,20 +178,20 @@ static apt_bool_t apt_poller_task_wakeup_process(apt_poller_task_t *task)
 		msg = apt_cyclic_queue_pop(task->msg_queue);
 		apr_thread_mutex_unlock(task->guard);
 		if(msg) {
-			status = apt_task_msg_process(task->base,msg);
+			apt_task_msg_process(task->base,msg);
 		}
 		else {
 			running = FALSE;
 		}
 	}
 	while(running == TRUE);
-	return status;
+	return TRUE;
 }
 
 static apt_bool_t apt_poller_task_run(apt_task_t *base)
 {
 	apt_poller_task_t *task = apt_task_object_get(base);
-	apt_bool_t running = TRUE;
+	apt_bool_t *running;
 	apr_status_t status;
 	apr_int32_t num;
 	const apr_pollfd_t *ret_pfd;
@@ -208,10 +207,15 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 	}
 	task_name = apt_task_name_get(task->base),
 
+	running = apt_task_running_flag_get(task->base);
+	if(!running) {
+		return FALSE;
+	}
+
 	/* explicitly indicate task is ready to process messages */
 	apt_task_ready(task->base);
 
-	while(running) {
+	while(*running) {
 		if(apt_timer_queue_timeout_get(task->timer_queue,&queue_timeout) == TRUE) {
 			timeout = queue_timeout * 1000;
 			time_last = apr_time_now();
@@ -230,8 +234,8 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 		for(i = 0; i < num; i++) {
 			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Poller Wakeup [%s]",task_name);
-				if(apt_poller_task_wakeup_process(task) == FALSE) {
-					running = FALSE;
+				apt_poller_task_wakeup_process(task);
+				if(*running == FALSE) {
 					break;
 				}
 				continue;

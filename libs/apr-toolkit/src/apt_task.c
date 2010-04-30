@@ -42,6 +42,7 @@ struct apt_task_t {
 	apt_obj_list_t      *child_tasks;   /* list of the child (slave) tasks */
 	apr_size_t           pending_start; /* number of pending start requests */
 	apr_size_t           pending_term;  /* number of pending terminate requests */
+	apt_bool_t           running;       /* task is running (TRUE if even terminate has already been requested) */
 	apt_bool_t           auto_ready;    /* if TRUE, task is implicitly ready to process messages */
 	const char          *name;          /* name of the task */
 };
@@ -245,7 +246,6 @@ APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_ms
 
 static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
-	apt_bool_t running = TRUE;
 	switch(msg->sub_type) {
 		case CORE_TASK_MSG_START_COMPLETE:
 		{
@@ -270,7 +270,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 		{
 			apt_task_child_terminate(task);
 			if(!task->pending_term) {
-				running = FALSE;
+				task->running = FALSE;
 			}
 			break;
 		}
@@ -290,31 +290,31 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 					/* signal terminate-complete message */
 					apt_task_msg_signal(task->parent_task,msg);
 				}
-				running = FALSE;
+				task->running = FALSE;
 			}
 			break;
 		}
 		default: break;
 	}
-	return running;
+	return TRUE;
 }
 
 APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
-	apt_bool_t running = TRUE;
+	apt_bool_t status = FALSE;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%s] [%d;%d]",
 		task->name, msg->type, msg->sub_type);
 	if(msg->type == TASK_MSG_CORE) {
-		running = apt_core_task_msg_process(task,msg);
+		status = apt_core_task_msg_process(task,msg);
 	}
 	else {
 		if(task->vtable.process_msg) {
-			task->vtable.process_msg(task,msg);
+			status = task->vtable.process_msg(task,msg);
 		}
 	}
 	
 	apt_task_msg_release(msg);
-	return running;
+	return status;
 }
 
 static apt_bool_t apt_task_terminate_request(apt_task_t *task)
@@ -431,6 +431,11 @@ APT_DECLARE(apt_bool_t) apt_task_ready(apt_task_t *task)
 	return TRUE;
 }
 
+APT_DECLARE(apt_bool_t*) apt_task_running_flag_get(apt_task_t *task)
+{
+	return &task->running;
+}
+
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data)
 {
 	apt_task_t *task = data;
@@ -441,6 +446,7 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 	}
 	apr_thread_mutex_lock(task->data_guard);
 	task->state = TASK_STATE_RUNNING;
+	task->running = TRUE;
 	apr_thread_mutex_unlock(task->data_guard);
 
 	if(task->auto_ready == TRUE) {
@@ -455,6 +461,7 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 
 	apr_thread_mutex_lock(task->data_guard);
 	task->state = TASK_STATE_IDLE;
+	task->running = FALSE;
 	apr_thread_mutex_unlock(task->data_guard);
 	/* raise post-run event */
 	if(task->vtable.on_post_run) {

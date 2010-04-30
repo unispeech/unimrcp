@@ -173,6 +173,12 @@ APT_DECLARE(void) apt_task_auto_ready_set(apt_task_t *task, apt_bool_t auto_read
 APT_DECLARE(apt_bool_t) apt_task_ready(apt_task_t *task);
 
 /**
+ * Get the running flag.
+ * @param task the task
+ */
+APT_DECLARE(apt_bool_t*) apt_task_running_flag_get(apt_task_t *task);
+
+/**
  * Hold task execution.
  * @param msec the time to hold
  */
