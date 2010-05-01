@@ -179,7 +179,7 @@ static apt_bool_t demo_synth_engine_open(mrcp_engine_t *engine)
 		apt_task_t *task = apt_consumer_task_base_get(demo_engine->task);
 		apt_task_start(task);
 	}
-	return TRUE;
+	return mrcp_engine_open_respond(engine,TRUE);
 }
 
 /** Close synthesizer engine */
@@ -190,7 +190,7 @@ static apt_bool_t demo_synth_engine_close(mrcp_engine_t *engine)
 		apt_task_t *task = apt_consumer_task_base_get(demo_engine->task);
 		apt_task_terminate(task,TRUE);
 	}
-	return TRUE;
+	return mrcp_engine_close_respond(engine);
 }
 
 /** Create demo synthesizer channel derived from engine channel base */

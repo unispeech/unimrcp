@@ -177,7 +177,7 @@ static apt_bool_t demo_recog_engine_open(mrcp_engine_t *engine)
 		apt_task_t *task = apt_consumer_task_base_get(demo_engine->task);
 		apt_task_start(task);
 	}
-	return TRUE;
+	return mrcp_engine_open_respond(engine,TRUE);
 }
 
 /** Close recognizer engine */
@@ -188,7 +188,7 @@ static apt_bool_t demo_recog_engine_close(mrcp_engine_t *engine)
 		apt_task_t *task = apt_consumer_task_base_get(demo_engine->task);
 		apt_task_terminate(task,TRUE);
 	}
-	return TRUE;
+	return mrcp_engine_close_respond(engine);
 }
 
 static mrcp_engine_channel_t* demo_recog_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool)

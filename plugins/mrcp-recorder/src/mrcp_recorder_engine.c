@@ -132,13 +132,13 @@ static apt_bool_t recorder_engine_destroy(mrcp_engine_t *engine)
 /** Open recorder engine */
 static apt_bool_t recorder_engine_open(mrcp_engine_t *engine)
 {
-	return TRUE;
+	return mrcp_engine_open_respond(engine,TRUE);
 }
 
 /** Close recorder engine */
 static apt_bool_t recorder_engine_close(mrcp_engine_t *engine)
 {
-	return TRUE;
+	return mrcp_engine_close_respond(engine);
 }
 
 static mrcp_engine_channel_t* recorder_engine_channel_create(mrcp_engine_t *engine, apr_pool_t *pool)

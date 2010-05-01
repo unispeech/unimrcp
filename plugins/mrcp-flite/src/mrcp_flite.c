@@ -160,7 +160,7 @@ static apt_bool_t flite_synth_engine_open(mrcp_engine_t *engine)
 	flite_engine->voices = flite_voices_load(engine->pool);
 
 	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "flite init success");
-	return TRUE;
+	return mrcp_engine_open_respond(engine,TRUE);
 }
 
 /** Close synthesizer engine */
@@ -171,7 +171,7 @@ static apt_bool_t flite_synth_engine_close(mrcp_engine_t *engine)
 
 	flite_voices_unload(flite_engine->voices);
 
-	return TRUE;
+	return mrcp_engine_close_respond(engine);
 }
 
 static apt_bool_t flite_synth_task_create(flite_synth_channel_t *synth_channel)

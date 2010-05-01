@@ -186,13 +186,13 @@ static apt_bool_t pocketsphinx_engine_open(mrcp_engine_t *engine_base)
 
 	/* load properties */
 	pocketsphinx_properties_load(&engine->properties,file_path,dir_layout,engine_base->pool);
-	return TRUE;
+	return mrcp_engine_open_respond(engine_base,TRUE);
 }
 
 /** Close pocketsphinx engine */
 static apt_bool_t pocketsphinx_engine_close(mrcp_engine_t *engine_base)
 {
-	return TRUE;
+	return mrcp_engine_close_respond(engine_base);
 }
 
 /** Create pocketsphinx recognizer */
