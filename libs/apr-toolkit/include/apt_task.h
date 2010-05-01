@@ -179,6 +179,30 @@ APT_DECLARE(apt_bool_t) apt_task_ready(apt_task_t *task);
 APT_DECLARE(apt_bool_t*) apt_task_running_flag_get(apt_task_t *task);
 
 /**
+ * Add start request.
+ * @param task the task
+ */
+APT_DECLARE(apt_bool_t) apt_task_start_request_add(apt_task_t *task);
+
+/**
+ * Remove start request.
+ * @param task the task
+ */
+APT_DECLARE(apt_bool_t) apt_task_start_request_remove(apt_task_t *task);
+
+/**
+ * Add termination request.
+ * @param task the task
+ */
+APT_DECLARE(apt_bool_t) apt_task_terminate_request_add(apt_task_t *task);
+
+/**
+ * Remove termination request.
+ * @param task the task
+ */
+APT_DECLARE(apt_bool_t) apt_task_terminate_request_remove(apt_task_t *task);
+
+/**
  * Hold task execution.
  * @param msec the time to hold
  */

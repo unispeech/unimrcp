@@ -50,6 +50,8 @@ struct apt_task_t {
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
 static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable);
 static apt_bool_t apt_task_terminate_request(apt_task_t *task);
+static void apt_task_start_complete_raise(apt_task_t *task);
+static void apt_task_terminate_complete_raise(apt_task_t *task);
 
 
 APT_DECLARE(apt_task_t*) apt_task_create(
@@ -249,21 +251,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 	switch(msg->sub_type) {
 		case CORE_TASK_MSG_START_COMPLETE:
 		{
-			if(!task->pending_start) {
-				/* error case, no pending start */
-				break;
-			}
-			task->pending_start--;
-			if(!task->pending_start) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Started [%s]",task->name);
-				if(task->vtable.on_start_complete) {
-					task->vtable.on_start_complete(task);
-				}
-				if(task->parent_task) {
-					/* signal start-complete message */
-					apt_task_msg_signal(task->parent_task,msg);
-				}
-			}
+			apt_task_start_request_remove(task);
 			break;
 		}
 		case CORE_TASK_MSG_TERMINATE_REQUEST:
@@ -276,22 +264,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 		}
 		case CORE_TASK_MSG_TERMINATE_COMPLETE:
 		{
-			if(!task->pending_term) {
-				/* error case, no pending terminate */
-				break;
-			}
-			task->pending_term--;
-			if(!task->pending_term) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Terminated [%s]",task->name);
-				if(task->vtable.on_terminate_complete) {
-					task->vtable.on_terminate_complete(task);
-				}
-				if(task->parent_task) {
-					/* signal terminate-complete message */
-					apt_task_msg_signal(task->parent_task,msg);
-				}
-				task->running = FALSE;
-			}
+			apt_task_terminate_request_remove(task);
 			break;
 		}
 		default: break;
@@ -350,19 +323,7 @@ APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task)
 
 	if(!task->pending_start) {
 		/* no child task to start, just raise start-complete event */
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Started [%s]",task->name);
-		if(task->vtable.on_start_complete) {
-			task->vtable.on_start_complete(task);
-		}
-		if(task->parent_task) {
-			if(task->msg_pool) {
-				apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-				/* signal start-complete message */
-				msg->type = TASK_MSG_CORE;
-				msg->sub_type = CORE_TASK_MSG_START_COMPLETE;
-				apt_task_msg_signal(task->parent_task,msg);
-			}
-		}
+		apt_task_start_complete_raise(task);
 	}
 	return TRUE;
 }
@@ -396,21 +357,7 @@ APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task)
 
 	if(!task->pending_term) {
 		/* no child task to terminate, just raise terminate-complete event */
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Terminated [%s]",task->name);
-		if(task->vtable.on_terminate_complete) {
-			task->vtable.on_terminate_complete(task);
-		}
-#ifdef ENABLE_SIMULT_TASK_TERMINATION
-		if(task->parent_task) {
-			if(task->msg_pool) {
-				apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-				/* signal terminate-complete message */
-				msg->type = TASK_MSG_CORE;
-				msg->sub_type = CORE_TASK_MSG_TERMINATE_COMPLETE;
-				apt_task_msg_signal(task->parent_task,msg);
-			}
-		}
-#endif
+		apt_task_terminate_complete_raise(task);
 	}
 	return TRUE;
 }
@@ -434,6 +381,81 @@ APT_DECLARE(apt_bool_t) apt_task_ready(apt_task_t *task)
 APT_DECLARE(apt_bool_t*) apt_task_running_flag_get(apt_task_t *task)
 {
 	return &task->running;
+}
+
+APT_DECLARE(apt_bool_t) apt_task_start_request_add(apt_task_t *task)
+{
+	task->pending_start++;
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_task_start_request_remove(apt_task_t *task)
+{
+	if(!task->pending_start) {
+		/* error case, no pending start */
+		return FALSE;
+	}
+	task->pending_start--;
+	if(!task->pending_start) {
+		apt_task_start_complete_raise(task);
+	}
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_task_terminate_request_add(apt_task_t *task)
+{
+	task->pending_term++;
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_task_terminate_request_remove(apt_task_t *task)
+{
+	if(!task->pending_term) {
+		/* error case, no pending terminate */
+		return FALSE;
+	}
+	task->pending_term--;
+	if(!task->pending_term) {
+		apt_task_terminate_complete_raise(task);
+		task->running = FALSE;
+	}
+	return TRUE;
+}
+
+static void apt_task_start_complete_raise(apt_task_t *task)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Started [%s]",task->name);
+	if(task->vtable.on_start_complete) {
+		task->vtable.on_start_complete(task);
+	}
+	if(task->parent_task) {
+		if(task->msg_pool) {
+			apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
+			/* signal start-complete message */
+			msg->type = TASK_MSG_CORE;
+			msg->sub_type = CORE_TASK_MSG_START_COMPLETE;
+			apt_task_msg_signal(task->parent_task,msg);
+		}
+	}
+}
+
+static void apt_task_terminate_complete_raise(apt_task_t *task)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Terminated [%s]",task->name);
+	if(task->vtable.on_terminate_complete) {
+		task->vtable.on_terminate_complete(task);
+	}
+#ifdef ENABLE_SIMULT_TASK_TERMINATION
+	if(task->parent_task) {
+		if(task->msg_pool) {
+			apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
+			/* signal terminate-complete message */
+			msg->type = TASK_MSG_CORE;
+			msg->sub_type = CORE_TASK_MSG_TERMINATE_COMPLETE;
+			apt_task_msg_signal(task->parent_task,msg);
+		}
+	}
+#endif
 }
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data)
