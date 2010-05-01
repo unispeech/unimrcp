@@ -29,30 +29,20 @@
 APT_BEGIN_EXTERN_C
 
 /** Destroy engine */
-static APR_INLINE apt_bool_t mrcp_engine_virtual_destroy(mrcp_engine_t *engine)
-{
-	return engine->method_vtable->destroy(engine);
-}
+apt_bool_t mrcp_engine_virtual_destroy(mrcp_engine_t *engine);
 
 /** Open engine */
-static APR_INLINE apt_bool_t mrcp_engine_virtual_open(mrcp_engine_t *engine)
-{
-	if(engine->is_open == FALSE) {
-		engine->is_open = engine->method_vtable->open(engine);
-		return engine->is_open;
-	}
-	return FALSE;
-}
+apt_bool_t mrcp_engine_virtual_open(mrcp_engine_t *engine);
+
+/** Response to open engine request */
+void mrcp_engine_on_open(mrcp_engine_t *engine, apt_bool_t status);
 
 /** Close engine */
-static APR_INLINE apt_bool_t mrcp_engine_virtual_close(mrcp_engine_t *engine)
-{
-	if(engine->is_open == TRUE) {
-		engine->is_open = FALSE;
-		return engine->method_vtable->close(engine);
-	}
-	return FALSE;
-}
+apt_bool_t mrcp_engine_virtual_close(mrcp_engine_t *engine);
+
+/** Response to close engine request */
+void mrcp_engine_on_close(mrcp_engine_t *engine);
+
 
 /** Create engine channel */
 mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool);

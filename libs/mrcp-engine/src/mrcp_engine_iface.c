@@ -17,6 +17,50 @@
  */
 
 #include "mrcp_engine_iface.h"
+#include "apt_log.h"
+
+/** Destroy engine */
+apt_bool_t mrcp_engine_virtual_destroy(mrcp_engine_t *engine)
+{
+	return engine->method_vtable->destroy(engine);
+}
+
+/** Open engine */
+apt_bool_t mrcp_engine_virtual_open(mrcp_engine_t *engine)
+{
+	if(engine->is_open == FALSE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Engine [%s]",engine->config->name);
+		return engine->method_vtable->open(engine);
+	}
+	return FALSE;
+}
+
+/** Response to open engine request */
+void mrcp_engine_on_open(mrcp_engine_t *engine, apt_bool_t status)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Engine Opened [%s] status [%s]",
+		engine->config->name,
+		status == TRUE ? "success" : "failure");
+	engine->is_open = status;
+}
+
+/** Close engine */
+apt_bool_t mrcp_engine_virtual_close(mrcp_engine_t *engine)
+{
+	if(engine->is_open == TRUE) {
+		engine->is_open = FALSE;
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Engine [%s]",engine->config->name);
+		return engine->method_vtable->close(engine);
+	}
+	return FALSE;
+}
+
+/** Response to close engine request */
+void mrcp_engine_on_close(mrcp_engine_t *engine)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Engine Closed [%s]",engine->config->name);
+	engine->is_open = FALSE;
+}
 
 /** Create engine channel */
 mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)

@@ -37,6 +37,8 @@ typedef struct mrcp_engine_t mrcp_engine_t;
 typedef struct mrcp_engine_config_t mrcp_engine_config_t;
 /** MRCP engine vtable declaration */
 typedef struct mrcp_engine_method_vtable_t mrcp_engine_method_vtable_t;
+/** MRCP engine event vtable declaration */
+typedef struct mrcp_engine_event_vtable_t mrcp_engine_event_vtable_t;
 /** MRCP engine channel declaration */
 typedef struct mrcp_engine_channel_t mrcp_engine_channel_t;
 /** MRCP engine channel virtual method table declaration */
@@ -102,6 +104,14 @@ struct mrcp_engine_method_vtable_t {
 	mrcp_engine_channel_t* (*create_channel)(mrcp_engine_t *engine, apr_pool_t *pool);
 };
 
+/** Table of MRCP engine virtual event handlers */
+struct mrcp_engine_event_vtable_t {
+	/** Open event handler */
+	apt_bool_t (*on_open)(mrcp_engine_t *channel, apt_bool_t status);
+	/** Close event handler */
+	apt_bool_t (*on_close)(mrcp_engine_t *channel);
+};
+
 /** MRCP engine */
 struct mrcp_engine_t {
 	/** Resource identifier */
@@ -110,6 +120,10 @@ struct mrcp_engine_t {
 	void                              *obj;
 	/** Table of virtual methods */
 	const mrcp_engine_method_vtable_t *method_vtable;
+	/** Table of virtual event handlers */
+	const mrcp_engine_event_vtable_t  *event_vtable;
+	/** External object used with event handlers */
+	void                              *event_obj;
 	/** Codec manager */
 	const mpf_codec_manager_t         *codec_manager;
 	/** Dir layout structure */
@@ -122,7 +136,6 @@ struct mrcp_engine_t {
 	apt_bool_t                         is_open;
 	/** Pool to allocate memory from */
 	apr_pool_t                        *pool;
-
 
 	/** Create state machine */
 	mrcp_state_machine_t* (*create_state_machine)(void *obj, mrcp_version_e version, apr_pool_t *pool);

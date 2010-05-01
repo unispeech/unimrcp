@@ -30,6 +30,8 @@ mrcp_engine_t* mrcp_engine_create(
 	engine->resource_id = resource_id;
 	engine->obj = obj;
 	engine->method_vtable =vtable;
+	engine->event_vtable = NULL;
+	engine->event_obj = NULL;
 	engine->config = NULL;
 	engine->codec_manager = NULL;
 	engine->dir_layout = NULL;

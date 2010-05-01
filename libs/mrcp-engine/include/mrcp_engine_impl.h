@@ -36,6 +36,18 @@ mrcp_engine_t* mrcp_engine_create(
 					const mrcp_engine_method_vtable_t *vtable,
 					apr_pool_t *pool);
 
+/** Send engine open response */
+static APR_INLINE apt_bool_t mrcp_engine_open_respond(mrcp_engine_t *engine, apt_bool_t status)
+{
+	return engine->event_vtable->on_open(engine,status);
+}
+
+/** Send engine close response */
+static APR_INLINE apt_bool_t mrcp_engine_close_respond(mrcp_engine_t *engine)
+{
+	return engine->event_vtable->on_close(engine);
+}
+
 
 /** Get engine config */
 const mrcp_engine_config_t* mrcp_engine_config_get(const mrcp_engine_t *engine);

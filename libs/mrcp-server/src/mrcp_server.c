@@ -130,6 +130,8 @@ static const mrcp_connection_event_vtable_t connection_method_vtable = {
 
 /* MRCP engine interface */
 typedef enum {
+	ENGINE_TASK_MSG_OPEN_ENGINE,
+	ENGINE_TASK_MSG_CLOSE_ENGINE,
 	ENGINE_TASK_MSG_OPEN_CHANNEL,
 	ENGINE_TASK_MSG_CLOSE_CHANNEL,
 	ENGINE_TASK_MSG_MESSAGE
@@ -137,9 +139,18 @@ typedef enum {
 
 typedef struct engine_task_msg_data_t engine_task_msg_data_t;
 struct engine_task_msg_data_t {
+	mrcp_engine_t  *engine;
 	mrcp_channel_t *channel;
 	apt_bool_t      status;
 	mrcp_message_t *mrcp_message;
+};
+
+static apt_bool_t mrcp_server_engine_open_signal(mrcp_engine_t *engine, apt_bool_t status);
+static apt_bool_t mrcp_server_engine_close_signal(mrcp_engine_t *engine);
+
+const mrcp_engine_event_vtable_t engine_vtable = {
+	mrcp_server_engine_open_signal,
+	mrcp_server_engine_close_signal,
 };
 
 static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel, apt_bool_t status);
@@ -153,6 +164,8 @@ const mrcp_engine_channel_event_vtable_t engine_channel_vtable = {
 };
 
 /* Task interface */
+static void mrcp_server_on_start_request(apt_task_t *task);
+static void mrcp_server_on_terminate_request(apt_task_t *task);
 static void mrcp_server_on_start_complete(apt_task_t *task);
 static void mrcp_server_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
@@ -203,6 +216,8 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = mrcp_server_msg_process;
+		vtable->on_start_request = mrcp_server_on_start_request;
+		vtable->on_terminate_request = mrcp_server_on_terminate_request;
 		vtable->on_start_complete = mrcp_server_on_start_complete;
 		vtable->on_terminate_complete = mrcp_server_on_terminate_complete;
 	}
@@ -558,6 +573,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, cons
 	engine->config = config;
 	engine->codec_manager = server->codec_manager;
 	engine->dir_layout = server->dir_layout;
+	engine->event_vtable = &engine_vtable;
+	engine->event_obj = server;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register MRCP Engine [%s]",config->name);
 	return mrcp_engine_factory_engine_register(server->engine_factory,engine,config->name);
 }
@@ -588,22 +605,53 @@ static APR_INLINE mrcp_server_session_t* mrcp_server_session_find(mrcp_server_t 
 	return apr_hash_get(server->session_table,session_id->buf,session_id->length);
 }
 
-
-static void mrcp_server_on_start_complete(apt_task_t *task)
+static void mrcp_server_on_start_request(apt_task_t *task)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
 
-	mrcp_engine_factory_open(server->engine_factory);
+	mrcp_engine_t *engine;
+	apr_hash_index_t *it;
+	void *val;
+	it = mrcp_engine_factory_engine_first(server->engine_factory);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		engine = val;
+		if(engine) {
+			if(mrcp_engine_virtual_open(engine) == TRUE) {
+				apt_task_start_request_add(task);
+			}
+		}
+	}
+}
+
+static void mrcp_server_on_terminate_request(apt_task_t *task)
+{
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+
+	mrcp_engine_t *engine;
+	apr_hash_index_t *it;
+	void *val;
+	it = mrcp_engine_factory_engine_first(server->engine_factory);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		engine = val;
+		if(engine) {
+			if(mrcp_engine_virtual_close(engine) == TRUE) {
+				apt_task_terminate_request_add(task);
+			}
+		}
+	}
+}
+
+static void mrcp_server_on_start_complete(apt_task_t *task)
+{
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Started");
 }
 
 static void mrcp_server_on_terminate_complete(apt_task_t *task)
 {
-	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
-	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
-
-	mrcp_engine_factory_close(server->engine_factory);
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Terminated");
 }
 
@@ -654,6 +702,14 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		{
 			engine_task_msg_data_t *data = (engine_task_msg_data_t*)msg->data;
 			switch(msg->sub_type) {
+				case ENGINE_TASK_MSG_OPEN_ENGINE:
+					mrcp_engine_on_open(data->engine,data->status);
+					apt_task_start_request_remove(task);
+					break;
+				case ENGINE_TASK_MSG_CLOSE_ENGINE:
+					mrcp_engine_on_close(data->engine);
+					apt_task_terminate_request_remove(task);
+					break;
 				case ENGINE_TASK_MSG_OPEN_CHANNEL:
 					mrcp_server_on_engine_channel_open(data->channel,data->status);
 					break;
@@ -727,9 +783,29 @@ static apt_bool_t mrcp_server_connection_task_msg_signal(
 
 static apt_bool_t mrcp_server_engine_task_msg_signal(
 							engine_task_msg_type_e  type,
-							mrcp_engine_channel_t           *engine_channel,
-							apt_bool_t                       status,
-							mrcp_message_t                  *message)
+							mrcp_engine_t          *engine,
+							apt_bool_t              status)
+{
+	mrcp_server_t *server = engine->event_obj;
+	apt_task_t *task = apt_consumer_task_base_get(server->task);
+	engine_task_msg_data_t *data;
+	apt_task_msg_t *task_msg = apt_task_msg_acquire(server->engine_msg_pool);
+	task_msg->type = MRCP_SERVER_ENGINE_TASK_MSG;
+	task_msg->sub_type = type;
+	data = (engine_task_msg_data_t*) task_msg->data;
+	data->engine = engine;
+	data->channel = NULL;
+	data->status = status;
+	data->mrcp_message = NULL;
+
+	return apt_task_msg_signal(task,task_msg);
+}
+
+static apt_bool_t mrcp_server_channel_task_msg_signal(
+							engine_task_msg_type_e  type,
+							mrcp_engine_channel_t  *engine_channel,
+							apt_bool_t              status,
+							mrcp_message_t         *message)
 {
 	mrcp_channel_t *channel = engine_channel->event_obj;
 	mrcp_session_t *session = mrcp_server_channel_session_get(channel);
@@ -740,6 +816,7 @@ static apt_bool_t mrcp_server_engine_task_msg_signal(
 	task_msg->type = MRCP_SERVER_ENGINE_TASK_MSG;
 	task_msg->sub_type = type;
 	data = (engine_task_msg_data_t*) task_msg->data;
+	data->engine = engine_channel->engine;
 	data->channel = channel;
 	data->status = status;
 	data->mrcp_message = message;
@@ -858,9 +935,25 @@ static apt_bool_t mrcp_server_disconnect_signal(mrcp_control_channel_t *channel)
 								TRUE);
 }
 
-static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel, apt_bool_t status)
+static apt_bool_t mrcp_server_engine_open_signal(mrcp_engine_t *engine, apt_bool_t status)
 {
 	return mrcp_server_engine_task_msg_signal(
+								ENGINE_TASK_MSG_OPEN_ENGINE,
+								engine,
+								status);
+}
+
+static apt_bool_t mrcp_server_engine_close_signal(mrcp_engine_t *engine)
+{
+	return mrcp_server_engine_task_msg_signal(
+								ENGINE_TASK_MSG_CLOSE_ENGINE,
+								engine,
+								TRUE);
+}
+
+static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel, apt_bool_t status)
+{
+	return mrcp_server_channel_task_msg_signal(
 								ENGINE_TASK_MSG_OPEN_CHANNEL,
 								channel,
 								status,
@@ -869,7 +962,7 @@ static apt_bool_t mrcp_server_channel_open_signal(mrcp_engine_channel_t *channel
 
 static apt_bool_t mrcp_server_channel_close_signal(mrcp_engine_channel_t *channel)
 {
-	return mrcp_server_engine_task_msg_signal(
+	return mrcp_server_channel_task_msg_signal(
 								ENGINE_TASK_MSG_CLOSE_CHANNEL,
 								channel,
 								TRUE,
@@ -878,7 +971,7 @@ static apt_bool_t mrcp_server_channel_close_signal(mrcp_engine_channel_t *channe
 
 static apt_bool_t mrcp_server_channel_message_signal(mrcp_engine_channel_t *channel, mrcp_message_t *message)
 {
-	return mrcp_server_engine_task_msg_signal(
+	return mrcp_server_channel_task_msg_signal(
 								ENGINE_TASK_MSG_MESSAGE,
 								channel,
 								TRUE,

@@ -63,7 +63,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_open(mrcp_engine_factory_t *factory
 	mrcp_engine_t *engine;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open MRCP Engines");
 	it = apr_hash_first(factory->pool,factory->engines);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
@@ -81,7 +80,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_close(mrcp_engine_factory_t *factor
 	mrcp_engine_t *engine;
 	apr_hash_index_t *it;
 	void *val;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close MRCP Engines");
 	it=apr_hash_first(factory->pool,factory->engines);
 	for(; it; it = apr_hash_next(it)) {
 		apr_hash_this(it,NULL,NULL,&val);
@@ -146,4 +144,10 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory
 		}
 	}
 	return NULL;
+}
+
+/** Start iterating over the engines in a factory */
+MRCP_DECLARE(apr_hash_index_t*) mrcp_engine_factory_engine_first(mrcp_engine_factory_t *factory)
+{
+	return apr_hash_first(factory->pool,factory->engines);
 }

@@ -53,6 +53,9 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_
 /** Find engine by resource identifier */
 MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id);
 
+/** Start iterating over the engines in a factory */
+MRCP_DECLARE(apr_hash_index_t*) mrcp_engine_factory_engine_first(mrcp_engine_factory_t *factory);
+
 
 APT_END_EXTERN_C
 
