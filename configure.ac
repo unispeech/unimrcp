@@ -126,20 +126,6 @@ AC_ARG_ENABLE(recorder-plugin,
 AM_CONDITIONAL([RECORDER_PLUGIN],[test "${enable_recorder_plugin}" = "yes"])
 
 
-#Enable Cepstral Swift plugin
-AC_ARG_ENABLE(cepstral-plugin,
-    [AC_HELP_STRING([--disable-cepstral-plugin  ],[exclude cepstral plugin from build])],
-    [enable_cepstral_plugin="$enableval"],
-    [enable_cepstral_plugin="yes"])
-
-if test "${enable_cepstral_plugin}" != "no"; then
-    UNIMRCP_CHECK_SWIFT
-fi
-
-AM_CONDITIONAL([CEPSTRAL_PLUGIN],[test "${enable_cepstral_plugin}" = "yes" &&\
-                                  test "${found_swift}" = "yes"])
-
-
 #Enable PocketSphinx plugin
 AC_ARG_ENABLE(pocketsphinx-plugin,
     [AC_HELP_STRING([--enable-pocketsphinx-plugin  ],[enable pocketsphinx plugin])],
@@ -188,7 +174,6 @@ AC_CONFIG_FILES([
   modules/mrcp-sofiasip/Makefile
   modules/mrcp-unirtsp/Makefile
   plugins/Makefile
-  plugins/mrcp-cepstral/Makefile
   plugins/mrcp-pocketsphinx/Makefile
   plugins/mrcp-flite/Makefile
   plugins/mrcp-recorder/Makefile
@@ -231,6 +216,5 @@ AC_MSG_NOTICE([Plugins:])
 AC_MSG_NOTICE([  Demo Synthesizer: $enable_demosynth_plugin])
 AC_MSG_NOTICE([  Demo Recognizer: $enable_demorecog_plugin])
 AC_MSG_NOTICE([  Recorder: $enable_recorder_plugin])
-AC_MSG_NOTICE([  Cepstral: $enable_cepstral_plugin])
 AC_MSG_NOTICE([  PocketSphinx: $enable_pocketsphinx_plugin])
 AC_MSG_NOTICE([  Flite: $enable_flite_plugin])

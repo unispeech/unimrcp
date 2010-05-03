@@ -84,7 +84,6 @@
 
     <!-- Factory of plugins (MRCP engines) -->
     <plugin-factory>
-      <engine id="Cepstral-Swift-1" name="mrcpcepstral" enable="false"/>
       <engine id="PocketSphinx-1" name="mrcppocketsphinx" enable="false"/>
       <engine id="Flite-1" name="mrcpflite" enable="false"/>
       <engine id="Demo-Synth-1" name="demosynth" enable="true"/>
