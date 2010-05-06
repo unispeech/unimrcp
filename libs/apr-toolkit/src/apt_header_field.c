@@ -83,7 +83,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_create_from_line(const apt_str
 	apt_string_copy(&header_field->name,&item,pool);
 
 	/* read value */
-	apt_text_field_read(&stream,';',TRUE,&item);
+	apt_text_field_read(&stream,0,TRUE,&item);
 	apt_string_copy(&header_field->value,&item,pool);
 	
 	header_field->id = UNKNOWN_HEADER_FIELD_ID;
