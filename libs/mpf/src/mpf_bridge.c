@@ -33,6 +33,8 @@ struct mpf_bridge_t {
 	mpf_audio_stream_t *source;
 	/** Audio stream sink */
 	mpf_audio_stream_t *sink;
+	/** Codec used in case of null bridge */
+	mpf_codec_t        *codec;
 
 	/** Media frame used to read data from source and write it to sink */
 	mpf_frame_t         frame;
@@ -59,7 +61,14 @@ static apt_bool_t mpf_null_bridge_process(mpf_object_t *object)
 {
 	mpf_bridge_t *bridge = (mpf_bridge_t*) object;
 	bridge->frame.type = MEDIA_FRAME_TYPE_NONE;
+	bridge->frame.marker = MPF_MARKER_NONE;
 	bridge->source->vtable->read_frame(bridge->source,&bridge->frame);
+
+	if((bridge->frame.type & MEDIA_FRAME_TYPE_AUDIO) == 0) {
+		/* generate silence frame */
+		mpf_codec_initialize(bridge->codec,&bridge->frame.codec_frame);
+	}
+
 	bridge->sink->vtable->write_frame(bridge->sink,&bridge->frame);
 	return TRUE;
 }
@@ -105,6 +114,7 @@ static mpf_bridge_t* mpf_bridge_base_create(mpf_audio_stream_t *source, mpf_audi
 	bridge = apr_palloc(pool,sizeof(mpf_bridge_t));
 	bridge->source = source;
 	bridge->sink = sink;
+	bridge->codec = NULL;
 	mpf_object_init(&bridge->base);
 	bridge->base.destroy = mpf_bridge_destroy;
 	bridge->base.process = mpf_bridge_process;
@@ -156,6 +166,7 @@ static mpf_object_t* mpf_null_bridge_create(mpf_audio_stream_t *source, mpf_audi
 	}
 
 	frame_size = mpf_codec_frame_size_calculate(source->rx_descriptor,codec->attribs);
+	bridge->codec = codec;
 	bridge->frame.codec_frame.size = frame_size;
 	bridge->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
 
