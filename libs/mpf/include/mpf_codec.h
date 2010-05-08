@@ -57,6 +57,9 @@ struct mpf_codec_vtable_t {
 
 	/** Virtual dissect method */
 	apt_bool_t (*dissect)(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame);
+
+	/** Virtual initialize method */
+	apt_bool_t (*initialize)(mpf_codec_t *codec, mpf_codec_frame_t *frame_out);
 };
 
 /**
@@ -152,6 +155,19 @@ static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void **buffer
 		else {
 			rv = FALSE;
 		}
+	}
+	return rv;
+}
+
+/** Initialize (fill) codec frame with silence */
+static APR_INLINE apt_bool_t mpf_codec_initialize(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
+{
+	apt_bool_t rv = TRUE;
+	if(codec->vtable->initialize) {
+		rv = codec->vtable->initialize(codec,frame_out);
+	}
+	else {
+		memset(frame_out->buffer,0,frame_out->size);
 	}
 	return rv;
 }

@@ -72,6 +72,17 @@ static apt_bool_t g711u_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 	return TRUE;
 }
 
+static apt_bool_t g711u_init(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
+{
+	apr_size_t i;
+	unsigned char *encode_buf = frame_out->buffer;
+	for(i=0; i<frame_out->size; i++) {
+		encode_buf[i] = linear_to_ulaw(0);
+	}
+
+	return TRUE;
+}
+
 static apt_bool_t g711a_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	const apr_int16_t *decode_buf;
@@ -108,12 +119,24 @@ static apt_bool_t g711a_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 	return TRUE;
 }
 
+static apt_bool_t g711a_init(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
+{
+	apr_size_t i;
+	unsigned char *encode_buf = frame_out->buffer;
+	for(i=0; i<frame_out->size; i++) {
+		encode_buf[i] = linear_to_alaw(0);
+	}
+
+	return TRUE;
+}
+
 static const mpf_codec_vtable_t g711u_vtable = {
 	g711_open,
 	g711_close,
 	g711u_encode,
 	g711u_decode,
-	NULL
+	NULL,
+	g711u_init
 };
 
 static const mpf_codec_vtable_t g711a_vtable = {
@@ -121,7 +144,8 @@ static const mpf_codec_vtable_t g711a_vtable = {
 	g711_close,
 	g711a_encode,
 	g711a_decode,
-	NULL
+	NULL,
+	g711a_init
 };
 
 static const mpf_codec_descriptor_t g711u_descriptor = {

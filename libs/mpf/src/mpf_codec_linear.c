@@ -73,6 +73,7 @@ static const mpf_codec_vtable_t l16_vtable = {
 	l16_close,
 	l16_encode,
 	l16_decode,
+	NULL,
 	NULL
 };
 
