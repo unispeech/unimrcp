@@ -598,6 +598,9 @@ static apt_bool_t unimrcp_client_rtsp_settings_load(unimrcp_client_loader_t *loa
 			if(is_cdata_valid(elem) == TRUE) {
 				settings->resource_location = cdata_copy(elem,loader->pool);
 			}
+			else {
+				settings->resource_location = "";
+			}
 		}
 		else if(strcasecmp(elem->name,"resource-map") == 0) {
 			const apr_xml_attr *name_attr;
