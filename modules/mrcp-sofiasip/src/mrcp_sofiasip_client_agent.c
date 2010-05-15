@@ -461,8 +461,8 @@ static void mrcp_sofia_on_state_change(
 			NUTAG_CALLSTATE_REF(ss_state),
 			TAG_END());
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State "APT_PTR_FMT" [%s]",
-		sofia_session ? MRCP_SESSION_PTR(sofia_session->session) : NULL,
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State %s [%s]",
+		sofia_session ? sofia_session->session->name : "",
 		nua_callstate_name(ss_state));
 
 	switch(ss_state) {
@@ -495,8 +495,8 @@ static void mrcp_sofia_on_resource_discover(
 		if(remote_sdp_str) {
 			sdp_parser_t *parser = NULL;
 			sdp_session_t *sdp = NULL;
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP "APT_PTR_FMT"\n%s", 
-				MRCP_SESSION_PTR(session),
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP %s\n%s", 
+				session->name,
 				remote_sdp_str);
 
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
