@@ -167,10 +167,10 @@ struct mrcp_application_t {
 mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj);
 /** Create channel */
 mrcp_channel_t* mrcp_client_channel_create(
-					mrcp_session_t *session, 
-					mrcp_resource_t *resource, 
-					mpf_termination_t *termination, 
-					mpf_rtp_termination_descriptor_t *rtp_descriptor, 
+					mrcp_client_session_t *session,
+					mrcp_resource_t *resource,
+					mpf_termination_t *termination,
+					mpf_rtp_termination_descriptor_t *rtp_descriptor,
 					void *obj);
 
 /** Create signaling app_message_t request */

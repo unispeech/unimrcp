@@ -196,6 +196,13 @@ MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session)
  */
 MRCP_DECLARE(void) mrcp_application_session_object_set(mrcp_session_t *session, void *obj);
 
+/**
+ * Set name of the session (informative only used for debugging).
+ * @param session the session to set name for
+ * @param name the name to set
+ */
+MRCP_DECLARE(void) mrcp_application_session_name_set(mrcp_session_t *session, const char *name);
+
 /** 
  * Send session update request.
  * @param session the session to update

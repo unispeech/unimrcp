@@ -647,6 +647,15 @@ MRCP_DECLARE(void) mrcp_application_session_object_set(mrcp_session_t *session, 
 	}
 }
 
+/** Set name of the session (informative only used for debugging) */
+MRCP_DECLARE(void) mrcp_application_session_name_set(mrcp_session_t *session, const char *name)
+{
+	if(session && name) {
+		session->name = apr_pstrdup(session->pool,name);
+	}
+}
+
+
 /** Send session update request */
 MRCP_DECLARE(apt_bool_t) mrcp_application_session_update(mrcp_session_t *session)
 {
@@ -719,7 +728,7 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 		}
 	}
 
-	return mrcp_client_channel_create(session,resource,termination,rtp_descriptor,obj);
+	return mrcp_client_channel_create(client_session,resource,termination,rtp_descriptor,obj);
 }
 
 /** Get external object associated with the channel */

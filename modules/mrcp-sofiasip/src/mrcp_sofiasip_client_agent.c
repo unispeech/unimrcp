@@ -322,8 +322,9 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 	}
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
 		local_sdp_str = sdp_str;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP "APT_PTRSID_FMT"\n%s", 
-			MRCP_SESSION_PTRSID(session), 
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP "APT_NAMESID_FMT"\n%s", 
+			session->name,
+			MRCP_SESSION_SID(session), 
 			local_sdp_str);
 	}
 
@@ -401,8 +402,9 @@ static void mrcp_sofia_on_session_ready(
 			sdp_parser_t *parser = NULL;
 			sdp_session_t *sdp = NULL;
 			const char *force_destination_ip = NULL;
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP "APT_PTRSID_FMT"\n%s",
-				MRCP_SESSION_PTRSID(session),
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remote SDP "APT_NAMESID_FMT"\n%s",
+				session->name,
+				MRCP_SESSION_SID(session),
 				remote_sdp_str);
 
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);

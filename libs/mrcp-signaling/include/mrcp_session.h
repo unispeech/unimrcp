@@ -53,6 +53,8 @@ struct mrcp_session_t {
 	apr_pool_t       *pool;
 	/** External object associated with session */
 	void             *obj;
+	/** Informative name of the session used for debugging */
+	const char       *name;
 	/** Back pointer to signaling agent */
 	mrcp_sig_agent_t *signaling_agent;
 
