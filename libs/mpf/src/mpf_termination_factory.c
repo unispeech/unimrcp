@@ -49,20 +49,26 @@ MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination)
 	return TRUE;
 }
 
+/** Get termination name */
+MPF_DECLARE(const char*) mpf_termination_name_get(const mpf_termination_t *termination)
+{
+	return termination->name;
+}
+
 /** Get associated object. */
-MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination)
+MPF_DECLARE(void*) mpf_termination_object_get(const mpf_termination_t *termination)
 {
 	return termination->obj;
 }
 
 /** Get audio stream. */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_termination_audio_stream_get(mpf_termination_t *termination)
+MPF_DECLARE(mpf_audio_stream_t*) mpf_termination_audio_stream_get(const mpf_termination_t *termination)
 {
 	return termination->audio_stream;
 }
 
 /** Get video stream. */
-MPF_DECLARE(mpf_video_stream_t*) mpf_termination_video_stream_get(mpf_termination_t *termination)
+MPF_DECLARE(mpf_video_stream_t*) mpf_termination_video_stream_get(const mpf_termination_t *termination)
 {
 	return termination->video_stream;
 }

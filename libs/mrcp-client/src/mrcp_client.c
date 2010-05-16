@@ -680,7 +680,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCP Handle "APT_PTR_FMT,MRCP_SESSION_PTR(session));
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCP Handle %s",session->name);
 	mrcp_session_destroy(session);
 	return TRUE;
 }

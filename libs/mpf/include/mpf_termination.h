@@ -53,6 +53,8 @@ struct mpf_termination_vtable_t {
 struct mpf_termination_t {
 	/** Pool to allocate memory from */
 	apr_pool_t                     *pool;
+	/** Informative name used for debugging */
+	const char                     *name;
 	/** External object */
 	void                           *obj;
 	/** Object to send events to */

@@ -91,7 +91,11 @@ static const mpf_termination_vtable_t rtp_vtable = {
 
 static mpf_termination_t* mpf_rtp_termination_create(mpf_termination_factory_t *termination_factory, void *obj, apr_pool_t *pool)
 {
-	return mpf_termination_base_create(termination_factory,obj,&rtp_vtable,NULL,NULL,pool);
+	mpf_termination_t *termination = mpf_termination_base_create(termination_factory,obj,&rtp_vtable,NULL,NULL,pool);
+	if(termination) {
+		termination->name = "rtp-tm";
+	}
+	return termination;
 }
 
 MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(

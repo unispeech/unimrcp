@@ -100,12 +100,13 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 }
 
 MPF_DECLARE(mpf_context_t*) mpf_engine_context_create(
-								mpf_engine_t *engine, 
-								void *obj, 
-								apr_size_t max_termination_count, 
+								mpf_engine_t *engine,
+								const char *name,
+								void *obj,
+								apr_size_t max_termination_count,
 								apr_pool_t *pool)
 {
-	return mpf_context_create(engine->context_factory,obj,max_termination_count,pool);
+	return mpf_context_create(engine->context_factory,name,obj,max_termination_count,pool);
 }
 
 MPF_DECLARE(apt_bool_t) mpf_engine_context_destroy(mpf_context_t *context)

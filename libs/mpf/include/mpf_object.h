@@ -33,6 +33,8 @@ typedef struct mpf_object_t mpf_object_t;
 
 /** Media processing objects base */
 struct mpf_object_t {
+	/** Informative name used for debugging */
+	const char *name;
 	/** Virtual destroy */
 	apt_bool_t (*destroy)(mpf_object_t *object);
 	/** Virtual process */
@@ -42,8 +44,9 @@ struct mpf_object_t {
 };
 
 /** Initialize object */
-static APR_INLINE void mpf_object_init(mpf_object_t *object)
+static APR_INLINE void mpf_object_init(mpf_object_t *object, const char *name)
 {
+	object->name = name;
 	object->destroy = NULL;
 	object->process = NULL;
 	object->trace = NULL;

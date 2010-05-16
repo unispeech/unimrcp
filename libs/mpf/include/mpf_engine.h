@@ -54,12 +54,14 @@ MPF_DECLARE(apt_bool_t) mpf_engine_codec_manager_register(mpf_engine_t *engine, 
 /**
  * Create MPF context.
  * @param engine the engine to create context for
+ * @param name the informative name of the context
  * @param obj the external object associated with context
  * @param max_termination_count the max number of terminations in context
  * @param pool the pool to allocate memory from
  */
 MPF_DECLARE(mpf_context_t*) mpf_engine_context_create(
-								mpf_engine_t *engine, 
+								mpf_engine_t *engine,
+								const char *name,
 								void *obj, 
 								apr_size_t max_termination_count, 
 								apr_pool_t *pool);

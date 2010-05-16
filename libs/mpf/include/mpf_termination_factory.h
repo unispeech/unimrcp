@@ -67,22 +67,28 @@ MPF_DECLARE(mpf_termination_t*) mpf_raw_termination_create(
 MPF_DECLARE(apt_bool_t) mpf_termination_destroy(mpf_termination_t *termination);
 
 /**
+ * Get termination name.
+ * @param termination the termination to get name of
+ */
+MPF_DECLARE(const char*) mpf_termination_name_get(const mpf_termination_t *termination);
+
+/**
  * Get associated object.
  * @param termination the termination to get object from
  */
-MPF_DECLARE(void*) mpf_termination_object_get(mpf_termination_t *termination);
+MPF_DECLARE(void*) mpf_termination_object_get(const mpf_termination_t *termination);
 
 /**
  * Get audio stream.
  * @param termination the termination to get audio stream from
  */
-MPF_DECLARE(mpf_audio_stream_t*) mpf_termination_audio_stream_get(mpf_termination_t *termination);
+MPF_DECLARE(mpf_audio_stream_t*) mpf_termination_audio_stream_get(const mpf_termination_t *termination);
 
 /**
  * Get video stream.
  * @param termination the termination to get video stream from
  */
-MPF_DECLARE(mpf_video_stream_t*) mpf_termination_video_stream_get(mpf_termination_t *termination);
+MPF_DECLARE(mpf_video_stream_t*) mpf_termination_video_stream_get(const mpf_termination_t *termination);
 
 
 APT_END_EXTERN_C

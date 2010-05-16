@@ -30,6 +30,7 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 {
 	mpf_termination_t *termination = apr_palloc(pool,sizeof(mpf_termination_t));
 	termination->pool = pool;
+	termination->name = "media-tm";
 	termination->obj = obj;
 	termination->event_handler_obj = NULL;
 	termination->event_handler = NULL;

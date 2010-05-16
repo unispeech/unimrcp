@@ -368,7 +368,10 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 		}
 		mrcp_server_session_add(session);
 
-		session->context = mpf_engine_context_create(session->profile->media_engine,session,5,session->base.pool);
+		session->context = mpf_engine_context_create(
+			session->profile->media_engine,
+			NULL,
+			session,5,session->base.pool);
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Offer "APT_SID_FMT" [c:%d a:%d v:%d]",
 		MRCP_SESSION_SID(&session->base),

@@ -180,7 +180,7 @@ static void mpf_suite_on_start_complete(apt_task_t *task)
 	session->rtp_mode = TRUE;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create MPF Context");
-	session->context = mpf_engine_context_create(suite_engine->engine,session,2,pool);
+	session->context = mpf_engine_context_create(suite_engine->engine,NULL,session,2,pool);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Termination [1]");
 	session->termination1 = mpf_termination_create(suite_engine->file_termination_factory,session,session->pool);
