@@ -151,6 +151,9 @@ bool UmcSession::OnResourceDiscover(mrcp_session_descriptor_t* descriptor, mrcp_
 bool UmcSession::CreateMrcpSession(const char* pProfileName)
 {
 	m_pMrcpSession = mrcp_application_session_create(m_pMrcpApplication,pProfileName,this);
+	char name[32];
+	apr_snprintf(name,sizeof(name),"umc-%s",m_Id);
+	mrcp_application_session_name_set(m_pMrcpSession,name);
 	return (m_pMrcpSession != NULL);
 }
 
