@@ -363,7 +363,7 @@ static mrcp_control_channel_t* mrcp_connection_channel_associate(mrcp_connection
 		if(channel) {
 			mrcp_connection_channel_remove(agent->null_connection,channel);
 			mrcp_connection_channel_add(connection,channel);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Move Control Channel <%s> to Connection %s [%d]",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Attach Control Channel <%s> to Connection %s [%d]",
 				channel->identifier.buf,
 				connection->id,
 				apr_hash_count(connection->channel_table));
@@ -402,7 +402,7 @@ static apt_bool_t mrcp_connection_remove(mrcp_connection_agent_t *agent, mrcp_co
 	}
 	if(agent->null_connection) {
 		if(apt_list_is_empty(agent->connection_list) == TRUE && apr_hash_count(agent->null_connection->channel_table) == 0) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Pending Connection");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
 			mrcp_connection_destroy(agent->null_connection);
 			agent->null_connection = NULL;
 			agent->connection_list = NULL;
@@ -423,6 +423,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	if(!agent->null_connection) {
 		pool = apt_pool_create();
 		if(apr_socket_accept(&sock,agent->listen_sock,pool) != APR_SUCCESS) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Accept Connection");
 			return FALSE;
 		}
 		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Rejected TCP/MRCPv2 Connection");
@@ -433,6 +434,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 	pool = agent->null_connection->pool;
 	if(apr_socket_accept(&sock,agent->listen_sock,pool) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Accept Connection");
 		return FALSE;
 	}
 
@@ -441,6 +443,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 	if(apr_socket_addr_get(&connection->r_sockaddr,APR_REMOTE,sock) != APR_SUCCESS ||
 		apr_socket_addr_get(&connection->l_sockaddr,APR_LOCAL,sock) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Socket Address");
 		apr_socket_close(sock);
 		mrcp_connection_destroy(connection);
 		return FALSE;
@@ -526,12 +529,12 @@ static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, 
 	}
 
 	if(!agent->null_connection) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Pending Connection");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Container for Pending Control Channels");
 		agent->null_connection = mrcp_connection_create();
 		agent->connection_list = apt_list_create(agent->null_connection->pool);
 	}
 	mrcp_connection_channel_add(agent->null_connection,channel);	
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s> to Pending Connection [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s>  pending [%d]",
 			channel->identifier.buf,
 			apr_hash_count(agent->null_connection->channel_table));
 	/* send response */
@@ -559,7 +562,7 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 	if(!connection->access_count) {
 		if(connection == agent->null_connection) {
 			if(apt_list_is_empty(agent->connection_list) == TRUE) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Pending Connection");
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
 				mrcp_connection_destroy(agent->null_connection);
 				agent->null_connection = NULL;
 				agent->connection_list = NULL;
@@ -568,7 +571,7 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 		else if(!connection->sock) {
 			mrcp_connection_remove(agent,connection);
 			/* set connection to be destroyed on channel destroy */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark Connection for Late Destroy");
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark Connection for Removal %s",connection->id);
 			channel->connection = connection;
 			channel->removed = TRUE;
 		}
@@ -583,7 +586,9 @@ static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent
 	apt_text_stream_t stream;
 	apt_message_status_e result;
 	if(!connection || !connection->sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCPv2 Connection");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection <%s@%s>",
+			message->channel_id.session_id.buf,
+			message->channel_id.resource_name.buf);
 		return FALSE;
 	}
 
@@ -660,7 +665,6 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 	apt_message_status_e msg_status;
 
 	if(descriptor->desc.s == agent->listen_sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Accept Connection");
 		return mrcp_server_agent_connection_accept(agent);
 	}
 	
