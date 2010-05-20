@@ -115,7 +115,7 @@ mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *applicatio
 	session->subrequest_count = 0;
 	session->state = SESSION_STATE_NONE;
 	session->status = MRCP_SIG_STATUS_CODE_SUCCESS;
-	session->base.name = apr_psprintf(pool,APT_PTR_FMT,session);
+	session->base.name = apr_psprintf(pool,"0x%pp",session);
 	return session;
 }
 

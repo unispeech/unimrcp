@@ -127,7 +127,7 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(
 	context->pool = pool;
 	context->name = name;
 	if(!context->name) {
-		context->name = apr_psprintf(pool,APT_PTR_FMT,context);
+		context->name = apr_psprintf(pool,"0x%pp",context);
 	}
 	context->capacity = max_termination_count;
 	context->count = 0;

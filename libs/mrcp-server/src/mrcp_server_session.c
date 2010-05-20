@@ -112,7 +112,7 @@ mrcp_server_session_t* mrcp_server_session_create()
 	session->mpf_task_msg = NULL;
 	session->subrequest_count = 0;
 	session->state = SESSION_STATE_NONE;
-	session->base.name = apr_psprintf(session->base.pool,APT_PTR_FMT,session);
+	session->base.name = apr_psprintf(session->base.pool,"0x%pp",session);
 	return session;
 }
 
