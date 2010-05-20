@@ -126,19 +126,19 @@ APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *m
  * Get parent (master) task.
  * @param task the task to get parent from
  */
-APT_DECLARE(apt_task_t*) apt_task_parent_get(apt_task_t *task);
+APT_DECLARE(apt_task_t*) apt_task_parent_get(const apt_task_t *task);
 
 /**
  * Get memory pool associated with task.
  * @param task the task to get pool from
  */
-APT_DECLARE(apr_pool_t*) apt_task_pool_get(apt_task_t *task);
+APT_DECLARE(apr_pool_t*) apt_task_pool_get(const apt_task_t *task);
 
 /**
  * Get external object associated with the task.
  * @param task the task to get object from
  */
-APT_DECLARE(void*) apt_task_object_get(apt_task_t *task);
+APT_DECLARE(void*) apt_task_object_get(const apt_task_t *task);
 
 /**
  * Get task vtable.
@@ -157,7 +157,7 @@ APT_DECLARE(void) apt_task_name_set(apt_task_t *task, const char *name);
  * Get task name.
  * @param task the task to get name from
  */
-APT_DECLARE(const char*) apt_task_name_get(apt_task_t *task);
+APT_DECLARE(const char*) apt_task_name_get(const apt_task_t *task);
 
 /**
  * Enable/disable auto ready mode.

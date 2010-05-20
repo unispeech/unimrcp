@@ -186,17 +186,17 @@ APT_DECLARE(void) apt_task_delay(apr_size_t msec)
 	apr_sleep(1000*msec);
 }
 
-APT_DECLARE(apt_task_t*) apt_task_parent_get(apt_task_t *task)
+APT_DECLARE(apt_task_t*) apt_task_parent_get(const apt_task_t *task)
 {
 	return task->parent_task;
 }
 
-APT_DECLARE(apr_pool_t*) apt_task_pool_get(apt_task_t *task)
+APT_DECLARE(apr_pool_t*) apt_task_pool_get(const apt_task_t *task)
 {
 	return task->pool;
 }
 
-APT_DECLARE(void*) apt_task_object_get(apt_task_t *task)
+APT_DECLARE(void*) apt_task_object_get(const apt_task_t *task)
 {
 	return task->obj;
 }
@@ -211,7 +211,7 @@ APT_DECLARE(void) apt_task_name_set(apt_task_t *task, const char *name)
 	task->name = name;
 }
 
-APT_DECLARE(const char*) apt_task_name_get(apt_task_t *task)
+APT_DECLARE(const char*) apt_task_name_get(const apt_task_t *task)
 {
 	return task->name;
 }
