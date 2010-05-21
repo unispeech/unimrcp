@@ -42,7 +42,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_loader_plugins_unload(mrcp_engine_loader_t 
 
 
 /** Load engine plugin */
-MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t *loader, const char *path, const char *name);
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_loader_plugin_load(
+								mrcp_engine_loader_t *loader,
+								const char *id,
+								const char *path,
+								mrcp_engine_config_t *config);
 
 
 APT_END_EXTERN_C

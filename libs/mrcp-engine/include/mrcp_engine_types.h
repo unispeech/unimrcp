@@ -114,6 +114,8 @@ struct mrcp_engine_event_vtable_t {
 
 /** MRCP engine */
 struct mrcp_engine_t {
+	/** Identifier of the engine */
+	const char                        *id;
 	/** Resource identifier */
 	mrcp_resource_id                   resource_id;
 	/** External object associated with engine */
@@ -143,8 +145,6 @@ struct mrcp_engine_t {
 
 /** MRCP engine config */
 struct mrcp_engine_config_t {
-	/** Name of the engine */
-	const char  *name;
 	/** Max number of simultaneous channels */
 	apr_size_t   max_channel_count;
 	/** Table of name/value string params */

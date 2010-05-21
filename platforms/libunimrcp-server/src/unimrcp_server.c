@@ -353,8 +353,8 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 		config->ext_ip = apr_pstrdup(loader->pool,loader->ext_ip);
 	}
 
-	agent = mrcp_sofiasip_server_agent_create(config,loader->pool);
-	return mrcp_server_signaling_agent_register(loader->server,agent,id);
+	agent = mrcp_sofiasip_server_agent_create(id,config,loader->pool);
+	return mrcp_server_signaling_agent_register(loader->server,agent);
 }
 
 /** Load UniRTSP signaling agent */
@@ -403,20 +403,20 @@ static apt_bool_t unimrcp_server_rtsp_uas_load(unimrcp_server_loader_t *loader, 
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",name_attr->value,value_attr->value);
 					apr_table_set(config->resource_map,name_attr->value,value_attr->value);
 				}
-			}    
+			}
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 
 	if(!config->local_ip) {
 		/* use default ip address if not specified */
 		config->local_ip = apr_pstrdup(loader->pool,loader->ip);
 	}
 
-	agent = mrcp_unirtsp_server_agent_create(config,loader->pool);
-	return mrcp_server_signaling_agent_register(loader->server,agent,id);
+	agent = mrcp_unirtsp_server_agent_create(id,config,loader->pool);
+	return mrcp_server_signaling_agent_register(loader->server,agent);
 }
 
 /** Load MRCPv2 connection agent */
@@ -472,7 +472,7 @@ static apt_bool_t unimrcp_server_mrcpv2_uas_load(unimrcp_server_loader_t *loader
 		mrcp_ip = apr_pstrdup(loader->pool,loader->ip);
 	}
 
-	agent = mrcp_server_connection_agent_create(mrcp_ip,mrcp_port,max_connection_count,force_new_connection,loader->pool);
+	agent = mrcp_server_connection_agent_create(id,mrcp_ip,mrcp_port,max_connection_count,force_new_connection,loader->pool);
 	if(agent) {
 		if(rx_buffer_size) {
 			mrcp_server_connection_rx_size_set(agent,rx_buffer_size);
@@ -481,7 +481,7 @@ static apt_bool_t unimrcp_server_mrcpv2_uas_load(unimrcp_server_loader_t *loader
 			mrcp_server_connection_tx_size_set(agent,tx_buffer_size);
 		}
 	}
-	return mrcp_server_connection_agent_register(loader->server,agent,id);
+	return mrcp_server_connection_agent_register(loader->server,agent);
 }
 
 /** Load media engine */
@@ -502,13 +502,13 @@ static apt_bool_t unimrcp_server_media_engine_load(unimrcp_server_loader_t *load
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	
-	media_engine = mpf_engine_create(loader->pool);
+	media_engine = mpf_engine_create(id,loader->pool);
 	if(media_engine) {
 		mpf_engine_scheduler_rate_set(media_engine,realtime_rate);
 	}
-	return mrcp_server_media_engine_register(loader->server,media_engine,id);
+	return mrcp_server_media_engine_register(loader->server,media_engine);
 }
 
 /** Load RTP factory */
@@ -568,6 +568,7 @@ static apt_bool_t unimrcp_server_rtp_factory_load(unimrcp_server_loader_t *loade
 /** Load plugin */
 static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, const apr_xml_elem *root)
 {
+	mrcp_engine_t *engine;
 	mrcp_engine_config_t *config;
 	const char *plugin_id = NULL;
 	const char *plugin_name = NULL;
@@ -617,7 +618,6 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 	}
 
 	config = mrcp_engine_config_alloc(loader->pool);
-	config->name = plugin_id;
 
 	/* load optional named and generic name/value params */
 	if(root->first_child){
@@ -641,7 +641,8 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 		}
 	}
 
-	return mrcp_server_plugin_register(loader->server,plugin_path,config);
+	engine = mrcp_server_engine_load(loader->server,plugin_id,plugin_path,config);
+	return mrcp_server_engine_register(loader->server,engine);
 }
 
 /** Load plugin (engine) factory */
@@ -847,11 +848,15 @@ static apt_bool_t unimrcp_server_mrcpv2_profile_load(unimrcp_server_loader_t *lo
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv2 Profile [%s]",id);
 	profile = mrcp_server_profile_create(
-		NULL,sip_agent,mrcpv2_agent,
-		media_engine,rtp_factory,
-		rtp_settings,
-		loader->pool);
-	return mrcp_server_profile_register(loader->server,profile,resource_engine_map,id);
+				id,
+				NULL,
+				sip_agent,
+				mrcpv2_agent,
+				media_engine,
+				rtp_factory,
+				rtp_settings,
+				loader->pool);
+	return mrcp_server_profile_register(loader->server,profile,resource_engine_map);
 }
 
 /** Load MRCPv1 profile */
@@ -895,11 +900,15 @@ static apt_bool_t unimrcp_server_mrcpv1_profile_load(unimrcp_server_loader_t *lo
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv1 Profile [%s]",id);
 	profile = mrcp_server_profile_create(
-		NULL,rtsp_agent,NULL,
-		media_engine,rtp_factory,
-		rtp_settings,
-		loader->pool);
-	return mrcp_server_profile_register(loader->server,profile,resource_engine_map,id);
+				id,
+				NULL,
+				rtsp_agent,
+				NULL,
+				media_engine,
+				rtp_factory,
+				rtp_settings,
+				loader->pool);
+	return mrcp_server_profile_register(loader->server,profile,resource_engine_map);
 }
 
 

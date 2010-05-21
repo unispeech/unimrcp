@@ -52,6 +52,8 @@ struct mrcp_sig_settings_t {
 
 /** MRCP signaling agent  */
 struct mrcp_sig_agent_t {
+	/** Agent identifier */
+	const char              *id;
 	/** Memory pool to allocate memory from */
 	apr_pool_t              *pool;
 	/** External object associated with agent */
@@ -74,7 +76,7 @@ struct mrcp_sig_agent_t {
 };
 
 /** Create signaling agent. */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool);
 
 /** Allocate MRCP signaling settings. */
 MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_signaling_settings_alloc(apr_pool_t *pool);

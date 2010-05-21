@@ -26,7 +26,6 @@
 #include "apt_pool.h"
 #include "apt_log.h"
 
-#define MRCPV2_CONNECTION_TASK_NAME "TCP/MRCPv2 Agent"
 
 struct mrcp_connection_agent_t {
 	apr_pool_t                           *pool;
@@ -75,6 +74,7 @@ static void mrcp_server_agent_listening_socket_destroy(mrcp_connection_agent_t *
 
 /** Create connection agent */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
+										const char *id,
 										const char *listen_ip,
 										apr_port_t listen_port,
 										apr_size_t max_connection_count,
@@ -90,8 +90,8 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 		return NULL;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "MRCPV2_CONNECTION_TASK_NAME" %s:%hu [%"APR_SIZE_T_FMT"]",
-		listen_ip,listen_port,max_connection_count);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv2 Agent [%s] %s:%hu [%"APR_SIZE_T_FMT"]",
+		id,listen_ip,listen_port,max_connection_count);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
 	agent->sockaddr = NULL;
@@ -119,7 +119,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 
 	task = apt_poller_task_base_get(agent->task);
 	if(task) {
-		apt_task_name_set(task,MRCPV2_CONNECTION_TASK_NAME);
+		apt_task_name_set(task,id);
 	}
 
 	vtable = apt_poller_task_vtable_get(agent->task);
@@ -168,7 +168,8 @@ static apt_bool_t mrcp_server_agent_on_destroy(apt_task_t *task)
 /** Destroy connection agent. */
 MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent [%s]",
+		mrcp_server_connection_agent_id_get(agent));
 	return apt_poller_task_destroy(agent->task);
 }
 
@@ -225,16 +226,24 @@ MRCP_DECLARE(void) mrcp_server_connection_tx_size_set(
 }
 
 /** Get task */
-MRCP_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(const mrcp_connection_agent_t *agent)
 {
 	return apt_poller_task_base_get(agent->task);
 }
 
 /** Get external object */
-MRCP_DECLARE(void*) mrcp_server_connection_agent_object_get(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(void*) mrcp_server_connection_agent_object_get(const mrcp_connection_agent_t *agent)
 {
 	return agent->obj;
 }
+
+/** Get string identifier */
+MRCP_DECLARE(const char*) mrcp_server_connection_agent_id_get(const mrcp_connection_agent_t *agent)
+{
+	apt_task_t *task = apt_poller_task_base_get(agent->task);
+	return apt_task_name_get(task);
+}
+
 
 /** Create MRCPv2 control channel */
 MRCP_DECLARE(mrcp_control_channel_t*) mrcp_server_control_channel_create(mrcp_connection_agent_t *agent, void *obj, apr_pool_t *pool)
@@ -534,7 +543,7 @@ static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, 
 		agent->connection_list = apt_list_create(agent->null_connection->pool);
 	}
 	mrcp_connection_channel_add(agent->null_connection,channel);	
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s>  pending [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Pending Control Channel <%s> [%d]",
 			channel->identifier.buf,
 			apr_hash_count(agent->null_connection->channel_table));
 	/* send response */

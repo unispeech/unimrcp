@@ -27,6 +27,7 @@ mrcp_engine_t* mrcp_engine_create(
 					apr_pool_t *pool)
 {
 	mrcp_engine_t *engine = apr_palloc(pool,sizeof(mrcp_engine_t));
+	engine->id = NULL;
 	engine->resource_id = resource_id;
 	engine->obj = obj;
 	engine->method_vtable =vtable;

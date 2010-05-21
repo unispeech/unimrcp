@@ -27,8 +27,6 @@
 #include "apt_cyclic_queue.h"
 #include "apt_log.h"
 
-#define MPF_TASK_NAME "MPF Engine"
-
 #define MPF_TIMER_RESOLUTION 100 /* 100 ms */
 
 struct mpf_engine_t {
@@ -56,7 +54,7 @@ mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
 
-MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
+MPF_DECLARE(mpf_engine_t*) mpf_engine_create(const char *id, apr_pool_t *pool)
 {
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
@@ -68,13 +66,13 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool)
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_container_t),pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "MPF_TASK_NAME);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Media Engine [%s]",id);
 	engine->task = apt_task_create(engine,msg_pool,pool);
 	if(!engine->task) {
 		return NULL;
 	}
 
-	apt_task_name_set(engine->task,MPF_TASK_NAME);
+	apt_task_name_set(engine->task,id);
 
 	vtable = apt_task_vtable_get(engine->task);
 	if(vtable) {
@@ -288,7 +286,7 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 	
 	apr_thread_mutex_lock(engine->request_queue_guard);
 	if(apt_cyclic_queue_push(engine->request_queue,msg) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"MPF Request Queue is Full");
+		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"MPF Request Queue is Full [%s]",apt_task_name_get(task));
 	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 	return TRUE;
@@ -441,4 +439,9 @@ MPF_DECLARE(apt_bool_t) mpf_engine_codec_manager_register(mpf_engine_t *engine, 
 MPF_DECLARE(apt_bool_t) mpf_engine_scheduler_rate_set(mpf_engine_t *engine, unsigned long rate)
 {
 	return mpf_scheduler_rate_set(engine->scheduler,rate);
+}
+
+MPF_DECLARE(const char*) mpf_engine_id_get(const mpf_engine_t *engine)
+{
+	return apt_task_name_get(engine->task);
 }

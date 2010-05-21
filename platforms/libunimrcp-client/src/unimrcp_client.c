@@ -350,8 +350,8 @@ static apt_bool_t unimrcp_client_sip_uac_load(unimrcp_client_loader_t *loader, c
 		config->ext_ip = apr_pstrdup(loader->pool,loader->ext_ip);
 	}
 
-	agent = mrcp_sofiasip_client_agent_create(config,loader->pool);
-	return mrcp_client_signaling_agent_register(loader->client,agent,id);
+	agent = mrcp_sofiasip_client_agent_create(id,config,loader->pool);
+	return mrcp_client_signaling_agent_register(loader->client,agent);
 }
 
 /** Load UniRTSP signaling agent */
@@ -387,8 +387,8 @@ static apt_bool_t unimrcp_client_rtsp_uac_load(unimrcp_client_loader_t *loader, 
 		}
 	}
 	
-	agent = mrcp_unirtsp_client_agent_create(config,loader->pool);
-	return mrcp_client_signaling_agent_register(loader->client,agent,id);
+	agent = mrcp_unirtsp_client_agent_create(id,config,loader->pool);
+	return mrcp_client_signaling_agent_register(loader->client,agent);
 }
 
 /** Load MRCPv2 connection agent */
@@ -435,7 +435,7 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 		}
 	}
 
-	agent = mrcp_client_connection_agent_create(max_connection_count,offer_new_connection,loader->pool);
+	agent = mrcp_client_connection_agent_create(id,max_connection_count,offer_new_connection,loader->pool);
 	if(agent) {
 		if(rx_buffer_size) {
 			mrcp_client_connection_rx_size_set(agent,atol(rx_buffer_size));
@@ -447,7 +447,7 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 			mrcp_client_connection_timeout_set(agent,atol(request_timeout));
 		}
 	}
-	return mrcp_client_connection_agent_register(loader->client,agent,id);
+	return mrcp_client_connection_agent_register(loader->client,agent);
 }
 
 /** Load media engine */
@@ -468,13 +468,13 @@ static apt_bool_t unimrcp_client_media_engine_load(unimrcp_client_loader_t *load
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	
-	media_engine = mpf_engine_create(loader->pool);
+	media_engine = mpf_engine_create(id,loader->pool);
 	if(media_engine) {
 		mpf_engine_scheduler_rate_set(media_engine,realtime_rate);
 	}
-	return mrcp_client_media_engine_register(loader->client,media_engine,id);
+	return mrcp_client_media_engine_register(loader->client,media_engine);
 }
 
 /** Load RTP factory */

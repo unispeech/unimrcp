@@ -64,7 +64,7 @@ struct mrcp_sofia_server_config_t {
 /**
  * Create Sofia-SIP signaling agent.
  */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(mrcp_sofia_server_config_t *config, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(const char *id, mrcp_sofia_server_config_t *config, apr_pool_t *pool);
 
 /**
  * Allocate Sofia-SIP config.

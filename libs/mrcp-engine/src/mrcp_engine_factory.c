@@ -92,9 +92,9 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_close(mrcp_engine_factory_t *factor
 }
 
 /** Register new engine */
-MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine)
 {
-	if(!engine || !name) {
+	if(!engine || !engine->id) {
 		return FALSE;
 	}
 
@@ -116,7 +116,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory
 		return FALSE;
 	}
 
-	apr_hash_set(factory->engines,name,APR_HASH_KEY_STRING,engine);
+	apr_hash_set(factory->engines,engine->id,APR_HASH_KEY_STRING,engine);
 	return TRUE;
 }
 

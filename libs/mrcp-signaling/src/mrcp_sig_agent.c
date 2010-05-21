@@ -20,9 +20,10 @@
 #include "mrcp_session.h"
 #include "apt_pool.h"
 
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
 	mrcp_sig_agent_t *sig_agent = apr_palloc(pool,sizeof(mrcp_sig_agent_t));
+	sig_agent->id = id;
 	sig_agent->pool = pool;
 	sig_agent->obj = obj;
 	sig_agent->mrcp_version = mrcp_version;

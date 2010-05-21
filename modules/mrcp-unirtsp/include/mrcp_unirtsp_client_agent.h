@@ -46,7 +46,7 @@ struct rtsp_client_config_t {
 /**
  * Create UniRTSP signaling agent.
  */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(rtsp_client_config_t *config, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(const char *id, rtsp_client_config_t *config, apr_pool_t *pool);
 
 /**
  * Allocate UniRTSP config.

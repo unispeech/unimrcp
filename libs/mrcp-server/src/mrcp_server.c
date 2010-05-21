@@ -305,19 +305,21 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(mrcp_server_t *se
 }
 
 /** Register MRCP engine */
-MRCP_DECLARE(apt_bool_t) mrcp_server_engine_register(mrcp_server_t *server, mrcp_engine_t *engine, mrcp_engine_config_t *config)
+MRCP_DECLARE(apt_bool_t) mrcp_server_engine_register(mrcp_server_t *server, mrcp_engine_t *engine)
 {
-	if(!engine || !config || !config->name) {
+	if(!engine || !engine->id) {
 		return FALSE;
 	}
+	
 	if(!server->engine_msg_pool) {
 		server->engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(engine_task_msg_data_t),server->pool);
 	}
-	engine->config = config;
 	engine->codec_manager = server->codec_manager;
 	engine->dir_layout = server->dir_layout;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register MRCP Engine [%s]",config->name);
-	return mrcp_engine_factory_engine_register(server->engine_factory,engine,config->name);
+	engine->event_vtable = &engine_vtable;
+	engine->event_obj = server;
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register MRCP Engine [%s]",engine->id);
+	return mrcp_engine_factory_engine_register(server->engine_factory,engine);
 }
 
 /** Register codec manager */
@@ -337,14 +339,20 @@ MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_server_codec_manager_get(mrcp_serv
 }
 
 /** Register media engine */
-MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_server_media_engine_register(mrcp_server_t *server, mpf_engine_t *media_engine)
 {
-	if(!media_engine || !name) {
+	const char *id;
+	if(!media_engine) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Media Engine [%s]",name);
+	id = mpf_engine_id_get(media_engine);
+	if(!id) {
+		return FALSE;
+	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Media Engine [%s]",id);
 	mpf_engine_codec_manager_register(media_engine,server->codec_manager);
-	apr_hash_set(server->media_engine_table,name,APR_HASH_KEY_STRING,media_engine);
+	apr_hash_set(server->media_engine_table,id,APR_HASH_KEY_STRING,media_engine);
 	mpf_engine_task_msg_type_set(media_engine,MRCP_SERVER_MEDIA_TASK_MSG);
 	if(server->task) {
 		apt_task_t *media_task = mpf_task_get(media_engine);
@@ -395,17 +403,17 @@ MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_server_rtp_settings_get(mrcp_server_t *se
 }
 
 /** Register MRCP signaling agent */
-MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(mrcp_server_t *server, mrcp_sig_agent_t *signaling_agent)
 {
-	if(!signaling_agent || !name) {
+	if(!signaling_agent || !signaling_agent->id) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Signaling Agent [%s]",name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Signaling Agent [%s]",signaling_agent->id);
 	signaling_agent->parent = server;
 	signaling_agent->resource_factory = server->resource_factory;
 	signaling_agent->create_server_session = mrcp_server_sig_agent_session_create;
 	signaling_agent->msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mrcp_signaling_message_t*),server->pool);
-	apr_hash_set(server->sig_agent_table,name,APR_HASH_KEY_STRING,signaling_agent);
+	apr_hash_set(server->sig_agent_table,signaling_agent->id,APR_HASH_KEY_STRING,signaling_agent);
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
 		apt_task_add(task,signaling_agent->task);
@@ -420,16 +428,21 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_server_signaling_agent_get(mrcp_server_t *s
 }
 
 /** Register MRCP connection agent (MRCPv2 only) */
-MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent, const char *name)
+MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(mrcp_server_t *server, mrcp_connection_agent_t *connection_agent)
 {
-	if(!connection_agent || !name) {
+	const char *id;
+	if(!connection_agent) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Connection Agent [%s]",name);
+	id = mrcp_server_connection_agent_id_get(connection_agent);
+	if(!id) {
+		return FALSE;
+	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Connection Agent [%s]",id);
 	mrcp_server_connection_resource_factory_set(connection_agent,server->resource_factory);
 	mrcp_server_connection_agent_handler_set(connection_agent,server,&connection_method_vtable);
 	server->connection_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(connection_agent_task_msg_data_t),server->pool);
-	apr_hash_set(server->cnt_agent_table,name,APR_HASH_KEY_STRING,connection_agent);
+	apr_hash_set(server->cnt_agent_table,id,APR_HASH_KEY_STRING,connection_agent);
 	if(server->task) {
 		apt_task_t *task = apt_consumer_task_base_get(server->task);
 		apt_task_t *connection_task = mrcp_server_connection_agent_task_get(connection_agent);
@@ -446,6 +459,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_get(mrcp_ser
 
 /** Create MRCP profile */
 MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
+									const char *id,
 									mrcp_resource_factory_t *resource_factory,
 									mrcp_sig_agent_t *signaling_agent,
 									mrcp_connection_agent_t *connection_agent,
@@ -455,6 +469,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 									apr_pool_t *pool)
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
+	profile->id = id;
 	profile->resource_factory = resource_factory;
 	profile->engine_table = NULL;
 	profile->media_engine = media_engine;
@@ -492,8 +507,8 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_prof
 		}
 		
 		if(engine) {
-			if(engine->config->name) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign MRCP Engine [%s] [%s]",resource->name.buf,engine->config->name);
+			if(engine->id) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign MRCP Engine [%s] [%s]",resource->name.buf,engine->id);
 			}
 			apr_hash_set(profile->engine_table,resource->name.buf,resource->name.length,engine);
 		}
@@ -507,18 +522,17 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_prof
 
 /** Register MRCP profile */
 MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
-									mrcp_server_t *server,
-									mrcp_profile_t *profile,
-									apr_table_t *plugin_map,
-									const char *name)
+							mrcp_server_t *server,
+							mrcp_profile_t *profile,
+							apr_table_t *plugin_map)
 {
-	if(!profile || !name) {
+	if(!profile || !profile->id) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no name");
 		return FALSE;
 	}
 	if(!profile->resource_factory) {
 		if(!server->resource_factory) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no resources");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing resource factory",profile->id);
 			return FALSE;
 		}
 		profile->resource_factory = server->resource_factory;
@@ -526,25 +540,25 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 	mrcp_server_engine_table_make(server,profile,plugin_map);
 	
 	if(!profile->signaling_agent) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",profile->id);
 		return FALSE;
 	}
 	if(profile->signaling_agent->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",profile->id);
 		return FALSE;
 	}
 	if(!profile->media_engine) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing media engine",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing media engine",profile->id);
 		return FALSE;
 	}
 	if(!profile->rtp_termination_factory) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing RTP factory",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing RTP factory",profile->id);
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Profile [%s]",name);
-	apr_hash_set(server->profile_table,name,APR_HASH_KEY_STRING,profile);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Profile [%s]",profile->id);
+	apr_hash_set(server->profile_table,profile->id,APR_HASH_KEY_STRING,profile);
 	return TRUE;
 }
 
@@ -555,28 +569,23 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(mrcp_server_t *server, con
 }
 
 /** Register MRCP engine plugin */
-MRCP_DECLARE(apt_bool_t) mrcp_server_plugin_register(mrcp_server_t *server, const char *path, mrcp_engine_config_t *config)
+MRCP_DECLARE(mrcp_engine_t*) mrcp_server_engine_load(
+								mrcp_server_t *server,
+								const char *id,
+								const char *path,
+								mrcp_engine_config_t *config)
 {
 	mrcp_engine_t *engine;
-	if(!config) {
+	if(!id || !path || !config) {
 		return FALSE;
 	}
-	
-	engine = mrcp_engine_loader_plugin_load(server->engine_loader,path,config->name);
+
+	engine = mrcp_engine_loader_plugin_load(server->engine_loader,id,path,config);
 	if(!engine) {
 		return FALSE;
 	}
 
-	if(!server->engine_msg_pool) {
-		server->engine_msg_pool = apt_task_msg_pool_create_dynamic(sizeof(engine_task_msg_data_t),server->pool);
-	}
-	engine->config = config;
-	engine->codec_manager = server->codec_manager;
-	engine->dir_layout = server->dir_layout;
-	engine->event_vtable = &engine_vtable;
-	engine->event_obj = server;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register MRCP Engine [%s]",config->name);
-	return mrcp_engine_factory_engine_register(server->engine_factory,engine,config->name);
+	return engine;
 }
 
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(mrcp_server_t *server)
@@ -829,19 +838,14 @@ static mrcp_profile_t* mrcp_server_profile_get_by_agent(mrcp_server_t *server, m
 	mrcp_profile_t *profile;
 	apr_hash_index_t *it;
 	void *val;
-	const void *key;
-	const char *name;
 	it = apr_hash_first(session->base.pool,server->profile_table);
 	for(; it; it = apr_hash_next(it)) {
-		apr_hash_this(it,&key,NULL,&val);
+		apr_hash_this(it,NULL,NULL,&val);
 		profile = val;
-		name = key;
-		if(profile && name && profile->signaling_agent == signaling_agent) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Found Profile [%s]",name);
+		if(profile && profile->signaling_agent == signaling_agent) {
 			return profile;
 		}
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Find Profile by Agent "APT_SID_FMT,MRCP_SESSION_SID(&session->base));
 	return NULL;
 }
 
@@ -852,9 +856,16 @@ static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *si
 	session->server = server;
 	session->profile = mrcp_server_profile_get_by_agent(server,session,signaling_agent);
 	if(!session->profile) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Find Profile by Agent "APT_NAMESID_FMT,
+			session->base.name,
+			MRCP_SESSION_SID(&session->base));
 		mrcp_session_destroy(&session->base);
 		return NULL;
 	}
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Session "APT_NAMESID_FMT" [%s]",
+			session->base.name,
+			MRCP_SESSION_SID(&session->base), 
+			session->profile->id);
 	session->base.signaling_agent = signaling_agent;
 	session->base.request_vtable = &session_request_vtable;
 	return &session->base;

@@ -29,7 +29,7 @@ apt_bool_t mrcp_engine_virtual_destroy(mrcp_engine_t *engine)
 apt_bool_t mrcp_engine_virtual_open(mrcp_engine_t *engine)
 {
 	if(engine->is_open == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Engine [%s]",engine->config->name);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Engine [%s]",engine->id);
 		return engine->method_vtable->open(engine);
 	}
 	return FALSE;
@@ -39,7 +39,7 @@ apt_bool_t mrcp_engine_virtual_open(mrcp_engine_t *engine)
 void mrcp_engine_on_open(mrcp_engine_t *engine, apt_bool_t status)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Engine Opened [%s] status [%s]",
-		engine->config->name,
+		engine->id,
 		status == TRUE ? "success" : "failure");
 	engine->is_open = status;
 }
@@ -49,7 +49,7 @@ apt_bool_t mrcp_engine_virtual_close(mrcp_engine_t *engine)
 {
 	if(engine->is_open == TRUE) {
 		engine->is_open = FALSE;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Engine [%s]",engine->config->name);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Engine [%s]",engine->id);
 		return engine->method_vtable->close(engine);
 	}
 	return FALSE;
@@ -58,7 +58,7 @@ apt_bool_t mrcp_engine_virtual_close(mrcp_engine_t *engine)
 /** Response to close engine request */
 void mrcp_engine_on_close(mrcp_engine_t *engine)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Engine Closed [%s]",engine->config->name);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Engine Closed [%s]",engine->id);
 	engine->is_open = FALSE;
 }
 
@@ -94,7 +94,6 @@ apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel)
 mrcp_engine_config_t* mrcp_engine_config_alloc(apr_pool_t *pool)
 {
 	mrcp_engine_config_t *config = apr_palloc(pool,sizeof(mrcp_engine_config_t));
-	config->name = NULL;
 	config->max_channel_count = 0;
 	config->params = NULL;
 	return config;

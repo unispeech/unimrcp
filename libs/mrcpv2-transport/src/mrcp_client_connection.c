@@ -25,7 +25,6 @@
 #include "apt_poller_task.h"
 #include "apt_log.h"
 
-#define MRCPV2_CONNECTION_TASK_NAME "TCP/MRCPv2 Agent"
 
 struct mrcp_connection_agent_t {
 	apr_pool_t                           *pool;
@@ -66,6 +65,7 @@ static void mrcp_client_timer_proc(apt_timer_t *timer, void *obj);
 
 /** Create connection agent. */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
+											const char *id,
 											apr_size_t max_connection_count, 
 											apt_bool_t offer_new_connection,
 											apr_pool_t *pool)
@@ -75,7 +75,8 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 	apt_task_msg_pool_t *msg_pool;
 	mrcp_connection_agent_t *agent;
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create "MRCPV2_CONNECTION_TASK_NAME" [%"APR_SIZE_T_FMT"]",max_connection_count);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv2 Agent [%s] [%"APR_SIZE_T_FMT"]",
+				id,	max_connection_count);
 	agent = apr_palloc(pool,sizeof(mrcp_connection_agent_t));
 	agent->pool = pool;
 	agent->request_timeout = 0;
@@ -97,7 +98,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 
 	task = apt_poller_task_base_get(agent->task);
 	if(task) {
-		apt_task_name_set(task,MRCPV2_CONNECTION_TASK_NAME);
+		apt_task_name_set(task,id);
 	}
 
 	vtable = apt_poller_task_vtable_get(agent->task);
@@ -112,7 +113,8 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
 /** Destroy connection agent. */
 MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_destroy(mrcp_connection_agent_t *agent)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCPv2 Agent [%s]",
+		mrcp_client_connection_agent_id_get(agent));
 	return apt_poller_task_destroy(agent->task);
 }
 
@@ -177,15 +179,22 @@ MRCP_DECLARE(void) mrcp_client_connection_timeout_set(
 }
 
 /** Get task */
-MRCP_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(const mrcp_connection_agent_t *agent)
 {
 	return apt_poller_task_base_get(agent->task);
 }
 
 /** Get external object */
-MRCP_DECLARE(void*) mrcp_client_connection_agent_object_get(mrcp_connection_agent_t *agent)
+MRCP_DECLARE(void*) mrcp_client_connection_agent_object_get(const mrcp_connection_agent_t *agent)
 {
 	return agent->obj;
+}
+
+/** Get string identifier */
+MRCP_DECLARE(const char*) mrcp_client_connection_agent_id_get(const mrcp_connection_agent_t *agent)
+{
+	apt_task_t *task = apt_poller_task_base_get(agent->task);
+	return apt_task_name_get(task);
 }
 
 

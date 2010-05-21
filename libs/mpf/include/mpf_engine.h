@@ -34,9 +34,10 @@ typedef apt_task_msg_t mpf_task_msg_t;
 
 /**
  * Create MPF engine.
+ * @param id the identifier of the engine
  * @param pool the pool to allocate memory from
  */
-MPF_DECLARE(mpf_engine_t*) mpf_engine_create(apr_pool_t *pool);
+MPF_DECLARE(mpf_engine_t*) mpf_engine_create(const char *id, apr_pool_t *pool);
 
 /**
  * Create MPF codec manager.
@@ -151,6 +152,12 @@ MPF_DECLARE(apt_bool_t) mpf_engine_message_send(mpf_engine_t *engine, mpf_task_m
  * @param rate the rate (n times faster than real-time)
  */
 MPF_DECLARE(apt_bool_t) mpf_engine_scheduler_rate_set(mpf_engine_t *engine, unsigned long rate);
+
+/**
+ * Get the identifier of the engine .
+ * @param engine the engine to get name of
+ */
+MPF_DECLARE(const char*) mpf_engine_id_get(const mpf_engine_t *engine);
 
 
 APT_END_EXTERN_C

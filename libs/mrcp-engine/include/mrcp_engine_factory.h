@@ -45,7 +45,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_close(mrcp_engine_factory_t *factor
 
 
 /** Register engine */
-MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine);
 
 /** Get engine by name */
 MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name);

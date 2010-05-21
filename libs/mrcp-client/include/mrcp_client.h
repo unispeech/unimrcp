@@ -93,7 +93,7 @@ MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(mrcp_clie
  * @param media_engine the media engine to set
  * @param name the name of the media engine
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_media_engine_register(mrcp_client_t *client, mpf_engine_t *media_engine, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_client_media_engine_register(mrcp_client_t *client, mpf_engine_t *media_engine);
 
 /**
  * Register RTP termination factory.
@@ -117,7 +117,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_settings_register(mrcp_client_t *client
  * @param signaling_agent the signaling agent to set
  * @param name the name of the agent
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *client, mrcp_sig_agent_t *signaling_agent, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *client, mrcp_sig_agent_t *signaling_agent);
 
 /**
  * Register MRCP signaling settings.
@@ -133,7 +133,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_settings_register(mrcp_client_t *
  * @param connection_agent the connection agent to set
  * @param name the name of the agent
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *client, mrcp_connection_agent_t *connection_agent, const char *name);
+MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *client, mrcp_connection_agent_t *connection_agent);
 
 /** Create MRCP profile */
 MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(

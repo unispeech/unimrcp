@@ -36,7 +36,8 @@ APT_BEGIN_EXTERN_C
  * @param pool the pool to allocate memory from
  */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_create(
-											apr_size_t max_connection_count, 
+											const char *id,
+											apr_size_t max_connection_count,
 											apt_bool_t offer_new_connection,
 											apr_pool_t *pool);
 
@@ -108,13 +109,19 @@ MRCP_DECLARE(void) mrcp_client_connection_timeout_set(
  * Get task.
  * @param agent the agent to get task from
  */
-MRCP_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(mrcp_connection_agent_t *agent);
+MRCP_DECLARE(apt_task_t*) mrcp_client_connection_agent_task_get(const mrcp_connection_agent_t *agent);
 
 /**
  * Get external object.
  * @param agent the agent to get object from
  */
-MRCP_DECLARE(void*) mrcp_client_connection_agent_object_get(mrcp_connection_agent_t *agent);
+MRCP_DECLARE(void*) mrcp_client_connection_agent_object_get(const mrcp_connection_agent_t *agent);
+
+/**
+ * Get string identifier.
+ * @param agent the agent to get identifier of
+ */
+MRCP_DECLARE(const char*) mrcp_client_connection_agent_id_get(const mrcp_connection_agent_t *agent);
 
 
 /**
