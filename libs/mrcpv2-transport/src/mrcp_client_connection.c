@@ -481,8 +481,6 @@ static apt_bool_t mrcp_client_agent_request_cancel(mrcp_connection_agent_t *agen
 		message->channel_id.resource_name.buf,
 		message->start_line.request_id);
 	response = mrcp_response_create(message,message->pool);
-	response->start_line.method_id = message->start_line.method_id;
-	response->start_line.method_name = message->start_line.method_name;
 	response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 	return mrcp_connection_message_receive(agent->vtable,channel,response);
 }

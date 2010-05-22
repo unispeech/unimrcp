@@ -133,6 +133,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request
 		response_message->start_line.request_id = request_message->start_line.request_id;
 		response_message->start_line.version = request_message->start_line.version;
 		response_message->start_line.method_id = request_message->start_line.method_id;
+		response_message->start_line.method_name = request_message->start_line.method_name;
 		mrcp_message_resource_set_by_id(response_message,request_message->resource);
 	}
 	return response_message;
