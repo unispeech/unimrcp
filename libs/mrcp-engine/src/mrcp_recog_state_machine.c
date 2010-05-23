@@ -85,9 +85,13 @@ static APR_INLINE apt_bool_t recog_event_dispatch(mrcp_recog_state_machine_t *st
 	return state_machine->base.on_dispatch(&state_machine->base,message);
 }
 
-static APR_INLINE void recog_state_change(mrcp_recog_state_machine_t *state_machine, mrcp_recog_state_e state)
+static APR_INLINE void recog_state_change(mrcp_recog_state_machine_t *state_machine, mrcp_recog_state_e state, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"State Transition %s -> %s",state_names[state_machine->state],state_names[state]);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"State Transition %s -> %s "APT_SIDRES_FMT,
+		state_names[state_machine->state],
+		state_names[state],
+		message->channel_id.session_id.buf,
+		message->channel_id.resource_name.buf);
 	state_machine->state = state;
 	if(state == RECOGNIZER_STATE_IDLE) {
 		state_machine->recog = NULL;
@@ -97,30 +101,22 @@ static APR_INLINE void recog_state_change(mrcp_recog_state_machine_t *state_mach
 
 static apt_bool_t recog_request_set_params(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Request [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	mrcp_header_fields_set(state_machine->properties,&message->header,message->pool);
 	return recog_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t recog_response_set_params(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process SET-PARAMS Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	return recog_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t recog_request_get_params(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Request [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	return recog_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t recog_response_get_params(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-PARAMS Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	mrcp_header_fields_set(&message->header,&state_machine->active_request->header,message->pool);
 	mrcp_header_fields_get(&message->header,state_machine->properties,message->pool);
 	return recog_response_dispatch(state_machine,message);
@@ -134,18 +130,14 @@ static apt_bool_t recog_request_define_grammar(mrcp_recog_state_machine_t *state
 		return recog_response_dispatch(state_machine,response_message);
 	}
 	else if(state_machine->state == RECOGNIZER_STATE_RECOGNIZED) {
-		recog_state_change(state_machine,RECOGNIZER_STATE_IDLE);
+		recog_state_change(state_machine,RECOGNIZER_STATE_IDLE,message);
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-GRAMMAR Request [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	return recog_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t recog_response_define_grammar(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process DEFINE-GRAMMAR Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	if(mrcp_resource_header_property_check(message,RECOGNIZER_HEADER_COMPLETION_CAUSE) != TRUE) {
 		mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
 		recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
@@ -159,7 +151,9 @@ static apt_bool_t recog_request_recognize(mrcp_recog_state_machine_t *state_mach
 	mrcp_header_fields_inherit(&message->header,state_machine->properties,message->pool);
 	if(state_machine->state == RECOGNIZER_STATE_RECOGNIZING) {
 		mrcp_message_t *response;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up RECOGNIZE Request [%"MRCP_REQUEST_ID_FMT"]",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Queue Up RECOGNIZE Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+			message->channel_id.session_id.buf,
+			message->channel_id.resource_name.buf,
 			message->start_line.request_id);
 		message->start_line.request_state = MRCP_REQUEST_STATE_PENDING;
 		apt_list_push_back(state_machine->queue,message,message->pool);
@@ -169,18 +163,14 @@ static apt_bool_t recog_request_recognize(mrcp_recog_state_machine_t *state_mach
 		return recog_response_dispatch(state_machine,response);
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process RECOGNIZE Request [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	return recog_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t recog_response_recognize(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process RECOGNIZE Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	if(message->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS) {
 		state_machine->recog = state_machine->active_request;
-		recog_state_change(state_machine,RECOGNIZER_STATE_RECOGNIZING);
+		recog_state_change(state_machine,RECOGNIZER_STATE_RECOGNIZING,message);
 	}
 	if(state_machine->is_pending == TRUE) {
 		state_machine->is_pending = FALSE;
@@ -195,8 +185,6 @@ static apt_bool_t recog_request_get_result(mrcp_recog_state_machine_t *state_mac
 	mrcp_message_t *response_message;
 	if(state_machine->state == RECOGNIZER_STATE_RECOGNIZED) {
 		/* found recognized request */
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-RESULT Request [%"MRCP_REQUEST_ID_FMT"]",
-			message->start_line.request_id);
 		return recog_request_dispatch(state_machine,message);
 	}
 
@@ -208,8 +196,6 @@ static apt_bool_t recog_request_get_result(mrcp_recog_state_machine_t *state_mac
 
 static apt_bool_t recog_response_get_result(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process GET-RESULT Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	return recog_response_dispatch(state_machine,message);
 }
 
@@ -218,8 +204,6 @@ static apt_bool_t recog_request_recognition_start_timers(mrcp_recog_state_machin
 	mrcp_message_t *response_message;
 	if(state_machine->state == RECOGNIZER_STATE_RECOGNIZING) {
 		/* found in-progress request */
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process START-INPUT-TIMERS Request [%"MRCP_REQUEST_ID_FMT"]",
-			message->start_line.request_id);
 		return recog_request_dispatch(state_machine,message);
 	}
 
@@ -231,8 +215,6 @@ static apt_bool_t recog_request_recognition_start_timers(mrcp_recog_state_machin
 
 static apt_bool_t recog_response_recognition_start_timers(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process START-INPUT-TIMERS Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	return recog_response_dispatch(state_machine,message);
 }
 
@@ -254,7 +236,10 @@ static apt_bool_t recog_pending_requests_remove(mrcp_recog_state_machine_t *stat
 	while(elem) {
 		pending_message = apt_list_elem_object_get(elem);
 		if(!request_id_list || active_request_id_list_find(generic_header,pending_message->start_line.request_id) == TRUE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Pending RECOGNIZE Request [%d]",pending_message->start_line.request_id);
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Pending RECOGNIZE Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+				pending_message->channel_id.session_id.buf,
+				pending_message->channel_id.resource_name.buf,
+				pending_message->start_line.request_id);
 			elem = apt_list_elem_remove(state_machine->queue,elem);
 			/* append active id list */
 			active_request_id_list_append(response_generic_header,pending_message->start_line.request_id);
@@ -285,13 +270,15 @@ static apt_bool_t recog_request_stop(mrcp_recog_state_machine_t *state_machine, 
 
 		if(!request_id_list || active_request_id_list_find(generic_header,state_machine->recog->start_line.request_id) == TRUE) {
 			/* found in-progress RECOGNIZE request, stop it */
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process STOP Request [%"MRCP_REQUEST_ID_FMT"]",
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Found IN-PROGRESS RECOGNIZE Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+				message->channel_id.session_id.buf,
+				message->channel_id.resource_name,
 				message->start_line.request_id);
 			return recog_request_dispatch(state_machine,message);
 		}
 	}
 	else if(state_machine->state == RECOGNIZER_STATE_RECOGNIZED) {
-		recog_state_change(state_machine,RECOGNIZER_STATE_IDLE);
+		recog_state_change(state_machine,RECOGNIZER_STATE_IDLE,message);
 	}
 
 	/* found no in-progress RECOGNIZE request, sending immediate response */
@@ -304,19 +291,20 @@ static apt_bool_t recog_response_stop(mrcp_recog_state_machine_t *state_machine,
 {
 	mrcp_message_t *pending_request;
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_prepare(message);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process STOP Response [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	/* append active id list */
 	active_request_id_list_append(generic_header,state_machine->recog->start_line.request_id);
 	mrcp_generic_header_property_add(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
 	recog_pending_requests_remove(state_machine,state_machine->active_request,message);
-	recog_state_change(state_machine,RECOGNIZER_STATE_IDLE);
+	recog_state_change(state_machine,RECOGNIZER_STATE_IDLE,message);
 	pending_request = apt_list_pop_front(state_machine->queue);
 	recog_response_dispatch(state_machine,message);
 
 	/* process pending RECOGNIZE requests / if any */
 	if(pending_request) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process Pending RECOGNIZE Request [%d]",pending_request->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process Pending RECOGNIZE Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+			pending_request->channel_id.session_id.buf,
+			pending_request->channel_id.resource_name,
+			pending_request->start_line.request_id);
 		state_machine->is_pending = TRUE;
 		recog_request_dispatch(state_machine,pending_request);
 	}
@@ -335,8 +323,6 @@ static apt_bool_t recog_event_start_of_input(mrcp_recog_state_machine_t *state_m
 		return FALSE;
 	}
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process START-OF-INPUT Event [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	return recog_event_dispatch(state_machine,message);
 }
@@ -345,36 +331,44 @@ static apt_bool_t recog_event_recognition_complete(mrcp_recog_state_machine_t *s
 {
 	mrcp_message_t *pending_request;
 	if(!state_machine->recog) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected RECOGNITION-COMPLETE Event [%"MRCP_REQUEST_ID_FMT"]",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected RECOGNITION-COMPLETE Event "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+			message->channel_id.session_id.buf,
+			message->channel_id.resource_name.buf,
 			message->start_line.request_id);
 		return FALSE;
 	}
 
 	if(state_machine->recog->start_line.request_id != message->start_line.request_id) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected RECOGNITION-COMPLETE Event [%"MRCP_REQUEST_ID_FMT"]",
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Unexpected RECOGNITION-COMPLETE Event "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+			message->channel_id.session_id.buf,
+			message->channel_id.resource_name.buf,
 			message->start_line.request_id);
 		return FALSE;
 	}
 
 	if(state_machine->active_request && state_machine->active_request->start_line.method_id == RECOGNIZER_STOP) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Ignore RECOGNITION-COMPLETE Event [%d]: waiting for STOP response",message->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Ignore RECOGNITION-COMPLETE Event "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]: waiting for STOP response",
+			message->channel_id.session_id.buf,
+			message->channel_id.resource_name.buf,
+			message->start_line.request_id);
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process RECOGNITION-COMPLETE Event [%"MRCP_REQUEST_ID_FMT"]",
-		message->start_line.request_id);
 	if(mrcp_resource_header_property_check(message,RECOGNIZER_HEADER_COMPLETION_CAUSE) != TRUE) {
 		mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
 		recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
 		mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
 	}
-	recog_state_change(state_machine,RECOGNIZER_STATE_RECOGNIZED);
+	recog_state_change(state_machine,RECOGNIZER_STATE_RECOGNIZED,message);
 	recog_event_dispatch(state_machine,message);
 
 	/* process pending RECOGNIZE requests */
 	pending_request = apt_list_pop_front(state_machine->queue);
 	if(pending_request) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process Pending RECOGNIZE Request [%d]",pending_request->start_line.request_id);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process Pending RECOGNIZE Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+			pending_request->channel_id.session_id.buf,
+			pending_request->channel_id.resource_name.buf,
+			pending_request->start_line.request_id);
 		state_machine->is_pending = TRUE;
 		recog_request_dispatch(state_machine,pending_request);
 	}
@@ -414,6 +408,11 @@ static apt_bool_t recog_request_state_update(mrcp_recog_state_machine_t *state_m
 		return FALSE;
 	}
 	
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process %s Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.method_name.buf,
+		message->channel_id.session_id.buf,
+		message->channel_id.resource_name.buf,
+		message->start_line.request_id);
 	method = recog_request_method_array[message->start_line.method_id];
 	if(method) {
 		return method(state_machine,message);
@@ -438,6 +437,11 @@ static apt_bool_t recog_response_state_update(mrcp_recog_state_machine_t *state_
 		return FALSE;
 	}
 	
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process %s Response "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.method_name.buf,
+		message->channel_id.session_id.buf,
+		message->channel_id.resource_name.buf,
+		message->start_line.request_id);
 	method = recog_response_method_array[message->start_line.method_id];
 	if(method) {
 		return method(state_machine,message);
@@ -453,6 +457,11 @@ static apt_bool_t recog_event_state_update(mrcp_recog_state_machine_t *state_mac
 		return FALSE;
 	}
 	
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Process %s Event "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+		message->start_line.method_name.buf,
+		message->channel_id.session_id.buf,
+		message->channel_id.resource_name.buf,
+		message->start_line.request_id);
 	method = recog_event_method_array[message->start_line.method_id];
 	if(method) {
 		return method(state_machine,message);
@@ -507,7 +516,9 @@ static apt_bool_t recog_state_deactivate(mrcp_state_machine_t *base)
 	message->start_line.request_id = source->start_line.request_id + 1;
 	apt_string_set(&message->start_line.method_name,"DEACTIVATE"); /* informative only */
 	message->header = source->header;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create and Process STOP Request [%"MRCP_REQUEST_ID_FMT"]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create and Process STOP Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+		message->channel_id.session_id.buf,
+		message->channel_id.resource_name.buf,
 		message->start_line.request_id);
 	return recog_request_dispatch(state_machine,message);
 }
