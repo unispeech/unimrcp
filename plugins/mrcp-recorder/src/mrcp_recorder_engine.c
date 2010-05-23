@@ -436,15 +436,18 @@ static apt_bool_t recorder_stream_write(mpf_audio_stream_t *stream, const mpf_fr
 		mpf_detector_event_e det_event = mpf_activity_detector_process(recorder_channel->detector,frame);
 		switch(det_event) {
 			case MPF_DETECTOR_EVENT_ACTIVITY:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity "APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recorder_channel->record_request));
 				recorder_start_of_input(recorder_channel);
 				break;
 			case MPF_DETECTOR_EVENT_INACTIVITY:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity "APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recorder_channel->record_request));
 				recorder_record_complete(recorder_channel,RECORDER_COMPLETION_CAUSE_SUCCESS_SILENCE);
 				break;
 			case MPF_DETECTOR_EVENT_NOINPUT:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Noinput");
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Detected Noinput "APT_SIDRES_FMT,
+					MRCP_MESSAGE_SIDRES(recorder_channel->record_request));
 				if(recorder_channel->timers_started == TRUE) {
 					recorder_record_complete(recorder_channel,RECORDER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT);
 				}
