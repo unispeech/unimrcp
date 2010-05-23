@@ -595,9 +595,7 @@ static apt_bool_t mrcp_server_agent_messsage_send(mrcp_connection_agent_t *agent
 	apt_text_stream_t stream;
 	apt_message_status_e result;
 	if(!connection || !connection->sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection <%s@%s>",
-			message->channel_id.session_id.buf,
-			message->channel_id.resource_name.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection "APT_SIDRES_FMT,MRCP_MESSAGE_SIDRES(message));
 		return FALSE;
 	}
 
@@ -640,9 +638,8 @@ static apt_bool_t mrcp_server_message_handler(mrcp_connection_t *connection, mrc
 			mrcp_connection_message_receive(agent->vtable,channel,message);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s> in Connection %s",
-				message->channel_id.session_id.buf,
-				message->channel_id.resource_name.buf,
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel "APT_SIDRES_FMT" in Connection %s",
+				MRCP_MESSAGE_SIDRES(message),
 				connection->id);
 		}
 	}

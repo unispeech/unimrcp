@@ -477,8 +477,7 @@ static apt_bool_t mrcp_client_agent_request_cancel(mrcp_connection_agent_t *agen
 {
 	mrcp_message_t *response;
 	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cancel MRCP Request <%s@%s> [%d]",
-		message->channel_id.session_id.buf,
-		message->channel_id.resource_name.buf,
+		MRCP_MESSAGE_SIDRES(message),
 		message->start_line.request_id);
 	response = mrcp_response_create(message,message->pool);
 	response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
@@ -518,9 +517,7 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 	apt_message_status_e result;
 
 	if(!connection || !connection->sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection <%s@%s>",
-			message->channel_id.session_id.buf,
-			message->channel_id.resource_name.buf);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection "APT_SIDRES_FMT,MRCP_MESSAGE_SIDRES(message));
 		mrcp_client_agent_request_cancel(agent,channel,message);
 		return FALSE;
 	}
@@ -578,9 +575,8 @@ static apt_bool_t mrcp_client_message_handler(mrcp_connection_t *connection, mrc
 			if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 				if(!channel->active_request || 
 					channel->active_request->start_line.request_id != message->start_line.request_id) {
-					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected MRCP Response <%s@%s> [%d]",
-						message->channel_id.session_id.buf,
-						message->channel_id.resource_name.buf,
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected MRCP Response "APT_SIDRES_FMT" [%d]",
+						MRCP_MESSAGE_SIDRES(message),
 						message->start_line.request_id);
 					return FALSE;
 				}
@@ -593,9 +589,8 @@ static apt_bool_t mrcp_client_message_handler(mrcp_connection_t *connection, mrc
 			mrcp_connection_message_receive(agent->vtable,channel,message);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel <%s@%s> in Connection %s [%d]",
-				message->channel_id.session_id.buf,
-				message->channel_id.resource_name.buf,
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Channel "APT_SIDRES_FMT" in Connection %s [%d]",
+				MRCP_MESSAGE_SIDRES(message),
 				connection->id,
 				apr_hash_count(connection->channel_table));
 		}

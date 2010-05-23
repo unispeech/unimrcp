@@ -31,6 +31,9 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Macro to log channel identifier of the message */
+#define MRCP_MESSAGE_SIDRES(message) \
+	(message)->channel_id.session_id.buf, (message)->channel_id.resource_name.buf
 
 /** MRCP message */
 struct mrcp_message_t {
