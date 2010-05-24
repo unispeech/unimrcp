@@ -46,7 +46,7 @@ APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
  * Get task base.
  * @param task the consumer task to get base for
  */
-APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task);
+APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(const apt_consumer_task_t *task);
 
 /**
  * Get task vtable.
@@ -58,7 +58,7 @@ APT_DECLARE(apt_task_vtable_t*) apt_consumer_task_vtable_get(apt_consumer_task_t
  * Get consumer task object.
  * @param task the consumer task to get object from
  */
-APT_DECLARE(void*) apt_consumer_task_object_get(apt_consumer_task_t *task);
+APT_DECLARE(void*) apt_consumer_task_object_get(const apt_consumer_task_t *task);
 
 APT_END_EXTERN_C
 

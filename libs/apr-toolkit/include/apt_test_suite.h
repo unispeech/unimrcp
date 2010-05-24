@@ -94,7 +94,7 @@ APT_DECLARE(apt_bool_t) apt_test_framework_run(apt_test_framework_t *framework, 
  * Retrieve the memory pool.
  * @param framework the test framework to retrieve memory pool from
  */
-APT_DECLARE(apr_pool_t*) apt_test_framework_pool_get(apt_test_framework_t *framework);
+APT_DECLARE(apr_pool_t*) apt_test_framework_pool_get(const apt_test_framework_t *framework);
 
 APT_END_EXTERN_C
 

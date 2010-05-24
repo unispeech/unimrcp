@@ -83,7 +83,7 @@ APT_DECLARE(apt_bool_t) apt_poller_task_terminate(apt_poller_task_t *task);
  * Get task base.
  * @param task the poller task to get task base from
  */
-APT_DECLARE(apt_task_t*) apt_poller_task_base_get(apt_poller_task_t *task);
+APT_DECLARE(apt_task_t*) apt_poller_task_base_get(const apt_poller_task_t *task);
 
 /**
  * Get task vtable.
@@ -95,13 +95,13 @@ APT_DECLARE(apt_task_vtable_t*) apt_poller_task_vtable_get(apt_poller_task_t *ta
  * Get external object.
  * @param task the poller task to get object from
  */
-APT_DECLARE(void*) apt_poller_task_object_get(apt_poller_task_t *task);
+APT_DECLARE(void*) apt_poller_task_object_get(const apt_poller_task_t *task);
 
 /**
  * Get pollset.
  * @param task the poller task to get pollset from
  */
-APT_DECLARE(apt_pollset_t*) apt_poller_task_pollset_get(apt_poller_task_t *task);
+APT_DECLARE(apt_pollset_t*) apt_poller_task_pollset_get(const apt_poller_task_t *task);
 
 /**
  * Create timer.

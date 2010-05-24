@@ -55,7 +55,7 @@ APT_DECLARE(apt_consumer_task_t*) apt_consumer_task_create(
 	return consumer_task;
 }
 
-APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(apt_consumer_task_t *task)
+APT_DECLARE(apt_task_t*) apt_consumer_task_base_get(const apt_consumer_task_t *task)
 {
 	return task->base;
 }
@@ -65,7 +65,7 @@ APT_DECLARE(apt_task_vtable_t*) apt_consumer_task_vtable_get(apt_consumer_task_t
 	return apt_task_vtable_get(task->base);
 }
 
-APT_DECLARE(void*) apt_consumer_task_object_get(apt_consumer_task_t *task)
+APT_DECLARE(void*) apt_consumer_task_object_get(const apt_consumer_task_t *task)
 {
 	return task->obj;
 }

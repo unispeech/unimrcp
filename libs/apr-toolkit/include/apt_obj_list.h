@@ -67,40 +67,40 @@ APT_DECLARE(void*) apt_list_pop_front(apt_obj_list_t *list);
  * Retrieve object of the first element in the list.
  * @param list the list to retrieve from
  */
-APT_DECLARE(void*) apt_list_head(apt_obj_list_t *list);
+APT_DECLARE(void*) apt_list_head(const apt_obj_list_t *list);
 
 /**
  * Retrieve object of the last element in the list.
  * @param list the list to retrieve from
  */
-APT_DECLARE(void*) apt_obj_list_tail(apt_obj_list_t *list);
+APT_DECLARE(void*) apt_obj_list_tail(const apt_obj_list_t *list);
 
 
 /**
  * Retrieve the first element of the list.
  * @param list the list to retrieve from
  */
-APT_DECLARE(apt_list_elem_t*) apt_list_first_elem_get(apt_obj_list_t *list);
+APT_DECLARE(apt_list_elem_t*) apt_list_first_elem_get(const apt_obj_list_t *list);
 
 /**
  * Retrieve the last element of the list.
  * @param list the list to retrieve from
  */
-APT_DECLARE(apt_list_elem_t*) apt_list_last_elem_get(apt_obj_list_t *list);
+APT_DECLARE(apt_list_elem_t*) apt_list_last_elem_get(const apt_obj_list_t *list);
 
 /**
  * Retrieve the next element of the list.
  * @param list the list to retrieve from
  * @param elem the element to retrieve next element from
  */
-APT_DECLARE(apt_list_elem_t*) apt_list_next_elem_get(apt_obj_list_t *list, apt_list_elem_t *elem);
+APT_DECLARE(apt_list_elem_t*) apt_list_next_elem_get(const apt_obj_list_t *list, apt_list_elem_t *elem);
 
 /**
  * Retrieve the prev element of the list.
  * @param list the list to retrieve from
  * @param elem the element to retrieve prev element from
  */
-APT_DECLARE(apt_list_elem_t*) apt_list_prev_elem_get(apt_obj_list_t *list, apt_list_elem_t *elem);
+APT_DECLARE(apt_list_elem_t*) apt_list_prev_elem_get(const apt_obj_list_t *list, apt_list_elem_t *elem);
 
 /**
  * Insert element to the list.
@@ -125,13 +125,13 @@ APT_DECLARE(apt_list_elem_t*) apt_list_elem_remove(apt_obj_list_t *list, apt_lis
  * @param list the list to query
  * @return TRUE if empty, otherwise FALSE
  */
-APT_DECLARE(apt_bool_t) apt_list_is_empty(apt_obj_list_t *list);
+APT_DECLARE(apt_bool_t) apt_list_is_empty(const apt_obj_list_t *list);
 
 /**
  * Retrieve the object associated with element.
  * @param elem the element to retrieve object from
  */
-APT_DECLARE(void*) apt_list_elem_object_get(apt_list_elem_t *elem);
+APT_DECLARE(void*) apt_list_elem_object_get(const apt_list_elem_t *elem);
 
 
 APT_END_EXTERN_C

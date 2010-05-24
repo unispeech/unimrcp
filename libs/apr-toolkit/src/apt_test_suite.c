@@ -63,7 +63,7 @@ APT_DECLARE(apt_bool_t) apt_test_framework_suite_add(apt_test_framework_t *frame
 	return (apt_list_push_back(framework->suites,suite,suite->pool) ? TRUE : FALSE);
 }
 
-APT_DECLARE(apr_pool_t*) apt_test_framework_pool_get(apt_test_framework_t *framework)
+APT_DECLARE(apr_pool_t*) apt_test_framework_pool_get(const apt_test_framework_t *framework)
 {
 	return framework->pool;
 }

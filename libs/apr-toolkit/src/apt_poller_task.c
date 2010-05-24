@@ -135,7 +135,7 @@ APT_DECLARE(apt_bool_t) apt_poller_task_terminate(apt_poller_task_t *task)
 }
 
 /** Get task */
-APT_DECLARE(apt_task_t*) apt_poller_task_base_get(apt_poller_task_t *task)
+APT_DECLARE(apt_task_t*) apt_poller_task_base_get(const apt_poller_task_t *task)
 {
 	return task->base;
 }
@@ -147,13 +147,13 @@ APT_DECLARE(apt_task_vtable_t*) apt_poller_task_vtable_get(apt_poller_task_t *ta
 }
 
 /** Get external object */
-APT_DECLARE(void*) apt_poller_task_object_get(apt_poller_task_t *task)
+APT_DECLARE(void*) apt_poller_task_object_get(const apt_poller_task_t *task)
 {
 	return task->obj;
 }
 
 /** Get pollset */
-APT_DECLARE(apt_pollset_t*) apt_poller_task_pollset_get(apt_poller_task_t *task)
+APT_DECLARE(apt_pollset_t*) apt_poller_task_pollset_get(const apt_poller_task_t *task)
 {
 	return task->pollset;
 }

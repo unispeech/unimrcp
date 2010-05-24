@@ -71,7 +71,7 @@ APT_DECLARE(void) apt_cyclic_queue_clear(apt_cyclic_queue_t *queue);
  * @param queue the queue to query
  * @return TRUE if empty, otherwise FALSE
  */
-APT_DECLARE(apt_bool_t) apt_cyclic_queue_is_empty(apt_cyclic_queue_t *queue);
+APT_DECLARE(apt_bool_t) apt_cyclic_queue_is_empty(const apt_cyclic_queue_t *queue);
 
 
 APT_END_EXTERN_C
