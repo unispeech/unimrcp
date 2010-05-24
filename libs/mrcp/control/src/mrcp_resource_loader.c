@@ -108,7 +108,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_resource_load_by_id(mrcp_resource_loader_t *loader
 }
 
 /** Get MRCP resource factory */
-MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_get(mrcp_resource_loader_t *loader)
+MRCP_DECLARE(mrcp_resource_factory_t*) mrcp_resource_factory_get(const mrcp_resource_loader_t *loader)
 {
 	return loader->factory;
 }

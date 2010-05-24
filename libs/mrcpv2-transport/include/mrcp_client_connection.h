@@ -130,21 +130,28 @@ MRCP_DECLARE(const char*) mrcp_client_connection_agent_id_get(const mrcp_connect
  * @param obj the external object to associate with the control channel
  * @param pool the pool to allocate memory from
  */
-MRCP_DECLARE(mrcp_control_channel_t*) mrcp_client_control_channel_create(mrcp_connection_agent_t *agent, void *obj, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_control_channel_t*) mrcp_client_control_channel_create(
+										mrcp_connection_agent_t *agent, 
+										void *obj, 
+										apr_pool_t *pool);
 
 /**
  * Add MRCPv2 control channel.
  * @param channel the control channel to add
  * @param descriptor the control descriptor
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_control_channel_add(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+MRCP_DECLARE(apt_bool_t) mrcp_client_control_channel_add(
+										mrcp_control_channel_t *channel, 
+										mrcp_control_descriptor_t *descriptor);
 
 /**
  * Modify MRCPv2 control channel.
  * @param channel the control channel to modify
  * @param descriptor the control descriptor
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_control_channel_modify(mrcp_control_channel_t *channel, mrcp_control_descriptor_t *descriptor);
+MRCP_DECLARE(apt_bool_t) mrcp_client_control_channel_modify(
+										mrcp_control_channel_t *channel, 
+										mrcp_control_descriptor_t *descriptor);
 
 /**
  * Remove MRCPv2 control channel.

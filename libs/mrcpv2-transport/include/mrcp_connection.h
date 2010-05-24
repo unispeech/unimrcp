@@ -93,7 +93,7 @@ void mrcp_connection_destroy(mrcp_connection_t *connection);
 apt_bool_t mrcp_connection_channel_add(mrcp_connection_t *connection, mrcp_control_channel_t *channel);
 
 /** Find Control Channel by Channel Identifier. */
-mrcp_control_channel_t* mrcp_connection_channel_find(mrcp_connection_t *connection, const apt_str_t *identifier);
+mrcp_control_channel_t* mrcp_connection_channel_find(const mrcp_connection_t *connection, const apt_str_t *identifier);
 
 /** Remove Control Channel from MRCP connection. */
 apt_bool_t mrcp_connection_channel_remove(mrcp_connection_t *connection, mrcp_control_channel_t *channel);

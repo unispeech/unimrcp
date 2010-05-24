@@ -154,13 +154,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
  * Get external object associated with the application.
  * @param application the application to get object from
  */
-MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application);
+MRCP_DECLARE(void*) mrcp_application_object_get(const mrcp_application_t *application);
 
 /**
  * Get dir layout structure.
  * @param application the application to get dir layout from
  */
-MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(mrcp_application_t *application);
+MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(const mrcp_application_t *application);
 
 /**
  * Create session.
@@ -175,19 +175,19 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
  * Get memory pool the session object is created out of.
  * @param session the session to get pool from
  */
-MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(mrcp_session_t *session);
+MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(const mrcp_session_t *session);
 
 /**
  * Get session identifier.
  * @param session the session to get identifier of
  */
-MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(mrcp_session_t *session);
+MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(const mrcp_session_t *session);
 
 /**
  * Get external object associated with the session.
  * @param session the session to get object from
  */
-MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session);
+MRCP_DECLARE(void*) mrcp_application_session_object_get(const mrcp_session_t *session);
 
 /**
  * Set (associate) external object to the session.
@@ -241,25 +241,25 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
  * Get external object associated with the channel.
  * @param channel the channel to get object from
  */
-MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel);
+MRCP_DECLARE(void*) mrcp_application_channel_object_get(const mrcp_channel_t *channel);
 
 /**
  * Get RTP termination descriptor.
  * @param channel the channel to get descriptor from
  */
-MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(mrcp_channel_t *channel);
+MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(const mrcp_channel_t *channel);
 
 /**
  * Get codec descriptor of source stream.
  * @param channel the channel to get descriptor from
  */
-MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_get(mrcp_channel_t *channel);
+MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_get(const mrcp_channel_t *channel);
 
 /**
  * Get codec descriptor of sink stream.
  * @param channel the channel to get descriptor from
  */
-MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(mrcp_channel_t *channel);
+MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(const mrcp_channel_t *channel);
 
 /** 
  * Send channel add request.

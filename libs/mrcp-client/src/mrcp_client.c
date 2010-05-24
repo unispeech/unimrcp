@@ -336,7 +336,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_codec_manager_register(mrcp_client_t *clien
 }
 
 /** Get registered codec manager */
-MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(mrcp_client_t *client)
+MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(const mrcp_client_t *client)
 {
 	return client->codec_manager;
 }
@@ -365,7 +365,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_media_engine_register(mrcp_client_t *client
 }
 
 /** Get media engine by name */
-MRCP_DECLARE(mpf_engine_t*) mrcp_client_media_engine_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mpf_engine_t*) mrcp_client_media_engine_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->media_engine_table,name,APR_HASH_KEY_STRING);
 }
@@ -382,7 +382,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_factory_register(mrcp_client_t *client,
 }
 
 /** Get RTP termination factory by name */
-MRCP_DECLARE(mpf_termination_factory_t*) mrcp_client_rtp_factory_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mpf_termination_factory_t*) mrcp_client_rtp_factory_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->rtp_factory_table,name,APR_HASH_KEY_STRING);
 }
@@ -399,7 +399,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_settings_register(mrcp_client_t *client
 }
 
 /** Get RTP settings by name */
-MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->rtp_settings_table,name,APR_HASH_KEY_STRING);
 }
@@ -423,7 +423,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *cli
 }
 
 /** Get signaling agent by name */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_client_signaling_agent_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_client_signaling_agent_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->sig_agent_table,name,APR_HASH_KEY_STRING);
 }
@@ -440,7 +440,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_settings_register(mrcp_client_t *
 }
 
 /** Get signaling settings by name */
-MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_client_signaling_settings_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_client_signaling_settings_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->sig_settings_table,name,APR_HASH_KEY_STRING);
 }
@@ -471,7 +471,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *cl
 }
 
 /** Get connection agent by name */
-MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->cnt_agent_table,name,APR_HASH_KEY_STRING);
 }
@@ -529,7 +529,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 }
 
 /** Get profile by name */
-MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(mrcp_client_t *client, const char *name)
+MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *client, const char *name)
 {
 	return apr_hash_get(client->profile_table,name,APR_HASH_KEY_STRING);
 }
@@ -548,7 +548,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client,
 }
 
 /** Get memory pool */
-MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(mrcp_client_t *client)
+MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(const mrcp_client_t *client)
 {
 	return client->pool;
 }
@@ -577,13 +577,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *applicatio
 }
 
 /** Get external object associated with the application */
-MRCP_DECLARE(void*) mrcp_application_object_get(mrcp_application_t *application)
+MRCP_DECLARE(void*) mrcp_application_object_get(const mrcp_application_t *application)
 {
 	return application->obj;
 }
 
 /** Get dir layout structure */
-MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(mrcp_application_t *application)
+MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(const mrcp_application_t *application)
 {
 	return application->client->dir_layout;
 }
@@ -621,7 +621,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 }
 
 /** Get memory pool the session object is created out of */
-MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(mrcp_session_t *session)
+MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(const mrcp_session_t *session)
 {
 	if(!session) {
 		return NULL;
@@ -630,7 +630,7 @@ MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(mrcp_session_t *sess
 }
 
 /** Get session identifier */
-MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(mrcp_session_t *session)
+MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(const mrcp_session_t *session)
 {
 	if(!session) {
 		return NULL;
@@ -639,7 +639,7 @@ MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(mrcp_session_t *s
 }
 
 /** Get external object associated with the session */
-MRCP_DECLARE(void*) mrcp_application_session_object_get(mrcp_session_t *session)
+MRCP_DECLARE(void*) mrcp_application_session_object_get(const mrcp_session_t *session)
 {
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	if(!client_session) {
@@ -742,7 +742,7 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 }
 
 /** Get external object associated with the channel */
-MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel)
+MRCP_DECLARE(void*) mrcp_application_channel_object_get(const mrcp_channel_t *channel)
 {
 	if(!channel) {
 		return FALSE;
@@ -751,7 +751,7 @@ MRCP_DECLARE(void*) mrcp_application_channel_object_get(mrcp_channel_t *channel)
 }
 
 /** Get RTP termination descriptor */
-MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(mrcp_channel_t *channel)
+MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(const mrcp_channel_t *channel)
 {
 	if(!channel || !channel->rtp_termination_slot) {
 		return NULL;
@@ -760,7 +760,7 @@ MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_
 }
 
 /** Get codec descriptor of source stream */
-MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_get(mrcp_channel_t *channel)
+MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_get(const mrcp_channel_t *channel)
 {
 	mpf_audio_stream_t *audio_stream;
 	if(!channel || !channel->termination) {
@@ -774,7 +774,7 @@ MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_g
 }
 
 /** Get codec descriptor of sink stream */
-MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(mrcp_channel_t *channel)
+MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(const mrcp_channel_t *channel)
 {
 	mpf_audio_stream_t *audio_stream;
 	if(!channel || !channel->termination) {

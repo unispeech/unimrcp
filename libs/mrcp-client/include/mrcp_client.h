@@ -85,7 +85,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_codec_manager_register(mrcp_client_t *clien
  * Get registered codec manager.
  * @param client the MRCP client to get codec manager from
  */
-MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(mrcp_client_t *client);
+MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(const mrcp_client_t *client);
 
 /**
  * Register media engine.
@@ -166,56 +166,56 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client,
  * Get memory pool.
  * @param client the MRCP client to get memory pool from
  */
-MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(mrcp_client_t *client);
+MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(const mrcp_client_t *client);
 
 /**
  * Get media engine by name.
  * @param client the MRCP client to get media engine from
  * @param name the name of the media engine to lookup
  */
-MRCP_DECLARE(mpf_engine_t*) mrcp_client_media_engine_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mpf_engine_t*) mrcp_client_media_engine_get(const mrcp_client_t *client, const char *name);
 
 /**
  * Get RTP termination factory by name.
  * @param client the MRCP client to get from
  * @param name the name to lookup
  */
-MRCP_DECLARE(mpf_termination_factory_t*) mrcp_client_rtp_factory_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mpf_termination_factory_t*) mrcp_client_rtp_factory_get(const mrcp_client_t *client, const char *name);
 
 /** 
  * Get RTP settings by name
  * @param client the MRCP client to get from
  * @param name the name to lookup
  */
-MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mpf_rtp_settings_t*) mrcp_client_rtp_settings_get(const mrcp_client_t *client, const char *name);
 
 /**
  * Get signaling agent by name.
  * @param client the MRCP client to get from
  * @param name the name to lookup
  */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_client_signaling_agent_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_client_signaling_agent_get(const mrcp_client_t *client, const char *name);
 
 /**
  * Get signaling settings by name.
  * @param client the MRCP client to get from
  * @param name the name to lookup
  */
-MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_client_signaling_settings_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_client_signaling_settings_get(const mrcp_client_t *client, const char *name);
 
 /**
  * Get connection agent by name.
  * @param client the MRCP client to get from
  * @param name the name to lookup
  */
-MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_get(const mrcp_client_t *client, const char *name);
 
 /**
  * Get profile by name.
  * @param client the MRCP client to get from
  * @param name the name to lookup
  */
-MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(mrcp_client_t *client, const char *name);
+MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *client, const char *name);
 
 APT_END_EXTERN_C
 

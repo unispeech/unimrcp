@@ -112,7 +112,7 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(mrcp_control
 MRCP_DECLARE(void) mrcp_cmid_add(apr_array_header_t *cmid_arr, apr_size_t cmid);
 
 /** Find cmid in cmid_arr */
-MRCP_DECLARE(apt_bool_t) mrcp_cmid_find(apr_array_header_t *cmid_arr, apr_size_t cmid);
+MRCP_DECLARE(apt_bool_t) mrcp_cmid_find(const apr_array_header_t *cmid_arr, apr_size_t cmid);
 
 /** Get MRCP protocol transport name by identifier */
 MRCP_DECLARE(const apt_str_t*) mrcp_proto_get(mrcp_proto_type_e proto);

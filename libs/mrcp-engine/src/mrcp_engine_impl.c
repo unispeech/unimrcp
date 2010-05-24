@@ -222,7 +222,7 @@ mrcp_engine_channel_t* mrcp_engine_sink_channel_create(
 }
 
 /** Get codec descriptor of the audio source stream */
-const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel)
+const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(const mrcp_engine_channel_t *channel)
 {
 	if(channel && channel->termination) {
 		mpf_audio_stream_t *audio_stream = mpf_termination_audio_stream_get(channel->termination);
@@ -234,7 +234,7 @@ const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_ch
 }
 
 /** Get codec descriptor of the audio sink stream */
-const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel)
+const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(const mrcp_engine_channel_t *channel)
 {
 	if(channel && channel->termination) {
 		mpf_audio_stream_t *audio_stream = mpf_termination_audio_stream_get(channel->termination);

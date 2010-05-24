@@ -117,7 +117,7 @@ MRCP_DECLARE(const mrcp_header_vtable_t*) mrcp_generic_header_vtable_get(mrcp_ve
 /** Append active request id list */
 MRCP_DECLARE(apt_bool_t) active_request_id_list_append(mrcp_generic_header_t *generic_header, mrcp_request_id request_id);
 /** Find request id in active request id list */
-MRCP_DECLARE(apt_bool_t) active_request_id_list_find(mrcp_generic_header_t *generic_header, mrcp_request_id request_id);
+MRCP_DECLARE(apt_bool_t) active_request_id_list_find(const mrcp_generic_header_t *generic_header, mrcp_request_id request_id);
 
 
 APT_END_EXTERN_C

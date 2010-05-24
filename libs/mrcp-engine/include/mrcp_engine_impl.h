@@ -118,16 +118,16 @@ static APR_INLINE const char* mrcp_engine_channel_id_get(mrcp_engine_channel_t *
 }
 
 /** Get MRCP version channel is created in the scope of */
-static APR_INLINE mrcp_version_e mrcp_engine_channel_version_get(mrcp_engine_channel_t *channel)
+static APR_INLINE mrcp_version_e mrcp_engine_channel_version_get(const mrcp_engine_channel_t *channel)
 {
 	return channel->mrcp_version;
 }
 
 /** Get codec descriptor of the audio source stream */
-const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(mrcp_engine_channel_t *channel);
+const mpf_codec_descriptor_t* mrcp_engine_source_stream_codec_get(const mrcp_engine_channel_t *channel);
 
 /** Get codec descriptor of the audio sink stream */
-const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(mrcp_engine_channel_t *channel);
+const mpf_codec_descriptor_t* mrcp_engine_sink_stream_codec_get(const mrcp_engine_channel_t *channel);
 
 
 APT_END_EXTERN_C

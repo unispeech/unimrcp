@@ -48,13 +48,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_close(mrcp_engine_factory_t *factor
 MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory_t *factory, mrcp_engine_t *engine);
 
 /** Get engine by name */
-MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name);
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(const mrcp_engine_factory_t *factory, const char *name);
 
 /** Find engine by resource identifier */
-MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id);
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(const mrcp_engine_factory_t *factory, mrcp_resource_id resource_id);
 
 /** Start iterating over the engines in a factory */
-MRCP_DECLARE(apr_hash_index_t*) mrcp_engine_factory_engine_first(mrcp_engine_factory_t *factory);
+MRCP_DECLARE(apr_hash_index_t*) mrcp_engine_factory_engine_first(const mrcp_engine_factory_t *factory);
 
 
 APT_END_EXTERN_C

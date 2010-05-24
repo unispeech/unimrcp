@@ -199,13 +199,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_client_terminate(rtsp_client_t *client)
 }
 
 /** Get task */
-RTSP_DECLARE(apt_task_t*) rtsp_client_task_get(rtsp_client_t *client)
+RTSP_DECLARE(apt_task_t*) rtsp_client_task_get(const rtsp_client_t *client)
 {
 	return apt_poller_task_base_get(client->task);
 }
 
 /** Get external object */
-RTSP_DECLARE(void*) rtsp_client_object_get(rtsp_client_t *client)
+RTSP_DECLARE(void*) rtsp_client_object_get(const rtsp_client_t *client)
 {
 	return client->obj;
 }

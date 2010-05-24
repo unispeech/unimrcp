@@ -212,7 +212,7 @@ static APR_INLINE apt_bool_t mrcp_resource_header_property_remove(mrcp_message_t
  * @param message the message to use
  * @param id the numeric identifier to check
  */
-static APR_INLINE apt_bool_t mrcp_resource_header_property_check(mrcp_message_t *message, apr_size_t id)
+static APR_INLINE apt_bool_t mrcp_resource_header_property_check(const mrcp_message_t *message, apr_size_t id)
 {
 	return apt_header_section_field_check(&message->header.header_section,id + GENERIC_HEADER_COUNT);
 }

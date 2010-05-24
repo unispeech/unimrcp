@@ -212,13 +212,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_terminate(rtsp_server_t *server)
 }
 
 /** Get task */
-RTSP_DECLARE(apt_task_t*) rtsp_server_task_get(rtsp_server_t *server)
+RTSP_DECLARE(apt_task_t*) rtsp_server_task_get(const rtsp_server_t *server)
 {
 	return apt_poller_task_base_get(server->task);
 }
 
 /** Get external object */
-RTSP_DECLARE(void*) rtsp_server_object_get(rtsp_server_t *server)
+RTSP_DECLARE(void*) rtsp_server_object_get(const rtsp_server_t *server)
 {
 	return server->obj;
 }

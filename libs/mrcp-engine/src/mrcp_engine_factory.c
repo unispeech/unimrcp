@@ -121,7 +121,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_engine_factory_engine_register(mrcp_engine_factory
 }
 
 /** Get engine by name */
-MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_t *factory, const char *name)
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(const mrcp_engine_factory_t *factory, const char *name)
 {
 	if(!name) {
 		return NULL;
@@ -130,7 +130,7 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_get(mrcp_engine_factory_
 }
 
 /** Find engine by resource identifier */
-MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory_t *factory, mrcp_resource_id resource_id)
+MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(const mrcp_engine_factory_t *factory, mrcp_resource_id resource_id)
 {
 	mrcp_engine_t *engine;
 	void *val;
@@ -147,7 +147,7 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_factory_engine_find(mrcp_engine_factory
 }
 
 /** Start iterating over the engines in a factory */
-MRCP_DECLARE(apr_hash_index_t*) mrcp_engine_factory_engine_first(mrcp_engine_factory_t *factory)
+MRCP_DECLARE(apr_hash_index_t*) mrcp_engine_factory_engine_first(const mrcp_engine_factory_t *factory)
 {
 	return apr_hash_first(factory->pool,factory->engines);
 }

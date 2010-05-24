@@ -324,10 +324,10 @@ MRCP_DECLARE(apt_bool_t) active_request_id_list_append(mrcp_generic_header_t *ge
 }
 
 /** Find request id in active request id list */
-MRCP_DECLARE(apt_bool_t) active_request_id_list_find(mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
+MRCP_DECLARE(apt_bool_t) active_request_id_list_find(const mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
 {
 	size_t i;
-	mrcp_request_id_list_t *request_id_list = &generic_header->active_request_id_list;
+	const mrcp_request_id_list_t *request_id_list = &generic_header->active_request_id_list;
 	for(i=0; i<request_id_list->count; i++) {
 		if(request_id_list->ids[i] == request_id) {
 			return TRUE;

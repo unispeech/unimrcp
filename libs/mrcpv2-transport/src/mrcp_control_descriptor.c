@@ -135,7 +135,7 @@ MRCP_DECLARE(void) mrcp_cmid_add(apr_array_header_t *cmid_arr, apr_size_t cmid)
 }
 
 /** Find cmid in cmid_arr */
-MRCP_DECLARE(apt_bool_t) mrcp_cmid_find(apr_array_header_t *cmid_arr, apr_size_t cmid)
+MRCP_DECLARE(apt_bool_t) mrcp_cmid_find(const apr_array_header_t *cmid_arr, apr_size_t cmid)
 {
 	int i;
 	for(i=0; i<cmid_arr->nelts; i++) {

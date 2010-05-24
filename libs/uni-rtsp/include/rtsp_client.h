@@ -86,13 +86,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_client_terminate(rtsp_client_t *client);
  * Get task.
  * @param client the client to get task from
  */
-RTSP_DECLARE(apt_task_t*) rtsp_client_task_get(rtsp_client_t *client);
+RTSP_DECLARE(apt_task_t*) rtsp_client_task_get(const rtsp_client_t *client);
 
 /**
  * Get external object.
  * @param client the client to get object from
  */
-RTSP_DECLARE(void*) rtsp_client_object_get(rtsp_client_t *client);
+RTSP_DECLARE(void*) rtsp_client_object_get(const rtsp_client_t *client);
 
 
 /**
