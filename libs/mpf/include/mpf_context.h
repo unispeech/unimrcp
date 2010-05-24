@@ -71,7 +71,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context);
  * Get external object associated with MPF context.
  * @param context the context to get object from
  */
-MPF_DECLARE(void*) mpf_context_object_get(mpf_context_t *context);
+MPF_DECLARE(void*) mpf_context_object_get(const mpf_context_t *context);
 
 /**
  * Add termination to context.

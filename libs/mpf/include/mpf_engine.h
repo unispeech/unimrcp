@@ -77,13 +77,13 @@ MPF_DECLARE(apt_bool_t) mpf_engine_context_destroy(mpf_context_t *context);
  * Get external object associated with MPF context.
  * @param context the context to get object from
  */
-MPF_DECLARE(void*) mpf_engine_context_object_get(mpf_context_t *context);
+MPF_DECLARE(void*) mpf_engine_context_object_get(const mpf_context_t *context);
 
 /**
  * Get task.
  * @param engine the engine to get task from
  */
-MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine);
+MPF_DECLARE(apt_task_t*) mpf_task_get(const mpf_engine_t *engine);
 
 /**
  * Set task msg type to send responses and events with.

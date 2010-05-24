@@ -163,7 +163,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_destroy(mpf_context_t *context)
 	return TRUE;
 }
 
-MPF_DECLARE(void*) mpf_context_object_get(mpf_context_t *context)
+MPF_DECLARE(void*) mpf_context_object_get(const mpf_context_t *context)
 {
 	return context->obj;
 }

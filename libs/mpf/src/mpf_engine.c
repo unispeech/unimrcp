@@ -112,12 +112,12 @@ MPF_DECLARE(apt_bool_t) mpf_engine_context_destroy(mpf_context_t *context)
 	return mpf_context_destroy(context);
 }
 
-MPF_DECLARE(void*) mpf_engine_context_object_get(mpf_context_t *context)
+MPF_DECLARE(void*) mpf_engine_context_object_get(const mpf_context_t *context)
 {
 	return mpf_context_object_get(context);
 }
 
-MPF_DECLARE(apt_task_t*) mpf_task_get(mpf_engine_t *engine)
+MPF_DECLARE(apt_task_t*) mpf_task_get(const mpf_engine_t *engine)
 {
 	return engine->task;
 }

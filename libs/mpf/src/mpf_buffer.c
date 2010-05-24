@@ -167,7 +167,7 @@ apt_bool_t mpf_buffer_frame_read(mpf_buffer_t *buffer, mpf_frame_t *media_frame)
 	return TRUE;
 }
 
-apr_size_t mpf_buffer_get_size(mpf_buffer_t *buffer)
+apr_size_t mpf_buffer_get_size(const mpf_buffer_t *buffer)
 {
 	return buffer->size;
 }
