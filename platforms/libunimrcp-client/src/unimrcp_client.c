@@ -19,8 +19,9 @@
 #include <stdlib.h>
 #include <apr_xml.h>
 #include <apr_fnmatch.h>
-#include "unimrcp_client.h"
+#include <apr_version.h>
 #include "uni_version.h"
+#include "unimrcp_client.h"
 #include "mrcp_resource_loader.h"
 #include "mpf_engine.h"
 #include "mpf_codec_manager.h"

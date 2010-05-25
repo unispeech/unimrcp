@@ -28,8 +28,6 @@
  *     http://apr.apache.org/versioning.html
  */
 
-#include <apr_version.h>
-
 /** major version 
  * Major API changes that could cause compatibility problems for older
  * programs such as structure size changes.  No binary compatibility is
@@ -59,10 +57,38 @@
  || ((major) == UNI_MAJOR_VERSION && (minor) < UNI_MINOR_VERSION) \
  || ((major) == UNI_MAJOR_VERSION && (minor) == UNI_MINOR_VERSION && (patch) <= UNI_PATCH_VERSION))
 
+
+/** Properly quote a value as a string in the C preprocessor */
+#define UNI_STRINGIFY(n) UNI_STRINGIFY_HELPER(n)
+/** Helper macro for UNI_STRINGIFY */
+#define UNI_STRINGIFY_HELPER(n) #n
+
 /** The formatted string of UniMRCP's version */
 #define UNI_VERSION_STRING \
-     APR_STRINGIFY(UNI_MAJOR_VERSION) "." \
-     APR_STRINGIFY(UNI_MINOR_VERSION) "." \
-     APR_STRINGIFY(UNI_PATCH_VERSION)
+     UNI_STRINGIFY(UNI_MAJOR_VERSION) "." \
+     UNI_STRINGIFY(UNI_MINOR_VERSION) "." \
+     UNI_STRINGIFY(UNI_PATCH_VERSION)
+
+/** An alternative formatted string of UniMRCP's version
+    macro for Win32 .rc files using numeric csv representation */
+#define UNI_VERSION_STRING_CSV UNI_MAJOR_VERSION ##, \
+                             ##UNI_MINOR_VERSION ##, \
+                             ##UNI_PATCH_VERSION
+
+#define UNI_COPYRIGHT "Copyright 2008-2010 Arsen Chaloyan"
+
+#define UNI_LICENSE \
+ "Licensed under the Apache License, Version 2.0 (the ""License"");" \
+ "you may not use this file except in compliance with the License." \
+ "You may obtain a copy of the License at" \
+ "" \
+ "     http://www.apache.org/licenses/LICENSE-2.0" \
+ "" \
+ "Unless required by applicable law or agreed to in writing, software" \
+ "distributed under the License is distributed on an ""AS IS"" BASIS," \
+ "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." \
+ "See the License for the specific language governing permissions and" \
+ "limitations under the License."
+
 
 #endif /* UNI_VERSION_H */
