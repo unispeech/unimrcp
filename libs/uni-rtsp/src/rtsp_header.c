@@ -330,7 +330,7 @@ static apt_bool_t rtsp_header_field_value_parse(rtsp_header_t *header, rtsp_head
 }
 
 /** Generate RTSP header field value */
-static apr_size_t rtsp_header_field_value_generate(const rtsp_header_t *header, rtsp_header_field_id id, apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t rtsp_header_field_value_generate(const rtsp_header_t *header, rtsp_header_field_id id, apt_str_t *value, apr_pool_t *pool)
 {
 	switch(id) {
 		case RTSP_HEADER_FIELD_CSEQ:
