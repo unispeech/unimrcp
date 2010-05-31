@@ -76,7 +76,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_alloc(apr_pool_t *pool);
 /**
  * Create a header field using given name and value APT strings.
  * @param name the name of the header field
- * @param name the value of the header field
+ * @param value the value of the header field
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_header_field_t*) apt_header_field_create(const apt_str_t *name, const apt_str_t *value, apr_pool_t *pool);
@@ -84,7 +84,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_create(const apt_str_t *name, 
 /**
  * Create a header field using given name and value C strings.
  * @param name the name of the header field
- * @param name the value of the header field
+ * @param value the value of the header field
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_header_field_t*) apt_header_field_create_c(const char *name, const char *value, apr_pool_t *pool);
@@ -99,7 +99,7 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_create_from_line(const apt_str
 
 /**
  * Copy specified header field.
- * @param header_field the header field to copy
+ * @param src_header_field the header field to copy
  * @param pool the pool to allocate memory from
  */
 APT_DECLARE(apt_header_field_t*) apt_header_field_copy(const apt_header_field_t *src_header_field, apr_pool_t *pool);
