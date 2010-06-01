@@ -91,8 +91,11 @@ APT_DECLARE(apt_bool_t) apt_header_section_generate(const apt_header_section_t *
 
 /** Temporary context associated with message and used for its parsing or generation */
 struct apt_message_context_t {
+	/** Context or ptotocol specific message */
 	void                 *message;
+	/** Header section of the message */
 	apt_header_section_t *header;
+	/** Body or content of the message */
 	apt_str_t            *body;
 };
 

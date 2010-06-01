@@ -41,11 +41,11 @@ struct apt_content_part_t {
 	/** Body */
 	apt_str_t            body;
 
-	/* Pointer to parsed content-type header field */
+	/** Pointer to parsed content-type header field */
 	apt_str_t           *type;
-	/* Pointer to parsed content-id header field */
+	/** Pointer to parsed content-id header field */
 	apt_str_t           *id;
-	/* Pointer to parsed content-length header field */
+	/** Pointer to parsed content-length header field */
 	apt_str_t           *length;
 };
 

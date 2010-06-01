@@ -75,8 +75,10 @@
                              ##UNI_MINOR_VERSION ##, \
                              ##UNI_PATCH_VERSION
 
+/** The Copyright */
 #define UNI_COPYRIGHT "Copyright 2008-2010 Arsen Chaloyan"
 
+/** The License */
 #define UNI_LICENSE \
  "Licensed under the Apache License, Version 2.0 (the ""License"");" \
  "you may not use this file except in compliance with the License." \
