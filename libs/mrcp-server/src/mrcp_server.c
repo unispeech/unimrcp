@@ -568,7 +568,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_get(const mrcp_server_t *serve
 	return apr_hash_get(server->profile_table,name,APR_HASH_KEY_STRING);
 }
 
-/** Register MRCP engine plugin */
+/** Load MRCP engine */
 MRCP_DECLARE(mrcp_engine_t*) mrcp_server_engine_load(
 								mrcp_server_t *server,
 								const char *id,

@@ -31,6 +31,7 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create connection agent.
+ * @param id the identifier of the agent
  * @param max_connection_count the number of max MRCPv2 connections
  * @param offer_new_connection the connection establishment policy in o/a
  * @param pool the pool to allocate memory from

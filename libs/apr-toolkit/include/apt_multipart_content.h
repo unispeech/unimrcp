@@ -96,8 +96,8 @@ APT_DECLARE(apt_multipart_content_t*) apt_multipart_content_assign(const apt_str
 /** 
  * Get the next content part
  * @param multipart_content the multipart content to get the next content part from
- * @param content_type the type of parsed content part
- * @param content the parsed content part
+ * @param content_part the parsed content part
+ * @param is_final indicates the final boundary is reached
  * @return TRUE on success
  */
 APT_DECLARE(apt_bool_t) apt_multipart_content_get(apt_multipart_content_t *multipart_content, apt_content_part_t *content_part, apt_bool_t *is_final);

@@ -91,7 +91,6 @@ MRCP_DECLARE(const mpf_codec_manager_t*) mrcp_client_codec_manager_get(const mrc
  * Register media engine.
  * @param client the MRCP client to set media engine for
  * @param media_engine the media engine to set
- * @param name the name of the media engine
  */
 MRCP_DECLARE(apt_bool_t) mrcp_client_media_engine_register(mrcp_client_t *client, mpf_engine_t *media_engine);
 
@@ -115,7 +114,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_rtp_settings_register(mrcp_client_t *client
  * Register MRCP signaling agent.
  * @param client the MRCP client to set signaling agent for
  * @param signaling_agent the signaling agent to set
- * @param name the name of the agent
  */
 MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_agent_register(mrcp_client_t *client, mrcp_sig_agent_t *signaling_agent);
 
@@ -131,7 +129,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_signaling_settings_register(mrcp_client_t *
  * Register MRCP connection agent (MRCPv2 only).
  * @param client the MRCP client to set connection agent for
  * @param connection_agent the connection agent to set
- * @param name the name of the agent
  */
 MRCP_DECLARE(apt_bool_t) mrcp_client_connection_agent_register(mrcp_client_t *client, mrcp_connection_agent_t *connection_agent);
 

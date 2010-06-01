@@ -70,7 +70,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_resource_factory_register(
  * Register MRCP engine.
  * @param server the MRCP server to set engine for
  * @param engine the engine to set
- * @param config the config of the engine
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_engine_register(
 								mrcp_server_t *server, 
@@ -124,7 +123,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_rtp_settings_register(
  * Register MRCP signaling agent.
  * @param server the MRCP server to set signaling agent for
  * @param signaling_agent the signaling agent to set
- * @param name the name of the agent
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(
 								mrcp_server_t *server, 
@@ -134,7 +132,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_signaling_agent_register(
  * Register MRCP connection agent (MRCPv2 only).
  * @param server the MRCP server to set connection agent for
  * @param connection_agent the connection agent to set
- * @param name the name of the agent
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(
 								mrcp_server_t *server, 
@@ -163,10 +160,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 									apr_table_t *plugin_map);
 
 /**
- * Register MRCP engine plugin.
- * @param server the MRCP server to set engine for
- * @param path the path to plugin
- * @param config the config of the plugin
+ * Load MRCP engine as a plugin.
+ * @param server the MRCP server to use
+ * @param id the identifier of the plugin
+ * @param path the path to the plugin to load
+ * @param config the config of the engine
  */
 MRCP_DECLARE(mrcp_engine_t*) mrcp_server_engine_load(
 									mrcp_server_t *server, 

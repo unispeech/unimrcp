@@ -61,11 +61,15 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_message_create(apr_pool_t *pool);
 /**
  * Create an MRCP request message.
  * @param resource the MRCP resource to use
- * @param resource the MRCP version to use
+ * @param version the MRCP version to use
  * @param method_id the MRCP resource specific method identifier
  * @param pool the pool to allocate memory from
  */
-MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(const mrcp_resource_t *resource, mrcp_version_e version, mrcp_method_id method_id, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_message_t*) mrcp_request_create(
+								const mrcp_resource_t *resource, 
+								mrcp_version_e version, 
+								mrcp_method_id method_id, 
+								apr_pool_t *pool);
 
 /**
  * Create an MRCP response message based on given request message.
@@ -80,7 +84,10 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_response_create(const mrcp_message_t *request
  * @param event_id the MRCP resource specific event identifier
  * @param pool the pool to allocate memory from
  */
-MRCP_DECLARE(mrcp_message_t*) mrcp_event_create(const mrcp_message_t *request_message, mrcp_method_id event_id, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_message_t*) mrcp_event_create(
+								const mrcp_message_t *request_message, 
+								mrcp_method_id event_id, 
+								apr_pool_t *pool);
 
 /**
  * Associate MRCP resource with message.
@@ -237,7 +244,9 @@ static APR_INLINE apt_bool_t mrcp_message_header_field_add(mrcp_message_t *messa
  *	while( (header_field = mrcp_message_next_header_field_get(message,header_field)) != NULL ) {
  *  }
  */
-MRCP_DECLARE(apt_header_field_t*) mrcp_message_next_header_field_get(const mrcp_message_t *message, apt_header_field_t *header_field);
+MRCP_DECLARE(apt_header_field_t*) mrcp_message_next_header_field_get(
+										const mrcp_message_t *message, 
+										apt_header_field_t *header_field);
 
 APT_END_EXTERN_C
 

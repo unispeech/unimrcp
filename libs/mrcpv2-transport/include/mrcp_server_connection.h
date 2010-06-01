@@ -31,10 +31,11 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Create connection agent.
- * @param listen_ip the listen IP address
- * @param listen_port the listen port
+ * @param id the identifier of the engine
+ * @param listen_ip the IP address to listen on
+ * @param listen_port the port to listen on
  * @param max_connection_count the number of max MRCPv2 connections
- * @param force_new_connection the connection establishment policy in o/a
+ * @param force_new_connection the policy used in o/a for connection establishment
  * @param pool the pool to allocate memory from
  */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
