@@ -193,7 +193,7 @@ APT_DECLARE(int) apt_log_header_translate(char *str);
 
 /**
  * Set the masking mode of private data.
- * @param the masking mode to set
+ * @param masking the masking mode to set
  */
 APT_DECLARE(apt_bool_t) apt_log_masking_set(apt_log_masking_e masking);
 
@@ -210,7 +210,7 @@ APT_DECLARE(apt_log_masking_e) apt_log_masking_translate(const char *str);
 
 /**
  * Mask private data based on the masking mode
- * @param data the data to mask
+ * @param data_in the data to mask
  * @param length the length of the data to mask on input, the length of the masked data on output
  * @param pool the memory pool to use if needed
  * @return The masked data.
