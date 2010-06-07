@@ -19,17 +19,11 @@
 #include <apr_thread_cond.h>
 #include <apr_hash.h>
 #include "mrcp_client.h"
-#include "mrcp_resource_factory.h"
-#include "mrcp_resource.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_session.h"
 #include "mrcp_client_connection.h"
-#include "mrcp_message.h"
-#include "mpf_engine.h"
-#include "mpf_termination_factory.h"
-#include "mpf_codec_manager.h"
-#include "apt_pool.h"
 #include "apt_consumer_task.h"
+#include "apt_pool.h"
 #include "apt_log.h"
 
 #define CLIENT_TASK_NAME "MRCP Client"
@@ -157,8 +151,6 @@ static const mrcp_connection_event_vtable_t connection_method_vtable = {
 static void mrcp_client_on_start_complete(apt_task_t *task);
 static void mrcp_client_on_terminate_complete(apt_task_t *task);
 static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg);
-static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel);
-static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
 
 
 /** Create MRCP client instance */
@@ -553,419 +545,39 @@ MRCP_DECLARE(apr_pool_t*) mrcp_client_memory_pool_get(const mrcp_client_t *clien
 	return client->pool;
 }
 
-
-/** Create application instance */
-MRCP_DECLARE(mrcp_application_t*) mrcp_application_create(const mrcp_app_message_handler_f handler, void *obj, apr_pool_t *pool)
+/** Get directory layout */
+MRCP_DECLARE(apt_dir_layout_t*) mrcp_client_dir_layout_get(const mrcp_client_t *client)
 {
-	mrcp_application_t *application;
-	if(!handler) {
-		return FALSE;
-	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Application");
-	application = apr_palloc(pool,sizeof(mrcp_application_t));
-	application->obj = obj;
-	application->handler = handler;
-	application->client = NULL;
-	return application;
+	return client->dir_layout;
 }
 
-/** Destroy application instance */
-MRCP_DECLARE(apt_bool_t) mrcp_application_destroy(mrcp_application_t *application)
+mrcp_client_session_t* mrcp_client_session_create(mrcp_client_t *client)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Application");
-	return TRUE;
-}
-
-/** Get external object associated with the application */
-MRCP_DECLARE(void*) mrcp_application_object_get(const mrcp_application_t *application)
-{
-	return application->obj;
-}
-
-/** Get dir layout structure */
-MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(const mrcp_application_t *application)
-{
-	return application->client->dir_layout;
-}
-
-
-
-/** Create client session */
-MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile_name, void *obj)
-{
-	mrcp_profile_t *profile;
-	mrcp_client_session_t *session;
-	if(!application || !application->client) {
-		return NULL;
-	}
-
-	profile = mrcp_client_profile_get(application->client,profile_name);
-	if(!profile) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Profile [%s]",profile_name);
-		return NULL;
-	}
-
-	session = mrcp_client_session_create(application,obj);
-	if(!session) {
-		return NULL;
-	}
+	apr_pool_t *pool;
+	mrcp_client_session_t *session = (mrcp_client_session_t*) mrcp_session_create(sizeof(mrcp_client_session_t)-sizeof(mrcp_session_t));
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Handle "APT_PTR_FMT" [%s]",
-		MRCP_SESSION_PTR(session),
-		profile_name);
-	session->profile = profile;
-	session->codec_manager = application->client->codec_manager;
+	pool = session->base.pool;
+	session->base.name = apr_psprintf(pool,"0x%pp",session);
 	session->base.response_vtable = &session_response_vtable;
 	session->base.event_vtable = &session_event_vtable;
-	return &session->base;
-}
 
-/** Get memory pool the session object is created out of */
-MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(const mrcp_session_t *session)
-{
-	if(!session) {
-		return NULL;
-	}
-	return session->pool;
-}
-
-/** Get session identifier */
-MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(const mrcp_session_t *session)
-{
-	if(!session) {
-		return NULL;
-	}
-	return &session->id;
-}
-
-/** Get external object associated with the session */
-MRCP_DECLARE(void*) mrcp_application_session_object_get(const mrcp_session_t *session)
-{
-	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(!client_session) {
-		return NULL;
-	}
-	return client_session->app_obj;
-}
-
-/** Set (associate) external object to the session */
-MRCP_DECLARE(void) mrcp_application_session_object_set(mrcp_session_t *session, void *obj)
-{
-	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(client_session) {
-		client_session->app_obj = obj;
-	}
-}
-
-/** Set name of the session (informative only used for debugging) */
-MRCP_DECLARE(void) mrcp_application_session_name_set(mrcp_session_t *session, const char *name)
-{
-	if(session && name) {
-		session->name = apr_pstrdup(session->pool,name);
-	}
-}
-
-
-/** Send session update request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_session_update(mrcp_session_t *session)
-{
-	if(!session) {
-		return FALSE;
-	}
-	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_SESSION_UPDATE,session,NULL);
-}
-
-/** Send session termination request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_session_terminate(mrcp_session_t *session)
-{
-	if(!session) {
-		return FALSE;
-	}
-	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_SESSION_TERMINATE,session,NULL);
-}
-
-/** Destroy client session (session must be terminated prior to destroy) */
-MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *session)
-{
-	if(!session) {
-		return FALSE;
-	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCP Handle %s",session->name);
-	mrcp_session_destroy(session);
-	return TRUE;
-}
-
-
-/** Create control channel */
-MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
-									mrcp_session_t *session, 
-									mrcp_resource_id resource_id, 
-									mpf_termination_t *termination, 
-									mpf_rtp_termination_descriptor_t *rtp_descriptor, 
-									void *obj)
-{
-	mrcp_resource_t *resource;
-	mrcp_profile_t *profile;
-	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(!client_session || !client_session->profile) {
-		/* Invalid params */
-		return FALSE;
-	}
-	profile = client_session->profile;
-
-	if(!profile->resource_factory) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: invalid profile");
-		return FALSE;
-	}
-	resource = mrcp_resource_get(profile->resource_factory,resource_id);
-	if(!resource) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: no such resource");
-		return FALSE;
-	}
-
-	if(termination) {
-		/* Media engine and RTP factory must be specified in this case */
-		if(!profile->media_engine || !profile->rtp_termination_factory) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: invalid profile");
-			return FALSE;
-		}
-	}
-	else {
-		/* Either termination or rtp_descriptor must be specified */
-		if(!rtp_descriptor) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: missing both termination and RTP descriptor");
-			return FALSE;
-		}
-	}
-
-	return mrcp_client_channel_create(client_session,resource,termination,rtp_descriptor,obj);
-}
-
-/** Get external object associated with the channel */
-MRCP_DECLARE(void*) mrcp_application_channel_object_get(const mrcp_channel_t *channel)
-{
-	if(!channel) {
-		return FALSE;
-	}
-	return channel->obj;
-}
-
-/** Get RTP termination descriptor */
-MRCP_DECLARE(mpf_rtp_termination_descriptor_t*) mrcp_application_rtp_descriptor_get(const mrcp_channel_t *channel)
-{
-	if(!channel || !channel->rtp_termination_slot) {
-		return NULL;
-	}
-	return channel->rtp_termination_slot->descriptor;
-}
-
-/** Get codec descriptor of source stream */
-MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_get(const mrcp_channel_t *channel)
-{
-	mpf_audio_stream_t *audio_stream;
-	if(!channel || !channel->termination) {
-		return NULL;
-	}
-	audio_stream = mpf_termination_audio_stream_get(channel->termination);
-	if(!audio_stream) {
-		return NULL;
-	}
-	return audio_stream->rx_descriptor;
-}
-
-/** Get codec descriptor of sink stream */
-MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(const mrcp_channel_t *channel)
-{
-	mpf_audio_stream_t *audio_stream;
-	if(!channel || !channel->termination) {
-		return NULL;
-	}
-	audio_stream = mpf_termination_audio_stream_get(channel->termination);
-	if(!audio_stream) {
-		return NULL;
-	}
-	return audio_stream->tx_descriptor;
-}
-
-
-/** Send channel add request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel)
-{
-	if(!session || !channel) {
-		return FALSE;
-	}
-	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_CHANNEL_ADD,session,channel);
-}
-
-/** Send channel removal request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_channel_remove(mrcp_session_t *session, mrcp_channel_t *channel)
-{
-	if(!session || !channel) {
-		return FALSE;
-	}
-	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_CHANNEL_REMOVE,session,channel);
-}
-
-/** Send resource discovery request */
-MRCP_DECLARE(apt_bool_t) mrcp_application_resource_discover(mrcp_session_t *session)
-{
-	if(!session) {
-		return FALSE;
-	}
-	return mrcp_app_signaling_task_msg_signal(MRCP_SIG_COMMAND_RESOURCE_DISCOVER,session,NULL);
-}
-
-/** Create MRCP message */
-MRCP_DECLARE(mrcp_message_t*) mrcp_application_message_create(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_method_id method_id)
-{
-	mrcp_message_t *mrcp_message;
-	mrcp_profile_t *profile;
-	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
-	if(!client_session || !channel || !channel->resource) {
-		return NULL;
-	}
-	profile = client_session->profile;
-	if(!profile || !profile->resource_factory) {
-		return NULL;
-	}
-	mrcp_message = mrcp_request_create(
-						channel->resource,
-						profile->signaling_agent->mrcp_version,
-						method_id,
-						session->pool);
-	return mrcp_message;
-}
-
-/** Send MRCP message */
-MRCP_DECLARE(apt_bool_t) mrcp_application_message_send(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
-{
-	if(!session || !channel || !message) {
-		return FALSE;
-	}
-	return mrcp_app_control_task_msg_signal(session,channel,message);
-}
-
-/** 
- * Create audio termination
- * @param session the session to create termination for
- * @param stream_vtable the virtual table of audio stream
- * @param capabilities the capabilities of the stream
- * @param obj the external object
- */
-MRCP_DECLARE(mpf_termination_t*) mrcp_application_audio_termination_create(
-										mrcp_session_t *session,
-										const mpf_audio_stream_vtable_t *stream_vtable,
-										mpf_stream_capabilities_t *capabilities,
-										void *obj)
-{
-	mpf_audio_stream_t *audio_stream;
-
-	if(!capabilities) {
-		return NULL;
-	}
-
-	if(mpf_codec_capabilities_validate(&capabilities->codecs) == FALSE) {
-		return NULL;
-	}
-
-	/* create audio stream */
-	audio_stream = mpf_audio_stream_create(
-			obj,                  /* object to associate */
-			stream_vtable,        /* virtual methods table of audio stream */
-			capabilities,         /* stream capabilities */
-			session->pool);       /* memory pool to allocate memory from */
-	if(!audio_stream) {
-		return NULL;
-	}
-
-	/* create raw termination */
-	return mpf_raw_termination_create(
-			NULL,                 /* no object to associate */
-			audio_stream,         /* audio stream */
-			NULL,                 /* no video stream */
-			session->pool);       /* memory pool to allocate memory from */
-}
-
-/** Create source media termination */
-MRCP_DECLARE(mpf_termination_t*) mrcp_application_source_termination_create(
-										mrcp_session_t *session,
-										const mpf_audio_stream_vtable_t *stream_vtable,
-										mpf_codec_descriptor_t *codec_descriptor,
-										void *obj)
-{
-	mpf_stream_capabilities_t *capabilities;
-	mpf_audio_stream_t *audio_stream;
-
-	capabilities = mpf_source_stream_capabilities_create(session->pool);
-	if(codec_descriptor) {
-		mpf_codec_capabilities_add(
-						&capabilities->codecs,
-						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
-						codec_descriptor->name.buf);
-	}
-	else {
-		mpf_codec_default_capabilities_add(&capabilities->codecs);
-	}
-
-	/* create audio stream */
-	audio_stream = mpf_audio_stream_create(
-			obj,                  /* object to associate */
-			stream_vtable,        /* virtual methods table of audio stream */
-			capabilities,         /* stream capabilities */
-			session->pool);       /* memory pool to allocate memory from */
-
-	if(!audio_stream) {
-		return NULL;
-	}
-
-	audio_stream->rx_descriptor = codec_descriptor;
-
-	/* create raw termination */
-	return mpf_raw_termination_create(
-			NULL,                 /* no object to associate */
-			audio_stream,         /* audio stream */
-			NULL,                 /* no video stream */
-			session->pool);       /* memory pool to allocate memory from */
-}
-
-MRCP_DECLARE(mpf_termination_t*) mrcp_application_sink_termination_create(
-										mrcp_session_t *session,
-										const mpf_audio_stream_vtable_t *stream_vtable,
-										mpf_codec_descriptor_t *codec_descriptor,
-										void *obj)
-{
-	mpf_stream_capabilities_t *capabilities;
-	mpf_audio_stream_t *audio_stream;
-
-	capabilities = mpf_sink_stream_capabilities_create(session->pool);
-	if(codec_descriptor) {
-		mpf_codec_capabilities_add(
-						&capabilities->codecs,
-						mpf_sample_rate_mask_get(codec_descriptor->sampling_rate),
-						codec_descriptor->name.buf);
-	}
-	else {
-		mpf_codec_default_capabilities_add(&capabilities->codecs);
-	}
-
-	/* create audio stream */
-	audio_stream = mpf_audio_stream_create(
-			obj,                  /* object to associate */
-			stream_vtable,        /* virtual methods table of audio stream */
-			capabilities,         /* stream capabilities */
-			session->pool);       /* memory pool to allocate memory from */
-	if(!audio_stream) {
-		return NULL;
-	}
-
-	audio_stream->tx_descriptor = codec_descriptor;
-
-	/* create raw termination */
-	return mpf_raw_termination_create(
-			NULL,                 /* no object to associate */
-			audio_stream,         /* audio stream */
-			NULL,                 /* no video stream */
-			session->pool);       /* memory pool to allocate memory from */
+	session->application = NULL;
+	session->app_obj = NULL;
+	session->profile = NULL;
+	session->context = NULL;
+	session->codec_manager = client->codec_manager;
+	session->terminations = apr_array_make(pool,2,sizeof(rtp_termination_slot_t));
+	session->channels = apr_array_make(pool,2,sizeof(mrcp_channel_t*));
+	session->registered = FALSE;
+	session->offer = NULL;
+	session->answer = NULL;
+	session->active_request = NULL;
+	session->request_queue = apt_list_create(pool);
+	session->mpf_task_msg = NULL;
+	session->subrequest_count = 0;
+	session->state = SESSION_STATE_NONE;
+	session->status = MRCP_SIG_STATUS_CODE_SUCCESS;
+	return session;
 }
 
 void mrcp_client_session_add(mrcp_client_t *client, mrcp_client_session_t *session)
@@ -1089,7 +701,7 @@ static apt_bool_t mrcp_client_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	return TRUE;
 }
 
-static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel)
+apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel)
 {
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	mrcp_application_t *application = client_session->application;
@@ -1111,7 +723,7 @@ static apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_
 	return apt_task_msg_signal(task,task_msg);
 }
 
-static apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
+apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
 {
 	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
 	mrcp_application_t *application = client_session->application;
@@ -1173,7 +785,6 @@ static apt_bool_t mrcp_client_connection_task_msg_signal(
 
 	return apt_task_msg_signal(task,task_msg);
 }
-
 
 
 static apt_bool_t mrcp_client_answer_signal(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)

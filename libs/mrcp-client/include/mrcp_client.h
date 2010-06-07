@@ -214,6 +214,12 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_get(const mr
  */
 MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *client, const char *name);
 
+/**
+ * Get directory layout.
+ * @param client the MRCP client to get from
+ */
+MRCP_DECLARE(apt_dir_layout_t*) mrcp_client_dir_layout_get(const mrcp_client_t *client);
+
 APT_END_EXTERN_C
 
 #endif /* MRCP_CLIENT_H */

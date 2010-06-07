@@ -163,8 +163,6 @@ struct mrcp_application_t {
 	apt_task_msg_pool_t       *msg_pool;
 };
 
-/** Create client session */
-mrcp_client_session_t* mrcp_client_session_create(mrcp_application_t *application, void *obj);
 /** Create channel */
 mrcp_channel_t* mrcp_client_channel_create(
 					mrcp_client_session_t *session,
