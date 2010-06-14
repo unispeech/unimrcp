@@ -78,7 +78,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_add(mrcp_message_header_t *header, ap
 			status = apt_header_section_field_add(&header->header_section,header_field);
 		}
 		else { 
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Uknown MRCP header field: %s",header_field->name.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown MRCP header field: %s",header_field->name.buf);
 		}
 	}
 	return status;
@@ -100,7 +100,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_fields_parse(mrcp_message_header_t *header,
 			apt_header_section_field_set(&header->header_section,header_field);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Uknown MRCP header field: %s",header_field->name.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown MRCP header field: %s",header_field->name.buf);
 		}
 	}
 
