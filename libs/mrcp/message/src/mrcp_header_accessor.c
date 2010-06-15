@@ -22,14 +22,16 @@
 /** Parse header field value */
 MRCP_DECLARE(apt_bool_t) mrcp_header_field_value_parse(mrcp_header_accessor_t *accessor, apt_header_field_t *header_field, apr_pool_t *pool)
 {
+	apr_size_t id;
 	if(!accessor->vtable) {
 		return FALSE;
 	}
 
-	header_field->id = apt_string_table_id_find(accessor->vtable->field_table,accessor->vtable->field_count,&header_field->name);
-	if(header_field->id >= accessor->vtable->field_count) {
+	id = apt_string_table_id_find(accessor->vtable->field_table,accessor->vtable->field_count,&header_field->name);
+	if(id >= accessor->vtable->field_count) {
 		return FALSE;
 	}
+	header_field->id = id;
 
 	if(header_field->value.length) {
 		if(accessor->vtable->parse_field(accessor,header_field->id,&header_field->value,pool) == FALSE) {
