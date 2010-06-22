@@ -184,8 +184,8 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(const char *dir_path, const char *file
 	}
 
 	file_data = apr_palloc(pool,sizeof(apt_log_file_data_t));
-	file_data->log_dir_path = dir_path;
-	file_data->log_file_name = file_name;
+	file_data->log_dir_path = apr_pstrdup(pool,dir_path);
+	file_data->log_file_name = apr_pstrdup(pool,file_name);
 	file_data->cur_file_index = 0;
 	file_data->cur_size = 0;
 	file_data->max_file_count = max_file_count;
