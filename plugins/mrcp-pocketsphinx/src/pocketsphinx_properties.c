@@ -61,8 +61,11 @@ static apt_bool_t sensitivity_properties_load(pocketsphinx_properties_t *propert
 		if(strcasecmp(attr->name,"level") == 0) {
 			properties->sensitivity_level = atol(attr->value);
 		}
-		else if(strcasecmp(attr->name,"timeout") == 0) {
-			properties->sensitivity_timeout = atol(attr->value);
+		else if(strcasecmp(attr->name,"activity-timeout") == 0) {
+			properties->activity_timeout = atol(attr->value);
+		}
+		else if(strcasecmp(attr->name,"inactivity-timeout") == 0) {
+			properties->inactivity_timeout = atol(attr->value);
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Attribute <%s>",attr->name);

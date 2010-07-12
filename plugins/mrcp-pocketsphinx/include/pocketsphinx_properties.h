@@ -52,8 +52,10 @@ struct pocketsphinx_properties_t {
 
 	/** Sensitivity level */
 	apr_size_t           sensitivity_level;
-	/** Sensitivity timeout */
-	apr_size_t           sensitivity_timeout;
+	/** Activity timeout (timeout to be used to switch to the activity state) */
+	apr_size_t           activity_timeout;
+	/** Inactivity timeout (timeout to be used to switch to the inactivity state) */
+	apr_size_t           inactivity_timeout;
 
 	/** Noinput timeout */
 	apr_size_t           no_input_timeout;

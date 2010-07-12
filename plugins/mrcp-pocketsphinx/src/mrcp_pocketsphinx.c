@@ -367,7 +367,9 @@ static apt_bool_t pocketsphinx_decoder_init(pocketsphinx_recognizer_t *recognize
 
 	if(!recognizer->detector) {
 		recognizer->detector = mpf_activity_detector_create(recognizer->channel->pool);
-		mpf_activity_detector_level_set(recognizer->detector,50);
+		mpf_activity_detector_level_set(recognizer->detector,recognizer->properties.sensitivity_level);
+		mpf_activity_detector_speech_timeout_set(recognizer->detector,recognizer->properties.activity_timeout);
+		mpf_activity_detector_silence_timeout_set(recognizer->detector,recognizer->properties.inactivity_timeout);
 	}
 	return TRUE;
 }
