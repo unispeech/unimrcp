@@ -16,7 +16,7 @@ For instance,
 -->
 
 <umcscenarios>
-  <scenario name="synth" class="Synthesizer" profile="MRCPv2-Default">
+  <scenario name="synth" class="Synthesizer" profile="uni2">
     <resource-discovery enable="0"/>
     <speak enable="1" content-type="application/synthesis+ssml" content-location="speak.xml"/>
     <!-- <speak enable="1" content-type="text/plain" content-location="speak.txt"/> -->
@@ -34,7 +34,7 @@ For instance,
     -->
   </scenario>
 
-  <scenario name="recog" class="Recognizer" profile="MRCPv2-Default">
+  <scenario name="recog" class="Recognizer" profile="uni2">
     <resource-discovery enable="0"/>
     <define-grammar enable="1" content-type="application/srgs+xml" content-location="grammar.xml"/>
     <!-- <define-grammar enable="1" content-type="application/grammar+xml" content-location="grammar.xml"/> -->
@@ -56,7 +56,7 @@ For instance,
     -->
   </scenario>
 
-  <scenario name="rec" class="Recorder" profile="MRCPv2-Default">
+  <scenario name="rec" class="Recorder" profile="uni2">
     <resource-discovery enable="0"/>
     <record enable="1"/>
 
@@ -73,7 +73,7 @@ For instance,
     -->
   </scenario>
 
-  <scenario name="dtmf" class="DtmfRecognizer" profile="MRCPv2-Default">
+  <scenario name="dtmf" class="DtmfRecognizer" profile="uni2">
     <resource-discovery enable="0"/>
     <recognize enable="1" content-type="text/uri-list" grammar="builtin:dtmf/digits" digits="1234"/> -->
 
@@ -90,7 +90,7 @@ For instance,
     -->
   </scenario>
 
-  <scenario name="params" class="Params" profile="MRCPv2-Default"/>
+  <scenario name="params" class="Params" profile="uni2"/>
 
   <!-- It'd be great to have scriptable custom scenarios as well.
   <scenario name="custom" class="UmcXml">
