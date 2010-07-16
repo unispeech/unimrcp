@@ -50,15 +50,16 @@ struct mrcp_sofia_agent_t {
 };
 
 struct mrcp_sofia_session_t {
-	mrcp_session_t           *session;
-	mrcp_sig_settings_t      *sip_settings;
-	char                     *sip_to_str;
+	mrcp_session_t            *session;
+	mrcp_sig_settings_t       *sip_settings;
+	char                      *sip_to_str;
 
-	su_home_t                *home;
-	nua_handle_t             *nh;
+	su_home_t                 *home;
+	nua_handle_t              *nh;
 
-	apt_bool_t                terminate_requested;
-	apr_thread_mutex_t       *mutex;
+	apt_bool_t                 terminate_requested;
+	mrcp_session_descriptor_t *descriptor;
+	apr_thread_mutex_t        *mutex;
 };
 
 /* Task Interface */
@@ -250,6 +251,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 	sofia_session->session = session;
 	sofia_session->sip_settings = settings;
 	sofia_session->terminate_requested = FALSE;
+	sofia_session->descriptor = NULL;
 	session->obj = sofia_session;
 
 	if(settings->user_name && settings->user_name != '\0') {
@@ -320,6 +322,7 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 	}
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
 		local_sdp_str = sdp_str;
+		sofia_session->descriptor = descriptor;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Local SDP "APT_NAMESID_FMT"\n%s", 
 			session->name,
 			MRCP_SESSION_SID(session), 
@@ -416,6 +419,62 @@ static void mrcp_sofia_on_session_ready(
 
 		mrcp_session_answer(session,descriptor);
 	}
+}
+
+static void mrcp_sofia_on_session_redirect(
+						int                   status,
+						mrcp_sofia_agent_t   *sofia_agent,
+						nua_handle_t         *nh,
+						mrcp_sofia_session_t *sofia_session,
+						sip_t const          *sip,
+						tagi_t                tags[])
+{
+	mrcp_session_t *session = sofia_session->session;
+	sip_contact_t *sip_contact;
+	if(!sip) {
+		return;
+	}
+	sip_contact = sip->sip_contact;
+	if(!sip_contact || !sip_contact->m_url) {
+		return;
+	}
+	
+	if(sip_contact->m_url->url_user && sip_contact->m_url->url_user != '\0') {
+		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%s",
+										sip_contact->m_url->url_user,
+										sip_contact->m_url->url_host,
+										sip_contact->m_url->url_port);
+	}
+	else {
+		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s:%s",
+										sip_contact->m_url->url_host,
+										sip_contact->m_url->url_port);
+	}
+
+	apr_thread_mutex_lock(sofia_session->mutex);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Redirect "APT_NAMESID_FMT" to %s",
+		session->name,
+		MRCP_SESSION_SID(session), 
+		sofia_session->sip_to_str);
+
+	if(sofia_session->nh) {
+		nua_handle_bind(sofia_session->nh, NULL);
+		nua_handle_destroy(sofia_session->nh);
+		sofia_session->nh = NULL;
+	}
+
+	sofia_session->nh = nua_handle(
+				sofia_agent->nua,
+				sofia_session,
+				SIPTAG_TO_STR(sofia_session->sip_to_str),
+				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
+				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_END());
+
+	apr_thread_mutex_unlock(sofia_session->mutex);
+
+	mrcp_sofia_session_offer(sofia_session->session,sofia_session->descriptor);
 }
 
 static void mrcp_sofia_on_session_terminate(
@@ -525,6 +584,11 @@ static void mrcp_sofia_event_callback(
 	switch(nua_event) {
 		case nua_i_state:
 			mrcp_sofia_on_state_change(status,sofia_agent,nh,sofia_session,sip,tags);
+			break;
+		case nua_r_invite:
+			if(status >= 300 && status < 400) {
+				mrcp_sofia_on_session_redirect(status,sofia_agent,nh,sofia_session,sip,tags);
+			}
 			break;
 		case nua_r_options:
 			mrcp_sofia_on_resource_discover(status,sofia_agent,nh,sofia_session,sip,tags);
