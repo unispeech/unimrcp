@@ -272,6 +272,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 				SIPTAG_TO_STR(sofia_session->sip_to_str),
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
 				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_IF(settings->feature_tags,SIPTAG_ACCEPT_CONTACT_STR(settings->feature_tags)),
 				TAG_END());
 
 	apr_thread_mutex_create(&sofia_session->mutex,APR_THREAD_MUTEX_DEFAULT,session->pool);

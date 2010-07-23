@@ -46,6 +46,7 @@ MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_signaling_settings_alloc(apr_pool_t *poo
 	settings->resource_location = NULL;
 	settings->resource_map = apr_table_make(pool,2);
 	settings->force_destination = FALSE;
+	settings->feature_tags = NULL;
 	return settings;
 }
 

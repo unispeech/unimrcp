@@ -46,6 +46,8 @@ struct mrcp_sig_settings_t {
 	/** Force destination ip address. Should be used only in case 
 	SDP contains incorrect connection address (local IP address behind NAT) */
 	apt_bool_t   force_destination;
+	/** Optional feature tags */
+	char        *feature_tags;
 };
 
 

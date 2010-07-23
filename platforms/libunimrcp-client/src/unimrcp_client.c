@@ -560,6 +560,11 @@ static apt_bool_t unimrcp_client_sip_settings_load(unimrcp_client_loader_t *load
 				settings->force_destination = cdata_bool_get(elem);
 			}
 		}
+		else if(strcasecmp(elem->name,"feature-tags") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				settings->feature_tags = cdata_copy(elem,loader->pool);
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
