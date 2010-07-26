@@ -149,6 +149,7 @@
                     <xsd:element name="server-ip" type="xsd:string" minOccurs="0" />
                     <xsd:element name="server-port" type="xsd:short" />
                     <xsd:element name="force-destination" type="xsd:boolean" default="false" minOccurs="0" />
+                    <xsd:element name="feature-tags" type="xsd:string" minOccurs="0" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />
                   <xsd:attribute name="enable" type="xsd:boolean" use="optional" />

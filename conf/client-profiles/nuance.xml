@@ -10,6 +10,7 @@
       <!-- <server-ip>10.10.0.1</server-ip> -->
       <server-port>5060</server-port>
       <!-- <force-destination>true</force-destination> -->
+      <!-- <feature-tags>*;+mrcpv2.speechrecog;+mrcpv2.speechrecog.grammars="http://grammars.example.com/biggrammar.gram"</feature-tags> -->
     </sip-settings>
     
     <!-- RTSP MRCPv1 settings -->
