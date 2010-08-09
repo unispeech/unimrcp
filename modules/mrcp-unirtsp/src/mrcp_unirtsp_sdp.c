@@ -560,18 +560,20 @@ MRCP_DECLARE(rtsp_message_t*) rtsp_resource_discovery_response_generate(
 /** Get MRCP resource name by RTSP resource name */
 MRCP_DECLARE(const char*) mrcp_name_get_by_rtsp_name(const apr_table_t *resource_map, const char *rtsp_name)
 {
-	const apr_array_header_t *header = apr_table_elts(resource_map);
-	apr_table_entry_t *entry = (apr_table_entry_t *)header->elts;
-	int i;
-	
-	for(i=0; i<header->nelts; i++) {
-		if(entry[i].val && rtsp_name) {
-			if(apr_strnatcasecmp(entry[i].val,rtsp_name) == 0) {
+	if(rtsp_name) {
+		const apr_array_header_t *header = apr_table_elts(resource_map);
+		apr_table_entry_t *entry = (apr_table_entry_t *)header->elts;
+		int i;
+		for(i=0; i<header->nelts; i++) {
+			if(!entry[i].val) continue;
+
+			if(strcasecmp(entry[i].val,rtsp_name) == 0) {
 				return entry[i].key;
 			}
 		}
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown RTSP Resource Name [%s]", rtsp_name);
 	}
-	return rtsp_name;
+	return "unknown";
 }
 
 /** Get RTSP resource name by MRCP resource name */
