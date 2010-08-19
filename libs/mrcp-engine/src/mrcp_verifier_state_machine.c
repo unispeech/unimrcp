@@ -119,30 +119,47 @@ static apt_bool_t verifier_response_get_params(mrcp_verifier_state_machine_t *st
 
 static apt_bool_t verifier_request_start_session(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state == VERIFIER_STATE_VERIFYING) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 
 	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_start_session(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	verifier_state_change(state_machine,VERIFIER_STATE_OPENED,message);
 
 	return verifier_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_request_end_session(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state == VERIFIER_STATE_IDLE) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 
 	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_end_session(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	verifier_state_change(state_machine,VERIFIER_STATE_IDLE,message);
 
 	return verifier_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_request_query_voiceprint(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state == VERIFIER_STATE_IDLE) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 
 	return verifier_request_dispatch(state_machine,message);
 }
@@ -155,77 +172,83 @@ static apt_bool_t verifier_response_query_voiceprint(mrcp_verifier_state_machine
 
 static apt_bool_t verifier_request_delete_voiceprint(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state == VERIFIER_STATE_IDLE) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 
 	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_delete_voiceprint(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
-
 	return verifier_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_request_verify(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state == VERIFIER_STATE_IDLE || state_machine->state == VERIFIER_STATE_VERIFYING) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 
+	state_machine->verify = message;
 	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_verify(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	verifier_state_change(state_machine,VERIFIER_STATE_VERIFYING,message);
 
 	return verifier_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_request_verify_from_buffer(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state == VERIFIER_STATE_IDLE || state_machine->state == VERIFIER_STATE_VERIFYING) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 
+	state_machine->verify = message;
 	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_verify_from_buffer(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	verifier_state_change(state_machine,VERIFIER_STATE_VERIFYING,message);
 
 	return verifier_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_request_verify_rollback(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
-
 	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_verify_rollback(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
-
 	return verifier_response_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_request_stop(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_message_t *response_message;
-	if(state_machine->state == VERIFIER_STATE_VERIFYING) {
-		mrcp_request_id_list_t *request_id_list = NULL;
-		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
-		if(generic_header && mrcp_generic_header_property_check(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST) == TRUE) {
-			if(generic_header->active_request_id_list.ids && generic_header->active_request_id_list.count) {
-				/* selective STOP request */
-				request_id_list = &generic_header->active_request_id_list;
-			}
-		}
-
-		if(!request_id_list || active_request_id_list_find(generic_header,state_machine->verify->start_line.request_id) == TRUE) {
-			/* found in-progress VERIFY request, stop it */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Found IN-PROGRESS VERIFY Request "APT_SIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
-				MRCP_MESSAGE_SIDRES(message),
-				message->start_line.request_id);
-			return verifier_request_dispatch(state_machine,message);
-		}
+	if(state_machine->state == VERIFIER_STATE_IDLE) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
 	}
 
-	/* found no in-progress VERIFY request, sending immediate response */
-	response_message = mrcp_response_create(message,message->pool);
-	return verifier_response_dispatch(state_machine,response_message);
+	if(state_machine->state == VERIFIER_STATE_OPENED) {
+		/* no in-progress VERIFY request, sending immediate response */
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		return verifier_response_dispatch(state_machine,response_message);
+	}
+
+	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_stop(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
@@ -234,7 +257,7 @@ static apt_bool_t verifier_response_stop(mrcp_verifier_state_machine_t *state_ma
 	/* append active id list */
 	active_request_id_list_append(generic_header,state_machine->verify->start_line.request_id);
 	mrcp_generic_header_property_add(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
-	verifier_state_change(state_machine,VERIFIER_STATE_IDLE,message);
+	verifier_state_change(state_machine,VERIFIER_STATE_OPENED,message);
 	return verifier_response_dispatch(state_machine,message);
 }
 
@@ -250,16 +273,13 @@ static apt_bool_t verifier_response_clear_buffer(mrcp_verifier_state_machine_t *
 
 static apt_bool_t verifier_request_start_input_timers(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_message_t *response_message;
-	if(state_machine->state == VERIFIER_STATE_VERIFYING) {
-		/* found in-progress request */
-		return verifier_request_dispatch(state_machine,message);
+	if(state_machine->state == VERIFIER_STATE_IDLE || state_machine->state == VERIFIER_STATE_VERIFYING) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
 	}
 
-	/* found no in-progress request */
-	response_message = mrcp_response_create(message,message->pool);
-	response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
-	return verifier_response_dispatch(state_machine,response_message);
+	return verifier_request_dispatch(state_machine,message);
 }
 
 static apt_bool_t verifier_response_start_input_timers(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
@@ -269,6 +289,11 @@ static apt_bool_t verifier_response_start_input_timers(mrcp_verifier_state_machi
 
 static apt_bool_t verifier_request_get_intermidiate_result(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
+	if(state_machine->state != VERIFIER_STATE_VERIFYING) {
+		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
+		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+		return verifier_response_dispatch(state_machine,response_message);
+	}
 	return verifier_request_dispatch(state_machine,message);
 }
 
