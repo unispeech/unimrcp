@@ -25,7 +25,9 @@ include_HEADERS          = include/mrcp.h \
                            resources/include/mrcp_recog_header.h \
                            resources/include/mrcp_recog_resource.h \
                            resources/include/mrcp_recorder_header.h \
-                           resources/include/mrcp_recorder_resource.h
+                           resources/include/mrcp_recorder_resource.h \
+                           resources/include/mrcp_verifier_header.h \
+                           resources/include/mrcp_verifier_resource.h
 
 libmrcp_la_SOURCES       = message/src/mrcp_start_line.c \
                            message/src/mrcp_header_accessor.c \
@@ -40,4 +42,6 @@ libmrcp_la_SOURCES       = message/src/mrcp_start_line.c \
                            resources/src/mrcp_recog_header.c \
                            resources/src/mrcp_recog_resource.c \
                            resources/src/mrcp_recorder_header.c \
-                           resources/src/mrcp_recorder_resource.c
+                           resources/src/mrcp_recorder_resource.c \
+                           resources/src/mrcp_verifier_header.c \
+                           resources/src/mrcp_verifier_resource.c
