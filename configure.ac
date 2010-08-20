@@ -117,6 +117,15 @@ AC_ARG_ENABLE(demorecog-plugin,
 AM_CONDITIONAL([DEMORECOG_PLUGIN],[test "${enable_demorecog_plugin}" = "yes"])
 
 
+#Enable demo verifier plugin
+AC_ARG_ENABLE(demoverifier-plugin,
+    [AC_HELP_STRING([--disable-demoverifier-plugin  ],[exclude demo verifier plugin from build])],
+    [enable_demoverifier_plugin="$enableval"],
+    [enable_demoverifier_plugin="yes"])
+
+AM_CONDITIONAL([DEMOVERIFIER_PLUGIN],[test "${enable_demoverifier_plugin}" = "yes"])
+
+
 #Enable recorder plugin
 AC_ARG_ENABLE(recorder-plugin,
     [AC_HELP_STRING([--disable-recorder-plugin  ],[exclude recorder plugin from build])],
@@ -179,6 +188,7 @@ AC_CONFIG_FILES([
   plugins/mrcp-recorder/Makefile
   plugins/demo-synth/Makefile
   plugins/demo-recog/Makefile
+  plugins/demo-verifier/Makefile
   platforms/Makefile
   platforms/libunimrcp-server/Makefile
   platforms/libunimrcp-client/Makefile
@@ -215,6 +225,7 @@ AC_MSG_NOTICE([  Sofia-SIP: $sofia_version])
 AC_MSG_NOTICE([Plugins:])
 AC_MSG_NOTICE([  Demo Synthesizer: $enable_demosynth_plugin])
 AC_MSG_NOTICE([  Demo Recognizer: $enable_demorecog_plugin])
+AC_MSG_NOTICE([  Demo Verifier: $enable_demoverifier_plugin])
 AC_MSG_NOTICE([  Recorder: $enable_recorder_plugin])
 AC_MSG_NOTICE([  PocketSphinx: $enable_pocketsphinx_plugin])
 AC_MSG_NOTICE([  Flite: $enable_flite_plugin])
