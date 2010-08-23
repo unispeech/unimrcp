@@ -31,11 +31,12 @@ struct mrcp_resource_loader_t {
 	apr_pool_t              *pool;
 };
 
-/** String table of MRCPv2 resources (mrcp_resource_types_e) */
+/** String table of MRCPv2 resources (mrcp_resource_type_e) */
 static const apt_str_table_item_t mrcp_resource_string_table[] = {
 	{{"speechsynth",11},6},
 	{{"speechrecog",11},6},
-	{{"recorder",    8},0}
+	{{"recorder",    8},0},
+	{{"speakverify",11},3}
 };
 
 static mrcp_resource_t* mrcp_resource_create_by_id(mrcp_resource_id id, apr_pool_t *pool);
