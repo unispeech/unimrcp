@@ -20,6 +20,7 @@
       <resource id="speechsynth" enable="true"/>
       <resource id="speechrecog" enable="true"/>
       <resource id="recorder" enable="true"/>
+      <resource id="speakverify" enable="true"/>
     </resource-factory>
 
     <!-- SofiaSIP MRCPv2 signaling agent -->
