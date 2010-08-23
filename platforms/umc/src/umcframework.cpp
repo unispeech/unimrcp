@@ -23,6 +23,7 @@
 #include "recorderscenario.h"
 #include "dtmfscenario.h"
 #include "setparamscenario.h"
+#include "verifierscenario.h"
 #include "unimrcp_client.h"
 #include "apt_log.h"
 
@@ -178,6 +179,8 @@ UmcScenario* UmcFramework::CreateScenario(const char* pType)
 			return new DtmfScenario();
 		else if(strcasecmp(pType,"Params") == 0)
 			return new SetParamScenario();
+		else if(strcasecmp(pType,"Verifier") == 0)
+			return new VerifierScenario();
 	}
 	return NULL;
 }

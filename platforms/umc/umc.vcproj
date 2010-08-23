@@ -339,6 +339,14 @@
 				RelativePath=".\src\umcsession.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\src\verifierscenario.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\verifiersession.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="include"
@@ -399,6 +407,14 @@
 			</File>
 			<File
 				RelativePath=".\include\umcsession.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\verifierscenario.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\verifiersession.h"
 				>
 			</File>
 		</Filter>
