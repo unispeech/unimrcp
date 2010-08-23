@@ -16,6 +16,7 @@
       <resource id="speechsynth" enable="true"/>
       <resource id="speechrecog" enable="true"/>
       <resource id="recorder" enable="true"/>
+      <resource id="speakverify" enable="true"/>
     </resource-factory>
 
     <!-- SofiaSIP MRCPv2 signaling agent -->
@@ -88,10 +89,11 @@
       <engine id="Flite-1" name="mrcpflite" enable="false"/>
       <engine id="Demo-Synth-1" name="demosynth" enable="true"/>
       <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
+      <engine id="Demo-Verifier-1" name="demoverifier" enable="true"/>
       <engine id="Recorder-1" name="mrcprecorder" enable="true"/>
 
       <!-- Engines may have additional named and generic params
-      <engine id="Your-Engine-1" name="yourengine" enable="true">
+      <engine id="Your-Engine-1" name="yourengine" enable="false">
         <max-channel-count>100</max-channel-count>
         <param name="..." value="..."/>
       </engine>
