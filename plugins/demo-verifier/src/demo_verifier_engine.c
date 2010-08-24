@@ -123,6 +123,8 @@ struct demo_verifier_msg_t {
 static apt_bool_t demo_verifier_msg_signal(demo_verifier_msg_type_e type, mrcp_engine_channel_t *channel, mrcp_message_t *request);
 static apt_bool_t demo_verifier_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
+static apt_bool_t demo_verifier_result_load(demo_verifier_channel_t *verifier_channel, mrcp_message_t *message);
+
 /** Declare this macro to set plugin version */
 MRCP_PLUGIN_VERSION_DECLARE
 
@@ -312,6 +314,15 @@ static apt_bool_t demo_verifier_channel_timers_start(mrcp_engine_channel_t *chan
 	return mrcp_engine_channel_message_send(channel,response);
 }
 
+/** Process GET-INTERMEDIATE-RESULT request */
+static apt_bool_t demo_verifier_channel_get_result(mrcp_engine_channel_t *channel, mrcp_message_t *request, mrcp_message_t *response)
+{
+	demo_verifier_channel_t *verifier_channel = channel->method_obj;
+	demo_verifier_result_load(verifier_channel,response);
+	return mrcp_engine_channel_message_send(channel,response);
+}
+
+
 /** Dispatch MRCP request */
 static apt_bool_t demo_verifier_channel_request_dispatch(mrcp_engine_channel_t *channel, mrcp_message_t *request)
 {
@@ -343,8 +354,10 @@ static apt_bool_t demo_verifier_channel_request_dispatch(mrcp_engine_channel_t *
 		case VERIFIER_CLEAR_BUFFER:
 			break;
 		case VERIFIER_START_INPUT_TIMERS:
+			processed = demo_verifier_channel_timers_start(channel,request,response);
 			break;
 		case VERIFIER_GET_INTERMIDIATE_RESULT:
+			processed = demo_verifier_channel_get_result(channel,request,response);
 			break;
 			
 		default:
