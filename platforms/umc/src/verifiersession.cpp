@@ -226,7 +226,22 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 	if(pMrcpMessage->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) 
 	{
 		/* received MRCP response */
-		if(pMrcpMessage->start_line.method_id == VERIFIER_VERIFY)
+		if(pMrcpMessage->start_line.method_id == VERIFIER_START_SESSION)
+		{
+			/* received the response to START-SESSION request */
+			/* create and send VERIFY request */
+			mrcp_message_t* pMrcpMessage = CreateVerificationRequest(pMrcpChannel);
+			if(pMrcpMessage)
+			{
+				SendMrcpRequest(pVerifierChannel->m_pMrcpChannel,pMrcpMessage);
+			}
+		}
+		else if(pMrcpMessage->start_line.method_id == VERIFIER_END_SESSION)
+		{
+			/* received the response to END-SESSION request */
+			Terminate();
+		}
+		else if(pMrcpMessage->start_line.method_id == VERIFIER_VERIFY)
 		{
 			/* received the response to VERIFY request */
 			if(pMrcpMessage->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS)
@@ -239,10 +254,14 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 				if(pVerifierChannel) 
 					pVerifierChannel->m_Streaming = true;
 			}
-			else 
+			else
 			{
-				/* received unexpected response, terminate the session */
-				Terminate();
+				/* create and send END-SESSION request */
+				mrcp_message_t* pMrcpMessage = CreateEndSessionRequest(pMrcpChannel);
+				if(pMrcpMessage)
+				{
+					SendMrcpRequest(pVerifierChannel->m_pMrcpChannel,pMrcpMessage);
+				}
 			}
 		}
 		else 
@@ -262,7 +281,12 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 			if(pVerifierChannel)
 				pVerifierChannel->m_pVerificationRequest = NULL;
 
-			Terminate();
+			/* create and send END-SESSION request */
+			mrcp_message_t* pMrcpMessage = CreateEndSessionRequest(pMrcpChannel);
+			if(pMrcpMessage)
+			{
+				SendMrcpRequest(pVerifierChannel->m_pMrcpChannel,pMrcpMessage);
+			}
 		}
 		else if(pMrcpMessage->start_line.method_id == VERIFIER_START_OF_INPUT) 
 		{
@@ -276,7 +300,7 @@ bool VerifierSession::StartVerification(mrcp_channel_t* pMrcpChannel)
 {
 	VerifierChannel* pVerifierChannel = (VerifierChannel*) mrcp_application_channel_object_get(pMrcpChannel);
 	/* create and send Verification request */
-	mrcp_message_t* pMrcpMessage = CreateVerificationRequest(pMrcpChannel);
+	mrcp_message_t* pMrcpMessage = CreateStartSessionRequest(pMrcpChannel);
 	if(pMrcpMessage)
 	{
 		SendMrcpRequest(pVerifierChannel->m_pMrcpChannel,pMrcpMessage);
@@ -290,6 +314,33 @@ bool VerifierSession::StartVerification(mrcp_channel_t* pMrcpChannel)
 		pVerifierChannel->m_TimeToComplete = 5000; // 5 sec
 	}
 	return true;
+}
+
+mrcp_message_t* VerifierSession::CreateStartSessionRequest(mrcp_channel_t* pMrcpChannel)
+{
+	mrcp_message_t* pMrcpMessage = CreateMrcpMessage(pMrcpChannel,VERIFIER_START_SESSION);
+	if(!pMrcpMessage)
+		return NULL;
+
+	mrcp_verifier_header_t* pVerifierHeader;
+
+	/* get/allocate verifier header */
+	pVerifierHeader = (mrcp_verifier_header_t*) mrcp_resource_header_prepare(pMrcpMessage);
+	if(pVerifierHeader)
+	{
+		apt_string_set(&pVerifierHeader->repository_uri,"http://www.example.com/voiceprintdbase/");
+		mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_REPOSITORY_URI);
+		apt_string_set(&pVerifierHeader->verification_mode,"verify");
+		mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_VERIFICATION_MODE);
+		apt_string_set(&pVerifierHeader->voiceprint_identifier,"johnsmith.voiceprint");
+		mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_VOICEPRINT_IDENTIFIER);
+	}
+	return pMrcpMessage;
+}
+
+mrcp_message_t* VerifierSession::CreateEndSessionRequest(mrcp_channel_t* pMrcpChannel)
+{
+	return CreateMrcpMessage(pMrcpChannel,VERIFIER_END_SESSION);
 }
 
 mrcp_message_t* VerifierSession::CreateVerificationRequest(mrcp_channel_t* pMrcpChannel)

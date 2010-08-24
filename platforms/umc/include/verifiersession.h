@@ -44,6 +44,8 @@ protected:
 	VerifierChannel* CreateVerifierChannel();
 	bool StartVerification(mrcp_channel_t* pMrcpChannel);
 
+	mrcp_message_t* CreateStartSessionRequest(mrcp_channel_t* pMrcpChannel);
+	mrcp_message_t* CreateEndSessionRequest(mrcp_channel_t* pMrcpChannel);
 	mrcp_message_t* CreateVerificationRequest(mrcp_channel_t* pMrcpChannel);
 
 	bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const;
