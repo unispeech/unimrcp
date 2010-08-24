@@ -331,6 +331,7 @@ static apt_bool_t demo_verifier_channel_request_dispatch(mrcp_engine_channel_t *
 		case VERIFIER_DELETE_VOICEPRINT:
 			break;
 		case VERIFIER_VERIFY:
+			processed = demo_verifier_channel_verify(channel,request,response);
 			break;
 		case VERIFIER_VERIFY_FROM_BUFFER:
 			break;
@@ -398,7 +399,7 @@ static apt_bool_t demo_verifier_result_load(demo_verifier_channel_t *verifier_ch
 	FILE *file;
 	mrcp_engine_channel_t *channel = verifier_channel->channel;
 	const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
-	char *file_path = apt_datadir_filepath_get(dir_layout,"result.xml",message->pool);
+	char *file_path = apt_datadir_filepath_get(dir_layout,"result-verification.xml",message->pool);
 	if(!file_path) {
 		return FALSE;
 	}
@@ -417,7 +418,7 @@ static apt_bool_t demo_verifier_result_load(demo_verifier_channel_t *verifier_ch
 		generic_header = mrcp_generic_header_prepare(message);
 		if(generic_header) {
 			/* set content types */
-			apt_string_assign(&generic_header->content_type,"application/x-nlsml",message->pool);
+			apt_string_assign(&generic_header->content_type,"application/nlsml+xml",message->pool);
 			mrcp_generic_header_property_add(message,GENERIC_HEADER_CONTENT_TYPE);
 		}
 	}
