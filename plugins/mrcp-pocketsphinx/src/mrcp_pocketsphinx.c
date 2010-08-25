@@ -295,17 +295,23 @@ static apt_bool_t pocketsphinx_recognizer_close(mrcp_engine_channel_t *channel)
 {
 	pocketsphinx_recognizer_t *recognizer = channel->method_obj;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close Channel "APT_SIDRES_FMT,RECOGNIZER_SIDRES(recognizer));
-	if(!recognizer->thread) {
-		return mrcp_engine_channel_close_respond(channel);
+	if(recognizer->thread) {
+		apr_status_t s;
+		apr_thread_mutex_lock(recognizer->mutex);
+		
+		/* Signal recognition thread to terminate */
+		recognizer->close_requested = TRUE;
+		recognizer->message_waiting = TRUE;
+		apr_thread_cond_signal(recognizer->wait_object);
+		
+		apr_thread_mutex_unlock(recognizer->mutex);
+
+		/* Wait for thread to be finally terminated */
+		apr_thread_join(&s,recognizer->thread);
+		recognizer->thread = NULL;
 	}
 
-	/* Signal recognition thread to terminate */
-	apr_thread_mutex_lock(recognizer->mutex);
-	recognizer->close_requested = TRUE;
-	recognizer->message_waiting = TRUE;
-	apr_thread_cond_signal(recognizer->wait_object);
-	apr_thread_mutex_unlock(recognizer->mutex);
-	return TRUE;
+	return mrcp_engine_channel_close_respond(channel);
 }
 
 /** Process MRCP request (asynchronous response MUST be sent)*/
@@ -828,10 +834,6 @@ static void* APR_THREAD_FUNC pocketsphinx_recognizer_run(apr_thread_t *thread, v
 		ps_free(recognizer->decoder);
 		recognizer->decoder = NULL;
 	}
-
-	recognizer->thread = NULL;
-	/** Finally send response to channel_close request */
-	mrcp_engine_channel_close_respond(recognizer->channel);
 
 	/** Exit thread */
 	apr_thread_exit(thread,APR_SUCCESS);
