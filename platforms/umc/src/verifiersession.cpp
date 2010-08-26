@@ -328,12 +328,25 @@ mrcp_message_t* VerifierSession::CreateStartSessionRequest(mrcp_channel_t* pMrcp
 	pVerifierHeader = (mrcp_verifier_header_t*) mrcp_resource_header_prepare(pMrcpMessage);
 	if(pVerifierHeader)
 	{
-		apt_string_set(&pVerifierHeader->repository_uri,"http://www.example.com/voiceprintdbase/");
-		mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_REPOSITORY_URI);
-		apt_string_set(&pVerifierHeader->verification_mode,"verify");
-		mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_VERIFICATION_MODE);
-		apt_string_set(&pVerifierHeader->voiceprint_identifier,"johnsmith.voiceprint");
-		mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_VOICEPRINT_IDENTIFIER);
+		const VerifierScenario* pScenario = GetScenario();
+		const char* pRepositoryURI = pScenario->GetRepositoryURI();
+		if(pRepositoryURI)
+		{
+			apt_string_set(&pVerifierHeader->repository_uri,pRepositoryURI);
+			mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_REPOSITORY_URI);
+		}
+		const char* pVoiceprintIdentifier = pScenario->GetVoiceprintIdentifier();
+		if(pVoiceprintIdentifier)
+		{
+			apt_string_set(&pVerifierHeader->voiceprint_identifier,pVoiceprintIdentifier);
+			mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_VOICEPRINT_IDENTIFIER);
+		}
+		const char* pVerificationMode = pScenario->GetVerificationMode();
+		if(pVerificationMode)
+		{
+			apt_string_set(&pVerifierHeader->verification_mode,pVerificationMode);
+			mrcp_resource_header_property_add(pMrcpMessage,VERIFIER_HEADER_VERIFICATION_MODE);
+		}
 	}
 	return pMrcpMessage;
 }
@@ -370,13 +383,15 @@ bool VerifierSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const
 
 FILE* VerifierSession::GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const
 {
-	const char* pFileName = GetScenario()->GetAudioSource();
-	if(!pFileName)
-	{
-		pFileName = apr_psprintf(pool,"one-%dkHz.pcm",
+	const VerifierScenario* pScenario = GetScenario();
+	const char* pVoiceprintIdentifier = pScenario->GetVoiceprintIdentifier();
+	if(!pVoiceprintIdentifier)
+		return NULL;
+
+	const char* pFileName = apr_psprintf(pool,"%s-%dkHz.pcm",
+			pVoiceprintIdentifier,
 			pDescriptor ? pDescriptor->sampling_rate/1000 : 8);
-	}
-	apt_dir_layout_t* pDirLayout = GetScenario()->GetDirLayout();
+	apt_dir_layout_t* pDirLayout = pScenario->GetDirLayout();
 	const char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
 	if(!pFilePath)
 		return NULL;

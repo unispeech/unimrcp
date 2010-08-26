@@ -8,6 +8,7 @@ Currently available scenarios are
 3. class="Recorder"
 4. class="DtmfRecofnizer"
 5. class="Params"
+6. class="Verifier"
 
 More than one scenario of the same type (class) can be defined.
 The name (not class) of the scenario is used to run it from console.
@@ -92,6 +93,22 @@ For instance,
 
   <scenario name="params" class="Params" profile="uni2"/>
 
+  <scenario name="verify" class="Verifier" profile="uni2">
+    <resource-discovery enable="0"/>
+    <verify repository-uri="http://www.example.com/voiceprintdbase/" verification-mode="verify" voiceprint-identifier="johnsmith"/>
+
+    <termination enable="1">
+      <capabilities>
+        <codec name="LPCM" rates="8000 16000"/>
+        <!-- <codec name="PCMU" rates="8000 16000"/> -->
+      </capabilities>
+    </termination>
+    <!-- 
+    <rtp-termination enable="1" ip="127.0.0.1" port="5678">
+      <codecs="PCMU PCMA L16/96/8000 PCMU/97/16000 telephone-event/101/8000"/>
+    </rtp-termination>
+    -->
+  </scenario>
   <!-- It'd be great to have scriptable custom scenarios as well.
   <scenario name="custom" class="UmcXml">
   </scenario>

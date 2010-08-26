@@ -26,7 +26,9 @@
 #include "apt_log.h"
 
 VerifierScenario::VerifierScenario() :
-	m_AudioSource(NULL)
+	m_RepositoryURI(NULL),
+	m_VerificationMode(NULL),
+	m_VoiceprintIdentifier(NULL)
 {
 }
 
@@ -43,7 +45,34 @@ bool VerifierScenario::LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool)
 	if(UmcScenario::LoadElement(pElem,pool))
 		return true;
 			
+	if(strcasecmp(pElem->name,"verify") == 0)
+	{
+		LoadVerify(pElem,pool);
+		return true;
+	}
 	return false;
+}
+
+bool VerifierScenario::LoadVerify(const apr_xml_elem* pElem, apr_pool_t* pool)
+{
+	const apr_xml_attr* pAttr;
+	for(pAttr = pElem->attr; pAttr; pAttr = pAttr->next) 
+	{
+		if(strcasecmp(pAttr->name,"repository-uri") == 0)
+		{
+			m_RepositoryURI = pAttr->value;
+		}
+		else if(strcasecmp(pAttr->name,"verification-mode") == 0)
+		{
+			m_VerificationMode = pAttr->value;
+		}
+		else if(strcasecmp(pAttr->name,"voiceprint-identifier") == 0)
+		{
+			m_VoiceprintIdentifier = pAttr->value;
+		}
+	}
+
+	return true;
 }
 
 

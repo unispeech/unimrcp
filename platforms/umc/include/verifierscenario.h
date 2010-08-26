@@ -39,21 +39,37 @@ public:
 	virtual UmcSession* CreateSession();
 
 /* ============================ ACCESSORS ================================== */
-	const char* GetAudioSource() const;
+	const char* GetRepositoryURI() const;
+	const char* GetVerificationMode() const;
+	const char* GetVoiceprintIdentifier() const;
 
 /* ============================ INQUIRIES ================================== */
 protected:
 /* ============================ MANIPULATORS =============================== */
 	virtual bool LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool);
 
+	bool LoadVerify(const apr_xml_elem* pElem, apr_pool_t* pool);
+
 /* ============================ DATA ======================================= */
-	const char* m_AudioSource;
+	const char* m_RepositoryURI;
+	const char* m_VerificationMode;
+	const char* m_VoiceprintIdentifier;
 };
 
 /* ============================ INLINE METHODS ============================= */
-inline const char* VerifierScenario::GetAudioSource() const
+inline const char* VerifierScenario::GetRepositoryURI() const
 {
-	return m_AudioSource;
+	return m_RepositoryURI;
+}
+
+inline const char* VerifierScenario::GetVerificationMode() const
+{
+	return m_VerificationMode;
+}
+
+inline const char* VerifierScenario::GetVoiceprintIdentifier() const
+{
+	return m_VoiceprintIdentifier;
 }
 
 #endif /* VERIFIER_SCENARIO_H */
