@@ -273,7 +273,6 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 	{
 		if(pMrcpMessage->start_line.method_id == VERIFIER_VERIFICATION_COMPLETE) 
 		{
-			ParseNLSMLResult(pMrcpMessage);
 			if(pVerifierChannel) 
 				pVerifierChannel->m_Streaming = false;
 
@@ -376,17 +375,15 @@ mrcp_message_t* VerifierSession::CreateVerificationRequest(mrcp_channel_t* pMrcp
 	return pMrcpMessage;
 }
 
-bool VerifierSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const
-{
-	return true;
-}
-
 FILE* VerifierSession::GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const
 {
 	const VerifierScenario* pScenario = GetScenario();
 	const char* pVoiceprintIdentifier = pScenario->GetVoiceprintIdentifier();
 	if(!pVoiceprintIdentifier)
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Voiceprint Specified");
 		return NULL;
+	}
 
 	const char* pFileName = apr_psprintf(pool,"%s-%dkHz.pcm",
 			pVoiceprintIdentifier,

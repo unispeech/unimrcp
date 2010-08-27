@@ -103,7 +103,7 @@ struct demo_verifier_channel_t {
 	apt_bool_t               timers_started;
 	/** Voice activity detector */
 	mpf_activity_detector_t *detector;
-	/** File to write utterance to */
+	/** File to write voiceprint to */
 	FILE                    *audio_out;
 };
 
@@ -280,7 +280,7 @@ static apt_bool_t demo_verifier_channel_verify(mrcp_engine_channel_t *channel, m
 	if(!verifier_channel->audio_out) {
 		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
 		const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(channel);
-		char *file_name = apr_psprintf(channel->pool,"utter-%dkHz-%s.pcm",
+		char *file_name = apr_psprintf(channel->pool,"voiceprint-%dkHz-%s.pcm",
 			descriptor ? descriptor->sampling_rate/1000 : 8,
 			request->channel_id.session_id.buf);
 		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);

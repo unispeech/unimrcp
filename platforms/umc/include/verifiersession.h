@@ -48,7 +48,6 @@ protected:
 	mrcp_message_t* CreateEndSessionRequest(mrcp_channel_t* pMrcpChannel);
 	mrcp_message_t* CreateVerificationRequest(mrcp_channel_t* pMrcpChannel);
 
-	bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const;
 	FILE* GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const;
 
 /* ============================ HANDLERS =================================== */
