@@ -86,22 +86,6 @@ bool VerifierSession::Stop()
 	if(!pStopMessage)
 		return false;
 
-	if(m_pVerifierChannel->m_pVerificationRequest)
-	{
-		mrcp_generic_header_t* pGenericHeader;
-		/* get/allocate generic header */
-		pGenericHeader = (mrcp_generic_header_t*) mrcp_generic_header_prepare(pStopMessage);
-		if(pGenericHeader) 
-		{
-			pGenericHeader->active_request_id_list.count = 1;
-			pGenericHeader->active_request_id_list.ids[0] = 
-				m_pVerifierChannel->m_pVerificationRequest->start_line.request_id;
-			mrcp_generic_header_property_add(pStopMessage,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST);
-		}
-
-		m_pVerifierChannel->m_pVerificationRequest = NULL;
-	}
-	
 	return SendMrcpRequest(m_pVerifierChannel->m_pMrcpChannel,pStopMessage);
 }
 
@@ -186,13 +170,13 @@ VerifierChannel* VerifierSession::CreateVerifierChannel()
 	pTermination = CreateAudioTermination(
 			&audio_stream_vtable,      /* virtual methods table of audio stream */
 			pCapabilities,             /* capabilities of audio stream */
-			pVerifierChannel);            /* object to associate */
+			pVerifierChannel);         /* object to associate */
 
 	pChannel = CreateMrcpChannel(
 			MRCP_VERIFIER_RESOURCE,    /* MRCP resource identifier */
 			pTermination,              /* media termination, used to terminate audio stream */
 			NULL,                      /* RTP descriptor, used to create RTP termination (NULL by default) */
-			pVerifierChannel);            /* object to associate */
+			pVerifierChannel);         /* object to associate */
 	if(!pChannel)
 	{
 		delete pVerifierChannel;
@@ -250,7 +234,7 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 				if(pVerifierChannel)
 					pVerifierChannel->m_pVerificationRequest = GetMrcpMessage();
 
-				/* start to stream the speech to Verifiernize */
+				/* start to stream the speech to Verify */
 				if(pVerifierChannel) 
 					pVerifierChannel->m_Streaming = true;
 			}
