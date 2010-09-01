@@ -264,6 +264,15 @@ MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get
 	return audio_stream->tx_descriptor;
 }
 
+/** Get associated audio stream */
+MRCP_DECLARE(const mpf_audio_stream_t*) mrcp_application_audio_stream_get(const mrcp_channel_t *channel)
+{
+	if(!channel || !channel->termination) {
+		return NULL;
+	}
+
+	return mpf_termination_audio_stream_get(channel->termination);
+}
 
 /** Send channel add request */
 MRCP_DECLARE(apt_bool_t) mrcp_application_channel_add(mrcp_session_t *session, mrcp_channel_t *channel)

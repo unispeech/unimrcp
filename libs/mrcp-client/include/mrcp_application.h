@@ -261,6 +261,12 @@ MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_source_descriptor_g
  */
 MRCP_DECLARE(const mpf_codec_descriptor_t*) mrcp_application_sink_descriptor_get(const mrcp_channel_t *channel);
 
+/**
+ * Get associated audio stream.
+ * @param channel the channel to get associated stream from
+ */
+MRCP_DECLARE(const mpf_audio_stream_t*) mrcp_application_audio_stream_get(const mrcp_channel_t *channel);
+
 /** 
  * Send channel add request.
  * @param session the session to create channel for
