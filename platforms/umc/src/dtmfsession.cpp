@@ -32,8 +32,6 @@ struct RecogChannel
 	mrcp_channel_t*       m_pMrcpChannel;
 	/** DTMF generator */
 	mpf_dtmf_generator_t* m_pDtmfGenerator;
-	/** Audio stream */
-	mpf_audio_stream_t*   m_pStream;
 	/** Streaming is in-progress */
 	bool                  m_Streaming;
 };
@@ -81,13 +79,6 @@ bool DtmfSession::OnSessionTerminate(mrcp_sig_status_code_e status)
 	return UmcSession::OnSessionTerminate(status);
 }
 
-static apt_bool_t OpenStream(mpf_audio_stream_t* pStream, mpf_codec_t *codec)
-{
-	RecogChannel* pRecogChannel = (RecogChannel*) pStream->obj;
-	pRecogChannel->m_pStream = pStream;
-	return TRUE;
-}
-
 static apt_bool_t ReadStream(mpf_audio_stream_t* pStream, mpf_frame_t* pFrame)
 {
 	RecogChannel* pRecogChannel = (RecogChannel*) pStream->obj;
@@ -112,7 +103,6 @@ RecogChannel* DtmfSession::CreateRecogChannel()
 	RecogChannel *pRecogChannel = new RecogChannel;
 	pRecogChannel->m_pMrcpChannel = NULL;
 	pRecogChannel->m_pDtmfGenerator = NULL;
-	pRecogChannel->m_pStream = NULL;
 	pRecogChannel->m_Streaming = false;
 
 	/* create source stream capabilities */
@@ -122,7 +112,7 @@ RecogChannel* DtmfSession::CreateRecogChannel()
 	static const mpf_audio_stream_vtable_t audio_stream_vtable = 
 	{
 		NULL,
-		OpenStream,
+		NULL,
 		NULL,
 		ReadStream,
 		NULL,
@@ -164,7 +154,11 @@ bool DtmfSession::OnChannelAdd(mrcp_channel_t* pMrcpChannel, mrcp_sig_status_cod
 	RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
 	if(pRecogChannel)
 	{
-		pRecogChannel->m_pDtmfGenerator = mpf_dtmf_generator_create(pRecogChannel->m_pStream,GetSessionPool());
+		const mpf_audio_stream_t* pStream = mrcp_application_audio_stream_get(pMrcpChannel);
+		if(pStream)
+		{
+			pRecogChannel->m_pDtmfGenerator = mpf_dtmf_generator_create(pStream,GetSessionPool());
+		}
 	}
 
 	return StartRecognition(pMrcpChannel);
