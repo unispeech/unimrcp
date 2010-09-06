@@ -178,6 +178,17 @@ static apt_bool_t recog_response_recognize(mrcp_recog_state_machine_t *state_mac
 	return recog_response_dispatch(state_machine,message);
 }
 
+static apt_bool_t recog_request_interpret(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
+{
+	mrcp_header_fields_inherit(&message->header,state_machine->properties,message->pool);
+	return recog_request_dispatch(state_machine,message);
+}
+
+static apt_bool_t recog_response_interpret(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
+{
+	return recog_response_dispatch(state_machine,message);
+}
+
 static apt_bool_t recog_request_get_result(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
 	mrcp_message_t *response_message;
@@ -366,11 +377,22 @@ static apt_bool_t recog_event_recognition_complete(mrcp_recog_state_machine_t *s
 	return TRUE;
 }
 
+static apt_bool_t recog_event_interpretation_complete(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
+{
+	if(mrcp_resource_header_property_check(message,RECOGNIZER_HEADER_COMPLETION_CAUSE) != TRUE) {
+		mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(message);
+		recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_SUCCESS;
+		mrcp_resource_header_property_add(message,RECOGNIZER_HEADER_COMPLETION_CAUSE);
+	}
+	return recog_event_dispatch(state_machine,message);
+}
+
 static recog_method_f recog_request_method_array[RECOGNIZER_METHOD_COUNT] = {
 	recog_request_set_params,
 	recog_request_get_params,
 	recog_request_define_grammar,
 	recog_request_recognize,
+	recog_request_interpret,
 	recog_request_get_result,
 	recog_request_recognition_start_timers,
 	recog_request_stop
@@ -381,6 +403,7 @@ static recog_method_f recog_response_method_array[RECOGNIZER_METHOD_COUNT] = {
 	recog_response_get_params,
 	recog_response_define_grammar,
 	recog_response_recognize,
+	recog_response_interpret,
 	recog_response_get_result,
 	recog_response_recognition_start_timers,
 	recog_response_stop
@@ -388,7 +411,8 @@ static recog_method_f recog_response_method_array[RECOGNIZER_METHOD_COUNT] = {
 
 static recog_method_f recog_event_method_array[RECOGNIZER_EVENT_COUNT] = {
 	recog_event_start_of_input,
-	recog_event_recognition_complete
+	recog_event_recognition_complete,
+	recog_event_interpretation_complete
 };
 
 /** Update state according to received incoming request from MRCP client */
