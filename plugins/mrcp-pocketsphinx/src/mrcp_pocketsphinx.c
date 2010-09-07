@@ -105,10 +105,12 @@ struct pocketsphinx_recognizer_t {
 	cmd_ln_t                 *config;
 	/** Recognizer properties coppied from default engine properties */
 	pocketsphinx_properties_t properties;
-	/** Is input timer started */
+	/** Whether input timer has been started or not */
 	apt_bool_t                is_input_timer_on;
 	/** Noinput timeout */
 	apr_size_t                no_input_timeout;
+	/** Whether recognition timer has been started or not */
+	apt_bool_t                is_recognition_timer_on;
 	/** Recognition timeout */
 	apr_size_t                recognition_timeout;
 	/** Timeout elapsed since the last partial result checking */
@@ -209,6 +211,7 @@ static mrcp_engine_channel_t* pocketsphinx_engine_recognizer_create(mrcp_engine_
 	recognizer->config = NULL;
 	recognizer->is_input_timer_on = FALSE;
 	recognizer->no_input_timeout = 0;
+	recognizer->is_recognition_timer_on = FALSE;
 	recognizer->recognition_timeout = 0;
 	recognizer->partial_result_timeout = 0;
 	recognizer->last_result = NULL;
@@ -609,6 +612,7 @@ static apt_bool_t pocketsphinx_recognize(pocketsphinx_recognizer_t *recognizer, 
 	}
 
 	recognizer->is_input_timer_on = TRUE;
+	recognizer->is_recognition_timer_on = FALSE;
 	/* get recognizer header */
 	request_recog_header = mrcp_resource_header_get(request);
 	if(request_recog_header) {
@@ -854,6 +858,9 @@ static apt_bool_t pocketsphinx_start_of_input(pocketsphinx_recognizer_t *recogni
 		return FALSE;
 	}
 
+	/* start recognition timer */
+	recognizer->is_recognition_timer_on = TRUE;
+
 	/* set request state */
 	message->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	/* send asynchronous event */
@@ -947,7 +954,7 @@ static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mp
 			}
 		}
 
-		if(recognizer->is_input_timer_on) {
+		if(recognizer->is_input_timer_on == TRUE) {
 			recognizer->no_input_timeout += CODEC_FRAME_TIME_BASE;
 			if(recognizer->no_input_timeout == recognizer->properties.no_input_timeout) {
 				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Noinput Timeout Elapsed "APT_SIDRES_FMT,
@@ -957,12 +964,14 @@ static apt_bool_t pocketsphinx_stream_write(mpf_audio_stream_t *stream, const mp
 			}
 		}
 
-		recognizer->recognition_timeout += CODEC_FRAME_TIME_BASE;
-		if(recognizer->recognition_timeout == recognizer->properties.recognition_timeout) {
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Recognition Timeout Elapsed "APT_SIDRES_FMT,
-					RECOGNIZER_SIDRES(recognizer));
-			pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_RECOGNITION_TIMEOUT);
-			return TRUE;
+		if(recognizer->is_recognition_timer_on == TRUE) {
+			recognizer->recognition_timeout += CODEC_FRAME_TIME_BASE;
+			if(recognizer->recognition_timeout == recognizer->properties.recognition_timeout) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Recognition Timeout Elapsed "APT_SIDRES_FMT,
+						RECOGNIZER_SIDRES(recognizer));
+				pocketsphinx_end_of_input(recognizer,RECOGNIZER_COMPLETION_CAUSE_RECOGNITION_TIMEOUT);
+				return TRUE;
+			}
 		}
 
 		det_event = mpf_activity_detector_process(recognizer->detector,frame);
