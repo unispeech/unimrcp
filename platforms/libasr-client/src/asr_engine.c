@@ -127,7 +127,7 @@ ASR_CLIENT_DECLARE(asr_engine_t*) asr_engine_create(
 
 	if((log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
 		/* open the log file */
-		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,pool);
+		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
 	}
 
 	engine = apr_palloc(pool,sizeof(asr_engine_t));

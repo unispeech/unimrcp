@@ -135,13 +135,15 @@ APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger);
  * @param file_name the name of the log file
  * @param max_file_size the max size of the log file
  * @param max_file_count the max number of files used in log rotation
+ * @param append whether to append or to truncate (start over) the log file
  * @param pool the memory pool to use
  */
 APT_DECLARE(apt_bool_t) apt_log_file_open(
-							const char *dir_path, 
-							const char *file_name, 
-							apr_size_t max_file_size, 
-							apr_size_t max_file_count, 
+							const char *dir_path,
+							const char *file_name,
+							apr_size_t max_file_size,
+							apr_size_t max_file_count,
+							apt_bool_t append,
 							apr_pool_t *pool);
 
 /**
