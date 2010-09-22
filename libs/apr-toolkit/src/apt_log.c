@@ -24,6 +24,8 @@
 
 #define MAX_LOG_ENTRY_SIZE 4096
 #define MAX_PRIORITY_NAME_LENGTH 9
+/* append to end of log file (new behavior), or if not defined truncate the log file each time (old behavior) */
+#define APT_LOG_APPEND 
 
 static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 {
@@ -67,6 +69,8 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 static const char* apt_log_file_path_make(apt_log_file_data_t *file_data);
 static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *log_entry, apr_size_t size);
 static apr_xml_doc* apt_log_doc_parse(const char *file_path, apr_pool_t *pool);
+static apr_size_t apt_log_file_get_size(apt_log_file_data_t *file_data);
+static apr_byte_t apt_log_file_exist(apt_log_file_data_t *file_data);
 
 static apt_logger_t* apt_log_instance_alloc(apr_pool_t *pool)
 {
@@ -194,11 +198,36 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(const char *dir_path, const char *file
 	file_data->pool = pool;
 
 	if(!file_data->max_size) {
-		file_data->max_file_count = MAX_LOG_FILE_SIZE;
+		file_data->max_size = MAX_LOG_FILE_SIZE;
 	}
 	if(!file_data->max_file_count) {
 		file_data->max_file_count = MAX_LOG_FILE_COUNT;
 	}
+
+#ifdef APT_LOG_APPEND
+	/* iteratively find the last created file */
+	while(file_data->cur_file_index<file_data->max_file_count)
+	{
+		if(apt_log_file_exist(file_data) == 0)
+		{
+			if(file_data->cur_file_index > 0)
+				file_data->cur_file_index--;
+			file_data->cur_size = apt_log_file_get_size(file_data);
+			break;
+		}
+		file_data->cur_file_index++;
+	}
+
+	/* if all the files have been created start rewriting from beginning */
+	if(file_data->cur_file_index>=file_data->max_file_count)
+	{
+		file_data->cur_file_index=0;
+		file_data->cur_size=0;
+		log_file_path = apt_log_file_path_make(file_data);
+		file_data->file = fopen(log_file_path,"wb"); /* truncate the first file to zero length */
+		fclose(file_data->file);
+	}
+#endif /*APT_LOG_APPEND*/
 
 	/* create mutex */
 	if(apr_thread_mutex_create(&file_data->mutex,APR_THREAD_MUTEX_DEFAULT,pool) != APR_SUCCESS) {
@@ -206,7 +235,11 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(const char *dir_path, const char *file
 	}
 	/* open log file */
 	log_file_path = apt_log_file_path_make(file_data);
+#ifdef APT_LOG_APPEND
+	file_data->file = fopen(log_file_path,"ab");
+#else
 	file_data->file = fopen(log_file_path,"wb");
+#endif
 	if(!file_data->file) {
 		apr_thread_mutex_destroy(file_data->mutex);
 		return FALSE;
@@ -462,6 +495,40 @@ static const char* apt_log_file_path_make(apt_log_file_data_t *file_data)
 	const char *log_file_name = apr_psprintf(file_data->pool,"%s-%"APR_SIZE_T_FMT".log",file_data->log_file_name,file_data->cur_file_index);
 	apr_filepath_merge(&log_file_path,file_data->log_dir_path,log_file_name,0,file_data->pool);
 	return log_file_path;
+}
+
+static apr_size_t apt_log_file_get_size(apt_log_file_data_t *file_data)
+{
+	FILE* fp;
+	const char *log_file_path;
+	apr_size_t ret;
+	
+	log_file_path = apt_log_file_path_make(file_data);
+	fp = fopen(log_file_path,"rb");
+	
+	if(!fp) return 0;
+
+	fseek(fp,0,SEEK_END);
+	ret = ftell(fp);
+
+	fclose(fp);
+
+	return ret;
+}
+
+static apr_byte_t apt_log_file_exist(apt_log_file_data_t *file_data)
+{
+	FILE* fp;
+	const char *log_file_path;
+	
+	log_file_path = apt_log_file_path_make(file_data);
+	fp = fopen(log_file_path,"rb");
+	
+	if(!fp) return 0;
+
+	fclose(fp);
+
+	return 1;
 }
 
 static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *log_entry, apr_size_t size)
