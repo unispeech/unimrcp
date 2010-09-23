@@ -744,7 +744,14 @@ static apt_bool_t pocketsphinx_recognition_complete(pocketsphinx_recognizer_t *r
 			prob = ps_get_prob(recognizer->decoder, &uttid); 
 			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Get Recognition Final Result [%s] Prob [%d] Score [%d] "APT_SIDRES_FMT,
 				hyp,prob,score,RECOGNIZER_SIDRES(recognizer));
-			if(pocketsphinx_result_build(recognizer,complete_event) != TRUE) {
+			if(pocketsphinx_result_build(recognizer,complete_event) == TRUE) {
+				if(recognizer->channel->mrcp_version == MRCP_VERSION_2 &&
+					recog_header->completion_cause == RECOGNIZER_COMPLETION_CAUSE_RECOGNITION_TIMEOUT) {
+					/* rewrite completion cause for MRCPv2 */
+					recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_TOO_MUCH_SPEECH_TIMEOUT;
+				}
+			}
+			else {
 				recog_header->completion_cause = RECOGNIZER_COMPLETION_CAUSE_ERROR;
 			}
 		}
