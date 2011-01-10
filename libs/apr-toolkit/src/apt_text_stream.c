@@ -436,7 +436,7 @@ APT_DECLARE(apt_bool_t) apt_float_value_generate(float value, apt_str_t *str, ap
 
 	/* remove trailing 0s (if any) */
 	end = str->buf + str->length - 1;
-	while(*end == 0x30 && end != str->buf) end--;
+	while(*end == 0x30 && end != str->buf && *(end - 1) != '.') end--;
 
 	str->length = end - str->buf + 1;
 	return TRUE;
@@ -453,7 +453,7 @@ APT_DECLARE(apt_bool_t) apt_text_float_value_insert(apt_text_stream_t *stream, f
 
 	/* remove trailing 0s (if any) */
 	end = stream->pos + length - 1;
-	while(*end == 0x30 && end != stream->pos) end--;
+	while(*end == 0x30 && end != stream->pos && *(end - 1) != '.') end--;
 
 	stream->pos = end + 1;
 	return TRUE;
