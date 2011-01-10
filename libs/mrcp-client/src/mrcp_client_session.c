@@ -121,7 +121,8 @@ mrcp_channel_t* mrcp_client_channel_create(
 		termination_slot->id = 0;
 		channel->rtp_termination_slot = termination_slot;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Create Channel "APT_NAMESID_FMT,MRCP_SESSION_NAMESID(session));
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Create Channel "APT_NAMESID_FMT,
+		MRCP_SESSION_NAMESID(session));
 	return channel;
 }
 
@@ -131,13 +132,14 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 		return FALSE;
 	}
 	if(!descriptor) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Answer "APT_NAMESID_FMT" [null descriptor]",MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Receive Answer "APT_NAMESID_FMT" [null descriptor]",
+			MRCP_SESSION_NAMESID(session));
 		session->status = MRCP_SIG_STATUS_CODE_FAILURE;
 		/* raise app response */
 		return mrcp_app_sig_response_raise(session,TRUE);
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive Answer "APT_NAMESID_FMT" [c:%d a:%d v:%d]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Receive Answer "APT_NAMESID_FMT" [c:%d a:%d v:%d]",
 		MRCP_SESSION_NAMESID(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
@@ -189,7 +191,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 
 apt_bool_t mrcp_client_session_terminate_response_process(mrcp_client_session_t *session)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Session Terminated "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Session Terminated "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
 
 	if(mrcp_client_session_subrequest_remove(session) == TRUE) {
 		mrcp_app_session_terminate_raise(session,MRCP_SIG_STATUS_CODE_SUCCESS);
@@ -202,7 +204,8 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 	if(session->state == SESSION_STATE_TERMINATING) {
 		/* session termination request has been sent, still waiting for the response,
 		   all the events must be ignored at this stage */
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected Event! "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Unexpected Event! "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 		return FALSE;
 	}
 	
@@ -290,7 +293,7 @@ apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *
 apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Control Channel Added "APT_NAMESIDRES_FMT,
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Control Channel Added "APT_NAMESIDRES_FMT,
 					MRCP_SESSION_NAMESID(session),
 					channel->resource->name.buf);
 	if(!channel->waiting_for_channel) {
@@ -307,7 +310,7 @@ apt_bool_t mrcp_client_on_channel_add(mrcp_channel_t *channel, mrcp_control_desc
 apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_descriptor_t *descriptor, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Control Channel Modified "APT_NAMESIDRES_FMT,
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Control Channel Modified "APT_NAMESIDRES_FMT,
 					MRCP_SESSION_NAMESID(session),
 					channel->resource->name.buf);
 	if(!channel->waiting_for_channel) {
@@ -327,7 +330,7 @@ apt_bool_t mrcp_client_on_channel_modify(mrcp_channel_t *channel, mrcp_control_d
 apt_bool_t mrcp_client_on_channel_remove(mrcp_channel_t *channel, apt_bool_t status)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)channel->session;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Control Channel Removed "APT_NAMESIDRES_FMT,
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Control Channel Removed "APT_NAMESIDRES_FMT,
 					MRCP_SESSION_NAMESID(session),
 					channel->resource->name.buf);
 	if(!channel->waiting_for_channel) {
@@ -383,16 +386,18 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 {
 	mrcp_client_session_t *session = (mrcp_client_session_t*)app_message->session;
 	if(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive App Request "APT_NAMESID_FMT" [%d]",
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Receive App Request "APT_NAMESID_FMT" [%d]",
 			MRCP_SESSION_NAMESID(session),
 			app_message->sig_message.command_id);
 	}
 	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Receive App MRCP Request "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Receive App MRCP Request "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 	}
 
 	if(session->active_request) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Push Request to Queue "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Push Request to Queue "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 		apt_list_push_back(session->request_queue,app_message,session->base.pool);
 		return TRUE;
 	}
@@ -405,7 +410,7 @@ apt_bool_t mrcp_client_app_message_process(mrcp_app_message_t *app_message)
 static apt_bool_t mrcp_client_session_offer_send(mrcp_client_session_t *session)
 {
 	mrcp_session_descriptor_t *descriptor = session->offer;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send Offer "APT_NAMESID_FMT" [c:%d a:%d v:%d] to %s:%hu",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Send Offer "APT_NAMESID_FMT" [c:%d a:%d v:%d] to %s:%hu",
 		MRCP_SESSION_NAMESID(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
@@ -446,7 +451,7 @@ static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, ap
 	}
 	session->active_request = NULL;
 	response = mrcp_client_app_response_create(request,session->status,session->base.pool);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Response "APT_NAMESID_FMT" [%d] %s [%d]", 
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App Response "APT_NAMESID_FMT" [%d] %s [%d]", 
 		MRCP_SESSION_NAMESID(session),
 		response->sig_message.command_id,
 		session->status == MRCP_SIG_STATUS_CODE_SUCCESS ? "SUCCESS" : "FAILURE",
@@ -472,7 +477,7 @@ static apt_bool_t mrcp_app_sig_event_raise(mrcp_client_session_t *session, mrcp_
 	app_event->application = session->application;
 	app_event->session = &session->base;
 	app_event->channel = channel;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Event "APT_NAMESID_FMT" [%d]", 
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App Event "APT_NAMESID_FMT" [%d]", 
 		MRCP_SESSION_NAMESID(session),
 		app_event->sig_message.event_id);
 	return session->application->handler(app_event);
@@ -491,7 +496,8 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 		mrcp_message->start_line.method_id = mrcp_request->start_line.method_id;
 		mrcp_message->start_line.method_name = mrcp_request->start_line.method_name;
 		response->control_message = mrcp_message;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App MRCP Response "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App MRCP Response "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 		session->application->handler(response);
 
 		session->active_request = apt_list_pop_front(session->request_queue);
@@ -506,7 +512,8 @@ static apt_bool_t mrcp_app_control_message_raise(mrcp_client_session_t *session,
 		app_message->application = session->application;
 		app_message->session = &session->base;
 		app_message->channel = channel;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App MRCP Event "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App MRCP Event "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 		session->application->handler(app_message);
 	}
 	return TRUE;
@@ -522,7 +529,7 @@ static apt_bool_t mrcp_app_failure_message_raise(mrcp_client_session_t *session)
 	session->active_request = NULL;
 	response = mrcp_client_app_response_create(request,session->status,session->base.pool);
 	if(response->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App Response "APT_NAMESID_FMT" [%d] %s [%d]",
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App Response "APT_NAMESID_FMT" [%d] %s [%d]",
 			MRCP_SESSION_NAMESID(session),
 			response->sig_message.command_id,
 			session->status == MRCP_SIG_STATUS_CODE_SUCCESS ? "SUCCESS" : "FAILURE",
@@ -532,7 +539,8 @@ static apt_bool_t mrcp_app_failure_message_raise(mrcp_client_session_t *session)
 		mrcp_message_t *mrcp_response = mrcp_response_create(response->control_message,response->control_message->pool);
 		mrcp_response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 		response->control_message = mrcp_response;
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Raise App MRCP Response "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App MRCP Response "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 	}
 	session->application->handler(response);
 	return TRUE;
@@ -602,14 +610,15 @@ static apt_bool_t mrcp_client_message_send(mrcp_client_session_t *session, mrcp_
 	if(!session->base.id.length) {
 		mrcp_message_t *response = mrcp_response_create(message,message->pool);
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Raise App Failure MRCP Response "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Raise App Failure MRCP Response "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 		mrcp_app_control_message_raise(session,channel,response);
 		return TRUE;
 	}
 
 	message->channel_id.session_id = session->base.id;
 	message->start_line.request_id = ++session->base.last_request_id;
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCP Request "APT_NAMESIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Send MRCP Request "APT_NAMESIDRES_FMT" [%"MRCP_REQUEST_ID_FMT"]",
 					MRCP_SESSION_NAMESID(session),
 					channel->resource->name.buf,
 					message->start_line.request_id);
@@ -636,7 +645,7 @@ static apt_bool_t mrcp_client_channel_modify(mrcp_client_session_t *session, mrc
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Modify Control Channel "APT_NAMESIDRES_FMT" [%d]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,session->base.log_obj,"Modify Control Channel "APT_NAMESIDRES_FMT" [%d]",
 					MRCP_SESSION_NAMESID(session),
 					channel->resource->name.buf,
 					enable);
@@ -694,6 +703,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		mrcp_control_descriptor_t *control_media;
 		if(!channel->control_channel) {
 			channel->control_channel = mrcp_client_control_channel_create(profile->connection_agent,channel,pool);
+			mrcp_client_control_channel_log_obj_set(channel->control_channel,session->base.log_obj);
 		}
 		control_media = mrcp_control_offer_create(pool);
 		control_media->id = mrcp_session_control_media_add(session->offer,control_media);
@@ -705,7 +715,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		}
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Control Channel "APT_NAMESIDRES_FMT,
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,session->base.log_obj,"Add Control Channel "APT_NAMESIDRES_FMT,
 					MRCP_SESSION_NAMESID(session),
 					channel->resource->name.buf);
 	/* add control channel */
@@ -731,7 +741,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 				session->base.name,
 				session,5,pool);
 		}
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Media Termination "APT_NAMESIDRES_FMT,
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Add Media Termination "APT_NAMESIDRES_FMT,
 			MRCP_SESSION_NAMESID(session),
 			mpf_termination_name_get(channel->termination));
 		if(mpf_engine_termination_message_add(
@@ -759,7 +769,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		/* create rtp termination */
 		termination = mpf_termination_create(profile->rtp_termination_factory,session,pool);
 		slot->termination = termination;
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Media Termination "APT_NAMESIDRES_FMT, 
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Add Media Termination "APT_NAMESIDRES_FMT, 
 			MRCP_SESSION_NAMESID(session),
 			mpf_termination_name_get(termination));
 
@@ -804,7 +814,8 @@ static apt_bool_t mrcp_client_session_update(mrcp_client_session_t *session)
 	if(!session->offer) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Update Session "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Update Session "APT_NAMESID_FMT, 
+		MRCP_SESSION_NAMESID(session));
 	return mrcp_client_session_offer_send(session);
 }
 
@@ -815,7 +826,8 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	rtp_termination_slot_t *slot;
 	int i;
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Session "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Terminate Session "APT_NAMESID_FMT, 
+		MRCP_SESSION_NAMESID(session));
 	profile = session->profile;
 
 	mrcp_client_session_state_set(session,SESSION_STATE_TERMINATING);
@@ -836,7 +848,8 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 		if(channel->control_channel) {
 			/* remove channel */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Control Channel "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Remove Control Channel "APT_NAMESID_FMT, 
+				MRCP_SESSION_NAMESID(session));
 			if(mrcp_client_control_channel_remove(channel->control_channel) == TRUE) {
 				channel->waiting_for_channel = TRUE;
 				mrcp_client_session_subrequest_add(session);
@@ -845,7 +858,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 
 		/* send subtract termination request */
 		if(channel->termination) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Media Termination "APT_NAMESIDRES_FMT, 
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Subtract Media Termination "APT_NAMESIDRES_FMT, 
 				MRCP_SESSION_NAMESID(session),
 				mpf_termination_name_get(channel->termination));
 			if(mpf_engine_termination_message_add(
@@ -866,7 +879,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 			if(!slot || !slot->termination) continue;
 
 			/* send subtract termination request */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Media Termination "APT_NAMESIDRES_FMT, 
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Subtract Media Termination "APT_NAMESIDRES_FMT, 
 				MRCP_SESSION_NAMESID(session),
 				mpf_termination_name_get(slot->termination));
 			if(mpf_engine_termination_message_add(
@@ -928,7 +941,7 @@ static apt_bool_t mrcp_client_on_termination_add(mrcp_client_session_t *session,
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Media Termination Added "APT_NAMESIDRES_FMT, 
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Media Termination Added "APT_NAMESIDRES_FMT, 
 		MRCP_SESSION_NAMESID(session),
 		mpf_termination_name_get(mpf_message->termination));
 	termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
@@ -972,7 +985,7 @@ static apt_bool_t mrcp_client_on_termination_modify(mrcp_client_session_t *sessi
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Media Termination Modified "APT_NAMESIDRES_FMT, 
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Media Termination Modified "APT_NAMESIDRES_FMT, 
 		MRCP_SESSION_NAMESID(session),
 		mpf_termination_name_get(mpf_message->termination));
 	termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
@@ -1004,7 +1017,7 @@ static apt_bool_t mrcp_client_on_termination_subtract(mrcp_client_session_t *ses
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Media Termination Subtracted "APT_NAMESIDRES_FMT, 
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Media Termination Subtracted "APT_NAMESIDRES_FMT, 
 		MRCP_SESSION_NAMESID(session),
 		mpf_termination_name_get(mpf_message->termination));
 	termination_slot = mrcp_client_rtp_termination_find(session,mpf_message->termination);
@@ -1077,7 +1090,8 @@ apt_bool_t mrcp_client_mpf_message_process(mpf_message_container_t *mpf_message_
 			}
 		}
 		else if(mpf_message->message_type == MPF_MESSAGE_TYPE_EVENT) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process MPF Event "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Process MPF Event "APT_NAMESID_FMT, 
+				MRCP_SESSION_NAMESID(session));
 		}
 	}
 	return TRUE;
@@ -1126,7 +1140,8 @@ static apt_bool_t mrcp_client_control_media_answer_process(mrcp_client_session_t
 		/* get control descriptor */
 		control_descriptor = mrcp_session_control_media_get(descriptor,i);
 		/* modify channel */
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify Control Channel "APT_NAMESID_FMT, MRCP_SESSION_NAMESID(session));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Modify Control Channel "APT_NAMESID_FMT, 
+			MRCP_SESSION_NAMESID(session));
 		if(mrcp_client_control_channel_modify(channel->control_channel,control_descriptor) == TRUE) {
 			channel->waiting_for_channel = TRUE;
 			mrcp_client_session_subrequest_add(session);
@@ -1166,7 +1181,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 			rtp_descriptor->audio.remote = remote_media;
 
 			/* send modify termination request */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Modify Media Termination "APT_NAMESIDRES_FMT, 
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Modify Media Termination "APT_NAMESIDRES_FMT, 
 				MRCP_SESSION_NAMESID(session),
 				mpf_termination_name_get(slot->termination));
 			if(mpf_engine_termination_message_add(
@@ -1194,7 +1209,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 	if(session->state == SESSION_STATE_TERMINATING) {
 		/* no more requests are allowed, as session is being terminated!
 		   just return, it is horribly wrong and can crash anytime here */
-		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Inappropriate Application Request "APT_NAMESID_FMT" [%d]",
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_ERROR,session->base.log_obj,"Inappropriate Application Request "APT_NAMESID_FMT" [%d]",
 			MRCP_SESSION_NAMESID(session),
 			app_message->sig_message.command_id);
 		return FALSE;
@@ -1211,7 +1226,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 	switch(app_message->message_type) {
 		case MRCP_APP_MESSAGE_TYPE_SIGNALING:
 		{
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Dispatch App Request "APT_NAMESID_FMT" [%d]",
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Dispatch App Request "APT_NAMESID_FMT" [%d]",
 				MRCP_SESSION_NAMESID(session),
 				app_message->sig_message.command_id);
 			switch(app_message->sig_message.command_id) {

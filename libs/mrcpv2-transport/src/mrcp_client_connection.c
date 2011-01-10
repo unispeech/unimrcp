@@ -208,6 +208,7 @@ MRCP_DECLARE(mrcp_control_channel_t*) mrcp_client_control_channel_create(mrcp_co
 	channel->request_timer = NULL;
 	channel->removed = FALSE;
 	channel->obj = obj;
+	channel->log_obj = NULL;
 	channel->pool = pool;
 
 	channel->request_timer = apt_poller_task_timer_create(
@@ -216,6 +217,12 @@ MRCP_DECLARE(mrcp_control_channel_t*) mrcp_client_control_channel_create(mrcp_co
 								channel,
 								pool);
 	return channel;
+}
+
+/** Set the logger object */
+MRCP_DECLARE(void) mrcp_client_control_channel_log_obj_set(mrcp_control_channel_t *channel, void *log_obj)
+{
+	channel->log_obj = log_obj;
 }
 
 /** Destroy MRCPv2 control channel */
@@ -421,20 +428,20 @@ static apt_bool_t mrcp_client_agent_channel_modify(mrcp_connection_agent_t *agen
 				/* try to find existing connection */
 				connection = mrcp_client_agent_connection_find(agent,descriptor);
 				if(!connection) {
-					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Found No Existing TCP/MRCPv2 Connection");
+					apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Found No Existing TCP/MRCPv2 Connection");
 				}
 			}
 			if(!connection) {
 				/* create new connection */
 				connection = mrcp_client_agent_connection_create(agent,descriptor);
 				if(!connection) {
-					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Establish TCP/MRCPv2 Connection");
+					apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Failed to Establish TCP/MRCPv2 Connection");
 				}
 			}
 
 			if(connection) {
 				mrcp_connection_channel_add(connection,channel);
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Control Channel <%s> %s [%d]",
+				apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,channel->log_obj,"Add Control Channel <%s> %s [%d]",
 						channel->identifier.buf,
 						connection->id,
 						apr_hash_count(connection->channel_table));
@@ -458,7 +465,7 @@ static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agen
 	if(channel->connection) {
 		mrcp_connection_t *connection = channel->connection;
 		mrcp_connection_channel_remove(connection,channel);
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Control Channel <%s> [%d]",
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,channel->log_obj,"Remove Control Channel <%s> [%d]",
 				channel->identifier.buf,
 				apr_hash_count(connection->channel_table));
 		if(!connection->access_count) {
@@ -476,7 +483,7 @@ static apt_bool_t mrcp_client_agent_channel_remove(mrcp_connection_agent_t *agen
 static apt_bool_t mrcp_client_agent_request_cancel(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_message_t *message)
 {
 	mrcp_message_t *response;
-	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cancel MRCP Request <%s@%s> [%d]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Cancel MRCP Request <%s@%s> [%d]",
 		MRCP_MESSAGE_SIDRES(message),
 		message->start_line.request_id);
 	response = mrcp_response_create(message,message->pool);
@@ -517,7 +524,7 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 	apt_message_status_e result;
 
 	if(!connection || !connection->sock) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null MRCPv2 Connection "APT_SIDRES_FMT,MRCP_MESSAGE_SIDRES(message));
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Null MRCPv2 Connection "APT_SIDRES_FMT,MRCP_MESSAGE_SIDRES(message));
 		mrcp_client_agent_request_cancel(agent,channel,message);
 		return FALSE;
 	}
@@ -529,7 +536,7 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
 
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Send MRCPv2 Stream %s [%"APR_SIZE_T_FMT" bytes]\n%.*s",
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,channel->log_obj,"Send MRCPv2 Stream %s [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 				connection->id,
 				stream.text.length,
 				connection->verbose == TRUE ? stream.text.length : 0,
@@ -539,12 +546,12 @@ static apt_bool_t mrcp_client_agent_messsage_send(mrcp_connection_agent_t *agent
 				status = TRUE;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Send MRCPv2 Stream %s",
+				apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Failed to Send MRCPv2 Stream %s",
 					connection->id);
 			}
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Stream %s",
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Failed to Generate MRCPv2 Stream %s",
 				connection->id);
 		}
 	}
@@ -575,7 +582,7 @@ static apt_bool_t mrcp_client_message_handler(mrcp_connection_t *connection, mrc
 			if(message->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) {
 				if(!channel->active_request || 
 					channel->active_request->start_line.request_id != message->start_line.request_id) {
-					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected MRCP Response "APT_SIDRES_FMT" [%d]",
+					apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,channel->log_obj,"Unexpected MRCP Response "APT_SIDRES_FMT" [%d]",
 						MRCP_MESSAGE_SIDRES(message),
 						message->start_line.request_id);
 					return FALSE;

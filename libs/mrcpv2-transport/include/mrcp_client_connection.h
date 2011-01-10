@@ -173,6 +173,13 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_control_channel_destroy(mrcp_control_channe
  */
 MRCP_DECLARE(apt_bool_t) mrcp_client_control_message_send(mrcp_control_channel_t *channel, mrcp_message_t *message);
 
+/**
+ * Set the logger object.
+ * @param channel the control channel to set the object for
+ * @param log_obj the object to set
+ */
+MRCP_DECLARE(void) mrcp_client_control_channel_log_obj_set(mrcp_control_channel_t *channel, void *log_obj);
+
 
 APT_END_EXTERN_C
 

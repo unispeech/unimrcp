@@ -96,7 +96,7 @@ typedef enum {
 typedef struct apt_logger_t apt_logger_t;
 
 /** Prototype of extended log handler function */
-typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const char *id, 
+typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const char *obj, 
 											apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 /**
@@ -235,6 +235,16 @@ APT_DECLARE(apt_bool_t) apt_log_ext_handler_set(apt_log_ext_handler_f handler);
  * @param format the format of the entire log entry
  */
 APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e priority, const char *format, ...);
+
+/**
+ * Do logging.
+ * @param file the file name log entry is generated from
+ * @param line the line number log entry is generated from
+ * @param priority the priority of the entire log entry
+ * @param obj the associated object
+ * @param format the format of the entire log entry
+ */
+APT_DECLARE(apt_bool_t) apt_obj_log(const char *file, int line, apt_log_priority_e priority, void *obj, const char *format, ...);
 
 APT_END_EXTERN_C
 

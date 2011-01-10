@@ -74,6 +74,8 @@ struct mrcp_control_channel_t {
 	apt_bool_t               removed;
 	/** External object associated with the channel */
 	void                    *obj;
+	/** External logger object associated with the channel */
+	void                    *log_obj;
 	/** Pool to allocate memory from */
 	apr_pool_t              *pool;
 	/** Channel identifier (id at resource) */

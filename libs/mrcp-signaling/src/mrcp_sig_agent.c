@@ -61,6 +61,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding)
 	session = apr_palloc(pool,sizeof(mrcp_session_t)+padding);
 	session->pool = pool;
 	session->obj = NULL;
+	session->log_obj = NULL;
 	session->name = NULL;
 	session->signaling_agent = NULL;
 	session->request_vtable = NULL;
