@@ -801,7 +801,7 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 		channel = APR_ARRAY_IDX(session->channels,i,mrcp_channel_t*);
 		if(!channel) continue;
 
-		if(!channel->cmid_arr || mrcp_cmid_find(channel->cmid_arr,slot->mid) == TRUE) {
+		if(session->terminations->nelts == 1 || (!channel->cmid_arr || mrcp_cmid_find(channel->cmid_arr,slot->mid) == TRUE)) {
 			APR_ARRAY_PUSH(slot->channels, mrcp_channel_t*) = channel;
 
 			audio_stream = NULL;
