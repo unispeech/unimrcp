@@ -273,6 +273,9 @@ apt_bool_t mrcp_client_session_discover_response_process(mrcp_client_session_t *
 			control_media->resource_name = descriptor->resource_name;
 		}
 	}
+	else {
+		session->answer = descriptor;
+	}
 
 	if(mrcp_client_session_subrequest_remove(session) == TRUE) {
 		mrcp_app_message_t *response;

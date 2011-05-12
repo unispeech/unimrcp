@@ -546,10 +546,10 @@ static void mrcp_sofia_on_resource_discover(
 		const char *remote_sdp_str = NULL;
 		mrcp_session_descriptor_t *descriptor = NULL;
 
-		tl_gets(tags, 
-				SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
-				TAG_END());
-
+		if(sip->sip_payload) {
+			remote_sdp_str = sip->sip_payload->pl_data;
+		}
+		
 		if(remote_sdp_str) {
 			sdp_parser_t *parser = NULL;
 			sdp_session_t *sdp = NULL;
