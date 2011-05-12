@@ -6,7 +6,7 @@ Currently available scenarios are
 1. class="Synthesizer"
 2. class="Recognizer"
 3. class="Recorder"
-4. class="DtmfRecofnizer"
+4. class="DtmfRecognizer"
 5. class="Params"
 6. class="Verifier"
 
