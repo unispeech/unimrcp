@@ -724,7 +724,7 @@ static APR_INLINE void rtp_rx_failure_threshold_check(rtp_receiver_t *receiver)
 	discarded = receiver->stat.discarded_packets - receiver->periodic_history.discarded_prior;
 
 	if(discarded * 100 > received * DISCARDED_TO_RECEIVED_RATIO_THRESHOLD) {
-		/* failure threshold hired, restart */
+		/* failure threshold reached -> restart */
 		rtp_rx_restart(receiver);
 	}
 }
@@ -776,7 +776,7 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 			return FALSE;
 		}
 	
-		if(mpf_jitter_buffer_write(receiver->jb,buffer,size,header->timestamp) != JB_OK) {
+		if(mpf_jitter_buffer_write(receiver->jb,buffer,size,header->timestamp,(apr_byte_t)header->marker) != JB_OK) {
 			receiver->stat.discarded_packets++;
 			rtp_rx_failure_threshold_check(receiver);
 		}

@@ -52,7 +52,7 @@ void mpf_jitter_buffer_destroy(mpf_jitter_buffer_t *jb);
 apt_bool_t mpf_jitter_buffer_restart(mpf_jitter_buffer_t *jb);
 
 /** Write audio data to jitter buffer */
-jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts);
+jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts, apr_byte_t marker);
 
 /** Write named event to jitter buffer */
 jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_named_event_frame_t *named_event, apr_uint32_t ts, apr_byte_t marker);

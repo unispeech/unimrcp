@@ -155,17 +155,28 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 	*write_ts = ts - jb->write_ts_offset + jb->playout_delay_ts;
 	if(*write_ts % jb->frame_ts != 0) {
 		/* not frame alligned */
+		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" not alligned -> discard\n",write_ts);
 		return JB_DISCARD_NOT_ALLIGNED;
 	}
 	return JB_OK;
 }
 
-jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts)
+jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_size_t size, apr_uint32_t ts, apr_byte_t marker)
 {
 	mpf_frame_t *media_frame;
 	apr_uint32_t write_ts;
 	apr_size_t available_frame_count;
-	jb_result_t result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts);
+	jb_result_t result;
+
+	if(marker) {
+		/* new talkspurt */
+		if(jb->write_ts <= jb->read_ts) {
+			/* buffer is empty => it's safe to restart */
+			mpf_jitter_buffer_restart(jb);
+		}
+	}
+
+	result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts);
 	if(result != JB_OK) {
 		return result;
 	}
