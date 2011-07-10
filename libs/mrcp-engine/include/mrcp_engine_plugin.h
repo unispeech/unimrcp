@@ -30,11 +30,18 @@
 
 APT_BEGIN_EXTERN_C
 
+/** Let the plugin symbols be always exported as C functions */
+#ifdef __cplusplus
+#define MRCP_PLUGIN_EXTERN_C extern "C"
+#else
+#define MRCP_PLUGIN_EXTERN_C extern
+#endif
+
 /** Plugin export defines */
 #ifdef WIN32
-#define MRCP_PLUGIN_DECLARE(type) EXTERN_C __declspec(dllexport) type
+#define MRCP_PLUGIN_DECLARE(type) MRCP_PLUGIN_EXTERN_C __declspec(dllexport) type
 #else
-#define MRCP_PLUGIN_DECLARE(type) type
+#define MRCP_PLUGIN_DECLARE(type) MRCP_PLUGIN_EXTERN_C type
 #endif
 
 /** [REQUIRED] Symbol name of the main entry point in plugin DSO */
@@ -57,7 +64,8 @@ typedef apt_bool_t (*mrcp_plugin_log_accessor_f)(apt_logger_t *logger);
 
 /** Declare this macro in plugins to set plugin version */
 #define MRCP_PLUGIN_VERSION_DECLARE \
-	MRCP_PLUGIN_DECLARE(mrcp_plugin_version_t) mrcp_plugin_version =  \
+	MRCP_PLUGIN_DECLARE(mrcp_plugin_version_t) mrcp_plugin_version; \
+	mrcp_plugin_version_t mrcp_plugin_version =  \
 		{PLUGIN_MAJOR_VERSION, PLUGIN_MINOR_VERSION, PLUGIN_PATCH_VERSION};
 
 
