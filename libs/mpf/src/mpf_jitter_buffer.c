@@ -155,8 +155,8 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 	*write_ts = ts - jb->write_ts_offset + jb->playout_delay_ts;
 	if(*write_ts % jb->frame_ts != 0) {
 		/* not frame alligned */
-		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" not alligned -> discard\n",write_ts);
-		return JB_DISCARD_NOT_ALLIGNED;
+		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" not alligned\n",write_ts);
+		*write_ts -= *write_ts % jb->frame_ts;
 	}
 	return JB_OK;
 }
