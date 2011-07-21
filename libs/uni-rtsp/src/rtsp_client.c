@@ -765,8 +765,7 @@ static apt_bool_t rtsp_client_request_cancel(rtsp_client_t *client, rtsp_client_
 static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_connection_t *rtsp_connection)
 {
 	rtsp_client_session_t *session;
-	apr_size_t remaining_handles = 0;
-	apr_size_t cancelled_requests = 0;
+	apr_size_t remaining_handles;
 	apt_pollset_t *pollset = apt_poller_task_pollset_get(client->task);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"RTSP Peer Disconnected %s", rtsp_connection->id);
@@ -781,7 +780,6 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 						session,
 						RTSP_STATUS_CODE_INTERNAL_SERVER_ERROR,
 						RTSP_REASON_PHRASE_INTERNAL_SERVER_ERROR) == TRUE) {
-				cancelled_requests++;
 				apt_timer_kill(session->request_timer);
 			}
 		}
@@ -802,12 +800,8 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 				rtsp_client_session_terminate_raise(client,session);
 			}
 		}
-		remaining_handles = apr_hash_count(rtsp_connection->session_table);
 	}
 
-	if(!remaining_handles && !cancelled_requests) {
-		rtsp_client_connection_destroy(rtsp_connection);
-	}
 	return TRUE;
 }
 
