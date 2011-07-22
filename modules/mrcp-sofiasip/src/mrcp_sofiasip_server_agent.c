@@ -319,16 +319,10 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 									   sip_t const          *sip,
 									   tagi_t                tags[])
 {
-	int offer_recv = 0, answer_recv = 0, offer_sent = 0, answer_sent = 0;
-	const char *local_sdp_str = NULL, *remote_sdp_str = NULL;
+	const char *remote_sdp_str = NULL;
 	mrcp_session_descriptor_t *descriptor = NULL;
 
 	tl_gets(tags, 
-			NUTAG_OFFER_RECV_REF(offer_recv),
-			NUTAG_ANSWER_RECV_REF(answer_recv),
-			NUTAG_OFFER_SENT_REF(offer_sent),
-			NUTAG_ANSWER_SENT_REF(answer_sent),
-			SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
 			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
 			TAG_END());
 	
@@ -405,7 +399,7 @@ static void mrcp_sofia_on_resource_discover(mrcp_sofia_agent_t   *sofia_agent,
 									        tagi_t                tags[])
 {
 	char sdp_str[2048];
-	char *local_sdp_str = NULL;
+	const char *local_sdp_str = NULL;
 
 	const char *ip = sofia_agent->config->ext_ip ? 
 		sofia_agent->config->ext_ip : sofia_agent->config->local_ip;

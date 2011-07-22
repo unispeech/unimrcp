@@ -306,7 +306,7 @@ static apt_bool_t mrcp_sofia_session_unref(mrcp_sofia_session_t *sofia_session)
 static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	char sdp_str[2048];
-	char *local_sdp_str = NULL;
+	const char *local_sdp_str = NULL;
 	apt_bool_t res = FALSE;
 	mrcp_sofia_session_t *sofia_session = session->obj;
 	if(!sofia_session) {
@@ -392,11 +392,10 @@ static void mrcp_sofia_on_session_ready(
 {
 	mrcp_session_t *session = sofia_session->session;
 	if(session) {
-		const char *local_sdp_str = NULL, *remote_sdp_str = NULL;
+		const char *remote_sdp_str = NULL;
 		mrcp_session_descriptor_t *descriptor = NULL;
 
 		tl_gets(tags, 
-				SOATAG_LOCAL_SDP_STR_REF(local_sdp_str),
 				SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
 				TAG_END());
 
