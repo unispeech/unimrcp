@@ -131,9 +131,9 @@ static apt_bool_t rtsp_client_task_msg_process(apt_task_t *task, apt_task_msg_t 
 
 static apt_bool_t rtsp_client_poller_signal_process(void *obj, const apr_pollfd_t *descriptor);
 
+static apt_bool_t rtsp_client_message_handler(rtsp_client_connection_t *rtsp_connection, rtsp_message_t *message, apt_message_status_e status);
 static apt_bool_t rtsp_client_message_send(rtsp_client_t *client, rtsp_client_connection_t *connection, rtsp_message_t *message);
 static apt_bool_t rtsp_client_session_message_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
-static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *message);
 static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rtsp_client_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
 
 static void rtsp_client_timer_proc(apt_timer_t *timer, void *obj);
@@ -745,20 +745,19 @@ static apt_bool_t rtsp_client_request_cancel(rtsp_client_t *client, rtsp_client_
 	}
 
 	request = session->active_request;
-	session->active_request = NULL;
-
 	response = rtsp_response_create(
 						request,
 						status_code,
 						reason,
 						session->pool);
+
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Cancel RTSP Request "APT_PTRSID_FMT" CSeq:%"APR_SIZE_T_FMT" [%d]",
 		session,
 		request->header.session_id.buf ? request->header.session_id.buf : "new",
 		request->header.cseq,
 		status_code);
-	rtsp_client_session_response_process(client,session,request,response);
-	return TRUE;
+	
+	return rtsp_client_message_handler(session->connection, response, APT_MESSAGE_STATUS_COMPLETE);
 }
 
 /* RTSP connection disconnected */
