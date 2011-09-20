@@ -34,9 +34,9 @@ typedef enum {
 	/** The request was processed to completion and there will be no	
 	    more events from that resource to the client with that request-id */
 	MRCP_REQUEST_STATE_COMPLETE,
-	/** The job has been placed on a queue and will be processed in first-in-first-out order */
-	MRCP_REQUEST_STATE_INPROGRESS,
 	/** Indicate that further event messages will be delivered with that request-id */
+	MRCP_REQUEST_STATE_INPROGRESS,
+	/** The job has been placed on a queue and will be processed in first-in-first-out order */
 	MRCP_REQUEST_STATE_PENDING,
 	
 	/** Number of request states */

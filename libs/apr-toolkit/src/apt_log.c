@@ -284,7 +284,7 @@ APT_DECLARE(apt_bool_t) apt_log_output_mode_check(apt_log_output_e mode)
 	if(!apt_logger) {
 		return FALSE;
 	}
-	return (apt_logger->mode | mode) ? TRUE : FALSE;
+	return (apt_logger->mode & mode) ? TRUE : FALSE;
 }
 
 APT_DECLARE(int) apt_log_output_mode_translate(char *str)
