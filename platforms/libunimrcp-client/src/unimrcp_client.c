@@ -69,19 +69,15 @@ struct unimrcp_client_loader_t {
 	const char    *auto_ip;
 };
 
-static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const char *dir_path, const char *file_name, apr_pool_t *pool);
+static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const char *dir_path, const char *file_name);
+static apt_bool_t unimrcp_client_load2(unimrcp_client_loader_t *loader, const char *xmlconfig);
 
-/** Create and load UniMRCP client */
-MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
+/** Initialize client -- common to unimrcp_client_create and unimrcp_client_create2 */
+static unimrcp_client_loader_t* unimrcp_client_init(apt_dir_layout_t *dir_layout)
 {
 	apr_pool_t *pool;
 	mrcp_client_t *client;
-	const char *dir_path;
 	unimrcp_client_loader_t *loader;
-
-	if(!dir_layout) {
-		return NULL;
-	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Client ["UNI_VERSION_STRING"]");
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
@@ -102,17 +98,49 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 	loader->ext_ip = NULL;
 	loader->server_ip = NULL;
 	loader->auto_ip = NULL;
+	return loader;
+}
+
+/** Create and load UniMRCP client from directory layout */
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
+{
+	const char *dir_path;
+	unimrcp_client_loader_t *loader;
+
+	if(!dir_layout) {
+		return NULL;
+	}
+
+	loader = unimrcp_client_init(dir_layout);
+	if (!loader)
+		return NULL;
 
 	dir_path = dir_layout->conf_dir_path;
 	if(!dir_path) {
 		dir_path = DEFAULT_CONF_DIR_PATH;
 	}
 
-	if(unimrcp_client_load(loader,dir_path,CONF_FILE_NAME,pool) == FALSE) {
+	if(unimrcp_client_load(loader,dir_path,CONF_FILE_NAME) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load UniMRCP Client Document");
 	}
 
-	return client;
+	return loader->client;
+}
+
+/** Create UniMRCP client from XML string configuration */
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create2(const char *xmlconfig)
+{
+	unimrcp_client_loader_t *loader;
+
+	loader = unimrcp_client_init(NULL);
+	if (!loader)
+		return NULL;
+
+	if(unimrcp_client_load2(loader,xmlconfig) == FALSE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Process UniMRCP Client Configuration");
+	}
+
+	return loader->client;
 }
 
 /** Check whether specified attribute is valid */
@@ -1027,30 +1055,15 @@ static apr_xml_doc* unimrcp_client_doc_parse(const char *file_path, apr_pool_t *
 	return xml_doc;
 }
 
-/** Load UniMRCP client */
-static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const char *dir_path, const char *file_name, apr_pool_t *pool)
+/** Process parsed XML document */
+static apt_bool_t unimrcp_client_doc_process(unimrcp_client_loader_t *loader, const char *dir_path, apr_xml_doc *doc, apr_pool_t *pool)
 {
-	apr_xml_doc *doc;
 	const apr_xml_elem *elem;
 	const apr_xml_elem *root;
 	const apr_xml_attr *attr;
-	const char *file_path;
 	const char *version = NULL;
 	const char *subfolder = NULL;
 
-	if(!dir_path || !file_name) {
-		return FALSE;
-	}
-
-	if(*dir_path == '\0') {
-		file_path = file_name;
-	}
-	else {
-		file_path = apr_psprintf(pool,"%s/%s",dir_path,file_name);
-	}
-
-	/* Parse XML document */
-	doc = unimrcp_client_doc_parse(file_path,pool);
 	if(!doc) {
 		return FALSE;
 	}
@@ -1105,13 +1118,19 @@ static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const cha
 		apr_finfo_t finfo;
 		apr_status_t rv;
 
+		if (!dir_path) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Attempt to Process Subdirectory when "
+				"Creating from Config String");
+			return TRUE;
+		}
+
 		dir_path = apr_psprintf(pool,"%s/%s",dir_path,subfolder);
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Enter Directory [%s]",dir_path);
 		rv = apr_dir_open(&dir,dir_path,pool);
 		if(rv == APR_SUCCESS) {
 			while(apr_dir_read(&finfo, APR_FINFO_NAME, dir) == APR_SUCCESS) {
 				if(apr_fnmatch("*.xml", finfo.name, 0) == APR_SUCCESS) {
-					unimrcp_client_load(loader,dir_path,finfo.name,pool);
+					unimrcp_client_load(loader,dir_path,finfo.name);
 				}
 			}
 			apr_dir_close(dir);
@@ -1122,4 +1141,55 @@ static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const cha
 		}
 	}
 	return TRUE;
+}
+
+/** Load UniMRCP client from file */
+static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const char *dir_path, const char *file_name)
+{
+	apr_pool_t *pool = loader->pool;
+	apr_xml_doc *doc;
+	const char *file_path;
+
+	if(!dir_path || !file_name) {
+		return FALSE;
+	}
+
+	if(*dir_path == '\0') {
+		file_path = file_name;
+	}
+	else {
+		file_path = apr_psprintf(pool,"%s/%s",dir_path,file_name);
+	}
+
+	/* Parse XML document */
+	doc = unimrcp_client_doc_parse(file_path,pool);
+	return unimrcp_client_doc_process(loader, dir_path, doc, pool);
+}
+
+/** Read configuration from string */
+static apt_bool_t unimrcp_client_load2(unimrcp_client_loader_t *loader, const char *xmlconfig)
+{
+	apr_pool_t *pool = loader->pool;
+	apr_xml_parser *parser;
+	apr_xml_doc *xml_doc;
+	char errbuf[4096];
+	apr_status_t rv;
+
+	parser = apr_xml_parser_create(pool);
+	if (!parser) return FALSE;
+	rv = apr_xml_parser_feed(parser, xmlconfig, strlen(xmlconfig));
+	if (rv != APR_SUCCESS) {
+		apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
+		apt_log(APT_LOG_MARK, APT_PRIO_ERROR, "Error parsing XML configuration: %d %pm: %s",
+			rv, &rv, errbuf);
+		return FALSE;
+	}
+	rv = apr_xml_parser_done(parser, &xml_doc);
+	if (rv != APR_SUCCESS) {
+		apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
+		apt_log(APT_LOG_MARK, APT_PRIO_ERROR, "Error parsing XML configuration: %d %pm: %s",
+			rv, &rv, errbuf);
+		return FALSE;
+	}
+	return unimrcp_client_doc_process(loader, NULL, xml_doc, pool);
 }

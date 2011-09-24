@@ -34,6 +34,12 @@ APT_BEGIN_EXTERN_C
  */
 MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout);
 
+/**
+ * Create UniMRCP client.
+ * @param xmlconfig XML configuration string
+ */
+MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create2(const char *xmlconfig);
+
 
 APT_END_EXTERN_C
 
