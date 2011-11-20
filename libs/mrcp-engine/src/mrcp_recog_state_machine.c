@@ -116,7 +116,7 @@ static apt_bool_t recog_request_get_params(mrcp_recog_state_machine_t *state_mac
 
 static apt_bool_t recog_response_get_params(mrcp_recog_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_header_fields_set(&message->header,&state_machine->active_request->header,message->pool);
+	mrcp_header_fields_inherit(&message->header,&state_machine->active_request->header,message->pool);
 	mrcp_header_fields_get(&message->header,state_machine->properties,message->pool);
 	return recog_response_dispatch(state_machine,message);
 }

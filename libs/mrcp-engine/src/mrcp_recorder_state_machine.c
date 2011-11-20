@@ -110,7 +110,7 @@ static apt_bool_t recorder_request_get_params(mrcp_recorder_state_machine_t *sta
 
 static apt_bool_t recorder_response_get_params(mrcp_recorder_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	mrcp_header_fields_set(&message->header,&state_machine->active_request->header,message->pool);
+	mrcp_header_fields_inherit(&message->header,&state_machine->active_request->header,message->pool);
 	mrcp_header_fields_get(&message->header,state_machine->properties,message->pool);
 	return recorder_response_dispatch(state_machine,message);
 }

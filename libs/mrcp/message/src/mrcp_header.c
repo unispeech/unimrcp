@@ -151,6 +151,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_fields_get(mrcp_message_header_t *header, c
 			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
 				header_field = APR_RING_NEXT(header_field, link)) {
 
+		if(!apt_string_is_empty(&header_field->value))
+			continue;
 		src_header_field = apt_header_section_field_get(&src_header->header_section,header_field->id);
 		if(src_header_field) {
 			if(header_field->id < GENERIC_HEADER_COUNT) {
