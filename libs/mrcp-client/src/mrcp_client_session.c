@@ -210,6 +210,7 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 	}
 	
 	if(session->active_request) {
+		apt_bool_t process_pending_requests = TRUE;
 		/* raise app response */
 		session->status = MRCP_SIG_STATUS_CODE_TERMINATE;
 		mrcp_app_failure_message_raise(session);
@@ -230,8 +231,11 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 				session->status = MRCP_SIG_STATUS_CODE_CANCEL;
 				mrcp_app_failure_message_raise(session);
 			}
+			else {
+				process_pending_requests = FALSE;
+			}
 		}
-		while(session->active_request);
+		while(process_pending_requests == TRUE);
 	}
 	else {
 		/* raise app event */
