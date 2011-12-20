@@ -226,8 +226,8 @@ APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task)
 
 APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] [%d;%d]",
-		task->name, msg->type, msg->sub_type);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] [0x%x;%d;%d]",
+		task->name, msg, msg->type, msg->sub_type);
 	if(task->vtable.signal_msg) {
 		return task->vtable.signal_msg(task,msg);
 	}
@@ -238,6 +238,8 @@ APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_ms
 {
 	apt_task_t *parent_task = task->parent_task;
 	if(parent_task) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] [0x%x;%d;%d]",
+			parent_task->name, msg, msg->type, msg->sub_type);
 		if(parent_task->vtable.signal_msg) {
 			return parent_task->vtable.signal_msg(parent_task,msg);
 		}
@@ -275,8 +277,8 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_bool_t status = FALSE;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%s] [%d;%d]",
-		task->name, msg->type, msg->sub_type);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%s] [0x%x;%d;%d]",
+		task->name, msg, msg->type, msg->sub_type);
 	if(msg->type == TASK_MSG_CORE) {
 		status = apt_core_task_msg_process(task,msg);
 	}
