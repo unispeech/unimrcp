@@ -35,6 +35,11 @@ struct apt_poller_task_t {
 	apt_cyclic_queue_t *msg_queue;
 	apt_pollset_t      *pollset;
 	apt_timer_queue_t  *timer_queue;
+
+	apr_pollfd_t       *desc_arr;
+	apr_int32_t         desc_count;
+	apr_int32_t         desc_index;
+
 };
 
 static apt_bool_t apt_poller_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
@@ -87,6 +92,9 @@ APT_DECLARE(apt_poller_task_t*) apt_poller_task_create(
 	apr_thread_mutex_create(&task->guard,APR_THREAD_MUTEX_UNNESTED,pool);
 
 	task->timer_queue = apt_timer_queue_create(pool);
+	task->desc_arr = NULL;
+	task->desc_count = 0;
+	task->desc_index = 0;
 	return task;
 }
 
@@ -165,6 +173,13 @@ APT_DECLARE(apt_bool_t) apt_poller_task_descriptor_add(const apt_poller_task_t *
 APT_DECLARE(apt_bool_t) apt_poller_task_descriptor_remove(const apt_poller_task_t *task, const apr_pollfd_t *descriptor)
 {
 	if(task->pollset) {
+		apr_int32_t i = task->desc_index + 1;
+		for(; i < task->desc_count; i++) {
+			apr_pollfd_t *cur_descriptor = &task->desc_arr[i];
+			if(cur_descriptor->client_data == descriptor->client_data) {
+				cur_descriptor->client_data = NULL;
+			}
+		}
 		return apt_pollset_remove(task->pollset,descriptor);
 	}
 	return FALSE;
@@ -205,12 +220,9 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 	apt_poller_task_t *task = apt_task_object_get(base);
 	apt_bool_t *running;
 	apr_status_t status;
-	apr_int32_t num;
-	const apr_pollfd_t *ret_pfd;
 	apr_interval_time_t timeout;
 	apr_uint32_t queue_timeout;
 	apr_time_t time_now, time_last = 0;
-	int i;
 	const char *task_name;
 
 	if(!task) {
@@ -238,13 +250,14 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 			timeout = -1;
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s]",task_name);
 		}
-		status = apt_pollset_poll(task->pollset, timeout, &num, &ret_pfd);
+		status = apt_pollset_poll(task->pollset, timeout, &task->desc_count, &task->desc_arr);
 		if(status != APR_SUCCESS && status != APR_TIMEUP) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Poll [%s] status: %d",task_name,status);
 			continue;
 		}
-		for(i = 0; i < num; i++) {
-			if(apt_pollset_is_wakeup(task->pollset,&ret_pfd[i])) {
+		for(task->desc_index = 0; task->desc_index < task->desc_count; task->desc_index++) {
+			const apr_pollfd_t *descriptor = &task->desc_arr[task->desc_index];
+			if(apt_pollset_is_wakeup(task->pollset,descriptor)) {
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Poller Wakeup [%s]",task_name);
 				apt_poller_task_wakeup_process(task);
 				if(*running == FALSE) {
@@ -254,7 +267,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 			}
 
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Signalled Descriptor [%s]",task_name);
-			task->signal_handler(task->obj,&ret_pfd[i]);
+			task->signal_handler(task->obj,descriptor);
 		}
 
 		if(timeout != -1) {
