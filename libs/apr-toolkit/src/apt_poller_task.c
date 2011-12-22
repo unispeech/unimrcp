@@ -250,7 +250,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 			timeout = -1;
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s]",task_name);
 		}
-		status = apt_pollset_poll(task->pollset, timeout, &task->desc_count, &task->desc_arr);
+		status = apt_pollset_poll(task->pollset, timeout, &task->desc_count, (const apr_pollfd_t **) &task->desc_arr);
 		if(status != APR_SUCCESS && status != APR_TIMEUP) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Poll [%s] status: %d",task_name,status);
 			continue;
