@@ -302,7 +302,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_client_session_request(rtsp_client_t *client, rtsp
 
 
 /** Create connection */
-static apt_bool_t rtsp_client_connect(rtsp_client_connection_t *connection, apt_pollset_t *pollset, const char *ip, apr_port_t port)
+static apt_bool_t rtsp_client_connect(rtsp_client_t *client, rtsp_client_connection_t *connection, const char *ip, apr_port_t port)
 {
 	char *local_ip = NULL;
 	char *remote_ip = NULL;
@@ -344,7 +344,7 @@ static apt_bool_t rtsp_client_connect(rtsp_client_connection_t *connection, apt_
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
-	if(apt_pollset_add(pollset,&connection->sock_pfd) != TRUE) {
+	if(apt_poller_task_descriptor_add(client->task,&connection->sock_pfd) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
@@ -356,11 +356,11 @@ static apt_bool_t rtsp_client_connect(rtsp_client_connection_t *connection, apt_
 }
 
 /** Close connection */
-static apt_bool_t rtsp_client_connection_close(rtsp_client_connection_t *connection, apt_pollset_t *pollset)
+static apt_bool_t rtsp_client_connection_close(rtsp_client_t *client, rtsp_client_connection_t *connection)
 {
 	if(connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTSP Connection %s",connection->id);
-		apt_pollset_remove(pollset,&connection->sock_pfd);
+		apt_poller_task_descriptor_remove(client->task,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 	}
@@ -372,7 +372,6 @@ static apt_bool_t rtsp_client_connection_close(rtsp_client_connection_t *connect
 static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_client_session_t *session)
 {
 	rtsp_client_connection_t *rtsp_connection;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(client->task);
 	apr_pool_t *pool = apt_pool_create();
 	if(!pool) {
 		return FALSE;
@@ -382,7 +381,7 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 	rtsp_connection->pool = pool;
 	rtsp_connection->sock = NULL;
 
-	if(rtsp_client_connect(rtsp_connection,pollset,session->server_ip.buf,session->server_port) == FALSE) {
+	if(rtsp_client_connect(client,rtsp_connection,session->server_ip.buf,session->server_port) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Connect to RTSP Server %s:%hu",
 			session->server_ip.buf,session->server_port);
 		apr_pool_destroy(pool);
@@ -409,9 +408,8 @@ static apt_bool_t rtsp_client_connection_create(rtsp_client_t *client, rtsp_clie
 static apt_bool_t rtsp_client_connection_destroy(rtsp_client_connection_t *rtsp_connection)
 {
 	rtsp_client_t *client = rtsp_connection->client;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(client->task);
 	apt_list_elem_remove(client->connection_list,rtsp_connection->it);
-	rtsp_client_connection_close(rtsp_connection,pollset);
+	rtsp_client_connection_close(client,rtsp_connection);
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Connection %s",rtsp_connection->id);
 	apr_pool_destroy(rtsp_connection->pool);
 
@@ -765,10 +763,9 @@ static apt_bool_t rtsp_client_on_disconnect(rtsp_client_t *client, rtsp_client_c
 {
 	rtsp_client_session_t *session;
 	apr_size_t remaining_handles;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(client->task);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"RTSP Peer Disconnected %s", rtsp_connection->id);
-	rtsp_client_connection_close(rtsp_connection,pollset);
+	rtsp_client_connection_close(client,rtsp_connection);
 
 	/* Cancel in-progreess requests */
 	do {

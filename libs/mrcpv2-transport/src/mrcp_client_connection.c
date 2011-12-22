@@ -287,7 +287,6 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 {
 	char *local_ip = NULL;
 	char *remote_ip = NULL;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
 	mrcp_connection_t *connection = mrcp_connection_create();
 
 	apr_sockaddr_info_get(&connection->r_sockaddr,descriptor->ip.buf,APR_INET,descriptor->port,0,connection->pool);
@@ -328,7 +327,7 @@ static mrcp_connection_t* mrcp_client_agent_connection_create(mrcp_connection_ag
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
-	if(apt_pollset_add(pollset, &connection->sock_pfd) != TRUE) {
+	if(apt_poller_task_descriptor_add(agent->task, &connection->sock_pfd) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
 		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
@@ -381,17 +380,14 @@ static mrcp_connection_t* mrcp_client_agent_connection_find(mrcp_connection_agen
 
 static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
-
 	/* remove from the list */
 	if(connection->it) {
 		apt_list_elem_remove(agent->connection_list,connection->it);
 		connection->it = NULL;
 	}
 	
-	if(pollset) {
-		apt_pollset_remove(pollset,&connection->sock_pfd);
-	}
+	apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
+
 	if(connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close TCP/MRCPv2 Connection %s",connection->id);
 		apr_socket_close(connection->sock);
@@ -629,11 +625,8 @@ static apt_bool_t mrcp_client_poller_signal_process(void *obj, const apr_pollfd_
 
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
-		apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"TCP/MRCPv2 Peer Disconnected %s",connection->id);
-		if(pollset) {
-			apt_pollset_remove(pollset,&connection->sock_pfd);
-		}
+		apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 

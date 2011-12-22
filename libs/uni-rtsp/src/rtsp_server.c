@@ -634,9 +634,8 @@ static apt_bool_t rtsp_server_message_handler(rtsp_server_connection_t *rtsp_con
 static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 {
 	apr_status_t status;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(server->task);
 	
-	if(!server->sockaddr || !pollset) {
+	if(!server->sockaddr) {
 		return FALSE;
 	}
 
@@ -668,7 +667,7 @@ static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 	server->listen_sock_pfd.reqevents = APR_POLLIN;
 	server->listen_sock_pfd.desc.s = server->listen_sock;
 	server->listen_sock_pfd.client_data = server->listen_sock;
-	if(apt_pollset_add(pollset, &server->listen_sock_pfd) != TRUE) {
+	if(apt_poller_task_descriptor_add(server->task, &server->listen_sock_pfd) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset");
 		apr_socket_close(server->listen_sock);
 		server->listen_sock = NULL;
@@ -680,10 +679,7 @@ static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 /** Remove from pollset and destroy listening socket */
 static void rtsp_server_listening_socket_destroy(rtsp_server_t *server)
 {
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(server->task);
-	if(pollset) {
-		apt_pollset_remove(pollset,&server->listen_sock_pfd);
-	}
+	apt_poller_task_descriptor_remove(server->task,&server->listen_sock_pfd);
 
 	if(server->listen_sock) {
 		apr_socket_close(server->listen_sock);
@@ -699,7 +695,6 @@ static apt_bool_t rtsp_server_connection_accept(rtsp_server_t *server)
 	char *remote_ip = NULL;
 	apr_sockaddr_t *l_sockaddr = NULL;
 	apr_sockaddr_t *r_sockaddr = NULL;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(server->task);
 	apr_pool_t *pool = apt_pool_create();
 	if(!pool) {
 		return FALSE;
@@ -733,7 +728,7 @@ static apt_bool_t rtsp_server_connection_accept(rtsp_server_t *server)
 	rtsp_connection->sock_pfd.reqevents = APR_POLLIN;
 	rtsp_connection->sock_pfd.desc.s = rtsp_connection->sock;
 	rtsp_connection->sock_pfd.client_data = rtsp_connection;
-	if(apt_pollset_add(pollset,&rtsp_connection->sock_pfd) != TRUE) {
+	if(apt_poller_task_descriptor_add(server->task,&rtsp_connection->sock_pfd) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",rtsp_connection->id);
 		apr_socket_close(rtsp_connection->sock);
 		apr_pool_destroy(pool);
@@ -757,13 +752,12 @@ static apt_bool_t rtsp_server_connection_accept(rtsp_server_t *server)
 /** Close connection */
 static apt_bool_t rtsp_server_connection_close(rtsp_server_t *server, rtsp_server_connection_t *rtsp_connection)
 {
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(server->task);
 	apr_size_t remaining_sessions = 0;
 	if(!rtsp_connection || !rtsp_connection->sock) {
 		return FALSE;
 	}
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTSP Connection %s",rtsp_connection->id);
-	apt_pollset_remove(pollset,&rtsp_connection->sock_pfd);
+	apt_poller_task_descriptor_remove(server->task,&rtsp_connection->sock_pfd);
 	apr_socket_close(rtsp_connection->sock);
 	rtsp_connection->sock = NULL;
 

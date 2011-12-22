@@ -133,13 +133,12 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 
 	if(mrcp_server_agent_listening_socket_create(agent) == TRUE) {
 		/* add listening socket to pollset */
-		apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
 		memset(&agent->listen_sock_pfd,0,sizeof(apr_pollfd_t));
 		agent->listen_sock_pfd.desc_type = APR_POLL_SOCKET;
 		agent->listen_sock_pfd.reqevents = APR_POLLIN;
 		agent->listen_sock_pfd.desc.s = agent->listen_sock;
 		agent->listen_sock_pfd.client_data = agent->listen_sock;
-		if(apt_pollset_add(pollset, &agent->listen_sock_pfd) != TRUE) {
+		if(apt_poller_task_descriptor_add(agent->task, &agent->listen_sock_pfd) != TRUE) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset");
 			mrcp_server_agent_listening_socket_destroy(agent);
 		}
@@ -155,10 +154,7 @@ static apt_bool_t mrcp_server_agent_on_destroy(apt_task_t *task)
 	apt_poller_task_t *poller_task = apt_task_object_get(task);
 	mrcp_connection_agent_t *agent = apt_poller_task_object_get(poller_task);
 
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(poller_task);
-	if(pollset) {
-		apt_pollset_remove(pollset,&agent->listen_sock_pfd);
-	}
+	apt_poller_task_descriptor_remove(agent->task,&agent->listen_sock_pfd);
 	mrcp_server_agent_listening_socket_destroy(agent);
 
 	apt_poller_task_cleanup(poller_task);
@@ -427,7 +423,6 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	char *remote_ip = NULL;
 	apr_socket_t *sock;
 	apr_pool_t *pool;
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
 	mrcp_connection_t *connection;
 
 	if(!agent->null_connection) {
@@ -471,7 +466,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection->sock_pfd.reqevents = APR_POLLIN;
 	connection->sock_pfd.desc.s = connection->sock;
 	connection->sock_pfd.client_data = connection;
-	if(apt_pollset_add(pollset, &connection->sock_pfd) != TRUE) {
+	if(apt_poller_task_descriptor_add(agent->task, &connection->sock_pfd) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
 		apr_socket_close(sock);
 		mrcp_connection_destroy(connection);
@@ -502,9 +497,8 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 static apt_bool_t mrcp_server_agent_connection_close(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
-	apt_pollset_t *pollset = apt_poller_task_pollset_get(agent->task);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"TCP/MRCPv2 Peer Disconnected %s",connection->id);
-	apt_pollset_remove(pollset,&connection->sock_pfd);
+	apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
 	apr_socket_close(connection->sock);
 	connection->sock = NULL;
 	if(!connection->access_count) {

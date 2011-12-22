@@ -98,10 +98,18 @@ APT_DECLARE(apt_task_vtable_t*) apt_poller_task_vtable_get(apt_poller_task_t *ta
 APT_DECLARE(void*) apt_poller_task_object_get(const apt_poller_task_t *task);
 
 /**
- * Get pollset.
- * @param task the poller task to get pollset from
+ * Add descriptor to pollset.
+ * @param task the task which holds the pollset
+ * @param descriptor the descriptor to add
  */
-APT_DECLARE(apt_pollset_t*) apt_poller_task_pollset_get(const apt_poller_task_t *task);
+APT_DECLARE(apt_bool_t) apt_poller_task_descriptor_add(const apt_poller_task_t *task, const apr_pollfd_t *descriptor);
+
+/**
+ * Remove descriptor from pollset.
+ * @param task the task which holds the pollset
+ * @param descriptor the descriptor to remove
+ */
+APT_DECLARE(apt_bool_t) apt_poller_task_descriptor_remove(const apt_poller_task_t *task, const apr_pollfd_t *descriptor);
 
 /**
  * Create timer.

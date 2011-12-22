@@ -152,10 +152,22 @@ APT_DECLARE(void*) apt_poller_task_object_get(const apt_poller_task_t *task)
 	return task->obj;
 }
 
-/** Get pollset */
-APT_DECLARE(apt_pollset_t*) apt_poller_task_pollset_get(const apt_poller_task_t *task)
+/** Add descriptor to pollset */
+APT_DECLARE(apt_bool_t) apt_poller_task_descriptor_add(const apt_poller_task_t *task, const apr_pollfd_t *descriptor)
 {
-	return task->pollset;
+	if(task->pollset) {
+		return apt_pollset_add(task->pollset,descriptor);
+	}
+	return FALSE;
+}
+
+/** Remove descriptor from pollset */
+APT_DECLARE(apt_bool_t) apt_poller_task_descriptor_remove(const apt_poller_task_t *task, const apr_pollfd_t *descriptor)
+{
+	if(task->pollset) {
+		return apt_pollset_remove(task->pollset,descriptor);
+	}
+	return FALSE;
 }
 
 /** Create timer */
