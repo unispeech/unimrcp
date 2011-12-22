@@ -391,34 +391,32 @@ static void mrcp_sofia_on_session_ready(
 						tagi_t                tags[])
 {
 	mrcp_session_t *session = sofia_session->session;
-	if(session) {
-		const char *remote_sdp_str = NULL;
-		mrcp_session_descriptor_t *descriptor = NULL;
+	const char *remote_sdp_str = NULL;
+	mrcp_session_descriptor_t *descriptor = NULL;
 
-		tl_gets(tags, 
-				SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
-				TAG_END());
+	tl_gets(tags, 
+			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
+			TAG_END());
 
-		if(remote_sdp_str) {
-			sdp_parser_t *parser = NULL;
-			sdp_session_t *sdp = NULL;
-			const char *force_destination_ip = NULL;
-			apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Remote SDP "APT_NAMESID_FMT"\n%s",
-				session->name,
-				MRCP_SESSION_SID(session),
-				remote_sdp_str);
+	if(remote_sdp_str) {
+		sdp_parser_t *parser = NULL;
+		sdp_session_t *sdp = NULL;
+		const char *force_destination_ip = NULL;
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Remote SDP "APT_NAMESID_FMT"\n%s",
+			session->name,
+			MRCP_SESSION_SID(session),
+			remote_sdp_str);
 
-			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
-			sdp = sdp_session(parser);
-			if(sofia_session->sip_settings->force_destination == TRUE) {
-				force_destination_ip = sofia_session->sip_settings->server_ip;
-			}
-			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,session->pool);
-			sdp_parser_free(parser);
+		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
+		sdp = sdp_session(parser);
+		if(sofia_session->sip_settings->force_destination == TRUE) {
+			force_destination_ip = sofia_session->sip_settings->server_ip;
 		}
-
-		mrcp_session_answer(session,descriptor);
+		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,session->pool);
+		sdp_parser_free(parser);
 	}
+
+	mrcp_session_answer(session,descriptor);
 }
 
 static void mrcp_sofia_on_session_redirect(
@@ -485,23 +483,21 @@ static void mrcp_sofia_on_session_terminate(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	mrcp_session_t *session = sofia_session->session;
-	if(session) {
-		apt_bool_t terminate_requested;
-	
-		apr_thread_mutex_lock(sofia_session->mutex);
-		terminate_requested = sofia_session->terminate_requested;
-		session = sofia_session->session;
-		mrcp_sofia_session_unref(sofia_session);
-		apr_thread_mutex_unlock(sofia_session->mutex);
+	mrcp_session_t *session;
+	apt_bool_t terminate_requested;
 
-		if(terminate_requested == TRUE) {
-			mrcp_sofia_session_destroy(sofia_session);
-			mrcp_session_terminate_response(session);
-		}
-		else {
-			mrcp_session_terminate_event(session);
-		}
+	apr_thread_mutex_lock(sofia_session->mutex);
+	terminate_requested = sofia_session->terminate_requested;
+	session = sofia_session->session;
+	mrcp_sofia_session_unref(sofia_session);
+	apr_thread_mutex_unlock(sofia_session->mutex);
+
+	if(terminate_requested == TRUE) {
+		mrcp_sofia_session_destroy(sofia_session);
+		mrcp_session_terminate_response(session);
+	}
+	else {
+		mrcp_session_terminate_event(session);
 	}
 }
 
@@ -518,8 +514,13 @@ static void mrcp_sofia_on_state_change(
 			NUTAG_CALLSTATE_REF(ss_state),
 			TAG_END());
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State %s [%s]",
-		sofia_session ? sofia_session->session->name : "",
+	if(!sofia_session || !sofia_session->session) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"SIP Call State [%s]",
+		nua_callstate_name(ss_state));
+		return;
+	}
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,sofia_session->session->log_obj,"SIP Call State %s [%s]",
+		sofia_session->session->name,
 		nua_callstate_name(ss_state));
 
 	switch(ss_state) {

@@ -92,7 +92,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 	session->base.log_obj = obj;
 	session->profile = profile;
 	
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCP Handle "APT_PTR_FMT" [%s]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,session->base.log_obj,"Create MRCP Handle "APT_PTR_FMT" [%s]",
 		MRCP_SESSION_PTR(session),
 		profile_name);
 	return &session->base;
@@ -168,7 +168,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_application_session_destroy(mrcp_session_t *sessio
 	if(!session) {
 		return FALSE;
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy MRCP Handle %s",session->name);
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,session->log_obj,"Destroy MRCP Handle %s",session->name);
 	mrcp_session_destroy(session);
 	return TRUE;
 }
