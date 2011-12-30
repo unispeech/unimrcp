@@ -340,6 +340,16 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 				config->sip_t1x64 = atol(cdata_text_get(elem));
 			}
 		}
+		else if(strcasecmp(elem->name,"sip-message-output") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->tport_log = cdata_bool_get(elem);
+			}
+		}
+		else if(strcasecmp(elem->name,"sip-message-dump") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->tport_dump_file = cdata_copy(elem,loader->pool);
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}

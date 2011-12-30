@@ -26,6 +26,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include <sofia-sip/nua.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sdp.h>
+#include <sofia-sip/tport.h>
 #include <sofia-sip/sofia_features.h>
 #undef strcasecmp
 #undef strncasecmp
@@ -130,6 +131,10 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->sip_t2 = 0;
 	config->sip_t4 = 0;
 	config->sip_t1x64 = 0;
+
+	config->tport_log = FALSE;
+	config->tport_dump_file = NULL;
+
 	return config;
 }
 
@@ -170,6 +175,8 @@ static void mrcp_sofia_task_initialize(apt_task_t *task)
 					mrcp_sofia_event_callback, /* Callback for processing events */
 					sofia_agent,               /* Additional data to pass to callback */
 					NUTAG_URL(sofia_agent->sip_bind_str), /* Address to bind to */
+					TAG_IF(sofia_config->tport_log == TRUE,TPTAG_LOG(1)), /* Print out SIP messages to the console */
+					TAG_IF(sofia_config->tport_dump_file,TPTAG_DUMP(sofia_config->tport_dump_file)), /* Dump SIP messages to the file */
 					TAG_END());                /* Last tag should always finish the sequence */
 	if(sofia_agent->nua) {
 		nua_set_params(
