@@ -451,7 +451,7 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 		}
 		else if(strcasecmp(elem->name,"offer-new-connection") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
-				offer_new_connection = atoi(cdata_text_get(elem));
+				offer_new_connection = cdata_bool_get(elem);
 			}
 		}
 		else if(strcasecmp(elem->name,"rx-buffer-size") == 0) {
