@@ -191,6 +191,7 @@
                     <xsd:element name="jitter-buffer" minOccurs="0">
                       <xsd:complexType>
                         <xsd:sequence>
+                          <xsd:element name="adaptive" type="xsd:byte" />
                           <xsd:element name="playout-delay" type="xsd:long" />
                           <xsd:element name="max-playout-delay" type="xsd:long" />
                         </xsd:sequence>
