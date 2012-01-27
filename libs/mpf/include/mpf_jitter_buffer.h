@@ -60,6 +60,9 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 /** Read media frame from jitter buffer */
 apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_frame);
 
+/** Get current playout delay */
+apr_uint32_t mpf_jitter_buffer_playout_delay_get(const mpf_jitter_buffer_t *jb);
+
 APT_END_EXTERN_C
 
 #endif /* MPF_JITTER_BUFFER_H */

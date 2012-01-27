@@ -38,12 +38,14 @@ struct mpf_jitter_buffer_t {
 	/* number of frames */
 	apr_size_t       frame_count;
 	/* frame timestamp units (samples) */
-	apr_uint32_t    frame_ts;
+	apr_uint32_t     frame_ts;
 	/* frame size in bytes */
 	apr_size_t       frame_size;
 
 	/* playout delay in timetsamp units */
 	apr_uint32_t     playout_delay_ts;
+	/* max playout delay in timetsamp units */
+	apr_uint32_t     max_playout_delay_ts;
 
 	/* write should be synchronized (offset calculated) */
 	apr_byte_t       write_sync;
@@ -108,8 +110,8 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 		jb->config->initial_playout_delay += CODEC_FRAME_TIME_BASE - jb->config->initial_playout_delay % CODEC_FRAME_TIME_BASE;
 	}
 
-	jb->playout_delay_ts = (apr_uint32_t)(jb->config->initial_playout_delay *
-		descriptor->channel_count * descriptor->sampling_rate / 1000);
+	jb->playout_delay_ts = jb->frame_ts * jb->config->initial_playout_delay / CODEC_FRAME_TIME_BASE;
+	jb->max_playout_delay_ts = jb->frame_ts * jb->config->max_playout_delay / CODEC_FRAME_TIME_BASE;
 
 	jb->write_sync = 1;
 	jb->write_ts_offset = 0;
@@ -136,6 +138,10 @@ apt_bool_t mpf_jitter_buffer_restart(mpf_jitter_buffer_t *jb)
 	memset(&jb->event_write_base,0,sizeof(mpf_named_event_frame_t));
 	jb->event_write_update = NULL;
 
+	if(jb->config->adaptive && jb->playout_delay_ts == jb->max_playout_delay_ts) {
+		jb->playout_delay_ts = jb->frame_ts * jb->config->initial_playout_delay / CODEC_FRAME_TIME_BASE;
+	}
+
 	return TRUE;
 }
 
@@ -148,15 +154,17 @@ static APR_INLINE mpf_frame_t* mpf_jitter_buffer_frame_get(mpf_jitter_buffer_t *
 static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_t *jb, apr_uint32_t ts, apr_uint32_t *write_ts)
 {
 	if(jb->write_sync) {
+		JB_TRACE("JB write sync playout delay=%"APR_SIZE_T_FMT"\n",jb->playout_delay_ts);
 		jb->write_ts_offset = ts - jb->write_ts;
 		jb->write_sync = 0;
 	}
 
 	*write_ts = ts - jb->write_ts_offset + jb->playout_delay_ts;
 	if(*write_ts % jb->frame_ts != 0) {
-		/* not frame alligned */
-		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" not alligned\n",write_ts);
-		*write_ts -= *write_ts % jb->frame_ts;
+		/* allign with frame_ts */
+		apr_uint32_t delta_ts = *write_ts % jb->frame_ts;
+		JB_TRACE("JB write allign ts=%"APR_SIZE_T_FMT" delta_ts=-%"APR_SIZE_T_FMT"\n",*write_ts,delta_ts);
+		*write_ts -= delta_ts;
 	}
 	return JB_OK;
 }
@@ -192,15 +200,31 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 			/* backward write */
 		}
 		else {
+			apr_uint32_t delta_ts;
 			/* too late */
-			JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" too late\n",write_ts);
-			return JB_DISCARD_TOO_LATE;
+			if(jb->config->adaptive == 0) {
+				/* jitter buffer is not adaptive, discard the packet */
+				JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" too late, discard\n",write_ts);
+				return JB_DISCARD_TOO_LATE;
+			}
+
+			delta_ts = jb->read_ts - write_ts;
+			if(jb->playout_delay_ts + delta_ts > jb->max_playout_delay_ts) {
+				/* max playout delay will be reached, discard the packet */
+				JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" max playout delay reached, discard\n",write_ts);
+				return JB_DISCARD_TOO_LATE;
+			}
+
+			/* adapt the playout delay */
+			jb->playout_delay_ts += delta_ts;
+			write_ts += delta_ts;
+			JB_TRACE("JB adapt playout delay=%"APR_SIZE_T_FMT" delta=%"APR_SIZE_T_FMT"\n",jb->playout_delay_ts,delta_ts);
 		}
 	}
 	available_frame_count = jb->frame_count - (write_ts - jb->read_ts)/jb->frame_ts;
 	if(available_frame_count <= 0) {
 		/* too early */
-		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" too early\n",write_ts);
+		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" too early, discard\n",write_ts);
 		return JB_DISCARD_TOO_EARLY;
 	}
 
@@ -276,13 +300,13 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 
 	if(write_ts < jb->read_ts) {
 		/* too late */
-		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" event=%d duration=%d too late\n",
+		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" event=%d duration=%d too late, discard\n",
 			write_ts,named_event->event_id,named_event->duration);
 		return JB_DISCARD_TOO_LATE;
 	}
 	else if( (write_ts - jb->read_ts)/jb->frame_ts >= jb->frame_count) {
 		/* too early */
-		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" event=%d duration=%d too early\n",
+		JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" event=%d duration=%d too early, discard\n",
 			write_ts,named_event->event_id,named_event->duration);
 		return JB_DISCARD_TOO_EARLY;
 	}
@@ -334,4 +358,13 @@ apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_fr
 	src_media_frame->marker = MPF_MARKER_NONE;
 	jb->read_ts += jb->frame_ts;
 	return TRUE;
+}
+
+apr_uint32_t mpf_jitter_buffer_playout_delay_get(const mpf_jitter_buffer_t *jb)
+{
+	if(jb->config->adaptive == 0) {
+		return jb->config->initial_playout_delay;
+	}
+
+	return jb->playout_delay_ts * CODEC_FRAME_TIME_BASE / jb->frame_ts;
 }

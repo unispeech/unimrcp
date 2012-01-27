@@ -464,12 +464,15 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 						codec,
 						rtp_stream->pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Receiver %s:%hu <- %s:%hu playout [%"APR_SIZE_T_FMT" ms]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Receiver %s:%hu <- %s:%hu playout [%"APR_SIZE_T_FMT" ms] bounds [%"APR_SIZE_T_FMT" - %"APR_SIZE_T_FMT" ms] adaptive [%d]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
 			rtp_stream->rtp_r_sockaddr->port,
-			rtp_stream->settings->jb_config.initial_playout_delay);
+			rtp_stream->settings->jb_config.initial_playout_delay,
+			rtp_stream->settings->jb_config.min_playout_delay,
+			rtp_stream->settings->jb_config.max_playout_delay,
+			rtp_stream->settings->jb_config.adaptive);
 	return TRUE;
 }
 
@@ -491,8 +494,7 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 		}
 	}
 
-	mpf_jitter_buffer_destroy(receiver->jb);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%u l:%u j:%u d:%u i:%u]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close RTP Receiver %s:%hu <- %s:%hu [r:%u l:%u j:%u p:%u d:%u i:%u]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
@@ -500,8 +502,10 @@ static apt_bool_t mpf_rtp_rx_stream_close(mpf_audio_stream_t *stream)
 			receiver->stat.received_packets,
 			receiver->stat.lost_packets,
 			receiver->rr_stat.jitter,
+			mpf_jitter_buffer_playout_delay_get(receiver->jb),
 			receiver->stat.discarded_packets,
 			receiver->stat.ignored_packets);
+	mpf_jitter_buffer_destroy(receiver->jb);
 	return TRUE;
 }
 
