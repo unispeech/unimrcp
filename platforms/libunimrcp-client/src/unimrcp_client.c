@@ -693,6 +693,11 @@ static apt_bool_t unimrcp_client_jb_settings_load(unimrcp_client_loader_t *loade
 				jb->max_playout_delay = atol(cdata_text_get(elem));
 			}
 		}
+		else if(strcasecmp(elem->name,"adaptive") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				jb->adaptive = (apr_byte_t) atol(cdata_text_get(elem));
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
