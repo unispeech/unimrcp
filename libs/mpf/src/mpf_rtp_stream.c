@@ -688,13 +688,24 @@ typedef enum {
 	RTP_TS_DRIFT
 } rtp_ts_result_e;
 
-static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf_codec_descriptor_t *descriptor, apr_time_t *time, apr_uint32_t ts)
+static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf_codec_descriptor_t *descriptor, apr_time_t *time, apr_uint32_t ts, apr_byte_t *marker)
 {
 	apr_int32_t deviation;
+	apr_int32_t time_diff;
+
+	/* arrival time diff in msec */
+	time_diff = (apr_int32_t)apr_time_as_msec(*time - receiver->history.time_last);
+
+	/* if the time difference is more than the threshold (INTER_TALKSPURT_GAP),
+	   and the marker is not set, then this might be a beginning of a 
+	   new malformed talkspurt */
+	if(!*marker && time_diff > INTER_TALKSPURT_GAP) {
+		/* set the missing marker */
+		*marker = 1;
+	}
 
 	/* arrival time diff in samples */
-	deviation = (apr_int32_t)apr_time_as_msec(*time - receiver->history.time_last) * 
-		descriptor->channel_count * descriptor->sampling_rate / 1000;
+	deviation = time_diff * descriptor->channel_count * descriptor->sampling_rate / 1000;
 	/* arrival timestamp diff */
 	deviation -= ts - receiver->history.ts_last;
 
@@ -775,12 +786,13 @@ static apt_bool_t rtp_rx_packet_receive(mpf_rtp_stream_t *rtp_stream, void *buff
 	
 	if(header->type == descriptor->payload_type) {
 		/* codec */
-		if(rtp_rx_ts_update(receiver,descriptor,&time,header->timestamp) == RTP_TS_DRIFT) {
+		apr_byte_t marker = (apr_byte_t)header->marker;
+		if(rtp_rx_ts_update(receiver,descriptor,&time,header->timestamp,&marker) == RTP_TS_DRIFT) {
 			rtp_rx_restart(receiver);
 			return FALSE;
 		}
 	
-		if(mpf_jitter_buffer_write(receiver->jb,buffer,size,header->timestamp,(apr_byte_t)header->marker) != JB_OK) {
+		if(mpf_jitter_buffer_write(receiver->jb,buffer,size,header->timestamp,marker) != JB_OK) {
 			receiver->stat.discarded_packets++;
 			rtp_rx_failure_threshold_check(receiver);
 		}

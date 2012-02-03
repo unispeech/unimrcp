@@ -32,16 +32,18 @@ APT_BEGIN_EXTERN_C
 /** Used to calculate actual number of received packets (32bit) in
  * case seq number (16bit) wrapped around */
 #define RTP_SEQ_MOD (1 << 16)
-/** Number of max dropout packets (seq numbers) is used to trigger drift 
- * in seq number or misorder packets */
+/** Number of max dropout packets (seq numbers) is used to trigger 
+ * either a drift in the seq numbers or a misorder packet */
 #define MAX_DROPOUT 3000
-/** Number of max misorder packets (seq numbers) to differentiate 
- * seq drift from misorder packets */
+/** Number of max misorder packets (seq numbers) is used to 
+ * differentiate a drift in the seq numbers from a misorder packet */
 #define MAX_MISORDER 100
-/** Restart receiver if threshold is fired */
+/** Restart receiver if threshold is reached */
 #define DISCARDED_TO_RECEIVED_RATIO_THRESHOLD 30 /* 30% */
-/** Deviation threshold is used to trigger drift in timestamps */
+/** Deviation threshold is used to trigger a drift in timestamps */
 #define DEVIATION_THRESHOLD 4000
+/** This threshold is used to detect a new talkspurt */
+#define INTER_TALKSPURT_GAP 1000 /* msec */
 
 /** RTP receiver history declaration */
 typedef struct rtp_rx_history_t rtp_rx_history_t;
