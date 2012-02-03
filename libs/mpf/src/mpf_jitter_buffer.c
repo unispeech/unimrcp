@@ -151,7 +151,7 @@ static APR_INLINE jb_result_t mpf_jitter_buffer_write_prepare(mpf_jitter_buffer_
 {
 	if(jb->write_sync) {
 		JB_TRACE("JB write sync playout delay=%"APR_SIZE_T_FMT"\n",jb->playout_delay_ts);
-		jb->write_ts_offset = ts - jb->write_ts;
+		jb->write_ts_offset = ts - jb->read_ts;
 		jb->write_sync = 0;
 	}
 
@@ -181,34 +181,39 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 		}
 	}
 
+	/* calculate write_ts */
 	result = mpf_jitter_buffer_write_prepare(jb,ts,&write_ts);
 	if(result != JB_OK) {
 		return result;
 	}
 
-	if(write_ts >= jb->write_ts) {
-		if(write_ts - jb->write_ts > jb->frame_ts) {
-			/* gap */
+	if(write_ts >= jb->read_ts) {
+		if(write_ts >= jb->write_ts) {
+			/* normal order */
 		}
-		/* normal write */
+		else {
+			/* out of order */
+		}
 	}
 	else {
-		if(write_ts >= jb->read_ts) {
-			/* backward write */
+		/* packet arrived too late */
+		if(write_ts < jb->write_ts) {
+			/* out of order => discard */
+			JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" out of order, too late => discard\n",write_ts);
+			return JB_DISCARD_TOO_LATE;
 		}
 		else {
 			apr_uint32_t delta_ts;
-			/* too late */
 			if(jb->config->adaptive == 0) {
-				/* jitter buffer is not adaptive, discard the packet */
-				JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" too late, discard\n",write_ts);
+				/* jitter buffer is not adaptive => discard the packet */
+				JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" too late => discard\n",write_ts);
 				return JB_DISCARD_TOO_LATE;
 			}
 
 			delta_ts = jb->read_ts - write_ts;
 			if(jb->playout_delay_ts + delta_ts > jb->max_playout_delay_ts) {
-				/* max playout delay will be reached, discard the packet */
-				JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" max playout delay reached, discard\n",write_ts);
+				/* max playout delay will be reached => discard the packet */
+				JB_TRACE("JB write ts=%"APR_SIZE_T_FMT" max playout delay reached => discard\n",write_ts);
 				return JB_DISCARD_TOO_LATE;
 			}
 
@@ -218,6 +223,7 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 			JB_TRACE("JB adapt playout delay=%"APR_SIZE_T_FMT" delta=%"APR_SIZE_T_FMT"\n",jb->playout_delay_ts,delta_ts);
 		}
 	}
+
 	available_frame_count = jb->frame_count - (write_ts - jb->read_ts)/jb->frame_ts;
 	if(available_frame_count <= 0) {
 		/* too early */
@@ -349,7 +355,6 @@ apt_bool_t mpf_jitter_buffer_read(mpf_jitter_buffer_t *jb, mpf_frame_t *media_fr
 		JB_TRACE("JB read ts=%"APR_SIZE_T_FMT" underflow\n", jb->read_ts);
 		media_frame->type = MEDIA_FRAME_TYPE_NONE;
 		media_frame->marker = MPF_MARKER_NONE;
-		jb->write_ts += jb->frame_ts;
 	}
 	src_media_frame->type = MEDIA_FRAME_TYPE_NONE;
 	src_media_frame->marker = MPF_MARKER_NONE;
