@@ -177,10 +177,11 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 	jb_result_t result;
 
 	if(marker) {
-		/* new talkspurt */
+		JB_TRACE("JB marker length=%d\n",jb->write_ts-jb->read_ts);
+		/* new talkspurt detected => test whether the buffer is empty */
 		if(jb->write_ts <= jb->read_ts) {
-			/* buffer is empty => it's safe to restart */
-			mpf_jitter_buffer_restart(jb);
+			/* resync */
+			jb->write_sync = 1;
 		}
 	}
 
