@@ -93,14 +93,16 @@ struct mpf_rtp_termination_descriptor_t {
 
 /** Jitter buffer configuration */
 struct mpf_jb_config_t {
-	/** Min playout delay in msec (used in case of adaptive jitter buffer) */
+	/** Min playout delay in msec */
 	apr_size_t min_playout_delay;
 	/** Initial playout delay in msec */
 	apr_size_t initial_playout_delay;
-	/** Max playout delay in msec (used in case of adaptive jitter buffer) */
+	/** Max playout delay in msec */
 	apr_size_t max_playout_delay;
-	/** Static - 0, adaptive - 1 jitter buffer */
+	/** Mode of operation of the jitter buffer: static - 0, adaptive - 1 */
 	apr_byte_t adaptive;
+	/** Enable/disable time skew detection */
+	apr_byte_t time_skew_detection;
 };
 
 /** RTCP BYE transmission policy */
@@ -180,6 +182,7 @@ static APR_INLINE void mpf_jb_config_init(mpf_jb_config_t *jb_config)
 	jb_config->initial_playout_delay = 0;
 	jb_config->min_playout_delay = 0;
 	jb_config->max_playout_delay = 0;
+	jb_config->time_skew_detection = 1;
 }
 
 /** Allocate RTP config */

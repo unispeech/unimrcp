@@ -454,25 +454,28 @@ static apt_bool_t mpf_rtp_rx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 {
 	mpf_rtp_stream_t *rtp_stream = stream->obj;
 	rtp_receiver_t *receiver = &rtp_stream->receiver;
+	mpf_jb_config_t *jb_config = &rtp_stream->settings->jb_config;
 	if(!rtp_stream->rtp_socket || !rtp_stream->rtp_l_sockaddr || !rtp_stream->rtp_r_sockaddr) {
 		return FALSE;
 	}
 
 	receiver->jb = mpf_jitter_buffer_create(
-						&rtp_stream->settings->jb_config,
+						jb_config,
 						stream->rx_descriptor,
 						codec,
 						rtp_stream->pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open RTP Receiver %s:%hu <- %s:%hu playout [%"APR_SIZE_T_FMT" ms] bounds [%"APR_SIZE_T_FMT" - %"APR_SIZE_T_FMT" ms] adaptive [%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,
+			"Open RTP Receiver %s:%hu <- %s:%hu playout [%"APR_SIZE_T_FMT" ms] bounds [%"APR_SIZE_T_FMT" - %"APR_SIZE_T_FMT" ms] adaptive [%d] skew detection [%d]",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
 			rtp_stream->rtp_r_sockaddr->hostname,
 			rtp_stream->rtp_r_sockaddr->port,
-			rtp_stream->settings->jb_config.initial_playout_delay,
-			rtp_stream->settings->jb_config.min_playout_delay,
-			rtp_stream->settings->jb_config.max_playout_delay,
-			rtp_stream->settings->jb_config.adaptive);
+			jb_config->initial_playout_delay,
+			jb_config->min_playout_delay,
+			jb_config->max_playout_delay,
+			jb_config->adaptive,
+			jb_config->time_skew_detection);
 	return TRUE;
 }
 

@@ -194,6 +194,7 @@
                           <xsd:element name="adaptive" type="xsd:byte" />
                           <xsd:element name="playout-delay" type="xsd:long" />
                           <xsd:element name="max-playout-delay" type="xsd:long" />
+                          <xsd:element name="time-skew-detection" type="xsd:byte" />
                         </xsd:sequence>
                       </xsd:complexType>
                     </xsd:element>
