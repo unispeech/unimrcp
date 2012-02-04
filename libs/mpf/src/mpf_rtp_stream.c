@@ -26,6 +26,7 @@
 #include "mpf_rtcp_packet.h"
 #include "mpf_rtp_defs.h"
 #include "mpf_rtp_pt.h"
+#include "mpf_trace.h"
 #include "apt_log.h"
 
 /** Max size of RTP packet */
@@ -37,11 +38,12 @@
 #define RTCP_BYE_SESSION_ENDED "Session ended"
 #define RTCP_BYE_TALKSPURT_ENDED "Talskpurt ended"
 
-#if ENABLE_RTP_PACKET_TRACE
+#if ENABLE_RTP_PACKET_TRACE == 1
 #define RTP_TRACE printf
+#elif ENABLE_RTP_PACKET_TRACE == 2
+#define RTP_TRACE mpf_debug_output_trace
 #else
-static APR_INLINE void null_trace() {}
-#define RTP_TRACE null_trace
+#define RTP_TRACE mpf_null_trace
 #endif
 
 /** RTP stream */
