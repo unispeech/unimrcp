@@ -723,7 +723,7 @@ static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf
 	}
 
 	receiver->rr_stat.jitter += deviation - ((receiver->rr_stat.jitter + 8) >> 4);
-	RTP_TRACE("jitter=%d deviation=%d\n",receiver->rr_stat.jitter,deviation);
+	RTP_TRACE("jitter=%u deviation=%d\n",receiver->rr_stat.jitter,deviation);
 	receiver->history.time_last = *time;
 	receiver->history.ts_last = ts;
 
@@ -933,7 +933,7 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 	if(++transmitter->current_frames == transmitter->packet_frames) {
 		rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
 		header->sequence = htons(++transmitter->last_seq_num);
-		RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u\n",
+		RTP_TRACE("> RTP time=%6u ssrc=%8x pt=%3u %cts=%9u seq=%5hu\n",
 			(apr_uint32_t)apr_time_usec(apr_time_now()),
 			transmitter->sr_stat.ssrc, header->type, 
 			(header->marker == 1) ? '*' : ' ',
@@ -973,14 +973,13 @@ static APR_INLINE apt_bool_t mpf_rtp_event_send(mpf_rtp_stream_t *rtp_stream, rt
 	named_event->edge = (frame->marker == MPF_MARKER_END_OF_EVENT) ? 1 : 0;
 	
 	header->sequence = htons(++transmitter->last_seq_num);
-	RTP_TRACE("> RTP time=%6lu ssrc=%8lx pt=%3u %cts=%9lu seq=%5u event=%2u dur=%3u %c\n",
+	RTP_TRACE("> RTP time=%6u ssrc=%8x pt=%3u %cts=%9u seq=%hu event=%2u dur=%3u %c\n",
 		(apr_uint32_t)apr_time_usec(apr_time_now()),
 		transmitter->sr_stat.ssrc, 
 		header->type, (header->marker == 1) ? '*' : ' ',
 		header->timestamp, transmitter->last_seq_num,
 		named_event->event_id, named_event->duration,
 		(named_event->edge == 1) ? '*' : ' ');
-
 	header->timestamp = htonl(header->timestamp);
 	named_event->duration = htons((apr_uint16_t)named_event->duration);
 	if(apr_socket_sendto(
