@@ -94,11 +94,11 @@ struct mpf_rtp_termination_descriptor_t {
 /** Jitter buffer configuration */
 struct mpf_jb_config_t {
 	/** Min playout delay in msec */
-	apr_size_t min_playout_delay;
+	apr_uint32_t min_playout_delay;
 	/** Initial playout delay in msec */
-	apr_size_t initial_playout_delay;
+	apr_uint32_t initial_playout_delay;
 	/** Max playout delay in msec */
-	apr_size_t max_playout_delay;
+	apr_uint32_t max_playout_delay;
 	/** Mode of operation of the jitter buffer: static - 0, adaptive - 1 */
 	apr_byte_t adaptive;
 	/** Enable/disable time skew detection */
