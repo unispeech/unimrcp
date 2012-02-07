@@ -166,6 +166,7 @@ static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_
 	descriptor->capabilities = NULL;
 	descriptor->local = NULL;
 	descriptor->remote = NULL;
+	descriptor->settings = NULL;
 }
 
 /** Initialize RTP termination descriptor */
