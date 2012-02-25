@@ -96,7 +96,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_add(mrcp_message_header_t *header, ap
 MRCP_DECLARE(apt_bool_t) mrcp_header_fields_set(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool);
 
 /** Get (copy) MRCP header fields */
-MRCP_DECLARE(apt_bool_t) mrcp_header_fields_get(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_header_fields_get(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, const mrcp_message_header_t *mask_header, apr_pool_t *pool);
 
 /** Inherit (copy) MRCP header fields */
 MRCP_DECLARE(apt_bool_t) mrcp_header_fields_inherit(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool);

@@ -107,6 +107,30 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_fields_parse(mrcp_message_header_t *header,
 	return TRUE;
 }
 
+static apt_bool_t mrcp_header_accessor_value_duplicate(mrcp_message_header_t *header, apt_header_field_t *header_field,
+											  const mrcp_message_header_t *src_header, const apt_header_field_t *src_header_field, 
+											  apr_pool_t *pool)
+{
+	apt_bool_t status = FALSE;
+	if(header_field->id < GENERIC_HEADER_COUNT) {
+		status = mrcp_header_field_value_duplicate(
+			&header->generic_header_accessor,
+			&src_header->generic_header_accessor,
+			header_field->id,
+			&header_field->value,
+			pool);
+	}
+	else {
+		status = mrcp_header_field_value_duplicate(
+			&header->resource_header_accessor,
+			&src_header->resource_header_accessor,
+			header_field->id - GENERIC_HEADER_COUNT,
+			&header_field->value,
+			pool);
+	}
+	return status;
+}
+
 /** Set (copy) MRCP header fields */
 MRCP_DECLARE(apt_bool_t) mrcp_header_fields_set(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
 {
@@ -116,64 +140,51 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_fields_set(mrcp_message_header_t *header, c
 			src_header_field != APR_RING_SENTINEL(&src_header->header_section.ring, apt_header_field_t, link);
 				src_header_field = APR_RING_NEXT(src_header_field, link)) {
 
-		header_field = apt_header_field_copy(src_header_field,pool);
-		if(header_field->id < GENERIC_HEADER_COUNT) {
-			if(mrcp_header_field_value_duplicate(
-					&header->generic_header_accessor,
-					&src_header->generic_header_accessor,
-					header_field->id,
-					&header_field->value,
-					pool) == TRUE) {
-				apt_header_section_field_add(&header->header_section,header_field);
-			}
+		header_field = apt_header_section_field_get(&header->header_section,src_header_field->id);
+		if(header_field) {
+			/* this header field has already been set, just copy its value */
+			apt_string_copy(&header_field->value,&src_header_field->value,pool);
 		}
 		else {
-			if(mrcp_header_field_value_duplicate(
-					&header->resource_header_accessor,
-					&src_header->resource_header_accessor,
-					header_field->id - GENERIC_HEADER_COUNT,
-					&header_field->value,
-					pool) == TRUE) {
-				apt_header_section_field_add(&header->header_section,header_field);
-			}
+			/* copy the entire header field and add it to the header section */
+			header_field = apt_header_field_copy(src_header_field,pool);
+			apt_header_section_field_add(&header->header_section,header_field);
 		}
+
+		mrcp_header_accessor_value_duplicate(header,header_field,src_header,src_header_field,pool);
 	}
 
 	return TRUE;
 }
 
 /** Get (copy) MRCP header fields */
-MRCP_DECLARE(apt_bool_t) mrcp_header_fields_get(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_header_fields_get(mrcp_message_header_t *header, const mrcp_message_header_t *src_header, const mrcp_message_header_t *mask_header, apr_pool_t *pool)
 {
 	apt_header_field_t *header_field;
 	const apt_header_field_t *src_header_field;
-	for(header_field = APR_RING_FIRST(&header->header_section.ring);
-			header_field != APR_RING_SENTINEL(&header->header_section.ring, apt_header_field_t, link);
-				header_field = APR_RING_NEXT(header_field, link)) {
+	const apt_header_field_t *mask_header_field;
+	for(mask_header_field = APR_RING_FIRST(&mask_header->header_section.ring);
+			mask_header_field != APR_RING_SENTINEL(&mask_header->header_section.ring, apt_header_field_t, link);
+				mask_header_field = APR_RING_NEXT(mask_header_field, link)) {
 
-		if(!apt_string_is_empty(&header_field->value))
+		header_field = apt_header_section_field_get(&header->header_section,mask_header_field->id);
+		if(header_field) {
+			/* this header field has already been set, skip to the next one */
 			continue;
-		src_header_field = apt_header_section_field_get(&src_header->header_section,header_field->id);
-		if(src_header_field) {
-			if(header_field->id < GENERIC_HEADER_COUNT) {
-				apt_string_copy(&header_field->value,&src_header_field->value,pool);
-				mrcp_header_field_value_duplicate(
-						&header->generic_header_accessor,
-						&src_header->generic_header_accessor,
-						header_field->id,
-						&header_field->value,
-						pool);
-			}
-			else {
-				apt_string_copy(&header_field->value,&src_header_field->value,pool);
-				mrcp_header_field_value_duplicate(
-						&header->resource_header_accessor,
-						&src_header->resource_header_accessor,
-						header_field->id - GENERIC_HEADER_COUNT,
-						&header_field->value,
-						pool);
-			}
 		}
+
+		src_header_field = apt_header_section_field_get(&src_header->header_section,mask_header_field->id);
+		if(src_header_field) {
+			/* copy the entire header field */
+			header_field = apt_header_field_copy(src_header_field,pool);
+			mrcp_header_accessor_value_duplicate(header,header_field,src_header,src_header_field,pool);
+		}
+		else {
+			/* copy only the name of the header field */
+			header_field = apt_header_field_copy(mask_header_field,pool);
+		}
+		/* add the header field to the header section */
+		apt_header_section_field_add(&header->header_section,header_field);
 	}
 
 	return TRUE;
@@ -189,29 +200,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_fields_inherit(mrcp_message_header_t *heade
 				src_header_field = APR_RING_NEXT(src_header_field, link)) {
 
 		header_field = apt_header_section_field_get(&header->header_section,src_header_field->id);
-		if(!header_field) {
-			header_field = apt_header_field_copy(src_header_field,pool);
-			if(header_field->id < GENERIC_HEADER_COUNT) {
-				if(mrcp_header_field_value_duplicate(
-						&header->generic_header_accessor,
-						&src_header->generic_header_accessor,
-						header_field->id,
-						&header_field->value,
-						pool) == TRUE) {
-					apt_header_section_field_add(&header->header_section,header_field);
-				}
-			}
-			else {
-				if(mrcp_header_field_value_duplicate(
-						&header->resource_header_accessor,
-						&src_header->resource_header_accessor,
-						header_field->id - GENERIC_HEADER_COUNT,
-						&header_field->value,
-						pool) == TRUE) {
-					apt_header_section_field_add(&header->header_section,header_field);
-				}
-			}
+		if(header_field) {
+			/* this header field has already been set, skip to the next one */
+			continue;
 		}
+
+		/* copy the entire header field and add it to the header section */
+		header_field = apt_header_field_copy(src_header_field,pool);
+		mrcp_header_accessor_value_duplicate(header,header_field,src_header,src_header_field,pool);
+		apt_header_section_field_add(&header->header_section,header_field);
 	}
 	return TRUE;
 }
