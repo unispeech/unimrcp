@@ -50,7 +50,6 @@ UNIMRCP_CHECK_APU
 UNIMRCP_CHECK_SOFIA
 
 
-
 AC_SUBST(ac_aux_dir)
 AC_SUBST(ac_macro_dir)
 AC_SUBST(plugindir)
@@ -74,6 +73,21 @@ AC_CACHE_CHECK([for _AC_LANG compiler vendor], ax_cv_[]_AC_LANG_ABBREV[]_compile
 ])
 
 AX_COMPILER_VENDOR
+
+#Enable inter-library dependencies
+AC_ARG_ENABLE(interlib-deps,
+    [AC_HELP_STRING([--disable-interlib-deps  ],[disable inter-library dependencies (might break builds)])],
+    [enable_interlib_deps="$enableval"],
+    [enable_interlib_deps="yes"])
+
+AC_MSG_NOTICE([enable inter-library dependencies: $enable_interlib_deps])
+if test "${enable_interlib_deps}" == "yes"; then
+    link_all_deplibs=yes
+    link_all_deplibs_CXX=yes
+else
+    link_all_deplibs=no
+    link_all_deplibs_CXX=no
+fi
 
 #Enable maintainer mode
 AC_ARG_ENABLE(maintainer-mode,
