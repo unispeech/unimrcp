@@ -393,20 +393,50 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 	}
 	else {
 		/* an update */
-		if(named_event->duration <= jb->event_write_update->duration) {
-			/* ignore this update, it's either a retransmission or
-			something from the past, which makes no sense now */
+		if(named_event->duration < jb->event_write_update->duration) {
+			/* ignore this update, it's something from the past, which makes no sense now */
 			return JB_OK;
 		}
+		else if(named_event->duration == jb->event_write_update->duration) {
+			/* this should be a retransmission, let it go through only if it contains new data */
+			if(jb->event_write_update->edge == 1 || jb->event_write_update->edge == named_event->edge) {
+				/* ignore this update since either the end of event marker has already been set,
+				or the current event provides no updates */
+				return JB_OK;
+			}
+		}
+
 		/* calculate position in jitter buffer considering the last received event (update) */
 		write_ts += jb->event_write_update->duration;
 	}
 
 	if(write_ts < jb->read_ts) {
 		/* too late */
-		JB_TRACE("JB write ts=%u event=%d duration=%d too late => discard\n",
-			write_ts,named_event->event_id,named_event->duration);
-		return JB_DISCARD_TOO_LATE;
+		apr_uint32_t delta_ts;
+		if(jb->config->adaptive == 0) {
+			/* jitter buffer is not adaptive => discard the packet */
+			JB_TRACE("JB write ts=%u event=%d duration=%d too late => discard\n",
+				write_ts,named_event->event_id,named_event->duration);
+			return JB_DISCARD_TOO_LATE;
+		}
+
+		/* calculate a minimal adjustment needed in order to place the packet into the buffer */
+		delta_ts = jb->read_ts - write_ts;
+
+		if(jb->playout_delay_ts + delta_ts > jb->max_playout_delay_ts) {
+			/* max playout delay will be reached => discard the packet */
+			JB_TRACE("JB write ts=%u event=%d duration=%d max playout delay reached => discard\n",
+				write_ts,named_event->event_id,named_event->duration);
+			return JB_DISCARD_TOO_LATE;
+		}
+
+		/* adjust the playout delay */
+		jb->playout_delay_ts += delta_ts;
+		write_ts += delta_ts;
+		if(marker) {
+			jb->event_write_base_ts = write_ts;
+		}
+		JB_TRACE("JB adjust playout delay=%u delta=%u\n",jb->playout_delay_ts,delta_ts);
 	}
 	else if( (write_ts - jb->read_ts)/jb->frame_ts >= jb->frame_count) {
 		/* too early */
@@ -415,8 +445,6 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 		return JB_DISCARD_TOO_EARLY;
 	}
 
-	JB_TRACE("JB write ts=%u event=%d duration=%d\n",
-		write_ts,named_event->event_id,named_event->duration);
 	media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
 	media_frame->event_frame = *named_event;
 	media_frame->type |= MEDIA_FRAME_TYPE_EVENT;
@@ -426,6 +454,8 @@ jb_result_t mpf_jitter_buffer_event_write(mpf_jitter_buffer_t *jb, const mpf_nam
 	else if(named_event->edge == 1) {
 		media_frame->marker = MPF_MARKER_END_OF_EVENT;
 	}
+	JB_TRACE("JB write ts=%u event=%d duration=%d marker=%d\n",
+		write_ts,named_event->event_id,named_event->duration,media_frame->marker);
 	jb->event_write_update = &media_frame->event_frame;
 
 	write_ts += jb->frame_ts;
