@@ -23,6 +23,16 @@
 
 #define WIN_SERVICE_NAME "unimrcp"
 
+/** UniMRCP service register command enumeration */
+typedef enum uni_service_register_e {
+	USR_NONE, USR_REGISTER, USR_UNREGISTER
+} uni_service_register_e;
+
+/** UniMRCP service control command enumeration */
+typedef enum uni_service_control_e {
+	USC_NONE, USC_START, USC_STOP
+} uni_service_control_e;
+
 
 /** Display error message with Windows error code and description */
 static void winerror(const char *msg)
@@ -191,6 +201,9 @@ int main(int argc, const char * const *argv)
 	apr_status_t rv;
 	apr_getopt_t *opt;
 	apt_bool_t ret = TRUE;
+	uni_service_register_e reg = USR_NONE;
+	uni_service_control_e control = USC_NONE;
+	const char *root_dir = "..";
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
@@ -222,16 +235,37 @@ int main(int argc, const char * const *argv)
 		while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 			switch(optch) {
 				case 'r':
-					ret = uni_service_register(optarg,pool);
+					if ((reg == USR_NONE) || (reg == USR_REGISTER)) {
+						reg = USR_REGISTER;
+						root_dir = optarg;
+					} else {
+						puts("Incosistent arguments");
+						ret = FALSE;
+					}
 					break;
 				case 'u':
-					ret = uni_service_unregister();
+					if ((reg == USR_NONE) || (reg == USR_UNREGISTER))
+						reg = USR_UNREGISTER;
+					else {
+						puts("Incosistent arguments");
+						ret = FALSE;
+					}
 					break;
 				case 's':
-					ret = uni_service_start();
+					if ((control == USC_NONE) || (control == USC_START))
+						control = USC_START;
+					else {
+						puts("Incosistent arguments");
+						ret = FALSE;
+					}
 					break;
 				case 't':
-					ret = uni_service_stop();
+					if ((control == USC_NONE) || (control == USC_STOP))
+						control = USC_STOP;
+					else {
+						puts("Incosistent arguments");
+						ret = FALSE;
+					}
 					break;
 				case 'h':
 					usage();
@@ -239,10 +273,34 @@ int main(int argc, const char * const *argv)
 			}
 			if (!ret) break;
 		}
-		if(rv != APR_EOF) {
+		if (ret &&
+				(((reg == USR_REGISTER) && (control == USC_STOP)) ||
+				((reg == USR_UNREGISTER) && (control == USC_START)))) {
+			ret = FALSE;
+			puts("Inconsistent arguments");
+		}
+		if((rv != APR_EOF) || !ret) {
 			ret = FALSE;
 			usage();
 		}
+	}
+
+	while (ret) {  /* No problem so far */
+		if (reg == USR_REGISTER)
+			ret = uni_service_register(root_dir, pool);
+		if (!ret) break;
+
+		if (control == USC_START)
+			ret = uni_service_start();
+		if (!ret) break;
+
+		if (control == USC_STOP)
+			ret = uni_service_stop();
+		/* Do not break here, stop failure should not matter before unregistration */
+
+		if (reg == USR_UNREGISTER)
+			ret = uni_service_unregister();
+		break;
 	}
 
 	/* destroy APR pool */
