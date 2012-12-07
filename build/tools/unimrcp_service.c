@@ -18,6 +18,8 @@
 
 #include <windows.h>
 #include <apr_getopt.h>
+#include <apr_file_info.h>
+#include <apr_strings.h>
 #include "apt.h"
 #include "apt_pool.h"
 
@@ -39,7 +41,7 @@ static void winerror(const char *msg)
 {
 	char buf[128];
 	DWORD err = GetLastError();
-	int ret = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	int ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		err,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -48,29 +50,82 @@ static void winerror(const char *msg)
 }
 
 /** Register/install service in SCM */
-static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *pool)
+static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *pool,
+                                       const char *name,
+                                       apt_bool_t autostart,
+                                       unsigned long recover,
+                                       int log_priority)
 {
-	char *bin_path;
+	apr_status_t status;
+	char buf[4096];
+	static const size_t len = sizeof(buf);
+	size_t pos = 0;
+	char *root_dir;
+	char *disp_name;
 	SERVICE_DESCRIPTION desc;
 	SC_HANDLE sch_service;
-	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
+	SC_HANDLE sch_manager;
+
+	/* Normalize root directory path and make it absolute */
+	status = apr_filepath_merge(&root_dir, NULL, root_dir_path,
+		APR_FILEPATH_NOTRELATIVE | APR_FILEPATH_NATIVE | APR_FILEPATH_TRUENAME, pool);
+	if (status != APR_SUCCESS) {
+		printf("Error making root directory absolute: %d %.512s\n", status,
+			apr_strerror(status, buf, 512));
+		return FALSE;
+	}
+	buf[pos++] = '"';
+	pos = apr_cpystrn(buf + pos, root_dir, len - pos) - buf;
+	if ((buf[pos - 1] != '\\') && (pos < len))
+		/* Add trailing backslash */
+		buf[pos++] = '\\';
+	pos = apr_cpystrn(buf + pos, "bin\\unimrcpserver.exe\" --service -o 2", len - pos) - buf;
+	if (log_priority >= 0) {
+		pos = apr_cpystrn(buf + pos, " -l ", len - pos) - buf;
+		if (pos < len - 34)
+			pos += strlen(itoa(log_priority, buf + pos, 10));
+	}
+	if (name) {
+		pos = apr_cpystrn(buf + pos, " --name \"", len - pos) - buf;
+		pos = apr_cpystrn(buf + pos, name, len - pos) - buf;
+		if ((buf[pos - 1] == '\\') && (pos < len))
+			/* `\"' might be misinterpreted as escape, so replace `\' with `\\' */
+			buf[pos++] = '\\';
+		if (pos < len)
+			buf[pos++] = '"';
+	}
+	pos = apr_cpystrn(buf + pos, " --root-dir \"", len - pos) - buf;
+	pos = apr_cpystrn(buf + pos, root_dir, len - pos) - buf;
+	if ((buf[pos - 1] == '\\') && (pos < len))
+		/* `\"' might be misinterpreted as escepe, so replace `\' with `\\' */
+		buf[pos++] = '\\';
+	if (pos < len)
+		buf[pos++] = '"';
+	if (pos < len)
+		buf[pos] = 0;
+	else {
+		puts("Service Command Too Long");
+		return FALSE;
+	}
+	if (name)
+		disp_name = apr_pstrcat(pool, name, " ", "UniMRCP Server", NULL);
+	else
+		disp_name = "UniMRCPServer";
+
+	sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
 	if(!sch_manager) {
 		winerror("Failed to Open SCManager");
 		return FALSE;
 	}
-
-	bin_path = apr_psprintf(pool,"%s\\bin\\unimrcpserver.exe --service --root-dir \"%s\" -o 2",
-					root_dir_path,
-					root_dir_path);
 	sch_service = CreateService(
 					sch_manager,
-					WIN_SERVICE_NAME,
-					"UniMRCP Server",
+					name ? name : WIN_SERVICE_NAME,
+					disp_name,
 					GENERIC_EXECUTE | SERVICE_CHANGE_CONFIG,
 					SERVICE_WIN32_OWN_PROCESS,
-					SERVICE_DEMAND_START,
+					autostart ? SERVICE_AUTO_START : SERVICE_DEMAND_START,
 					SERVICE_ERROR_NORMAL,
-					bin_path,0,0,0,0,0);
+					buf,0,0,0,0,0);
 	if(!sch_service) {
 		winerror("Failed to Create Service");
 		CloseServiceHandle(sch_manager);
@@ -82,24 +137,41 @@ static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *po
 		winerror("Failed to Set Service Description");
 	}
 
+	if (recover) {
+		SERVICE_FAILURE_ACTIONS sfa;
+		SC_ACTION action;
+		sfa.dwResetPeriod = 0;
+		sfa.lpCommand = "";
+		sfa.lpRebootMsg = "";
+		sfa.cActions = 1;
+		sfa.lpsaActions = &action;
+		action.Delay = recover * 1000;
+		action.Type = SC_ACTION_RESTART;
+		if (!ChangeServiceConfig2(sch_service,SERVICE_CONFIG_FAILURE_ACTIONS,&sfa)) {
+			winerror("Failed to Set Service Restart on Failure");
+		}
+	}
+
 	CloseServiceHandle(sch_service);
 	CloseServiceHandle(sch_manager);
+	printf("UniMRCP service %s registered\n", name ? name : WIN_SERVICE_NAME);
 	return TRUE;
 }
 
 /** Unregister/uninstall service from SCM */
-static apt_bool_t uni_service_unregister()
+static apt_bool_t uni_service_unregister(const char *name)
 {
 	apt_bool_t status = TRUE;
 	SERVICE_STATUS ss_status;
 	SC_HANDLE sch_service;
 	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
+	if (!name) name = WIN_SERVICE_NAME;
 	if(!sch_manager) {
 		winerror("Failed to Open SCManager");
 		return FALSE;
 	}
 
-	sch_service = OpenService(sch_manager,WIN_SERVICE_NAME,DELETE|SERVICE_STOP);
+	sch_service = OpenService(sch_manager,name,DELETE|SERVICE_STOP);
 	if(!sch_service) {
 		winerror("Failed to Open Service");
 		CloseServiceHandle(sch_manager);
@@ -110,24 +182,26 @@ static apt_bool_t uni_service_unregister()
 	if(!DeleteService(sch_service)) {
 		winerror("Failed to Delete Service");
 		status = FALSE;
-	}
+	} else
+		printf("UniMRCP service %s unregistered\n", name);
 	CloseServiceHandle(sch_service);
 	CloseServiceHandle(sch_manager);
 	return status;
 }
 
 /** Start service */
-static apt_bool_t uni_service_start()
+static apt_bool_t uni_service_start(const char *name)
 {
 	apt_bool_t status = TRUE;
 	SC_HANDLE sch_service;
 	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
+	if (!name) name = WIN_SERVICE_NAME;
 	if(!sch_manager) {
 		winerror("Failed to Open SCManager");
 		return FALSE;
 	}
 
-	sch_service = OpenService(sch_manager,WIN_SERVICE_NAME,SERVICE_START);
+	sch_service = OpenService(sch_manager,name,SERVICE_START);
 	if(!sch_service) {
 		winerror("Failed to Open Service");
 		CloseServiceHandle(sch_manager);
@@ -137,25 +211,27 @@ static apt_bool_t uni_service_start()
 	if(!StartService(sch_service,0,NULL)) {
 		winerror("Failed to Start Service");
 		status = FALSE;
-	}
+	} else
+		printf("UniMRCP service %s started\n", name);
 	CloseServiceHandle(sch_service);
 	CloseServiceHandle(sch_manager);
 	return status;
 }
 
 /** Stop service */
-static apt_bool_t uni_service_stop()
+static apt_bool_t uni_service_stop(const char *name)
 {
 	apt_bool_t status = TRUE;
 	SERVICE_STATUS ss_status;
 	SC_HANDLE sch_service;
 	SC_HANDLE sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
+	if (!name) name = WIN_SERVICE_NAME;
 	if(!sch_manager) {
 		winerror("Failed to Open SCManager");
 		return FALSE;
 	}
 
-	sch_service = OpenService(sch_manager,WIN_SERVICE_NAME,SERVICE_STOP);
+	sch_service = OpenService(sch_manager,name,SERVICE_STOP);
 	if(!sch_service) {
 		winerror("Failed to Open Service");
 		CloseServiceHandle(sch_manager);
@@ -165,7 +241,8 @@ static apt_bool_t uni_service_stop()
 	if(!ControlService(sch_service,SERVICE_CONTROL_STOP,&ss_status)) {
 		winerror("Failed to Stop Service");
 		status = FALSE;
-	}
+	} else
+		printf("UniMRCP service %s stopped\n", name);
 
 	CloseServiceHandle(sch_service);
 	CloseServiceHandle(sch_manager);
@@ -191,6 +268,14 @@ static void usage()
 		"\n"
 		"   -t [--stop]             : Stop the Windows service.\n"
 		"\n"
+		"   -n [--name] svcname     : Service name (default: unimrcp)\n"
+		"\n"
+		"   -a [--autostart]        : Start service after boot-up\n"
+		"\n"
+		"   -f [--fail-restart] n   : If crashed, restart after n secs\n"
+		"\n"
+		"   -l [--log-prio] priority: Set the log priority.\n"
+		"                             (0-emergency, ..., 7-debug)\n"
 		"   -h [--help]             : Show the help.\n"
 		"\n");
 }
@@ -204,15 +289,23 @@ int main(int argc, const char * const *argv)
 	uni_service_register_e reg = USR_NONE;
 	uni_service_control_e control = USC_NONE;
 	const char *root_dir = "..";
+	const char *name = NULL;
+	apt_bool_t autostart = FALSE;
+	unsigned long recover = 0;
+	int log_priority = -1;
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "register",   'r', TRUE,  "register service" },  /* -r or --register arg */
-		{ "unregister", 'u', FALSE, "unregister service" },/* -u or --unregister */
-		{ "start",      's', FALSE, "start service" },     /* -s or --start */
-		{ "stop",       't', FALSE, "stop service" },      /* -t or --stop */
-		{ "help",       'h', FALSE, "show help" },         /* -h or --help */
-		{ NULL, 0, 0, NULL },                               /* end */
+		{ "register",    'r', TRUE,  "register service" },   /* -r or --register arg */
+		{ "unregister",  'u', FALSE, "unregister service" }, /* -u or --unregister */
+		{ "start",       's', FALSE, "start service" },      /* -s or --start */
+		{ "stop",        't', FALSE, "stop service" },       /* -t or --stop */
+		{ "name",        'n', TRUE,  "service name" },       /* -n or --name arg */
+		{ "autostart",   'a', FALSE, "start automatically" },/* -a or --autostart */
+		{ "fail-restart",'f', TRUE,  "restart if fails" },   /* -f or --fail-restart arg */
+		{ "log-prio",    'l', TRUE,  "log priority" },       /* -l arg or --log-prio arg */
+		{ "help",        'h', FALSE, "show help" },          /* -h or --help */
+		{ NULL, 0, 0, NULL },                                /* end */
 	};
 
 	/* APR global initialization */
@@ -267,6 +360,24 @@ int main(int argc, const char * const *argv)
 						ret = FALSE;
 					}
 					break;
+				case 'n':
+					name = optarg;
+					break;
+				case 'a':
+					autostart = TRUE;
+					break;
+				case 'f':
+					if (sscanf(optarg, "%lu", &recover) != 1) {
+						puts("Invalid value for param --fail-restart");
+						ret = FALSE;
+					}
+					break;
+				case 'l':
+					if (sscanf(optarg, "%hhu", &log_priority) != 1) {
+						puts("Invalid value for param --log-prio");
+						ret = FALSE;
+					}
+					break;
 				case 'h':
 					usage();
 					break;
@@ -287,19 +398,19 @@ int main(int argc, const char * const *argv)
 
 	while (ret) {  /* No problem so far */
 		if (reg == USR_REGISTER)
-			ret = uni_service_register(root_dir, pool);
+			ret = uni_service_register(root_dir, pool, name, autostart, recover, log_priority);
 		if (!ret) break;
 
 		if (control == USC_START)
-			ret = uni_service_start();
+			ret = uni_service_start(name);
 		if (!ret) break;
 
 		if (control == USC_STOP)
-			ret = uni_service_stop();
+			ret = uni_service_stop(name);
 		/* Do not break here, stop failure should not matter before unregistration */
 
 		if (reg == USR_UNREGISTER)
-			ret = uni_service_unregister();
+			ret = uni_service_unregister(name);
 		break;
 	}
 

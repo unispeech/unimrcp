@@ -28,10 +28,13 @@ typedef struct {
 	apt_bool_t    foreground;
 	const char   *log_priority;
 	const char   *log_output;
+#ifdef WIN32
+	const char   *svcname;
+#endif
 } server_options_t;
 
 #ifdef WIN32
-apt_bool_t uni_service_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
+apt_bool_t uni_service_run(const char *name, apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 #else
 apt_bool_t uni_daemon_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 #endif
@@ -60,6 +63,8 @@ static void usage()
 #ifdef WIN32
 		"   -s [--service]           : Run as the Windows service.\n"
 		"\n"
+		"   -n [--name] svcname      : Service name (default: unimrcp)\n"
+		"\n"
 #else
 		"   -d [--daemon]            : Run as the daemon.\n"
 		"\n"
@@ -82,6 +87,7 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
 #ifdef WIN32
 		{ "service",     's', FALSE, "run as service" },    /* -s or --service */
+		{ "name",        'n', TRUE,  "service name" },      /* -n or --name arg */
 #else
 		{ "daemon",      'd', FALSE, "start as daemon" },   /* -d or --daemon */
 #endif
@@ -108,6 +114,9 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 #ifdef WIN32
 			case 's':
 				options->foreground = FALSE;
+				break;
+			case 'n':
+				options->svcname = optarg;
 				break;
 #else
 			case 'd':
@@ -153,6 +162,9 @@ int main(int argc, const char * const *argv)
 	options.foreground = TRUE;
 	options.log_priority = NULL;
 	options.log_output = NULL;
+#ifdef WIN32
+	options.svcname = NULL;
+#endif
 
 	/* load options */
 	if(options_load(&options,argc,argv,pool) != TRUE) {
@@ -190,7 +202,7 @@ int main(int argc, const char * const *argv)
 #ifdef WIN32
 	else {
 		/* run as windows service */
-		uni_service_run(dir_layout,pool);
+		uni_service_run(options.svcname,dir_layout,pool);
 	}
 #else
 	else {
