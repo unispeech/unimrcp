@@ -54,14 +54,15 @@ static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *po
                                        const char *name,
                                        apt_bool_t autostart,
                                        unsigned long recover,
-                                       int log_priority)
+                                       int log_priority,
+                                       const char *disp_name,
+                                       const char *description)
 {
 	apr_status_t status;
 	char buf[4096];
 	static const size_t len = sizeof(buf);
 	size_t pos = 0;
 	char *root_dir;
-	char *disp_name;
 	SERVICE_DESCRIPTION desc;
 	SC_HANDLE sch_service;
 	SC_HANDLE sch_manager;
@@ -97,7 +98,7 @@ static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *po
 	pos = apr_cpystrn(buf + pos, " --root-dir \"", len - pos) - buf;
 	pos = apr_cpystrn(buf + pos, root_dir, len - pos) - buf;
 	if ((buf[pos - 1] == '\\') && (pos < len))
-		/* `\"' might be misinterpreted as escepe, so replace `\' with `\\' */
+		/* `\"' might be misinterpreted as escape, so replace `\' with `\\' */
 		buf[pos++] = '\\';
 	if (pos < len)
 		buf[pos++] = '"';
@@ -107,10 +108,14 @@ static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *po
 		puts("Service Command Too Long");
 		return FALSE;
 	}
-	if (name)
-		disp_name = apr_pstrcat(pool, name, " ", "UniMRCP Server", NULL);
-	else
-		disp_name = "UniMRCPServer";
+	if (!disp_name || !*disp_name) {
+		if (name)
+			disp_name = apr_pstrcat(pool, name, " ", "UniMRCP Server", NULL);
+		else
+			disp_name = "UniMRCP Server";
+	}
+	if (!description || !*description)
+		description = "Launches UniMRCP Server";
 
 	sch_manager = OpenSCManager(0,0,SC_MANAGER_ALL_ACCESS);
 	if(!sch_manager) {
@@ -132,7 +137,7 @@ static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *po
 		return FALSE;
 	}
 
-	desc.lpDescription = "Launches UniMRCP Server";
+	desc.lpDescription = (char *) description;
 	if(!ChangeServiceConfig2(sch_service,SERVICE_CONFIG_DESCRIPTION,&desc)) {
 		winerror("Failed to Set Service Description");
 	}
@@ -252,6 +257,8 @@ static apt_bool_t uni_service_stop(const char *name)
 
 static void usage()
 {
+	static apt_bool_t written = FALSE;
+	if (written) return;
 	printf(
 		"\n"
 		"Usage:\n"
@@ -276,8 +283,13 @@ static void usage()
 		"\n"
 		"   -l [--log-prio] priority: Set the log priority.\n"
 		"                             (0-emergency, ..., 7-debug)\n"
+		"   -p [--disp-name] title  : Set service display name\n"
+		"                             (default: [svcname] UniMRCP Server)\n"
+		"   -c [--description] desc : Set service description\n"
+		"                             (default: Launches UniMRCP Server)\n"
 		"   -h [--help]             : Show the help.\n"
 		"\n");
+	written = TRUE;
 }
 
 int main(int argc, const char * const *argv)
@@ -293,6 +305,8 @@ int main(int argc, const char * const *argv)
 	apt_bool_t autostart = FALSE;
 	unsigned long recover = 0;
 	int log_priority = -1;
+	const char *disp_name = NULL;
+	const char *description = NULL;
 
 	static const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
@@ -304,6 +318,8 @@ int main(int argc, const char * const *argv)
 		{ "autostart",   'a', FALSE, "start automatically" },/* -a or --autostart */
 		{ "fail-restart",'f', TRUE,  "restart if fails" },   /* -f or --fail-restart arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },       /* -l arg or --log-prio arg */
+		{ "disp-name",   'p', TRUE,  "display name" },       /* -p arg or --disp-name arg */
+		{ "description", 'c', TRUE,  "description" },        /* -c arg or --description arg */
 		{ "help",        'h', FALSE, "show help" },          /* -h or --help */
 		{ NULL, 0, 0, NULL },                                /* end */
 	};
@@ -378,6 +394,12 @@ int main(int argc, const char * const *argv)
 						ret = FALSE;
 					}
 					break;
+				case 'p':
+					disp_name = optarg;
+					break;
+				case 'c':
+					description = optarg;
+					break;
 				case 'h':
 					usage();
 					break;
@@ -390,7 +412,7 @@ int main(int argc, const char * const *argv)
 			ret = FALSE;
 			puts("Inconsistent arguments");
 		}
-		if((rv != APR_EOF) || !ret) {
+		if((rv != APR_EOF) || !ret || (!reg && !control)) {
 			ret = FALSE;
 			usage();
 		}
@@ -398,7 +420,7 @@ int main(int argc, const char * const *argv)
 
 	while (ret) {  /* No problem so far */
 		if (reg == USR_REGISTER)
-			ret = uni_service_register(root_dir, pool, name, autostart, recover, log_priority);
+			ret = uni_service_register(root_dir, pool, name, autostart, recover, log_priority, disp_name, description);
 		if (!ret) break;
 
 		if (control == USC_START)
