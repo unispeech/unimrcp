@@ -194,7 +194,7 @@ bool UmcScenario::IsElementEnabled(const apr_xml_elem* pElem) const
 	return true;
 }
 
-const char* UmcScenario::LoadFileContent(const char* pFileName, apr_pool_t* pool) const
+const char* UmcScenario::LoadFileContent(const char* pFileName, apr_size_t& size, apr_pool_t* pool) const
 {
 	if(!m_pDirLayout || !pFileName)
 		return NULL;
@@ -218,7 +218,7 @@ const char* UmcScenario::LoadFileContent(const char* pFileName, apr_pool_t* pool
 		return NULL;
 	}
 
-	apr_size_t size = (apr_size_t)finfo.size;
+	size = (apr_size_t)finfo.size;
 	char* pContent = (char*) apr_palloc(pool,size+1);
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Load File Content size [%"APR_SIZE_T_FMT" bytes] %s",size,pFilePath);
 	if(apr_file_read(pFile,pContent,&size) != APR_SUCCESS) 

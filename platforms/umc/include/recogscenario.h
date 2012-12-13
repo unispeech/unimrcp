@@ -41,6 +41,7 @@ public:
 /* ============================ ACCESSORS ================================== */
 	const char* GetContentType() const;
 	const char* GetContent() const;
+	apr_size_t GetContentLength() const;
 	const char* GetAudioSource() const;
 
 /* ============================ INQUIRIES ================================== */
@@ -58,6 +59,7 @@ protected:
 	bool        m_Recognize;
 	const char* m_ContentType;
 	const char* m_Content;
+	apr_size_t  m_ContentLength;
 	const char* m_AudioSource;
 };
 
@@ -70,6 +72,11 @@ inline const char* RecogScenario::GetContentType() const
 inline const char* RecogScenario::GetContent() const
 {
 	return m_Content;
+}
+
+inline apr_size_t RecogScenario::GetContentLength() const
+{
+	return m_ContentLength;
 }
 
 inline const char* RecogScenario::GetAudioSource() const

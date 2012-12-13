@@ -30,6 +30,7 @@ RecogScenario::RecogScenario() :
 	m_Recognize(true),
 	m_ContentType("application/srgs+xml"),
 	m_Content(NULL),
+	m_ContentLength(0),
 	m_AudioSource(NULL)
 {
 }
@@ -102,7 +103,7 @@ bool RecogScenario::LoadDefineGrammar(const apr_xml_elem* pElem, apr_pool_t* poo
 		}
 		else if(strcasecmp(pAttr->name,"content-location") == 0)
 		{
-			m_Content = LoadFileContent(pAttr->value,pool);
+			m_Content = LoadFileContent(pAttr->value,m_ContentLength,pool);
 		}
 	}
 	return true;

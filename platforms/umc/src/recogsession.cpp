@@ -352,7 +352,7 @@ mrcp_message_t* RecogSession::CreateDefineGrammarRequest(mrcp_channel_t* pMrcpCh
 
 	/* set message body */
 	if(pScenario->GetContent())
-		apt_string_assign(&pMrcpMessage->body,pScenario->GetContent(),pMrcpMessage->pool);
+		apt_string_assign_n(&pMrcpMessage->body,pScenario->GetContent(),pScenario->GetContentLength(),pMrcpMessage->pool);
 	return pMrcpMessage;
 }
 
