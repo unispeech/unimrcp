@@ -332,7 +332,7 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 	mrcp_unirtsp_session_t *session = mrcp_session->obj;
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 
-	char buffer[500];
+	char buffer[2000];
 	apt_text_stream_t stream;
 	rtsp_message_t *rtsp_message = NULL;
 	apt_str_t *body;

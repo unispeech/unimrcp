@@ -301,14 +301,32 @@ APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_
 /** Generate array of name-value pairs */
 APT_DECLARE(apt_bool_t) apt_pair_array_generate(const apt_pair_arr_t *arr, apt_str_t *str, apr_pool_t *pool)
 {
-	char buf[512];
-	apt_text_stream_t stream;
-	apt_text_stream_init(&stream,buf,sizeof(buf));
-	if(apt_text_pair_array_insert(&stream,arr) == FALSE) {
-		return FALSE;
+	int p, v = 0;
+	struct iovec vec[512];
+	const apt_pair_t *pair;
+	static const int MAX_VECS = sizeof(vec) / sizeof(*vec);
+	static const struct iovec IOV_SEMICOLON = {";", 1};
+	static const struct iovec IOV_EQUALS = {"=", 1};
+
+	for (p = 0; p < arr->nelts; p++) {
+		pair = (apt_pair_t*)arr->elts + p;
+		if (!pair->name.length)
+			continue;
+		if (v) {
+			if (v >= MAX_VECS)
+				return FALSE;
+			vec[v++] = IOV_SEMICOLON;
+		}
+		if (v + (pair->value.length ? 3 : 1) > MAX_VECS)
+			return FALSE;
+		vec[v++] = *((struct iovec*)&pair->name);
+		if (pair->value.length) {
+			vec[v++] = IOV_EQUALS;
+			vec[v++] = *((struct iovec*)&pair->value);
+		}
 	}
-	apt_string_assign_n(str, stream.text.buf, stream.pos - stream.text.buf, pool);
-	return TRUE;
+	str->buf = apr_pstrcatv(pool, vec, v, &str->length);
+	return str->buf ? TRUE : FALSE;
 }
 
 
@@ -325,9 +343,16 @@ APT_DECLARE(apt_bool_t) apt_text_pair_array_insert(apt_text_stream_t *stream, co
 	for(i=0; i<arr->nelts; i++) {
 		pair = (apt_pair_t*)arr->elts + i;
 		if(i != 0) {
+			if (pos >= stream->end)
+				return FALSE;
 			*pos++ = ';';
 		}
 		if(pair->name.length) {
+			if (pos + pair->name.length +
+				(pair->value.length ? pair->value.length + 1 : 0) > stream->end)
+			{
+				return FALSE;
+			}
 			memcpy(pos,pair->name.buf,pair->name.length);
 			pos += pair->name.length;
 			if(pair->value.length) {
