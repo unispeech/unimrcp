@@ -1,4 +1,4 @@
-MAINTAINERCLEANFILES 	 = Makefile.in
+MAINTAINERCLEANFILES     = Makefile.in
 
 INCLUDES                 = -I$(top_srcdir)/libs/mpf/codecs \
                            -I$(top_srcdir)/libs/mpf/include \

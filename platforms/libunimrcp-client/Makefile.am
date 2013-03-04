@@ -1,4 +1,4 @@
-MAINTAINERCLEANFILES 	    = Makefile.in
+MAINTAINERCLEANFILES        = Makefile.in
 
 INCLUDES                    = -I$(top_srcdir)/platforms/libunimrcp-client/include \
                               -I$(top_srcdir)/modules/mrcp-sofiasip/include \

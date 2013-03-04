@@ -1,4 +1,4 @@
-MAINTAINERCLEANFILES 	 = Makefile.in
+MAINTAINERCLEANFILES     = Makefile.in
 
 INCLUDES                 = -I$(top_srcdir)/libs/uni-rtsp/include \
                            -I$(top_srcdir)/libs/apr-toolkit/include \

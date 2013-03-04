@@ -1,4 +1,4 @@
-MAINTAINERCLEANFILES 	    = Makefile.in
+MAINTAINERCLEANFILES        = Makefile.in
 
 INCLUDES                    = -I$(top_srcdir)/libs/mrcp-signaling/include \
                               -I$(top_srcdir)/libs/mrcp/include \
