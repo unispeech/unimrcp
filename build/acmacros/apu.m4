@@ -25,7 +25,7 @@ AC_DEFUN([UNIMRCP_CHECK_APU],
   LDFLAGS="$LDFLAGS `$apu_config --ldflags`"
 
   UNIMRCP_APU_INCLUDES="`$apu_config --includes`"
-  UNIMRCP_APU_LIBS="`$apu_config --link-libtool --libs`"
+  UNIMRCP_APU_LIBS="`$apu_config --link-ld`"
 
   AC_SUBST(UNIMRCP_APU_INCLUDES)
   AC_SUBST(UNIMRCP_APU_LIBS)

@@ -27,7 +27,7 @@ AC_DEFUN([UNIMRCP_CHECK_APR],
   LDFLAGS="$LDFLAGS `$apr_config --ldflags`"
 
   UNIMRCP_APR_INCLUDES="`$apr_config --includes`"
-  UNIMRCP_APR_LIBS="`$apr_config --link-libtool --libs`"
+  UNIMRCP_APR_LIBS="`$apr_config --link-ld`"
 
   AC_SUBST(UNIMRCP_APR_INCLUDES)
   AC_SUBST(UNIMRCP_APR_LIBS)
