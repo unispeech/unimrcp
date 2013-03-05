@@ -11,24 +11,30 @@ AC_DEFUN([UNIMRCP_CHECK_SPHINXBASE],
                 [sphinxbase_path=$withval],
                 [sphinxbase_path="/usr/local"]
                 )
-    
+
     found_sphinxbase="no"
     sphinxbase_config="lib/pkgconfig/sphinxbase.pc"
     sphinxbase_srcdir="src"
     for dir in $sphinxbase_path ; do
         cd $dir && sphinxbase_dir=`pwd` && cd - > /dev/null
         if test -f "$dir/$sphinxbase_config"; then
-            found_sphinxbase="yes"
-            UNIMRCP_SPHINXBASE_INCLUDES="`pkg-config --cflags $dir/$sphinxbase_config`"
-            UNIMRCP_SPHINXBASE_LIBS="`pkg-config --libs $dir/$sphinxbase_config`"
-	    sphinxbase_version="`pkg-config --modversion $dir/$sphinxbase_config`"
-            break
+            if test -n "$PKG_CONFIG"; then
+                found_sphinxbase="yes"
+                UNIMRCP_SPHINXBASE_INCLUDES="`$PKG_CONFIG --cflags $dir/$sphinxbase_config`"
+                UNIMRCP_SPHINXBASE_LIBS="`$PKG_CONFIG --libs $dir/$sphinxbase_config`"
+                sphinxbase_version="`$PKG_CONFIG --modversion $dir/$sphinxbase_config`"
+                break
+            else
+                AC_MSG_ERROR(pkg-config is not available)
+            fi
         fi
         if test -d "$dir/$sphinxbase_srcdir"; then
             found_sphinxbase="yes"
             UNIMRCP_SPHINXBASE_INCLUDES="-I$sphinxbase_dir/include"
             UNIMRCP_SPHINXBASE_LIBS="$sphinxbase_dir/$sphinxbase_srcdir/libsphinxbase/libsphinxbase.la $sphinxbase_dir/$sphinxbase_srcdir/libsphinxad/libsphinxad.la"
-	    sphinxbase_version="`pkg-config --modversion $sphinxbase_dir/sphinxbase.pc`"
+            if test -n "$PKG_CONFIG"; then
+                sphinxbase_version="`$PKG_CONFIG --modversion $sphinxbase_dir/sphinxbase.pc`"
+            fi
             break
         fi
     done
@@ -41,7 +47,8 @@ AC_DEFUN([UNIMRCP_CHECK_SPHINXBASE],
 
 case "$host" in
     *darwin*)
-	UNIMRCP_SPHINXBASE_LIBS="$UNIMRCP_SPHINXBASE_LIBS -framework CoreFoundation -framework SystemConfiguration"                                                                ;;
+        UNIMRCP_SPHINXBASE_LIBS="$UNIMRCP_SPHINXBASE_LIBS -framework CoreFoundation -framework SystemConfiguration"
+        ;;
 esac
 
         AC_SUBST(UNIMRCP_SPHINXBASE_INCLUDES)

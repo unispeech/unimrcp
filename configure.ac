@@ -30,6 +30,9 @@ m4_undefine([AC_PROG_F77])
 m4_defun([AC_PROG_F77],[])
 AC_PROG_LIBTOOL
 
+dnl Search for pkg-config
+AC_PATH_PROG(PKG_CONFIG, pkg-config)
+
 dnl Get version information
 get_version="build/get-version.sh"
 version_hdr="build/uni_version.h"

@@ -11,24 +11,30 @@ AC_DEFUN([UNIMRCP_CHECK_SOFIA],
                 [sofia_path=$withval],
                 [sofia_path="/usr/local"]
                 )
-    
+
     found_sofia="no"
     sofiaconfig="lib/pkgconfig/sofia-sip-ua.pc"
     sofiasrcdir="libsofia-sip-ua"
     for dir in $sofia_path ; do
         cd $dir && sofiadir=`pwd` && cd - > /dev/null
         if test -f "$dir/$sofiaconfig"; then
-            found_sofia="yes"
-            UNIMRCP_SOFIA_INCLUDES="`pkg-config --cflags $dir/$sofiaconfig`"
-            UNIMRCP_SOFIA_LIBS="`pkg-config --libs $dir/$sofiaconfig`"
-	    sofia_version="`pkg-config --modversion $dir/$sofiaconfig`"
-            break
+            if test -n "$PKG_CONFIG"; then
+                found_sofia="yes"
+                UNIMRCP_SOFIA_INCLUDES="`$PKG_CONFIG --cflags $dir/$sofiaconfig`"
+                UNIMRCP_SOFIA_LIBS="`$PKG_CONFIG --libs $dir/$sofiaconfig`"
+                sofia_version="`$PKG_CONFIG --modversion $dir/$sofiaconfig`"
+                break
+            else
+                AC_MSG_ERROR(pkg-config is not available)
+            fi
         fi
         if test -d "$dir/$sofiasrcdir"; then
             found_sofia="yes"
             UNIMRCP_SOFIA_INCLUDES="-I$sofiadir/$sofiasrcdir -I$sofiadir/$sofiasrcdir/bnf -I$sofiadir/$sofiasrcdir/features -I$sofiadir/$sofiasrcdir/http -I$sofiadir/$sofiasrcdir/ipt -I$sofiadir/$sofiasrcdir/iptsec -I$sofiadir/$sofiasrcdir/msg -I$sofiadir/$sofiasrcdir/nea -I$sofiadir/$sofiasrcdir/nta -I$sofiadir/$sofiasrcdir/nth -I$sofiadir/$sofiasrcdir/nua -I$sofiadir/$sofiasrcdir/sdp -I$sofiadir/$sofiasrcdir/sip -I$sofiadir/$sofiasrcdir/soa -I$sofiadir/$sofiasrcdir/sresolv -I$sofiadir/$sofiasrcdir/stun -I$sofiadir/$sofiasrcdir/su -I$sofiadir/$sofiasrcdir/tport -I$sofiadir/$sofiasrcdir/url"
             UNIMRCP_SOFIA_LIBS="$sofiadir/$sofiasrcdir/libsofia-sip-ua.la"
-	    sofia_version="`pkg-config --modversion $sofiadir/packages/sofia-sip-ua.pc`"
+            if test -n "$PKG_CONFIG"; then
+                sofia_version="`$PKG_CONFIG --modversion $sofiadir/packages/sofia-sip-ua.pc`"
+            fi
             break
         fi
     done
@@ -41,7 +47,8 @@ AC_DEFUN([UNIMRCP_CHECK_SOFIA],
 
 case "$host" in
     *darwin*)
-	UNIMRCP_SOFIA_LIBS="$UNIMRCP_SOFIA_LIBS -framework CoreFoundation -framework SystemConfiguration"                                                                ;;
+        UNIMRCP_SOFIA_LIBS="$UNIMRCP_SOFIA_LIBS -framework CoreFoundation -framework SystemConfiguration"
+        ;;
 esac
 
         AC_SUBST(UNIMRCP_SOFIA_INCLUDES)

@@ -11,26 +11,32 @@ AC_DEFUN([UNIMRCP_CHECK_POCKETSPHINX],
                 [pocketsphinx_path=$withval],
                 [pocketsphinx_path="/usr/local"]
                 )
-    
+
     found_pocketsphinx="no"
     pocketsphinx_config="lib/pkgconfig/pocketsphinx.pc"
     pocketsphinx_srcdir="src"
     for dir in $pocketsphinx_path ; do
         cd $dir && pocketsphinx_dir=`pwd` && cd - > /dev/null
         if test -f "$dir/$pocketsphinx_config"; then
-            found_pocketsphinx="yes"
-            UNIMRCP_POCKETSPHINX_INCLUDES="`pkg-config --cflags $dir/$pocketsphinx_config`"
-            UNIMRCP_POCKETSPHINX_LIBS="`pkg-config --libs $dir/$pocketsphinx_config`"
-            UNIMRCP_POCKETSPHINX_MODELS=
-	    pocketsphinx_version="`pkg-config --modversion $dir/$pocketsphinx_config`"
-            break
+            if test -n "$PKG_CONFIG"; then
+                found_pocketsphinx="yes"
+                UNIMRCP_POCKETSPHINX_INCLUDES="`$PKG_CONFIG --cflags $dir/$pocketsphinx_config`"
+                UNIMRCP_POCKETSPHINX_LIBS="`$PKG_CONFIG --libs $dir/$pocketsphinx_config`"
+                UNIMRCP_POCKETSPHINX_MODELS=
+                pocketsphinx_version="`$PKG_CONFIG --modversion $dir/$pocketsphinx_config`"
+                break
+            else
+                AC_MSG_ERROR(pkg-config is not available)
+            fi
         fi
         if test -d "$dir/$pocketsphinx_srcdir"; then
             found_pocketsphinx="yes"
             UNIMRCP_POCKETSPHINX_INCLUDES="-I$pocketsphinx_dir/include"
             UNIMRCP_POCKETSPHINX_LIBS="$pocketsphinx_dir/$pocketsphinx_srcdir/libpocketsphinx/libpocketsphinx.la"
             UNIMRCP_POCKETSPHINX_MODELS="$pocketsphinx_dir/model"
-	    pocketsphinx_version="`pkg-config --modversion $pocketsphinx_dir/pocketsphinx.pc`"
+            if test -n "$PKG_CONFIG"; then
+                pocketsphinx_version="`$PKG_CONFIG --modversion $pocketsphinx_dir/pocketsphinx.pc`"
+            fi
             break
         fi
     done
@@ -43,7 +49,8 @@ AC_DEFUN([UNIMRCP_CHECK_POCKETSPHINX],
 
 case "$host" in
     *darwin*)
-	UNIMRCP_POCKETSPHINX_LIBS="$UNIMRCP_POCKETSPHINX_LIBS -framework CoreFoundation -framework SystemConfiguration"                                                                ;;
+        UNIMRCP_POCKETSPHINX_LIBS="$UNIMRCP_POCKETSPHINX_LIBS -framework CoreFoundation -framework SystemConfiguration"
+        ;;
 esac
 
         AC_SUBST(UNIMRCP_POCKETSPHINX_INCLUDES)
