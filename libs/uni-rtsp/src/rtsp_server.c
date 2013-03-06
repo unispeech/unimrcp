@@ -192,7 +192,12 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	server->sub_pool = apt_subpool_create(pool);
 	server->connection_list = NULL;
 
-	rtsp_server_listening_socket_create(server);
+	if(rtsp_server_listening_socket_create(server) != TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Listening Socket [%s] %s:%hu", 
+				id,
+				listen_ip,
+				listen_port);
+	}
 	return server;
 }
 
@@ -645,7 +650,7 @@ static apt_bool_t rtsp_server_message_handler(rtsp_server_connection_t *rtsp_con
 	return TRUE;
 }
 
-/** Create listening socket and add to pollset */
+/** Create listening socket and add it to pollset */
 static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 {
 	apr_status_t status;
@@ -677,6 +682,7 @@ static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 		return FALSE;
 	}
 
+	/* add listening socket to pollset */
 	memset(&server->listen_sock_pfd,0,sizeof(apr_pollfd_t));
 	server->listen_sock_pfd.desc_type = APR_POLL_SOCKET;
 	server->listen_sock_pfd.reqevents = APR_POLLIN;
@@ -686,6 +692,7 @@ static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset");
 		apr_socket_close(server->listen_sock);
 		server->listen_sock = NULL;
+		return FALSE;
 	}
 
 	return TRUE;
@@ -694,9 +701,8 @@ static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 /** Remove from pollset and destroy listening socket */
 static void rtsp_server_listening_socket_destroy(rtsp_server_t *server)
 {
-	apt_poller_task_descriptor_remove(server->task,&server->listen_sock_pfd);
-
 	if(server->listen_sock) {
+		apt_poller_task_descriptor_remove(server->task,&server->listen_sock_pfd);
 		apr_socket_close(server->listen_sock);
 		server->listen_sock = NULL;
 	}

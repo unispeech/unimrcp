@@ -386,10 +386,9 @@ static apt_bool_t mrcp_client_agent_connection_remove(mrcp_connection_agent_t *a
 		connection->it = NULL;
 	}
 	
-	apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
-
 	if(connection->sock) {
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Close TCP/MRCPv2 Connection %s",connection->id);
+		apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
 		apr_socket_close(connection->sock);
 		connection->sock = NULL;
 	}

@@ -131,20 +131,11 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->connection_list = NULL;
 	agent->null_connection = NULL;
 
-	if(mrcp_server_agent_listening_socket_create(agent) == TRUE) {
-		/* add listening socket to pollset */
-		memset(&agent->listen_sock_pfd,0,sizeof(apr_pollfd_t));
-		agent->listen_sock_pfd.desc_type = APR_POLL_SOCKET;
-		agent->listen_sock_pfd.reqevents = APR_POLLIN;
-		agent->listen_sock_pfd.desc.s = agent->listen_sock;
-		agent->listen_sock_pfd.client_data = agent->listen_sock;
-		if(apt_poller_task_descriptor_add(agent->task, &agent->listen_sock_pfd) != TRUE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset");
-			mrcp_server_agent_listening_socket_destroy(agent);
-		}
-	}
-	else {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Listening Socket");
+	if(mrcp_server_agent_listening_socket_create(agent) != TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Listening Socket [%s] %s:%hu", 
+				id,
+				listen_ip,
+				listen_port);
 	}
 	return agent;
 }
@@ -154,9 +145,7 @@ static apt_bool_t mrcp_server_agent_on_destroy(apt_task_t *task)
 	apt_poller_task_t *poller_task = apt_task_object_get(task);
 	mrcp_connection_agent_t *agent = apt_poller_task_object_get(poller_task);
 
-	apt_poller_task_descriptor_remove(agent->task,&agent->listen_sock_pfd);
 	mrcp_server_agent_listening_socket_destroy(agent);
-
 	apt_poller_task_cleanup(poller_task);
 	return TRUE;
 }
@@ -314,6 +303,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_control_message_send(mrcp_control_channel_t
 	return mrcp_server_control_message_signal(CONNECTION_TASK_MSG_SEND_MESSAGE,channel->agent,channel,NULL,message);
 }
 
+/** Create listening socket and add it to pollset */
 static apt_bool_t mrcp_server_agent_listening_socket_create(mrcp_connection_agent_t *agent)
 {
 	apr_status_t status;
@@ -344,12 +334,27 @@ static apt_bool_t mrcp_server_agent_listening_socket_create(mrcp_connection_agen
 		return FALSE;
 	}
 
+	/* add listening socket to pollset */
+	memset(&agent->listen_sock_pfd,0,sizeof(apr_pollfd_t));
+	agent->listen_sock_pfd.desc_type = APR_POLL_SOCKET;
+	agent->listen_sock_pfd.reqevents = APR_POLLIN;
+	agent->listen_sock_pfd.desc.s = agent->listen_sock;
+	agent->listen_sock_pfd.client_data = agent->listen_sock;
+	if(apt_poller_task_descriptor_add(agent->task, &agent->listen_sock_pfd) != TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset [%s]");
+		apr_socket_close(agent->listen_sock);
+		agent->listen_sock = NULL;
+		return FALSE;
+	}
+
 	return TRUE;
 }
 
+/** Remove from pollset and destroy listening socket */
 static void mrcp_server_agent_listening_socket_destroy(mrcp_connection_agent_t *agent)
 {
 	if(agent->listen_sock) {
+		apt_poller_task_descriptor_remove(agent->task,&agent->listen_sock_pfd);
 		apr_socket_close(agent->listen_sock);
 		agent->listen_sock = NULL;
 	}
