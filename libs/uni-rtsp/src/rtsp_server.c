@@ -123,16 +123,24 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_co
 static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server);
 static void rtsp_server_listening_socket_destroy(rtsp_server_t *server);
 
+/** Get string identifier */
+static const char* rtsp_server_id_get(const rtsp_server_t *server)
+{
+	apt_task_t *task = apt_poller_task_base_get(server->task);
+	return apt_task_name_get(task);
+}
 
 /** Create RTSP server */
 RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
-										const char *listen_ip,
-										apr_port_t listen_port,
-										apr_size_t max_connection_count,
-										void *obj,
-										const rtsp_server_vtable_t *handler,
-										apr_pool_t *pool)
+									const char *id,
+									const char *listen_ip,
+									apr_port_t listen_port,
+									apr_size_t max_connection_count,
+									void *obj,
+									const rtsp_server_vtable_t *handler,
+									apr_pool_t *pool)
 {
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_server_t *server;
@@ -140,11 +148,12 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	if(!listen_ip) {
 		return NULL;
 	}
-	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Server %s:%hu [%"APR_SIZE_T_FMT"]",
-				listen_ip,
-				listen_port,
-				max_connection_count);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Server [%s] %s:%hu [%"APR_SIZE_T_FMT"]",
+			id,
+			listen_ip,
+			listen_port,
+			max_connection_count);
 	server = apr_palloc(pool,sizeof(rtsp_server_t));
 	server->pool = pool;
 	server->obj = obj;
@@ -168,7 +177,12 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	if(!server->task) {
 		return NULL;
 	}
-	
+
+	task = apt_poller_task_base_get(server->task);
+	if(task) {
+		apt_task_name_set(task,id);
+	}
+
 	vtable = apt_poller_task_vtable_get(server->task);
 	if(vtable) {
 		vtable->destroy = rtsp_server_on_destroy;
@@ -195,7 +209,8 @@ static apt_bool_t rtsp_server_on_destroy(apt_task_t *task)
 /** Destroy RTSP server */
 RTSP_DECLARE(apt_bool_t) rtsp_server_destroy(rtsp_server_t *server)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy RTSP Server");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Server [%s]",
+			rtsp_server_id_get(server));
 	return apt_poller_task_destroy(server->task);
 }
 

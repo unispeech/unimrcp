@@ -85,25 +85,20 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(const char *id,
 	}
 
 	agent->rtsp_server = rtsp_server_create(
-								config->local_ip,
-								config->local_port,
-								config->max_connection_count,
-								agent,
-								&session_request_vtable,
-								pool);
+							id,
+							config->local_ip,
+							config->local_port,
+							config->max_connection_count,
+							agent,
+							&session_request_vtable,
+							pool);
 	if(!agent->rtsp_server) {
 		return NULL;
 	}
-	
+
 	task = rtsp_server_task_get(agent->rtsp_server);
-	apt_task_name_set(task,id);
 	agent->sig_agent->task = task;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create UniRTSP Agent [%s] %s:%hu [%"APR_SIZE_T_FMT"]",
-				id,
-				config->local_ip,
-				config->local_port,
-				config->max_connection_count);
 	return agent->sig_agent;
 }
 

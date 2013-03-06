@@ -94,6 +94,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(const char *id,
 	}
 
 	agent->rtsp_client = rtsp_client_create(
+								id,
 								config->max_connection_count,
 								config->request_timeout,
 								agent,
@@ -104,11 +105,8 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_client_agent_create(const char *id,
 	}
 
 	task = rtsp_client_task_get(agent->rtsp_client);
-	apt_task_name_set(task,id);
 	agent->sig_agent->task = task;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create UniRTSP Agent [%s] [%"APR_SIZE_T_FMT"]",
-						id,config->max_connection_count);
 	return agent->sig_agent;
 }
 

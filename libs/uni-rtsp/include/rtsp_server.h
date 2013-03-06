@@ -49,6 +49,7 @@ struct rtsp_server_vtable_t {
 
 /**
  * Create RTSP server.
+ * @param id the identifier of the server
  * @param listen_ip the listen IP address
  * @param listen_port the listen port
  * @param max_connection_count the number of max RTSP connections
@@ -57,12 +58,13 @@ struct rtsp_server_vtable_t {
  * @param pool the pool to allocate memory from
  */
 RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
-								const char *listen_ip, 
-								apr_port_t listen_port, 
-								apr_size_t max_connection_count,
-								void *obj,
-								const rtsp_server_vtable_t *handler,
-								apr_pool_t *pool);
+									const char *id,
+									const char *listen_ip,
+									apr_port_t listen_port,
+									apr_size_t max_connection_count,
+									void *obj,
+									const rtsp_server_vtable_t *handler,
+									apr_pool_t *pool);
 
 /**
  * Destroy RTSP server.

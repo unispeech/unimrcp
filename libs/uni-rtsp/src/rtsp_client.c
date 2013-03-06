@@ -138,19 +138,29 @@ static apt_bool_t rtsp_client_session_response_process(rtsp_client_t *client, rt
 
 static void rtsp_client_timer_proc(apt_timer_t *timer, void *obj);
 
+/** Get string identifier */
+static const char* rtsp_client_id_get(const rtsp_client_t *client)
+{
+	apt_task_t *task = apt_poller_task_base_get(client->task);
+	return apt_task_name_get(task);
+}
+
 /** Create RTSP client */
 RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
-								apr_size_t max_connection_count,
-								apr_size_t request_timeout,
-								void *obj,
-								const rtsp_client_vtable_t *handler,
-								apr_pool_t *pool)
+									const char *id,
+									apr_size_t max_connection_count,
+									apr_size_t request_timeout,
+									void *obj,
+									const rtsp_client_vtable_t *handler,
+									apr_pool_t *pool)
 {
+	apt_task_t *task;
 	apt_task_vtable_t *vtable;
 	apt_task_msg_pool_t *msg_pool;
 	rtsp_client_t *client;
-	
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create RTSP Client [%"APR_SIZE_T_FMT"]",max_connection_count);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Client [%s] [%"APR_SIZE_T_FMT"]",
+			id, max_connection_count);
 	client = apr_palloc(pool,sizeof(rtsp_client_t));
 	client->pool = pool;
 	client->obj = obj;
@@ -168,6 +178,11 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 		return NULL;
 	}
 
+	task = apt_poller_task_base_get(client->task);
+	if(task) {
+		apt_task_name_set(task,id);
+	}
+
 	vtable = apt_poller_task_vtable_get(client->task);
 	if(vtable) {
 		vtable->process_msg = rtsp_client_task_msg_process;
@@ -182,7 +197,8 @@ RTSP_DECLARE(rtsp_client_t*) rtsp_client_create(
 /** Destroy RTSP client */
 RTSP_DECLARE(apt_bool_t) rtsp_client_destroy(rtsp_client_t *client)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy RTSP Client");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Client [%s]",
+			rtsp_client_id_get(client));
 	return apt_poller_task_destroy(client->task);
 }
 
