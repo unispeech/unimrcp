@@ -190,6 +190,11 @@ static void mrcp_sofia_task_initialize(apt_task_t *task)
 					SIPTAG_USER_AGENT_STR(sofia_config->user_agent_name),
 					TAG_END());
 	}
+	else {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create NUA [%s] %s",
+					apt_task_name_get(task),
+					sofia_agent->sip_bind_str);
+	}
 }
 
 static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
@@ -216,7 +221,8 @@ static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
 {
 	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
 	if(sofia_agent->nua) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Send Shutdown Signal to NUA");
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Send Shutdown Signal to NUA [%s]",
+				apt_task_name_get(task));
 		nua_shutdown(sofia_agent->nua);
 	}
 	return TRUE;
