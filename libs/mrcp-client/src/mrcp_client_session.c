@@ -1224,7 +1224,14 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 	
 	if(session->registered == FALSE) {
 		session->base.signaling_agent = session->profile->signaling_agent;
-		session->base.signaling_agent->create_client_session(&session->base,session->profile->signaling_settings);
+		if(session->base.signaling_agent->create_client_session(&session->base,session->profile->signaling_settings) != TRUE) {
+			/* raise app response */
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Create Session "APT_NAMESID_FMT" [%d]",
+				MRCP_SESSION_NAMESID(session),
+				app_message->sig_message.command_id);
+			session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+			return mrcp_app_failure_message_raise(session);
+		}
 
 		mrcp_client_session_add(session->application->client,session);
 		session->registered = TRUE;
