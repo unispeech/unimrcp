@@ -6,6 +6,6 @@ def-data:
 		filename=`echo $$datafile | sed -e 's|^.*/||'`; \
 		$(INSTALL) -m 644 $$filename $(datadir); \
 	done
-           
+
 install-data-local:
 	test -d $(datadir) || $(MAKE) def-data
