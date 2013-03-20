@@ -771,6 +771,10 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			media->state = MPF_MEDIA_ENABLED;
 			media->direction = mpf_stream_reverse_direction_get(audio_stream->direction);
 			rtp_descriptor->audio.local = media;
+			if(audio_stream->capabilities) {
+				rtp_descriptor->audio.capabilities = mpf_stream_capabilities_clone(audio_stream->capabilities,pool);
+				rtp_descriptor->audio.capabilities->direction = media->direction;
+			}
 		}
 
 		/* create rtp termination */
@@ -803,7 +807,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 					slot->id = session->offer->audio_media_arr->nelts - 1;
 				}
 			}
-		}	
+		}
 	}
 
 	slot->descriptor = rtp_descriptor;
