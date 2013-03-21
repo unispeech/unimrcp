@@ -430,6 +430,7 @@ static void mrcp_sofia_on_session_ready(
 			force_destination_ip = sofia_session->sip_settings->server_ip;
 		}
 		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,session->pool);
+		descriptor->response_code = status;
 		sdp_parser_free(parser);
 	}
 
@@ -577,6 +578,7 @@ static void mrcp_sofia_on_resource_discover(
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 			sdp = sdp_session(parser);
 			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,session->pool);
+			descriptor->response_code = status;
 			sdp_parser_free(parser);
 		}
 

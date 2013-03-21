@@ -184,6 +184,12 @@ MRCP_DECLARE(apr_pool_t*) mrcp_application_session_pool_get(const mrcp_session_t
 MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(const mrcp_session_t *session);
 
 /**
+ * Get SIP or RTSP response code.
+ * @param session the session to use
+ */
+MRCP_DECLARE(int) mrcp_application_session_response_code_get(const mrcp_session_t *session);
+
+/**
  * Get external object associated with the session.
  * @param session the session to get object from
  */

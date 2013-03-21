@@ -27,6 +27,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool
 	apt_string_reset(&descriptor->resource_name);
 	descriptor->resource_state = FALSE;
 	descriptor->status = MRCP_SESSION_STATUS_OK;
+	descriptor->response_code = 0;
 	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(void*));
 	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
 	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));

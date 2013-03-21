@@ -52,6 +52,8 @@ struct mrcp_session_descriptor_t {
 	apt_bool_t            resource_state;
 	/** Session status */
 	mrcp_session_status_e status;
+	/** Response code (SIP for MRCPv2 and RTSP for MRCPv1) */
+	int                   response_code;
 
 	/** MRCP control media array (mrcp_control_descriptor_t) */
 	apr_array_header_t   *control_media_arr;

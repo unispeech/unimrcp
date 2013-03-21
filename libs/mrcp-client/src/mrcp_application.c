@@ -19,6 +19,7 @@
 #include "mrcp_application.h"
 #include "mrcp_client.h"
 #include "mrcp_client_session.h"
+#include "mrcp_session_descriptor.h"
 #include "mrcp_message.h"
 #include "mrcp_sig_agent.h"
 #include "mrcp_resource_factory.h"
@@ -114,6 +115,16 @@ MRCP_DECLARE(const apt_str_t*) mrcp_application_session_id_get(const mrcp_sessio
 		return NULL;
 	}
 	return &session->id;
+}
+
+/** Get SIP or RTSP response code */
+MRCP_DECLARE(int) mrcp_application_session_response_code_get(const mrcp_session_t *session)
+{
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	if(!client_session || !client_session->answer) {
+		return 0;
+	}
+	return client_session->answer->response_code;
 }
 
 /** Get external object associated with the session */

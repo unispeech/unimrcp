@@ -137,7 +137,7 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 }
 
 /** Generate MRCP descriptor by SDP session */
-static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t *descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
+static apt_bool_t mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t *descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
 
@@ -171,9 +171,8 @@ static mrcp_session_descriptor_t* mrcp_descriptor_generate_by_sdp_session(mrcp_s
 				break;
 		}
 	}
-	return descriptor;
+	return TRUE;
 }
-
 
 /** Generate MRCP descriptor by RTSP request */
 MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_request(
@@ -190,7 +189,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 	if(!resource_name) {
 		return NULL;
 	}
-	
+
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&request->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&request->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
@@ -253,12 +252,12 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 	if(!resource_name) {
 		return NULL;
 	}
-	
+
 	if(request->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
 		if(rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 			rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 			response->body.buf) {
-			
+
 			sdp_parser_t *parser;
 			sdp_session_t *sdp;
 
@@ -270,11 +269,12 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 
 				apt_string_assign(&descriptor->resource_name,resource_name,pool);
 				descriptor->resource_state = TRUE;
+				descriptor->response_code = response->start_line.common.status_line.status_code;
 			}
 			else {
 				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
 			}
-			
+
 			sdp_parser_free(parser);
 		}
 		else {
@@ -486,7 +486,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_genera
 	if(rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_TYPE) == TRUE &&
 		rtsp_header_property_check(&response->header,RTSP_HEADER_FIELD_CONTENT_LENGTH) == TRUE &&
 		response->body.buf) {
-			
+
 		sdp_parser_t *parser;
 		sdp_session_t *sdp;
 
@@ -495,6 +495,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_genera
 		if(sdp) {
 			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,0,pool);
 			descriptor->resource_state = TRUE;
+			descriptor->response_code = response->start_line.common.status_line.status_code;
 		}
 		else {
 			apt_string_assign(&descriptor->resource_name,resource_name,pool);
