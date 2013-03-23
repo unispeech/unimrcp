@@ -22,6 +22,7 @@
 #include "apt_pool.h"
 #include "apt_dir_layout.h"
 #include "apt_log.h"
+#include "uni_version.h"
 
 typedef struct {
 	const char   *root_dir_path;
@@ -46,13 +47,17 @@ static void usage()
 {
 	printf(
 		"\n"
+		" * "UNI_COPYRIGHT"\n"
+		" *\n"
+		UNI_LICENSE"\n"
+		"\n"
 		"Usage:\n"
 		"\n"
 		"  unimrcpserver [options]\n"
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -r [--root-dir] path     : Set the project root directory path.\n"
+		"   -r [--root-dir] path     : Set the path to the project root directory.\n"
 		"\n"
 		"   -l [--log-prio] priority : Set the log priority.\n"
 		"                              (0-emergency, ..., 7-debug)\n"
@@ -61,14 +66,16 @@ static void usage()
 		"                              (0-none, 1-console only, 2-file only, 3-both)\n"
 		"\n"
 #ifdef WIN32
-		"   -s [--service]           : Run as the Windows service.\n"
+		"   -s [--service]           : Run as a Windows service.\n"
 		"\n"
-		"   -n [--name] svcname      : Service name (default: unimrcp)\n"
+		"   -n [--name] svcname      : Set the service name (default: unimrcp)\n"
 		"\n"
 #else
-		"   -d [--daemon]            : Run as the daemon.\n"
+		"   -d [--daemon]            : Run as a daemon.\n"
 		"\n"
 #endif
+		"   -v [--version]           : Show the version.\n"
+		"\n"
 		"   -h [--help]              : Show the help.\n"
 		"\n");
 }
@@ -91,6 +98,7 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 #else
 		{ "daemon",      'd', FALSE, "start as daemon" },   /* -d or --daemon */
 #endif
+		{ "version",     'v', FALSE, "show version" },      /* -v or --version */
 		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
 		{ NULL, 0, 0, NULL },                               /* end */
 	};
@@ -123,6 +131,9 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 				options->foreground = FALSE;
 				break;
 #endif
+			case 'v':
+				printf(UNI_VERSION_STRING);
+				return FALSE;
 			case 'h':
 				usage();
 				return FALSE;
