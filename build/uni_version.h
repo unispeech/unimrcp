@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2010 Arsen Chaloyan
+ * Copyright 2008-2013 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@
 
 /**
  * @file uni_version.h
- * @brief UniMRCP Version Numbering
+ * @brief UniMRCP Version
  * 
- * UniMRCP version numbering is derived from APR project specified in:
+ * UniMRCP uses a version numbering scheme derived from the APR project.
  *
- *     http://apr.apache.org/versioning.html
+ * <a href="http://apr.apache.org/versioning.html"> APR's Version Numbering </a>
  */
 
 /** major version 
@@ -37,60 +37,55 @@
 
 /** minor version
  * Minor API changes that do not cause binary compatibility problems.
- * Reset to 0 when upgrading UNI_MAJOR_VERSION
+ * Reset to 0 when upgrading UNI_MAJOR_VERSION.
  */
 #define UNI_MINOR_VERSION   0
 
 /** patch level 
  * The Patch Level never includes API changes, simply bug fixes.
- * Reset to 0 when upgrading UNI_MINOR_VERSION
+ * Reset to 0 when upgrading UNI_MINOR_VERSION.
  */
 #define UNI_PATCH_VERSION   0
 
 
-/**
- * Check at compile time if the UNI version is at least a certain
- * level.
- */
+/** Check at compile time if the version of UniMRCP is at least a certain level. */
 #define UNI_VERSION_AT_LEAST(major,minor,patch)                    \
 (((major) < UNI_MAJOR_VERSION)                                     \
  || ((major) == UNI_MAJOR_VERSION && (minor) < UNI_MINOR_VERSION) \
  || ((major) == UNI_MAJOR_VERSION && (minor) == UNI_MINOR_VERSION && (patch) <= UNI_PATCH_VERSION))
 
-
-/** Properly quote a value as a string in the C preprocessor */
+/** Properly quote a value as a string in the C preprocessor. */
 #define UNI_STRINGIFY(n) UNI_STRINGIFY_HELPER(n)
-/** Helper macro for UNI_STRINGIFY */
+/** Helper macro for UNI_STRINGIFY. */
 #define UNI_STRINGIFY_HELPER(n) #n
 
-/** The formatted string of UniMRCP's version */
+/** The formatted string of UniMRCP's version. */
 #define UNI_VERSION_STRING \
      UNI_STRINGIFY(UNI_MAJOR_VERSION) "." \
      UNI_STRINGIFY(UNI_MINOR_VERSION) "." \
      UNI_STRINGIFY(UNI_PATCH_VERSION)
 
 /** An alternative formatted string of UniMRCP's version
-    macro for Win32 .rc files using numeric csv representation */
+    macro for Win32 .rc files using numeric CSV representation. */
 #define UNI_VERSION_STRING_CSV UNI_MAJOR_VERSION ##, \
                              ##UNI_MINOR_VERSION ##, \
                              ##UNI_PATCH_VERSION
 
-/** The Copyright */
-#define UNI_COPYRIGHT "Copyright 2008-2010 Arsen Chaloyan"
+/** The Copyright. */
+#define UNI_COPYRIGHT "Copyright 2008-2013 Arsen Chaloyan"
 
-/** The License */
+/** The License. */
 #define UNI_LICENSE \
- "Licensed under the Apache License, Version 2.0 (the ""License"");" \
- "you may not use this file except in compliance with the License." \
- "You may obtain a copy of the License at" \
- "" \
- "     http://www.apache.org/licenses/LICENSE-2.0" \
- "" \
- "Unless required by applicable law or agreed to in writing, software" \
- "distributed under the License is distributed on an ""AS IS"" BASIS," \
- "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." \
- "See the License for the specific language governing permissions and" \
- "limitations under the License."
-
+ " * Licensed under the Apache License, Version 2.0 (the ""License"");\n" \
+ " * you may not use this file except in compliance with the License.\n" \
+ " * You may obtain a copy of the License at\n" \
+ " * \n" \
+ " *     http://www.apache.org/licenses/LICENSE-2.0 \n" \
+ " * \n" \
+ " * Unless required by applicable law or agreed to in writing, software\n" \
+ " * distributed under the License is distributed on an ""AS IS"" BASIS,\n" \
+ " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" \
+ " * See the License for the specific language governing permissions and\n" \
+ " * limitations under the License.\n"
 
 #endif /* UNI_VERSION_H */
