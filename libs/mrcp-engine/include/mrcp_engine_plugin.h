@@ -80,7 +80,7 @@ typedef apt_bool_t (*mrcp_plugin_log_accessor_f)(apt_logger_t *logger);
  * Minor API changes that do not cause binary compatibility problems.
  * Reset to 0 when upgrading PLUGIN_MAJOR_VERSION
  */
-#define PLUGIN_MINOR_VERSION   0
+#define PLUGIN_MINOR_VERSION   1
 
 /** patch level 
  * The Patch Level never includes API changes, simply bug fixes.
