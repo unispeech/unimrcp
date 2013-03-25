@@ -23,6 +23,7 @@
 #include "demo_framework.h"
 #include "apt_pool.h"
 #include "apt_log.h"
+#include "uni_version.h"
 
 typedef struct {
 	const char   *root_dir_path;
@@ -102,6 +103,10 @@ static void usage()
 {
 	printf(
 		"\n"
+		" * "UNI_COPYRIGHT"\n"
+		" *\n"
+		UNI_LICENSE"\n"
+		"\n"
 		"Usage:\n"
 		"\n"
 		"  unimrcpclient [options]\n"
@@ -115,6 +120,8 @@ static void usage()
 		"\n"
 		"   -o [--log-output] mode   : Set the log output mode.\n"
 		"                              (0-none, 1-console only, 2-file only, 3-both)\n"
+		"\n"
+		"   -v [--version]           : Show the version.\n"
 		"\n"
 		"   -h [--help]              : Show the help.\n"
 		"\n");
@@ -132,6 +139,7 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 		{ "root-dir",    'r', TRUE,  "path to root dir" },  /* -r arg or --root-dir arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
 		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
+		{ "version",     'v', FALSE, "show version" },      /* -v or --version */
 		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
 		{ NULL, 0, 0, NULL },                               /* end */
 	};
@@ -152,6 +160,9 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 			case 'o':
 				options->log_output = optarg;
 				break;
+			case 'v':
+				printf(UNI_VERSION_STRING);
+				return FALSE;
 			case 'h':
 				usage();
 				return FALSE;

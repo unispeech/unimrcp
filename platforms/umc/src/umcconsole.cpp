@@ -22,6 +22,7 @@
 #include "umcconsole.h"
 #include "umcframework.h"
 #include "apt_pool.h"
+#include "uni_version.h"
 
 
 UmcConsole::UmcConsole() :
@@ -226,6 +227,10 @@ void UmcConsole::Usage() const
 {
 	printf(
 		"\n"
+		" * "UNI_COPYRIGHT"\n"
+		" *\n"
+		UNI_LICENSE"\n"
+		"\n"
 		"Usage:\n"
 		"\n"
 		"  umc [options]\n"
@@ -239,6 +244,8 @@ void UmcConsole::Usage() const
 		"\n"
 		"   -o [--log-output] mode   : Set the log output mode.\n"
 		"                              (0-none, 1-console only, 2-file only, 3-both)\n"
+		"\n"
+		"   -v [--version]           : Show the version.\n"
 		"\n"
 		"   -h [--help]              : Show the help.\n"
 		"\n");
@@ -257,6 +264,7 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 		{ "root-dir",    'r', TRUE,  "path to root dir" },  /* -r arg or --root-dir arg */
 		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
 		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
+		{ "version",     'v', FALSE, "show version" },      /* -v or --version */
 		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
 		{ NULL, 0, 0, NULL },                               /* end */
 	};
@@ -285,6 +293,9 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 				if(optarg) 
 				m_Options.m_LogOutput = optarg;
 				break;
+			case 'v':
+				printf(UNI_VERSION_STRING);
+				return FALSE;
 			case 'h':
 				Usage();
 				return FALSE;
