@@ -34,7 +34,8 @@ Source: {#= uni_src}\{#= release_dir}\lib\*.lib; DestDir: {app}\lib; Components:
 Source: {#= uni_src}\libs\apr\{#= release_dir}\*.lib; DestDir: {app}\lib; Components: sdk
 Source: {#= uni_src}\libs\apr-util\{#= release_dir}\*.lib; DestDir: {app}\lib; Components: sdk
 Source: {#= uni_src}\libs\sofia-sip\win32\libsofia-sip-ua\{#= release_dir}\*.lib; DestDir: {app}\lib; Components: sdk
-Source: {#= uni_src}\build\vsprops\sdk\*.vsprops; DestDir: {app}\vsprops; Components: sdk; AfterInstall: SetProjectPath()
+Source: {#= uni_src}\build\props\sdk\*.props; DestDir: {app}\props; Components: sdk; AfterInstall: SetProjectPath(ExpandConstant('{app}\props\unimrcpsdk.props'))
+Source: {#= uni_src}\build\vsprops\sdk\*.vsprops; DestDir: {app}\vsprops; Components: sdk; AfterInstall: SetProjectPath(ExpandConstant('{app}\vsprops\unimrcpsdk.vsprops'))
 Source: {#= uni_src}\docs\ea\*; DestDir: {app}\doc\ea; Components: docs/design; Flags: recursesubdirs
 Source: {#= uni_src}\docs\dox\*; DestDir: {app}\doc\dox; Components: docs/api; Flags: recursesubdirs
 
@@ -44,14 +45,11 @@ Name: {group}\UniMRCP Docs\API; Filename: {app}\doc\dox\html\index.html; Compone
 Name: {group}\Uninstall; Filename: {uninstallexe}
 
 [Code]
-procedure SetProjectPath();
+procedure SetProjectPath(PropertySheetFile: String);
 var
-  VspropsFile: String;
   Content: String;
 begin
-  VspropsFile := ExpandConstant('{app}\vsprops\unimrcpsdk.vsprops');
-  LoadStringFromFile (VspropsFile, Content);
-  StringChange (Content, 'Value="C:\Program Files\UniMRCP"', ExpandConstant('Value="{app}"'));
-  SaveStringToFile (VspropsFile, Content, False);
+  LoadStringFromFile (PropertySheetFile, Content);
+  StringChange (Content, 'C:\Program Files\UniMRCP', ExpandConstant('{app}'));
+  SaveStringToFile (PropertySheetFile, Content, False);
 end;
-
