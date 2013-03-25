@@ -11,4 +11,7 @@
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="unimrcpservice.rc" />
+  </ItemGroup>
 </Project>
