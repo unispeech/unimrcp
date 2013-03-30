@@ -16,6 +16,7 @@
  * $Id$
  */
 
+#include <apr_time.h>
 #include <apr_queue.h>
 #include "apt_consumer_task.h"
 #include "apt_log.h"
