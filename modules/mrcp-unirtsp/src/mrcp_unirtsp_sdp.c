@@ -137,7 +137,7 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 }
 
 /** Generate MRCP descriptor by SDP session */
-static apt_bool_t mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t *descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
+static apt_bool_t mrcp_descriptor_generate_by_rtsp_sdp_session(mrcp_session_descriptor_t *descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
 
@@ -202,7 +202,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			sdp = sdp_session(parser);
 			if(sdp) {
 				descriptor = mrcp_session_descriptor_create(pool);
-				mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
+				mrcp_descriptor_generate_by_rtsp_sdp_session(descriptor,sdp,force_destination_ip,pool);
 			}
 			else {
 				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
@@ -265,7 +265,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 			sdp = sdp_session(parser);
 			if(sdp) {
 				descriptor = mrcp_session_descriptor_create(pool);
-				mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,pool);
+				mrcp_descriptor_generate_by_rtsp_sdp_session(descriptor,sdp,force_destination_ip,pool);
 
 				apt_string_assign(&descriptor->resource_name,resource_name,pool);
 				descriptor->resource_state = TRUE;
@@ -493,7 +493,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_resource_discovery_response_genera
 		parser = sdp_parse(home,response->body.buf,response->body.length,0);
 		sdp = sdp_session(parser);
 		if(sdp) {
-			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,0,pool);
+			mrcp_descriptor_generate_by_rtsp_sdp_session(descriptor,sdp,0,pool);
 			descriptor->resource_state = TRUE;
 			descriptor->response_code = response->start_line.common.status_line.status_code;
 		}
