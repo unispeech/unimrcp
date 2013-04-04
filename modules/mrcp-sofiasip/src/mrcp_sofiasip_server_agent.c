@@ -332,13 +332,10 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 									   sip_t const          *sip,
 									   tagi_t                tags[])
 {
+	apt_bool_t status = FALSE;
 	const char *remote_sdp_str = NULL;
-	mrcp_session_descriptor_t *descriptor = NULL;
+	mrcp_session_descriptor_t *descriptor;
 
-	tl_gets(tags, 
-			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
-			TAG_END());
-	
 	if(!sofia_session) {
 		sofia_session = mrcp_sofia_session_create(sofia_agent,nh);
 		if(!sofia_session) {
@@ -346,6 +343,12 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 			return;
 		}
 	}
+
+	descriptor = mrcp_session_descriptor_create(sofia_session->session->pool);
+
+	tl_gets(tags, 
+			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
+			TAG_END());
 
 	if(remote_sdp_str) {
 		sdp_parser_t *parser = NULL;
@@ -357,11 +360,11 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 		sdp = sdp_session(parser);		
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,sofia_session->session->pool);
+		status = mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,NULL,sofia_session->session->pool);
 		sdp_parser_free(parser);
 	}
 
-	if(!descriptor) {
+	if(status == FALSE) {
 		nua_respond(nh, SIP_400_BAD_REQUEST, TAG_END());
 		return;
 	}
@@ -386,16 +389,16 @@ static void mrcp_sofia_on_state_change(mrcp_sofia_agent_t   *sofia_agent,
 									   sip_t const          *sip,
 									   tagi_t                tags[])
 {
-	int ss_state = nua_callstate_init;
+	int nua_state = nua_callstate_init;
 	tl_gets(tags, 
-			NUTAG_CALLSTATE_REF(ss_state),
+			NUTAG_CALLSTATE_REF(nua_state),
 			TAG_END()); 
 	
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"SIP Call State %s [%s]",
 		sofia_session ? sofia_session->session->name : "",
-		nua_callstate_name(ss_state));
+		nua_callstate_name(nua_state));
 
-	switch(ss_state) {
+	switch(nua_state) {
 		case nua_callstate_received:
 			mrcp_sofia_on_call_receive(sofia_agent,nh,sofia_session,sip,tags);
 			break;

@@ -57,6 +57,7 @@ struct mrcp_sofia_session_t {
 
 	su_home_t                 *home;
 	nua_handle_t              *nh;
+	enum nua_callstate         nua_state;
 
 	apt_bool_t                 terminate_requested;
 	mrcp_session_descriptor_t *descriptor;
@@ -79,6 +80,7 @@ static const mrcp_session_request_vtable_t session_request_vtable = {
 	NULL,
 	mrcp_sofia_session_discover_request
 };
+
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool);
 static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_settings_t *settings);
@@ -291,12 +293,13 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
 				TAG_IF(settings->feature_tags,SIPTAG_ACCEPT_CONTACT_STR(settings->feature_tags)),
 				TAG_END());
+	sofia_session->nua_state = nua_callstate_init;
 
 	apr_thread_mutex_create(&sofia_session->mutex,APR_THREAD_MUTEX_DEFAULT,session->pool);
 	return TRUE;
 }
 
-static apt_bool_t mrcp_sofia_session_destroy(mrcp_sofia_session_t *sofia_session)
+static apt_bool_t mrcp_sofia_session_cleanup(mrcp_sofia_session_t *sofia_session)
 {
 	if(sofia_session->mutex) {
 		apr_thread_mutex_destroy(sofia_session->mutex);
@@ -376,7 +379,7 @@ static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session)
 	apr_thread_mutex_unlock(sofia_session->mutex);
 
 	if(sofia_session->terminate_requested == FALSE) {
-		mrcp_sofia_session_destroy(sofia_session);
+		mrcp_sofia_session_cleanup(sofia_session);
 		mrcp_session_terminate_response(session);
 	}
 	return TRUE;
@@ -409,7 +412,8 @@ static void mrcp_sofia_on_session_ready(
 {
 	mrcp_session_t *session = sofia_session->session;
 	const char *remote_sdp_str = NULL;
-	mrcp_session_descriptor_t *descriptor = NULL;
+	mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(session->pool);
+	descriptor->response_code = status;
 
 	tl_gets(tags, 
 			SOATAG_REMOTE_SDP_STR_REF(remote_sdp_str),
@@ -429,8 +433,8 @@ static void mrcp_sofia_on_session_ready(
 		if(sofia_session->sip_settings->force_destination == TRUE) {
 			force_destination_ip = sofia_session->sip_settings->server_ip;
 		}
-		descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,force_destination_ip,session->pool);
-		descriptor->response_code = status;
+
+		mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,force_destination_ip,session->pool);
 		sdp_parser_free(parser);
 	}
 
@@ -511,11 +515,18 @@ static void mrcp_sofia_on_session_terminate(
 	apr_thread_mutex_unlock(sofia_session->mutex);
 
 	if(terminate_requested == TRUE) {
-		mrcp_sofia_session_destroy(sofia_session);
+		mrcp_sofia_session_cleanup(sofia_session);
 		mrcp_session_terminate_response(session);
+		return;
+	}
+
+	if(sofia_session->nua_state == nua_callstate_ready) {
+		mrcp_session_terminate_event(session);
 	}
 	else {
-		mrcp_session_terminate_event(session);
+		mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(session->pool);
+		descriptor->response_code = status;
+		mrcp_session_answer(session,descriptor);
 	}
 }
 
@@ -527,21 +538,20 @@ static void mrcp_sofia_on_state_change(
 						sip_t const          *sip,
 						tagi_t                tags[])
 {
-	int ss_state = nua_callstate_init;
+	int nua_state = nua_callstate_init;
 	tl_gets(tags,
-			NUTAG_CALLSTATE_REF(ss_state),
+			NUTAG_CALLSTATE_REF(nua_state),
 			TAG_END());
 	
 	if(!sofia_session || !sofia_session->session) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"SIP Call State [%s]",
-		nua_callstate_name(ss_state));
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"SIP Call State [%s]", nua_callstate_name(nua_state));
 		return;
 	}
 	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,sofia_session->session->log_obj,"SIP Call State %s [%s]",
 		sofia_session->session->name,
-		nua_callstate_name(ss_state));
+		nua_callstate_name(nua_state));
 
-	switch(ss_state) {
+	switch(nua_state) {
 		case nua_callstate_ready:
 			mrcp_sofia_on_session_ready(status,sofia_agent,nh,sofia_session,sip,tags);
 			break;
@@ -549,6 +559,7 @@ static void mrcp_sofia_on_state_change(
 			mrcp_sofia_on_session_terminate(status,sofia_agent,nh,sofia_session,sip,tags);
 			break;
 	}
+	sofia_session->nua_state = nua_state;
 }
 
 static void mrcp_sofia_on_resource_discover(
@@ -562,7 +573,8 @@ static void mrcp_sofia_on_resource_discover(
 	mrcp_session_t *session = sofia_session->session;
 	if(session) {
 		const char *remote_sdp_str = NULL;
-		mrcp_session_descriptor_t *descriptor = NULL;
+		mrcp_session_descriptor_t *descriptor = mrcp_session_descriptor_create(session->pool);
+		descriptor->response_code = status;
 
 		if(sip->sip_payload) {
 			remote_sdp_str = sip->sip_payload->pl_data;
@@ -577,8 +589,7 @@ static void mrcp_sofia_on_resource_discover(
 
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 			sdp = sdp_session(parser);
-			descriptor = mrcp_descriptor_generate_by_sdp_session(sdp,NULL,session->pool);
-			descriptor->response_code = status;
+			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,NULL,session->pool);
 			sdp_parser_free(parser);
 		}
 

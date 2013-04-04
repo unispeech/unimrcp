@@ -83,18 +83,15 @@ MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, ap
 }
 
 /** Generate MRCP descriptor by SDP session */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
+MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t* descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool)
 {
 	sdp_media_t *sdp_media;
-	mrcp_session_descriptor_t *descriptor;
 
 	if(!sdp) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid SDP Message");
-		return NULL;
+		return FALSE;
 	}
 	
-	descriptor = mrcp_session_descriptor_create(pool);
-
 	if(force_destination_ip) {
 		apt_string_assign(&descriptor->ip,force_destination_ip,pool);
 	}
@@ -132,7 +129,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session
 				break;
 		}
 	}
-	return descriptor;
+	return TRUE;
 }
 
 

@@ -32,7 +32,7 @@ APT_BEGIN_EXTERN_C
 MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, apt_bool_t offer);
 
 /** Generate MRCP descriptor by SDP session */
-MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_sdp_session(const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_descriptor_t* descriptor, const sdp_session_t *sdp, const char *force_destination_ip, apr_pool_t *pool);
 
 /** Generate SDP resource discovery string */
 MRCP_DECLARE(apr_size_t) sdp_resource_discovery_string_generate(const char *ip, const char *origin, char *buffer, apr_size_t size);

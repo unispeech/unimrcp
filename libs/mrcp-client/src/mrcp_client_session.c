@@ -139,43 +139,49 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 		return mrcp_app_sig_response_raise(session,TRUE);
 	}
 
-	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Receive Answer "APT_NAMESID_FMT" [c:%d a:%d v:%d]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Receive Answer "APT_NAMESID_FMT" [c:%d a:%d v:%d] Status %d",
 		MRCP_SESSION_NAMESID(session),
 		descriptor->control_media_arr->nelts,
 		descriptor->audio_media_arr->nelts,
-		descriptor->video_media_arr->nelts);
+		descriptor->video_media_arr->nelts,
+		descriptor->response_code);
 
-	mrcp_client_session_state_set(session,SESSION_STATE_PROCESSING_ANSWER);
-	if(session->context) {
-		/* first, reset/destroy existing associations and topology */
-		if(mpf_engine_topology_message_add(
-					session->profile->media_engine,
-					MPF_RESET_ASSOCIATIONS,session->context,
-					&session->mpf_task_msg) == TRUE){
-			mrcp_client_session_subrequest_add(session);
+	if(descriptor->response_code >=200 && descriptor->response_code < 300) {
+		mrcp_client_session_state_set(session,SESSION_STATE_PROCESSING_ANSWER);
+		if(session->context) {
+			/* first, reset/destroy existing associations and topology */
+			if(mpf_engine_topology_message_add(
+						session->profile->media_engine,
+						MPF_RESET_ASSOCIATIONS,session->context,
+						&session->mpf_task_msg) == TRUE){
+				mrcp_client_session_subrequest_add(session);
+			}
 		}
-	}
 
-	if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
-		if(mrcp_client_resource_answer_process(session,descriptor) != TRUE) {
-			session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+		if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
+			if(mrcp_client_resource_answer_process(session,descriptor) != TRUE) {
+				session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+			}
+		}
+		else {
+			mrcp_client_control_media_answer_process(session,descriptor);
+			mrcp_client_av_media_answer_process(session,descriptor);
+		}
+
+		if(session->context) {
+			/* apply topology based on assigned associations */
+			if(mpf_engine_topology_message_add(
+						session->profile->media_engine,
+						MPF_APPLY_TOPOLOGY,session->context,
+						&session->mpf_task_msg) == TRUE) {
+				mrcp_client_session_subrequest_add(session);
+			}
+
+			mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
 		}
 	}
 	else {
-		mrcp_client_control_media_answer_process(session,descriptor);
-		mrcp_client_av_media_answer_process(session,descriptor);
-	}
-
-	if(session->context) {
-		/* apply topology based on assigned associations */
-		if(mpf_engine_topology_message_add(
-					session->profile->media_engine,
-					MPF_APPLY_TOPOLOGY,session->context,
-					&session->mpf_task_msg) == TRUE) {
-			mrcp_client_session_subrequest_add(session);
-		}
-
-		mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
+		session->status = MRCP_SIG_STATUS_CODE_FAILURE;
 	}
 
 	/* store received answer */
