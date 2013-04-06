@@ -181,7 +181,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 		}
 	}
 	else {
-		session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+		session->status = MRCP_SIG_STATUS_CODE_TERMINATE;
 	}
 
 	/* store received answer */
