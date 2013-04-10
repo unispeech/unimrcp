@@ -336,29 +336,42 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 
 	local_media->state = remote_media->state;
 	local_media->direction = mpf_stream_reverse_direction_get(remote_media->direction);
-	rtp_stream->base->direction = local_media->direction;
 
 	if(remote_media->state == MPF_MEDIA_ENABLED) {
-		if(mpf_codec_list_is_empty(&remote_media->codec_list) == TRUE) {
-			/* no remote codecs available, initialize them according to the local codecs  */
-			mpf_codec_list_copy(&remote_media->codec_list,
-								&local_media->codec_list,
-								rtp_stream->pool);
-		}
+		mpf_codec_list_t *codec_list1 = NULL;
+		mpf_codec_list_t *codec_list2 = NULL;
 
 		/* intersect local and remote codecs */
 		if(rtp_stream->settings->own_preferrence == TRUE) {
-			mpf_codec_lists_intersect(
-				&local_media->codec_list,
-				&remote_media->codec_list);
+			codec_list1 = &local_media->codec_list;
+			codec_list2 = &remote_media->codec_list;
 		}
 		else {
-			mpf_codec_lists_intersect(
-				&remote_media->codec_list,
-				&local_media->codec_list);
+			codec_list2 = &local_media->codec_list;
+			codec_list1 = &remote_media->codec_list;
+		}
+
+		if(mpf_codec_lists_intersect(codec_list1,codec_list2) == FALSE) {
+			/* reject RTP/RTCP session */
+			rtp_stream->state = MPF_MEDIA_DISABLED;
+			local_media->direction = STREAM_DIRECTION_NONE;
+			local_media->state = MPF_MEDIA_DISABLED;
+			if(rtp_stream->rtp_l_sockaddr) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Reject RTP Session %s:%hu no codecs matched",
+					rtp_stream->rtp_l_sockaddr->hostname,
+					rtp_stream->rtp_l_sockaddr->port);
+			}
+
+			if(rtp_stream->rtcp_tx_timer) {
+				apt_timer_kill(rtp_stream->rtcp_tx_timer);
+			}
+			if(rtp_stream->rtcp_rx_timer) {
+				apt_timer_kill(rtp_stream->rtcp_rx_timer);
+			}
 		}
 	}
 
+	rtp_stream->base->direction = local_media->direction;
 	return TRUE;
 }
 
