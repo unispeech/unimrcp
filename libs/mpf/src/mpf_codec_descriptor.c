@@ -89,7 +89,6 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_descriptor_create_by_capabilities
 	return descriptor;
 }
 
-
 /** Match two codec descriptors */
 MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t *descriptor1, const mpf_codec_descriptor_t *descriptor2)
 {
@@ -202,7 +201,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 	codec_list1->event_descriptor = NULL;
 	codec_list2->primary_descriptor = NULL;
 	codec_list2->event_descriptor = NULL;
-	/* find only one match for primary and named event descriptors, 
+	/* find only one match for primary and named event descriptors,
 	set the matched descriptors as preffered, disable the others */
 	for(i=0; i<codec_list1->descriptor_arr->nelts; i++) {
 		descriptor1 = &APR_ARRAY_IDX(codec_list1->descriptor_arr,i,mpf_codec_descriptor_t);
@@ -262,6 +261,11 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 		else {
 			descriptor2->enabled = FALSE;
 		}
+	}
+
+	/* if primary descriptor is disabled or not set, return FALSE */
+	if(!codec_list1->primary_descriptor || codec_list1->primary_descriptor->enabled == FALSE) {
+		return FALSE;
 	}
 
 	return TRUE;
