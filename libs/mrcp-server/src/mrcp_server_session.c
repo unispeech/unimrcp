@@ -827,8 +827,17 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 			}
 
 			if(mrcp_session_version_get(session) == MRCP_VERSION_1) {
-				/* implicitly modify the descriptor, if needed */
 				mpf_stream_direction_e direction = audio_stream->direction;
+				/* implicitly modify the descriptor, if needed */
+				if(media_descriptor->direction == STREAM_DIRECTION_NONE && mpf_codec_list_is_empty(&media_descriptor->codec_list) == TRUE) {
+					/* this is the case when SETUP contains no SDP, assume all the available codecs are offered */
+					if(mpf_codec_list_is_empty(&session->profile->rtp_settings->codec_list) == FALSE) {
+						mpf_codec_list_copy(&media_descriptor->codec_list,
+								&session->profile->rtp_settings->codec_list,
+								session->base.pool);
+					}
+				}
+
 				media_descriptor->direction |= direction;
 				if(media_descriptor->state == MPF_MEDIA_DISABLED) {
 					media_descriptor->state = MPF_MEDIA_ENABLED;
