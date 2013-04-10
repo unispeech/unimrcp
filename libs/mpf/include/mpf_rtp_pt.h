@@ -30,13 +30,15 @@ APT_BEGIN_EXTERN_C
 
 /** RTP payload types */
 typedef enum {
-	RTP_PT_PCMU        =  0, /**< PCMU          Audio 8kHz 1  */
-	RTP_PT_PCMA        =  8, /**< PCMA          Audio 8kHz 1  */
+	RTP_PT_PCMU        =  0, /**< PCMU           Audio 8kHz 1 */
+	RTP_PT_PCMA        =  8, /**< PCMA           Audio 8kHz 1 */
 
-	RTP_PT_CN          =  13, /**< Comfort Noise Audio 8kHz 1  */
+	RTP_PT_CN          =  13, /**< Comfort Noise Audio 8kHz 1 */
+
+	RTP_PT_RESERVED    =  19, /**< Not used for any particular codec */
 
 	RTP_PT_DYNAMIC     =  96, /**< Start of dynamic payload types */
-	RTP_PT_DYNAMIC_MAX = 127, /**< End of dynamic payload types  */
+	RTP_PT_DYNAMIC_MAX = 127, /**< End of dynamic payload types */
 
 	RTP_PT_UNKNOWN     = 128  /**< Unknown (invalid) payload type */
 } mpf_rtp_pt_e;

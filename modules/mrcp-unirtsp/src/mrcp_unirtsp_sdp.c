@@ -22,14 +22,15 @@
 #include "rtsp_message.h"
 #include "mrcp_unirtsp_sdp.h"
 #include "mpf_rtp_attribs.h"
+#include "mpf_rtp_pt.h"
 #include "apt_text_stream.h"
 #include "apt_log.h"
-
 
 /** Generate SDP media by RTP media descriptor */
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_media)
 {
 	apr_size_t offset = 0;
+	int codec_count = 0;
 	int i;
 	mpf_codec_descriptor_t *codec_descriptor;
 	apr_array_header_t *descriptor_arr = audio_media->codec_list.descriptor_arr;
@@ -43,7 +44,12 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		codec_descriptor = &APR_ARRAY_IDX(descriptor_arr,i,mpf_codec_descriptor_t);
 		if(codec_descriptor->enabled == TRUE) {
 			offset += snprintf(buffer+offset,size-offset," %d", codec_descriptor->payload_type);
+			codec_count++;
 		}
+	}
+	if(!codec_count){
+		/* SDP m line should have at least one media format listed; use a reserved RTP payload type */
+		offset += snprintf(buffer+offset,size-offset," %d", RTP_PT_RESERVED);
 	}
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
 	if(audio_media->state == MPF_MEDIA_ENABLED) {

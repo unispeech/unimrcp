@@ -23,6 +23,7 @@
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
 #include "mpf_rtp_attribs.h"
+#include "mpf_rtp_pt.h"
 #include "apt_text_stream.h"
 #include "apt_log.h"
 
@@ -132,11 +133,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 	return TRUE;
 }
 
-
 /** Generate SDP media by RTP media descriptor */
 static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mpf_rtp_media_descriptor_t *audio_media)
 {
 	apr_size_t offset = 0;
+	int codec_count = 0;
 	int i;
 	mpf_codec_descriptor_t *codec_descriptor;
 	apr_array_header_t *descriptor_arr = audio_media->codec_list.descriptor_arr;
@@ -151,6 +152,10 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		if(codec_descriptor->enabled == TRUE) {
 			offset += snprintf(buffer+offset,size-offset," %d", codec_descriptor->payload_type);
 		}
+	}
+	if(!codec_count){
+		/* SDP m line should have at least one media format listed; use a reserved RTP payload type */
+		offset += snprintf(buffer+offset,size-offset," %d", RTP_PT_RESERVED);
 	}
 	offset += snprintf(buffer+offset,size-offset,"\r\n");
 	if(descriptor->ip.length && audio_media->ip.length && 
@@ -249,7 +254,6 @@ static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, cons
 		offset += snprintf(buffer+offset,size-offset,
 			"a=cmid:%"APR_SIZE_T_FMT"\r\n",
 			APR_ARRAY_IDX(control_media->cmid_arr,i,apr_size_t));
-
 	}
 
 	return offset;
