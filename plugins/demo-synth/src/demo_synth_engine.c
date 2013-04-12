@@ -102,7 +102,7 @@ struct demo_synth_channel_t {
 	apr_size_t             time_to_complete;
 	/** Is paused */
 	apt_bool_t             paused;
-	/** Speech source (used instead of actual synthesizing) */
+	/** Speech source (used instead of actual synthesis) */
 	FILE                  *audio_file;
 };
 
@@ -262,11 +262,17 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 {
 	char *file_path = NULL;
 	demo_synth_channel_t *synth_channel = channel->method_obj;
+	const mpf_codec_descriptor_t *descriptor = mrcp_engine_source_stream_codec_get(channel);
+
+	if(!descriptor) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor "APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+		return FALSE;
+	}
+
 	synth_channel->time_to_complete = 0;
 	if(channel->engine) {
-		const mpf_codec_descriptor_t *descriptor = mrcp_engine_source_stream_codec_get(channel);
-		char *file_name = apr_psprintf(channel->pool,"demo-%dkHz.pcm",
-			descriptor ? descriptor->sampling_rate/1000 : 8);
+		char *file_name = apr_psprintf(channel->pool,"demo-%dkHz.pcm",descriptor->sampling_rate/1000);
 		file_path = apt_datadir_filepath_get(channel->engine->dir_layout,file_name,channel->pool);
 	}
 	if(file_path) {
@@ -289,7 +295,7 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 			}
 		}
 	}
-	
+
 	response->start_line.request_state = MRCP_REQUEST_STATE_INPROGRESS;
 	/* send asynchronous response */
 	mrcp_engine_channel_message_send(channel,response);

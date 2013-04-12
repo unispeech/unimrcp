@@ -261,6 +261,14 @@ static apt_bool_t demo_verifier_channel_verify(mrcp_engine_channel_t *channel, m
 	/* process verify request */
 	mrcp_verifier_header_t *verifier_header;
 	demo_verifier_channel_t *verifier_channel = channel->method_obj;
+	const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(channel);
+
+	if(!descriptor) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor "APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
+		return FALSE;
+	}
+
 	verifier_channel->timers_started = TRUE;
 
 	/* get verifier header */
@@ -279,10 +287,9 @@ static apt_bool_t demo_verifier_channel_verify(mrcp_engine_channel_t *channel, m
 
 	if(!verifier_channel->audio_out) {
 		const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
-		const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(channel);
 		char *file_name = apr_psprintf(channel->pool,"voiceprint-%dkHz-%s.pcm",
-			descriptor ? descriptor->sampling_rate/1000 : 8,
-			request->channel_id.session_id.buf);
+							descriptor->sampling_rate/1000,
+							request->channel_id.session_id.buf);
 		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
 		if(file_path) {
 			verifier_channel->audio_out = fopen(file_path,"wb");

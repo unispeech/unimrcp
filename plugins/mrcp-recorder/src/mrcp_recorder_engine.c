@@ -205,14 +205,22 @@ static apt_bool_t recorder_channel_close(mrcp_engine_channel_t *channel)
 /** Open file to record */
 static apt_bool_t recorder_file_open(recorder_channel_t *recorder_channel, mrcp_message_t *request)
 {
+	char *file_path;
+	char *file_name;
 	mrcp_engine_channel_t *channel = recorder_channel->channel;
 	const apt_dir_layout_t *dir_layout = channel->engine->dir_layout;
 	const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(channel);
-	char *file_name = apr_psprintf(channel->pool,"rec-%dkHz-%s-%"MRCP_REQUEST_ID_FMT".pcm",
-		descriptor ? descriptor->sampling_rate/1000 : 8,
+
+	if(!descriptor) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor "APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+		return FALSE;
+	}
+
+	file_name = apr_psprintf(channel->pool,"rec-%dkHz-%s-%"MRCP_REQUEST_ID_FMT".pcm",
+		descriptor->sampling_rate/1000,
 		request->channel_id.session_id.buf,
 		request->start_line.request_id);
-	char *file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
+	file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
 	if(!file_path) {
 		return FALSE;
 	}
