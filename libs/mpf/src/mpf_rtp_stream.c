@@ -213,9 +213,15 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 								&rtp_stream->settings->codec_list,
 								rtp_stream->pool);
 		}
-		
-		if(capabilities) {
-			mpf_codec_list_modify(&local_media->codec_list,&capabilities->codecs);
+	}
+
+	if(capabilities) {
+		if(mpf_codec_list_match(&local_media->codec_list,&capabilities->codecs) == FALSE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Match Codec List %s:%hu",
+									local_media->ip.buf,
+									local_media->port);
+			local_media->state = MPF_MEDIA_DISABLED;
+			status = FALSE;
 		}
 	}
 
@@ -239,8 +245,15 @@ static apt_bool_t mpf_rtp_stream_local_media_update(mpf_rtp_stream_t *rtp_stream
 							rtp_stream->base->termination->codec_manager,
 							&media->codec_list,
 							rtp_stream->pool);
-		if(capabilities) {
-			mpf_codec_list_modify(&media->codec_list,&capabilities->codecs);
+	}
+
+	if(capabilities) {
+		if(mpf_codec_list_match(&media->codec_list,&capabilities->codecs) == FALSE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Match Codec List %s:%hu",
+									media->ip.buf,
+									media->port);
+			media->state = MPF_MEDIA_DISABLED;
+			status = FALSE;
 		}
 	}
 
@@ -458,7 +471,6 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 	}
 	return status;
 }
-
 
 static apt_bool_t mpf_rtp_stream_destroy(mpf_audio_stream_t *stream)
 {

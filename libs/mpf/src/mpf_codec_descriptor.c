@@ -171,24 +171,31 @@ static mpf_codec_attribs_t* mpf_codec_capabilities_attribs_find(const mpf_codec_
 	return NULL;
 }
 
-/** Modify codec list according to capabilities specified */
-MPF_DECLARE(apt_bool_t) mpf_codec_list_modify(mpf_codec_list_t *codec_list, const mpf_codec_capabilities_t *capabilities)
+/** Match codec list with specified capabilities */
+MPF_DECLARE(apt_bool_t) mpf_codec_list_match(mpf_codec_list_t *codec_list, const mpf_codec_capabilities_t *capabilities)
 {
 	int i;
 	mpf_codec_descriptor_t *descriptor;
+	apt_bool_t status = FALSE;
 	if(!capabilities) {
 		return FALSE;
 	}
 
 	for(i=0; i<codec_list->descriptor_arr->nelts; i++) {
 		descriptor = &APR_ARRAY_IDX(codec_list->descriptor_arr,i,mpf_codec_descriptor_t);
+		if(descriptor->enabled == FALSE) continue;
+
 		/* match capabilities */
-		if(!mpf_codec_capabilities_attribs_find(capabilities,descriptor)) {
+		if(mpf_codec_capabilities_attribs_find(capabilities,descriptor)) {
+			/* at least one codec descriptor matches */
+			status = TRUE;
+		}
+		else {
 			descriptor->enabled = FALSE;
 		}
 	}
 
-	return TRUE;
+	return status;
 }
 
 /** Intersect two codec lists */

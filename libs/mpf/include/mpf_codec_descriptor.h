@@ -267,8 +267,8 @@ static APR_INLINE apt_bool_t mpf_codec_capabilities_validate(mpf_codec_capabilit
 /** Find matched descriptor in codec list */
 MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_list_descriptor_find(const mpf_codec_list_t *codec_list, const mpf_codec_descriptor_t *descriptor);
 
-/** Modify codec list according to capabilities specified */
-MPF_DECLARE(apt_bool_t) mpf_codec_list_modify(mpf_codec_list_t *codec_list, const mpf_codec_capabilities_t *capabilities);
+/** Match codec list with specified capabilities */
+MPF_DECLARE(apt_bool_t) mpf_codec_list_match(mpf_codec_list_t *codec_list, const mpf_codec_capabilities_t *capabilities);
 
 /** Intersect two codec lists */
 MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2);
