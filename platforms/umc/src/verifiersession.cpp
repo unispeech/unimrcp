@@ -281,6 +281,13 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 
 bool VerifierSession::StartVerification(mrcp_channel_t* pMrcpChannel)
 {
+	const mpf_codec_descriptor_t* pDescriptor = mrcp_application_source_descriptor_get(pMrcpChannel);
+	if(!pDescriptor)
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Media Source Descriptor");
+		return Terminate();
+	}
+
 	VerifierChannel* pVerifierChannel = (VerifierChannel*) mrcp_application_channel_object_get(pMrcpChannel);
 	/* create and send Verification request */
 	mrcp_message_t* pMrcpMessage = CreateStartSessionRequest(pMrcpChannel);
@@ -289,7 +296,6 @@ bool VerifierSession::StartVerification(mrcp_channel_t* pMrcpChannel)
 		SendMrcpRequest(pVerifierChannel->m_pMrcpChannel,pMrcpMessage);
 	}
 
-	const mpf_codec_descriptor_t* pDescriptor = mrcp_application_source_descriptor_get(pMrcpChannel);
 	pVerifierChannel->m_pAudioIn = GetAudioIn(pDescriptor,GetSessionPool());
 	if(!pVerifierChannel->m_pAudioIn)
 	{
@@ -371,7 +377,7 @@ FILE* VerifierSession::GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr
 
 	const char* pFileName = apr_psprintf(pool,"%s-%dkHz.pcm",
 			pVoiceprintIdentifier,
-			pDescriptor ? pDescriptor->sampling_rate/1000 : 8);
+			pDescriptor->sampling_rate/1000);
 	apt_dir_layout_t* pDirLayout = pScenario->GetDirLayout();
 	const char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
 	if(!pFilePath)

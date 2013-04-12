@@ -37,6 +37,7 @@
 #include "mrcp_generic_header.h"
 #include "mrcp_synth_header.h"
 #include "mrcp_synth_resource.h"
+#include "apt_log.h"
 
 typedef struct synth_app_channel_t synth_app_channel_t;
 
@@ -196,23 +197,29 @@ static apt_bool_t synth_application_on_session_terminate(mrcp_application_t *app
 /** Handle the responses sent to channel add requests */
 static apt_bool_t synth_application_on_channel_add(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
 {
-	synth_app_channel_t *synth_channel = mrcp_application_channel_object_get(channel);
-	apr_pool_t *pool = mrcp_application_session_pool_get(session);
 	if(status == MRCP_SIG_STATUS_CODE_SUCCESS) {
 		mrcp_message_t *mrcp_message;
+		synth_app_channel_t *synth_channel = mrcp_application_channel_object_get(channel);
+		apr_pool_t *pool = mrcp_application_session_pool_get(session);
 		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
+		const mpf_codec_descriptor_t *descriptor = mrcp_application_sink_descriptor_get(channel);
+		if(!descriptor) {
+			/* terminate the demo */
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Media Sink Descriptor");
+			return mrcp_application_session_terminate(session);
+		}
+
 		/* create and send SPEAK request */
 		mrcp_message = demo_speak_message_create(session,channel,dir_layout);
 		if(mrcp_message) {
 			mrcp_application_message_send(session,channel,mrcp_message);
 		}
 
-		if(synth_channel && session) {
+		if(synth_channel) {
 			const apt_str_t *id = mrcp_application_session_id_get(session);
-			const mpf_codec_descriptor_t *descriptor = mrcp_application_sink_descriptor_get(channel);
 			char *file_name = apr_psprintf(pool,"synth-%dkHz-%s.pcm",
-				descriptor ? descriptor->sampling_rate/1000 : 8,
-				id->buf);
+									descriptor->sampling_rate/1000,
+									id->buf);
 			char *file_path = apt_datadir_filepath_get(dir_layout,file_name,pool);
 			if(file_path) {
 				synth_channel->audio_out = fopen(file_path,"wb");

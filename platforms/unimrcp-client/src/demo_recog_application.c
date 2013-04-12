@@ -240,19 +240,26 @@ static apt_bool_t recog_application_on_channel_remove(mrcp_application_t *applic
 /** Handle the DEFINE-GRAMMAR responses */
 static apt_bool_t recog_application_on_define_grammar(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel)
 {
-	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	mrcp_message_t *mrcp_message;
+	recog_app_channel_t *recog_channel = mrcp_application_channel_object_get(channel);
 	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(application);
-	apr_pool_t *pool = mrcp_application_session_pool_get(session);
+
+	const mpf_codec_descriptor_t *descriptor = mrcp_application_source_descriptor_get(channel);
+	if(!descriptor) {
+		/* terminate the demo */
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Media Source Descriptor");
+		return mrcp_application_session_terminate(session);
+	}
+
 	/* create and send RECOGNIZE request */
 	mrcp_message = demo_recognize_message_create(session,channel,dir_layout);
 	if(mrcp_message) {
 		mrcp_application_message_send(session,channel,mrcp_message);
 	}
+	
 	if(recog_channel) {
-		const mpf_codec_descriptor_t *descriptor = mrcp_application_source_descriptor_get(channel);
-		char *file_name = apr_psprintf(pool,"one-%dkHz.pcm",
-			descriptor ? descriptor->sampling_rate/1000 : 8);
+		apr_pool_t *pool = mrcp_application_session_pool_get(session);
+		char *file_name = apr_psprintf(pool,"one-%dkHz.pcm",descriptor->sampling_rate/1000);
 		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,pool);
 		if(file_path) {
 			recog_channel->audio_in = fopen(file_path,"rb");

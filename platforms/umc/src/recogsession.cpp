@@ -309,6 +309,13 @@ bool RecogSession::OnDefineGrammar(mrcp_channel_t* pMrcpChannel)
 
 bool RecogSession::StartRecognition(mrcp_channel_t* pMrcpChannel)
 {
+	const mpf_codec_descriptor_t* pDescriptor = mrcp_application_source_descriptor_get(pMrcpChannel);
+	if(!pDescriptor)
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Media Source Descriptor");
+		return Terminate();
+	}
+
 	RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
 	/* create and send RECOGNIZE request */
 	mrcp_message_t* pMrcpMessage = CreateRecognizeRequest(pMrcpChannel);
@@ -317,7 +324,6 @@ bool RecogSession::StartRecognition(mrcp_channel_t* pMrcpChannel)
 		SendMrcpRequest(pRecogChannel->m_pMrcpChannel,pMrcpMessage);
 	}
 
-	const mpf_codec_descriptor_t* pDescriptor = mrcp_application_source_descriptor_get(pMrcpChannel);
 	pRecogChannel->m_pAudioIn = GetAudioIn(pDescriptor,GetSessionPool());
 	if(!pRecogChannel->m_pAudioIn)
 	{
@@ -453,8 +459,7 @@ FILE* RecogSession::GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_po
 	const char* pFileName = GetScenario()->GetAudioSource();
 	if(!pFileName)
 	{
-		pFileName = apr_psprintf(pool,"one-%dkHz.pcm",
-			pDescriptor ? pDescriptor->sampling_rate/1000 : 8);
+		pFileName = apr_psprintf(pool,"one-%dkHz.pcm",pDescriptor->sampling_rate/1000);
 	}
 	apt_dir_layout_t* pDirLayout = GetScenario()->GetDirLayout();
 	const char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
