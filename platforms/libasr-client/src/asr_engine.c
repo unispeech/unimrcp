@@ -369,30 +369,30 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
 	return mrcp_message;
 }
 
-/** Get NLSML input result */
-static const char* nlsml_input_get(mrcp_message_t *message)
+/** Get NLSML result */
+static const char* nlsml_result_get(mrcp_message_t *message)
 {
-	apr_xml_elem *interpret;
-	apr_xml_elem *instance;
-	apr_xml_elem *input;
-	apr_xml_doc *doc = nlsml_doc_load(&message->body,message->pool);
-	if(!doc) {
+	nlsml_interpretation_t *interpretation;
+	nlsml_instance_t *instance;
+	nlsml_result_t *result = nlsml_result_parse(message->body.buf, message->body.length, message->pool);
+	if(!result) {
 		return NULL;
 	}
 	
-	/* get interpreted result */
-	interpret = nlsml_first_interpret_get(doc);
-	if(!interpret) {
-		return NULL;
-	}
-	/* get instance and input */
-	nlsml_interpret_results_get(interpret,&instance,&input);
-	if(!input || !input->first_cdata.first) {
+	/* get first interpretation */
+	interpretation = nlsml_first_interpretation_get(result);
+	if(!interpretation) {
 		return NULL;
 	}
 	
-	/* return input */
-	return input->first_cdata.first->text;
+	/* get first instance */
+	instance = nlsml_interpretation_first_instance_get(interpretation);
+	if(!instance) {
+		return NULL;
+	}
+
+	nlsml_instance_swi_suppress(instance);
+	return nlsml_instance_content_generate(instance, message->pool);
 }
 
 
@@ -619,7 +619,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 	while(!asr_session->recog_complete);
 
 	/* Get results */
-	return nlsml_input_get(asr_session->recog_complete);
+	return nlsml_result_get(asr_session->recog_complete);
 }
 
 /** Initiate recognition based on specified grammar and input stream */
@@ -700,7 +700,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 	while(!asr_session->recog_complete);
 
 	/* Get results */
-	return nlsml_input_get(asr_session->recog_complete);
+	return nlsml_result_get(asr_session->recog_complete);
 }
 
 /** Write audio frame to recognize */

@@ -421,36 +421,11 @@ mrcp_message_t* RecogSession::CreateRecognizeRequest(mrcp_channel_t* pMrcpChanne
 
 bool RecogSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const
 {
-	apr_xml_elem* pInterpret;
-	apr_xml_elem* pInstance;
-	apr_xml_elem* pInput;
-	apr_xml_doc* pDoc = nlsml_doc_load(&pMrcpMessage->body,pMrcpMessage->pool);
-	if(!pDoc)
+	nlsml_result_t *pResult = nlsml_result_parse(pMrcpMessage->body.buf, pMrcpMessage->body.length, pMrcpMessage->pool);
+	if(!pResult)
 		return false;
-	
-	/* walk through interpreted results */
-	pInterpret = nlsml_first_interpret_get(pDoc);
-	for(; pInterpret; pInterpret = nlsml_next_interpret_get(pInterpret)) 
-	{
-		/* get instance and input */
-		nlsml_interpret_results_get(pInterpret,&pInstance,&pInput);
-		if(pInstance) 
-		{
-			/* process instance */
-			if(pInstance->first_cdata.first) 
-			{
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Interpreted Instance [%s]",pInstance->first_cdata.first->text);
-			}
-		}
-		if(pInput) 
-		{
-			/* process input */
-			if(pInput->first_cdata.first)
-			{
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Interpreted Input [%s]",pInput->first_cdata.first->text);
-			}
-		}
-	}
+
+	nlsml_result_trace(pResult, pMrcpMessage->pool);
 	return true;
 }
 

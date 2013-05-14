@@ -38,6 +38,7 @@
 #include "mrcp_generic_header.h"
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
+#include "apt_nlsml_doc.h"
 #include "apt_log.h"
 
 typedef struct recog_app_channel_t recog_app_channel_t;
@@ -310,7 +311,11 @@ static apt_bool_t recog_application_on_message_receive(mrcp_application_t *appli
 	}
 	else if(message->start_line.message_type == MRCP_MESSAGE_TYPE_EVENT) {
 		if(message->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) {
-			demo_nlsml_result_parse(message);
+			nlsml_result_t *result = nlsml_result_parse(message->body.buf, message->body.length, message->pool);
+			if(result) {
+				nlsml_result_trace(result, message->pool);
+			}
+			
 			if(recog_channel) {
 				recog_channel->streaming = FALSE;
 			}

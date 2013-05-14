@@ -26,8 +26,6 @@
 /* recognizer includes */
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
-/* NLSML doc include */
-#include "apt_nlsml_doc.h"
 /* logger include */
 #include "apt_log.h"
 
@@ -139,38 +137,6 @@ mrcp_message_t* demo_recognize_message_create(mrcp_session_t *session, mrcp_chan
 		apt_string_assign(&mrcp_message->body,text,mrcp_message->pool);
 	}
 	return mrcp_message;
-}
-
-/** Parse NLSML result */
-apt_bool_t demo_nlsml_result_parse(mrcp_message_t *message)
-{
-	apr_xml_elem *interpret;
-	apr_xml_elem *instance;
-	apr_xml_elem *input;
-	apr_xml_doc *doc = nlsml_doc_load(&message->body,message->pool);
-	if(!doc) {
-		return FALSE;
-	}
-	
-	/* walk through interpreted results */
-	interpret = nlsml_first_interpret_get(doc);
-	for(; interpret; interpret = nlsml_next_interpret_get(interpret)) {
-		/* get instance and input */
-		nlsml_interpret_results_get(interpret,&instance,&input);
-		if(instance) {
-			/* process instance */
-			if(instance->first_cdata.first) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Interpreted Instance [%s]",instance->first_cdata.first->text);
-			}
-		}
-		if(input) {
-			/* process input */
-			if(input->first_cdata.first) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Interpreted Input [%s]",input->first_cdata.first->text);
-			}
-		}
-	}
-	return TRUE;
 }
 
 /** Create demo RTP termination descriptor */
