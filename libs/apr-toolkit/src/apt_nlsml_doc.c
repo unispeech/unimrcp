@@ -93,6 +93,42 @@ struct nlsml_verification_result_t
 	APR_RING_ENTRY(nlsml_verification_result_t) link;
 };
 
+/** Load NLSML document */
+static apr_xml_doc* nlsml_doc_load(const char *data, apr_size_t length, apr_pool_t *pool)
+{
+	apr_xml_parser *parser;
+	apr_xml_doc *doc = NULL;
+	const apr_xml_elem *root;
+
+	/* create XML parser */
+	parser = apr_xml_parser_create(pool);
+	if(apr_xml_parser_feed(parser,data,length) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to feed NLSML input to the parser");
+		return NULL;
+	}
+
+	/* done with XML tree creation */
+	if(apr_xml_parser_done(parser,&doc) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to terminate NLSML parsing");
+		return NULL;
+	}
+
+	if(!doc || !doc->root) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No NLSML root element");
+		return NULL;
+	}
+	root = doc->root;
+
+	/* NLSML validity check: root element must be <result> */
+	if(strcmp(root->name,"result") != 0) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected NLSML root element <%s>",root->name);
+		return NULL;
+	}
+
+	return doc;
+}
+
+/** Parse confidence value */
 static float nlsml_confidence_parse(const char *str)
 {
 	float confidence = (float) atof(str);
@@ -220,11 +256,9 @@ APT_DECLARE(nlsml_result_t*) nlsml_result_parse(const char *data, apr_size_t len
 	nlsml_interpretation_t *interpretation;
 	nlsml_enrollment_result_t *enrollment_result;
 	nlsml_verification_result_t *verification_result;
-	apt_str_t str;
 	apr_xml_doc *doc;
 	/* Load XML document */
-	apt_string_assign_n(&str, data, length, pool);
-	doc = nlsml_doc_load(&str ,pool);
+	doc = nlsml_doc_load(data, length, pool);
 	if(!doc)
 		return NULL;
 
@@ -527,100 +561,4 @@ APT_DECLARE(const char*) nlsml_input_timestamp_start_get(const nlsml_input_t *in
 APT_DECLARE(const char*) nlsml_input_timestamp_end_get(const nlsml_input_t *input)
 {
 	return input->timestamp_end;
-}
-
-
-/** Load NLSML document */
-APT_DECLARE(apr_xml_doc*) nlsml_doc_load(const apt_str_t *data, apr_pool_t *pool)
-{
-	apr_xml_parser *parser;
-	apr_xml_doc *doc = NULL;
-	const apr_xml_elem *root;
-
-	/* create XML parser */
-	parser = apr_xml_parser_create(pool);
-	if(apr_xml_parser_feed(parser,data->buf,data->length) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to feed NLSML input to the parser");
-		return NULL;
-	}
-
-	/* done with XML tree creation */
-	if(apr_xml_parser_done(parser,&doc) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to terminate NLSML parsing");
-		return NULL;
-	}
-
-	if(!doc || !doc->root) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No NLSML root element");
-		return NULL;
-	}
-	root = doc->root;
-
-	/* NLSML validity check: root element must be <result> */
-	if(strcmp(root->name,"result") != 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unexpected NLSML root element <%s>",root->name);
-		return NULL;
-	}
-
-	return doc;
-}
-
-/** Get the first <interpretation> element */
-APT_DECLARE(apr_xml_elem*) nlsml_first_interpret_get(const apr_xml_doc *doc)
-{
-	apr_xml_elem *child_elem;
-	for(child_elem = doc->root->first_child; child_elem; child_elem = child_elem->next) {
-		if(strcmp(child_elem->name,"interpretation") == 0) {
-			return child_elem;
-		}
-	}
-
-	return NULL;
-}
-
-/** Get the next <interpretation> element */
-APT_DECLARE(apr_xml_elem*) nlsml_next_interpret_get(const apr_xml_elem *elem)
-{
-	apr_xml_elem *child_elem;
-	for(child_elem = elem->next; child_elem; child_elem = child_elem->next) {
-		if(strcmp(child_elem->name,"interpretation") == 0) {
-			return child_elem;
-		}
-	}
-
-	return NULL;
-}
-
-/** Get <instance> and <input> elements of <interpretation> element */
-APT_DECLARE(apt_bool_t) nlsml_interpret_results_get(const apr_xml_elem *interpret, apr_xml_elem **instance, apr_xml_elem **input)
-{
-	apr_xml_elem *child_elem;
-	*input = NULL;
-	*instance = NULL;
-	for(child_elem = interpret->first_child; child_elem; child_elem = child_elem->next) {
-		if(strcmp(child_elem->name,"input") == 0) {
-			*input = child_elem;
-		}
-		else if(strcmp(child_elem->name,"instance") == 0) {
-			*instance = child_elem;
-		}
-	}
-	return TRUE;
-}
-
-/** Get specified atrribute of <input> */
-APT_DECLARE(const char *) nlsml_input_attrib_get(const apr_xml_elem *input, const char *attrib, apt_bool_t recursive)
-{
-	const apr_xml_attr *xml_attr;
-	for(xml_attr = input->attr; xml_attr; xml_attr = xml_attr->next) {
-		if(strcasecmp(xml_attr->name,attrib) == 0) {
-			return xml_attr->value;
-		}
-	}
-
-	if(recursive && input->parent) {
-		return nlsml_input_attrib_get(input->parent,attrib,recursive);
-	}
-
-	return NULL;
 }
