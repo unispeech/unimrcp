@@ -504,7 +504,7 @@ APT_DECLARE(apt_bool_t) nlsml_instance_swi_suppress(nlsml_instance_t *instance)
 		prev_elem = child_elem;
 	}
 
-	if(APR_XML_ELEM_IS_EMPTY(instance->elem)) {
+	if(APR_XML_ELEM_IS_EMPTY(instance->elem) && swi_literal) {
 		instance->elem->first_cdata = swi_literal->first_cdata;
 	}
 
