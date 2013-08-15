@@ -92,6 +92,8 @@ struct mrcp_client_session_t {
 	mrcp_sig_status_code_e      status;
 	/** Number of in-progress sub requests */
 	apr_size_t                  subrequest_count;
+	/** True, if server unexpectedly closed session/connection */
+	apt_bool_t                  disconnected;
 };
 
 /** MRCP channel */

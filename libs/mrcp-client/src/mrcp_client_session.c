@@ -63,6 +63,10 @@ static APR_INLINE void mrcp_client_session_state_set(mrcp_client_session_t *sess
 {
 	if(session->subrequest_count != 0) {
 		/* error case */
+		apt_obj_log(APT_LOG_MARK,APT_PRIO_ERROR,session->base.log_obj,"Unexpected State Change [%d] pending subrequests [%d] "APT_NAMESID_FMT,
+			state,
+			session->subrequest_count,
+			MRCP_SESSION_NAMESID(session));
 		session->subrequest_count = 0;
 	}
 	session->state = state;
@@ -214,39 +218,15 @@ apt_bool_t mrcp_client_session_terminate_event_process(mrcp_client_session_t *se
 			MRCP_SESSION_NAMESID(session));
 		return FALSE;
 	}
-	
-	if(session->active_request) {
-		apt_bool_t process_pending_requests = TRUE;
-		/* raise app response */
-		session->status = MRCP_SIG_STATUS_CODE_TERMINATE;
-		mrcp_app_failure_message_raise(session);
 
-		/* cancel remaing requests, but do process session termination request (if any) */
-		do {
-			session->active_request = apt_list_pop_front(session->request_queue);
-			if(session->active_request) {
-				const mrcp_app_message_t *app_message = session->active_request;
-				if(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING &&
-					app_message->sig_message.command_id == MRCP_SIG_COMMAND_SESSION_TERMINATE) {
-					/* process session termination */
-					mrcp_app_request_dispatch(session,app_message);
-					break;
-				}
-
-				/* cancel pending request */
-				session->status = MRCP_SIG_STATUS_CODE_CANCEL;
-				mrcp_app_failure_message_raise(session);
-			}
-			else {
-				process_pending_requests = FALSE;
-			}
-		}
-		while(process_pending_requests == TRUE);
-	}
-	else {
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Mark Session as Disconnected "APT_NAMESID_FMT,
+		MRCP_SESSION_NAMESID(session));
+	session->disconnected = TRUE;
+	if(!session->active_request) {
 		/* raise app event */
 		mrcp_app_sig_event_raise(session,NULL);
 	}
+
 	return TRUE;
 }
 
@@ -463,6 +443,9 @@ static apt_bool_t mrcp_app_sig_response_raise(mrcp_client_session_t *session, ap
 		return FALSE;
 	}
 	session->active_request = NULL;
+	if(session->disconnected == TRUE) {
+		session->status = MRCP_SIG_STATUS_CODE_TERMINATE;
+	}
 	response = mrcp_client_app_response_create(request,session->status,session->base.pool);
 	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Raise App Response "APT_NAMESID_FMT" [%d] %s [%d]", 
 		MRCP_SESSION_NAMESID(session),
@@ -1231,7 +1214,18 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 			app_message->sig_message.command_id);
 		return FALSE;
 	}
-	
+
+	if(session->disconnected == TRUE) {
+		/* cancel all the requests besides session termination one */
+		if(!(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING &&
+			app_message->sig_message.command_id == MRCP_SIG_COMMAND_SESSION_TERMINATE)) {
+				apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Cancel App Request "APT_NAMESID_FMT" [%d]",
+					MRCP_SESSION_NAMESID(session), app_message->sig_message.command_id);
+				session->status = MRCP_SIG_STATUS_CODE_CANCEL;
+				return mrcp_app_failure_message_raise(session);
+		}
+	}
+
 	if(session->registered == FALSE) {
 		session->base.signaling_agent = session->profile->signaling_agent;
 		if(session->base.signaling_agent->create_client_session(&session->base,session->profile->signaling_settings) != TRUE) {

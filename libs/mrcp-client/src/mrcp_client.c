@@ -575,6 +575,7 @@ mrcp_client_session_t* mrcp_client_session_create(mrcp_client_t *client)
 	session->request_queue = apt_list_create(pool);
 	session->mpf_task_msg = NULL;
 	session->subrequest_count = 0;
+	session->disconnected = FALSE;
 	session->state = SESSION_STATE_NONE;
 	session->status = MRCP_SIG_STATUS_CODE_SUCCESS;
 	return session;
