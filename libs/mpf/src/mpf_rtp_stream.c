@@ -1104,7 +1104,6 @@ static apr_socket_t* mpf_socket_create(apr_sockaddr_t **l_sockaddr, const char *
 	
 	apr_socket_opt_set(socket,APR_SO_NONBLOCK,1);
 	apr_socket_timeout_set(socket,0);
-	apr_socket_opt_set(socket,APR_SO_REUSEADDR,1);
 
 	if(apr_socket_bind(socket,*l_sockaddr) != APR_SUCCESS) {
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Bind Socket to %s:%hu", ip,port);
