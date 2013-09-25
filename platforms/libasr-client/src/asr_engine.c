@@ -291,17 +291,32 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 		apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
 		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,pool);
 		if(grammar_file_path) {
-			char text[1024];
-			apr_size_t size;
-			FILE *grammar = fopen(grammar_file_path,"r");
-			if(!grammar) {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open [%s]",grammar_file_path);
+			apr_finfo_t finfo;
+			apr_file_t *grammar_file;
+			apt_str_t *content = &mrcp_message->body;
+
+			if(apr_file_open(&grammar_file,grammar_file_path,APR_FOPEN_READ|APR_FOPEN_BINARY,0,pool) != APR_SUCCESS) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Grammar File %s",grammar_file_path);
 				return NULL;
 			}
 
-			size = fread(text,1,sizeof(text),grammar);
-			apt_string_assign_n(&mrcp_message->body,text,size,mrcp_message->pool);
-			fclose(grammar);
+			if(apr_file_info_get(&finfo,APR_FINFO_SIZE,grammar_file) != APR_SUCCESS) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Grammar File Info %s",grammar_file_path);
+				apr_file_close(grammar_file);
+				return NULL;
+			}
+
+			content->length = (apr_size_t)finfo.size;
+			content->buf = (char*) apr_palloc(pool,content->length+1);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Load Grammar File Content size [%"APR_SIZE_T_FMT" bytes] %s",
+				content->length,grammar_file_path);
+			if(apr_file_read(grammar_file,content->buf,&content->length) != APR_SUCCESS) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Read Grammar File Content %s",grammar_file_path);
+				apr_file_close(grammar_file);
+				return NULL;
+			}
+			content->buf[content->length] = '\0';
+			apr_file_close(grammar_file);
 		}
 
 		/* get/allocate generic header */
