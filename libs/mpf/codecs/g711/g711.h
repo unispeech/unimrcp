@@ -236,7 +236,7 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
     /* Get the sign and the magnitude of the value. */
     if (linear < 0)
     {
-        linear = ULAW_BIAS - linear;
+        linear = ULAW_BIAS - linear - 1;
         mask = 0x7F;
     }
     else
@@ -321,7 +321,7 @@ static __inline__ uint8_t linear_to_alaw(int linear)
     {
         /* Sign (bit 7) bit = 0 */
         mask = ALAW_AMI_MASK;
-        linear = -linear - 8;
+        linear = -linear - 1;
     }
 
     /* Convert the scaled magnitude to segment number. */
