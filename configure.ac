@@ -11,6 +11,9 @@ AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/acmacros])
 AC_PREFIX_DEFAULT(/usr/local/unimrcp)
 
+dnl Set ac_macro_dir variable manually for autoconf 2.61 and above
+ac_macro_dir='build/acmacros'
+
 plugindir='${prefix}/plugin'
 confdir='${prefix}/conf'
 logdir='${prefix}/log'
