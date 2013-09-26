@@ -16,6 +16,13 @@ confdir='${prefix}/conf'
 logdir='${prefix}/log'
 datadir='${prefix}/data'
 
+dnl Include m4 macros for libtool 2
+sinclude(build/acmacros/libtool.m4)
+sinclude(build/acmacros/ltoptions.m4)
+sinclude(build/acmacros/ltsugar.m4)
+sinclude(build/acmacros/ltversion.m4)
+sinclude(build/acmacros/lt~obsolete.m4)
+
 AM_INIT_AUTOMAKE(foreign)
 
 dnl Set default language
