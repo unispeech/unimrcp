@@ -16,11 +16,11 @@ ACLOCAL              = aclocal -I $(macrodir)
 
 SUBDIRS              = build conf data libs modules plugins platforms
 if TEST_SUITES
-SUBDIRS              += tests
+SUBDIRS             += tests
 endif
 
 dox:
 	doxygen $(top_srcdir)/docs/doxygen.conf
  
 install-data-local:
-	test -d $(logdir)  || $(mkinstalldirs) $(logdir)
+	test -d $(DESTDIR)$(logdir)  || $(mkinstalldirs) $(DESTDIR)$(logdir)
