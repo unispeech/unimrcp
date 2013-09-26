@@ -14,9 +14,7 @@
  *
  */
 
-/*! \file */
-
-/*! \page g711_page A-law and mu-law handling
+/* g711_page A-law and mu-law handling
 Lookup tables for A-law and u-law look attractive, until you consider the impact
 on the CPU cache. If it causes a substantial area of your processor cache to get
 hit too often, cache sloshing will severely slow things down. The main reason
@@ -38,28 +36,23 @@ difficult to achieve the precise transcoding procedure laid down in the G.711
 specification by other means.
 */
 
-#if !defined(_G711_H_)
-#define _G711_H_
+#ifndef MPF_G711_H
+#define MPF_G711_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/**
+ * @file g711.h
+ * @brief A-law and u-law conversion routines
+ */ 
 
-#ifdef _MSC_VER
-#ifndef __inline__
-#define __inline__ __inline
-#endif
-typedef unsigned __int8 uint8_t;
-typedef __int16 int16_t;
-typedef __int32 int32_t;
-typedef unsigned __int16 uint16_t;
-#endif
+#include "mpf.h"
+
+APT_BEGIN_EXTERN_C
 
 #if defined(__i386__)
 /*! \brief Find the bit position of the highest set bit in a word
     \param bits The word to be searched
     \return The bit number of the highest set bit, or -1 if the word is zero. */
-static __inline__ int top_bit(unsigned int bits)
+static APR_INLINE int top_bit(unsigned int bits)
 {
     int res;
 
@@ -74,7 +67,7 @@ static __inline__ int top_bit(unsigned int bits)
 /*! \brief Find the bit position of the lowest set bit in a word
     \param bits The word to be searched
     \return The bit number of the lowest set bit, or -1 if the word is zero. */
-static __inline__ int bottom_bit(unsigned int bits)
+static APR_INLINE int bottom_bit(unsigned int bits)
 {
     int res;
 
@@ -86,7 +79,7 @@ static __inline__ int bottom_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 #elif defined(__x86_64__)
-static __inline__ int top_bit(unsigned int bits)
+static APR_INLINE int top_bit(unsigned int bits)
 {
     int res;
 
@@ -98,7 +91,7 @@ static __inline__ int top_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 
-static __inline__ int bottom_bit(unsigned int bits)
+static APR_INLINE int bottom_bit(unsigned int bits)
 {
     int res;
 
@@ -110,7 +103,7 @@ static __inline__ int bottom_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 #else
-static __inline__ int top_bit(unsigned int bits)
+static APR_INLINE int top_bit(unsigned int bits)
 {
     int i;
     
@@ -146,7 +139,7 @@ static __inline__ int top_bit(unsigned int bits)
 }
 /*- End of function --------------------------------------------------------*/
 
-static __inline__ int bottom_bit(unsigned int bits)
+static APR_INLINE int bottom_bit(unsigned int bits)
 {
     int i;
     
@@ -227,9 +220,9 @@ static __inline__ int bottom_bit(unsigned int bits)
     \param linear The sample to encode.
     \return The u-law value.
 */
-static __inline__ uint8_t linear_to_ulaw(int linear)
+static APR_INLINE apr_byte_t linear_to_ulaw(int linear)
 {
-    uint8_t u_val;
+    apr_byte_t u_val;
     int mask;
     int seg;
 
@@ -252,9 +245,9 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
      * and complement the code word.
      */
     if (seg >= 8)
-        u_val = (uint8_t) (0x7F ^ mask);
+        u_val = (apr_byte_t) (0x7F ^ mask);
     else
-        u_val = (uint8_t) (((seg << 4) | ((linear >> (seg + 3)) & 0xF)) ^ mask);
+        u_val = (apr_byte_t) (((seg << 4) | ((linear >> (seg + 3)) & 0xF)) ^ mask);
 #ifdef ULAW_ZEROTRAP
     /* Optional ITU trap */
     if (u_val == 0)
@@ -268,7 +261,7 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
     \param ulaw The u-law sample to decode.
     \return The linear value.
 */
-static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
+static APR_INLINE apr_int16_t ulaw_to_linear(apr_byte_t ulaw)
 {
     int t;
     
@@ -279,7 +272,7 @@ static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
      * shift up by the segment number and subtract out the bias.
      */
     t = (((ulaw & 0x0F) << 3) + ULAW_BIAS) << (((int) ulaw & 0x70) >> 4);
-    return  (int16_t) ((ulaw & 0x80)  ?  (ULAW_BIAS - t)  :  (t - ULAW_BIAS));
+    return  (apr_int16_t) ((ulaw & 0x80)  ?  (ULAW_BIAS - t)  :  (t - ULAW_BIAS));
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -307,7 +300,7 @@ static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
     \param linear The sample to encode.
     \return The A-law value.
 */
-static __inline__ uint8_t linear_to_alaw(int linear)
+static APR_INLINE apr_byte_t linear_to_alaw(int linear)
 {
     int mask;
     int seg;
@@ -331,13 +324,13 @@ static __inline__ uint8_t linear_to_alaw(int linear)
         if (linear >= 0)
         {
             /* Out of range. Return maximum value. */
-            return (uint8_t) (0x7F ^ mask);
+            return (apr_byte_t) (0x7F ^ mask);
         }
         /* We must be just a tiny step below zero */
-        return (uint8_t) (0x00 ^ mask);
+        return (apr_byte_t) (0x00 ^ mask);
     }
     /* Combine the sign, segment, and quantization bits. */
-    return (uint8_t) (((seg << 4) | ((linear >> ((seg)  ?  (seg + 3)  :  4)) & 0x0F)) ^ mask);
+    return (apr_byte_t) (((seg << 4) | ((linear >> ((seg)  ?  (seg + 3)  :  4)) & 0x0F)) ^ mask);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -345,7 +338,7 @@ static __inline__ uint8_t linear_to_alaw(int linear)
     \param alaw The A-law sample to decode.
     \return The linear value.
 */
-static __inline__ int16_t alaw_to_linear(uint8_t alaw)
+static APR_INLINE apr_int16_t alaw_to_linear(apr_byte_t alaw)
 {
     int i;
     int seg;
@@ -357,7 +350,7 @@ static __inline__ int16_t alaw_to_linear(uint8_t alaw)
         i = (i + 0x108) << (seg - 1);
     else
         i += 8;
-    return (int16_t) ((alaw & 0x80)  ?  i  :  -i);
+    return (apr_int16_t) ((alaw & 0x80)  ?  i  :  -i);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -365,17 +358,15 @@ static __inline__ int16_t alaw_to_linear(uint8_t alaw)
     \param alaw The A-law sample to transcode.
     \return The best matching u-law value.
 */
-uint8_t alaw_to_ulaw(uint8_t alaw);
+apr_byte_t alaw_to_ulaw(apr_byte_t alaw);
 
 /*! \brief Transcode from u-law to A-law, using the procedure defined in G.711.
     \param alaw The u-law sample to transcode.
     \return The best matching A-law value.
 */
-uint8_t ulaw_to_alaw(uint8_t ulaw);
+apr_byte_t ulaw_to_alaw(apr_byte_t ulaw);
 
-#ifdef __cplusplus
-}
-#endif
+APT_END_EXTERN_C
 
-#endif
+#endif /* MPF_G711_H */
 /*- End of file ------------------------------------------------------------*/
