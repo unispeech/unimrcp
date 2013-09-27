@@ -28,6 +28,9 @@ sinclude(build/acmacros/lt~obsolete.m4)
 
 AM_INIT_AUTOMAKE(foreign)
 
+dnl Enable silent build rules (available since automake 1.11)
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 dnl Set default language
 AC_LANG_C
 
