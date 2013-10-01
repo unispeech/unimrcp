@@ -164,7 +164,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 		if(descriptor->ip.length && audio_media->ip.length && 
 			apt_string_compare(&descriptor->ip,&audio_media->ip) != TRUE) {
 			const char *media_ip = audio_media->ext_ip.buf ? audio_media->ext_ip.buf : audio_media->ip.buf;
-			offset += sprintf(buffer+offset,"c=IN IP4 %s\r\n",media_ip);
+			offset += snprintf(buffer+offset,size-offset,"c=IN IP4 %s\r\n",media_ip);
 		}
 		
 		for(i=0; i<descriptor_arr->nelts; i++) {
@@ -235,7 +235,7 @@ static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, cons
 	}
 	else { /* answer */
 		if(control_media->port) {
-			offset += sprintf(buffer+offset,
+			offset += snprintf(buffer+offset,size-offset,
 				"m=application %d %s 1\r\n"
 				"a=setup:%s\r\n"
 				"a=connection:%s\r\n"
@@ -248,7 +248,7 @@ static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, cons
 				control_media->resource_name.buf);
 		}
 		else {
-			offset += sprintf(buffer+offset,
+			offset += snprintf(buffer+offset,size-offset,
 				"m=application %d %s 1\r\n"
 				"a=channel:%s@%s\r\n",
 				control_media->port,
