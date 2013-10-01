@@ -319,16 +319,15 @@ APT_DECLARE(apt_bool_t) apt_pair_array_generate(const apt_pair_arr_t *arr, apt_s
 		}
 		if (v + (pair->value.length ? 3 : 1) > MAX_VECS)
 			return FALSE;
-		vec[v++] = *((struct iovec*)&pair->name);
+		apt_string_to_iovec(&pair->name, &vec[v++]);
 		if (pair->value.length) {
 			vec[v++] = IOV_EQUALS;
-			vec[v++] = *((struct iovec*)&pair->value);
+			apt_string_to_iovec(&pair->value, &vec[v++]);
 		}
 	}
 	str->buf = apr_pstrcatv(pool, vec, v, &str->length);
 	return str->buf ? TRUE : FALSE;
 }
-
 
 /** Insert array of name-value pairs */
 APT_DECLARE(apt_bool_t) apt_text_pair_array_insert(apt_text_stream_t *stream, const apt_pair_arr_t *arr)

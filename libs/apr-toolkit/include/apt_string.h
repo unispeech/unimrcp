@@ -140,6 +140,17 @@ static APR_INLINE apt_bool_t apt_string_compare(const apt_str_t *str1, const apt
 	return (strncasecmp(str1->buf,str2->buf,str1->length) == 0) ? TRUE : FALSE;
 }
 
+/**
+ * Represent string as iovec. 
+ * @param str the string to represent
+ * @param vec the iovec to set
+ */
+static APR_INLINE void apt_string_to_iovec(const apt_str_t *str, struct iovec *vec)
+{
+	vec->iov_base = str->buf;
+	vec->iov_len = str->length;
+}
+
 APT_END_EXTERN_C
 
 #endif /* APT_STRING_H */
