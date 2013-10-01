@@ -443,7 +443,7 @@ MRCP_DECLARE(mrcp_request_id) mrcp_request_id_parse(const apt_str_t *field)
 /** Generate MRCP request-id */
 MRCP_DECLARE(apt_bool_t) mrcp_request_id_generate(mrcp_request_id request_id, apt_text_stream_t *stream)
 {
-	int length = sprintf(stream->pos, "%"MRCP_REQUEST_ID_FMT, request_id);
+	int length = apr_snprintf(stream->pos, stream->end - stream->pos, "%"MRCP_REQUEST_ID_FMT, request_id);
 	if(length <= 0) {
 		return FALSE;
 	}
