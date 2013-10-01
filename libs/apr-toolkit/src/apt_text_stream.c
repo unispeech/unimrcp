@@ -301,57 +301,40 @@ APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_
 /** Generate array of name-value pairs */
 APT_DECLARE(apt_bool_t) apt_pair_array_generate(const apt_pair_arr_t *arr, apt_str_t *str, apr_pool_t *pool)
 {
-	int p, v = 0;
-	struct iovec vec[512];
-	const apt_pair_t *pair;
-	static const int MAX_VECS = sizeof(vec) / sizeof(*vec);
-	static const struct iovec IOV_SEMICOLON = {";", 1};
-	static const struct iovec IOV_EQUALS = {"=", 1};
-
-	for (p = 0; p < arr->nelts; p++) {
-		pair = (apt_pair_t*)arr->elts + p;
-		if (!pair->name.length)
-			continue;
-		if (v) {
-			if (v >= MAX_VECS)
-				return FALSE;
-			vec[v++] = IOV_SEMICOLON;
-		}
-		if (v + (pair->value.length ? 3 : 1) > MAX_VECS)
-			return FALSE;
-		apt_string_to_iovec(&pair->name, &vec[v++]);
-		if (pair->value.length) {
-			vec[v++] = IOV_EQUALS;
-			apt_string_to_iovec(&pair->value, &vec[v++]);
-		}
-	}
-	str->buf = apr_pstrcatv(pool, vec, v, &str->length);
-	return str->buf ? TRUE : FALSE;
-}
-
-/** Insert array of name-value pairs */
-APT_DECLARE(apt_bool_t) apt_text_pair_array_insert(apt_text_stream_t *stream, const apt_pair_arr_t *arr)
-{
 	int i;
+	char *pos;
 	apt_pair_t *pair;
-	char *pos = stream->pos;
-	if(!arr) {
+	if(!arr || !str) {
 		return FALSE;
 	}
 
+	/* Compute length of string being generated */
+	str->length = 0;
+	for(i=0; i<arr->nelts; i++) {
+		pair = (apt_pair_t*)arr->elts + i;
+		/* name */
+		str->length += pair->name.length;
+		if(pair->value.length) {
+			/* =value */
+			str->length += 1 + pair->value.length;
+		}
+	}
+	if(arr->nelts) {
+		/* ; */
+		str->length += arr->nelts - 1;
+	}
+
+	/* Allocate required string */
+	str->buf = apr_palloc(pool, str->length + 1);
+
+	/* Copy pairs into allocated string */
+	pos = str->buf;
 	for(i=0; i<arr->nelts; i++) {
 		pair = (apt_pair_t*)arr->elts + i;
 		if(i != 0) {
-			if (pos >= stream->end)
-				return FALSE;
 			*pos++ = ';';
 		}
 		if(pair->name.length) {
-			if (pos + pair->name.length +
-				(pair->value.length ? pair->value.length + 1 : 0) > stream->end)
-			{
-				return FALSE;
-			}
 			memcpy(pos,pair->name.buf,pair->name.length);
 			pos += pair->name.length;
 			if(pair->value.length) {
@@ -361,7 +344,7 @@ APT_DECLARE(apt_bool_t) apt_text_pair_array_insert(apt_text_stream_t *stream, co
 			}
 		}
 	}
-	stream->pos = pos;
+	pos = '\0';
 	return TRUE;
 }
 

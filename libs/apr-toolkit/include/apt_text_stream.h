@@ -96,9 +96,6 @@ APT_DECLARE(apt_bool_t) apt_pair_array_parse(apt_pair_arr_t *arr, const apt_str_
 /** Generate array of name-value pairs */
 APT_DECLARE(apt_bool_t) apt_pair_array_generate(const apt_pair_arr_t *arr, apt_str_t *str, apr_pool_t *pool);
 
-/** Insert array of name-value pairs */
-APT_DECLARE(apt_bool_t) apt_text_pair_array_insert(apt_text_stream_t *stream, const apt_pair_arr_t *arr);
-
 
 /** Parse boolean-value */
 APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t *value);
