@@ -58,20 +58,33 @@ static apt_bool_t mrcp_request_id_list_parse(mrcp_request_id_list_t *request_id_
 }
 
 /** Generate mrcp request-id list */
-static apt_bool_t mrcp_request_id_list_generate(mrcp_request_id_list_t *request_id_list, apt_str_t *str, apr_pool_t *pool)
+static apt_bool_t mrcp_request_id_list_generate(const mrcp_request_id_list_t *request_id_list, apt_str_t *str, apr_pool_t *pool)
 {
 	apr_size_t i;
-	char buf[256];
-	apt_text_stream_t stream;
-	apt_text_stream_init(&stream,buf,sizeof(buf));
-	for(i=0; i<request_id_list->count; i++) {
-		mrcp_request_id_generate(request_id_list->ids[i],&stream);
-		if(i < request_id_list->count-1) {
-			*stream.pos++ = ',';
-		}
+	int length;
+	char *pos;
+
+	/* compute estimated length, assuming request-ids consist of upto 10 digits */
+	str->length = 10 * request_id_list->count;
+	if(request_id_list->count > 1) {
+		/* , */
+		str->length += request_id_list->count - 1;
 	}
 
-	apt_string_assign_n(str,stream.text.buf, stream.pos - stream.text.buf, pool);
+	str->buf = apr_palloc(pool,str->length + 1);
+
+	pos = str->buf;
+	for(i=0; i<request_id_list->count; i++) {
+		if(i != 0) {
+			*pos++ = ',';
+		}
+
+		length = apr_snprintf(pos, str->length - (pos - str->buf), "%"MRCP_REQUEST_ID_FMT, request_id_list->ids[i]);
+		if(length < 0)
+			return FALSE;
+		pos += length;
+	}
+	pos = '\0';
 	return TRUE;
 }
 

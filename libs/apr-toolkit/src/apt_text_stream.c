@@ -519,19 +519,21 @@ APT_DECLARE(apt_bool_t) apt_var_length_value_generate(apr_size_t *value, apr_siz
 /** Generate completion-cause */
 APT_DECLARE(apt_bool_t) apt_completion_cause_generate(const apt_str_table_item_t table[], apr_size_t size, apr_size_t cause, apt_str_t *str, apr_pool_t *pool)
 {
-	char buf[256];
-	int length;
 	const apt_str_t *name = apt_string_table_str_get(table,size,cause);
 	if(!name) {
 		return FALSE;
 	}
-	length = sprintf(buf,"%03"APR_SIZE_T_FMT" ",cause);
-	if(length <= 0) {
+
+	/* 3 digits + 1 space + name->length */
+	str->length = 4 + name->length;
+	str->buf = apr_palloc(pool,str->length + 1);
+
+	if(sprintf(str->buf,"%03"APR_SIZE_T_FMT" ",cause) != 4) {
 		return FALSE;
 	}
 
-	memcpy(buf+length,name->buf,name->length);
-	apt_string_assign_n(str,buf,name->length + length,pool);
+	memcpy(str->buf+4,name->buf,name->length);
+	str->buf[str->length] = '\0';
 	return TRUE;
 }
 
