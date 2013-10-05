@@ -240,16 +240,27 @@ AC_CONFIG_FILES([
 
 AC_OUTPUT
 
-AC_MSG_NOTICE
-AC_MSG_NOTICE([Report:])
-AC_MSG_NOTICE([  UniMRCP: $UNI_DOTTED_VERSION])
-AC_MSG_NOTICE([  APR: $apr_version])
-AC_MSG_NOTICE([  APR-Util: $apu_version])
-AC_MSG_NOTICE([  Sofia-SIP: $sofia_version])
-AC_MSG_NOTICE([Plugins:])
-AC_MSG_NOTICE([  Demo Synthesizer: $enable_demosynth_plugin])
-AC_MSG_NOTICE([  Demo Recognizer: $enable_demorecog_plugin])
-AC_MSG_NOTICE([  Demo Verifier: $enable_demoverifier_plugin])
-AC_MSG_NOTICE([  Recorder: $enable_recorder_plugin])
-AC_MSG_NOTICE([  PocketSphinx: $enable_pocketsphinx_plugin])
-AC_MSG_NOTICE([  Flite: $enable_flite_plugin])
+echo
+echo '****************************** REPORT ******************************'
+echo
+echo UniMRCP version............... : $UNI_DOTTED_VERSION
+echo
+echo APR version................... : $apr_version
+echo APR-util version.............. : $apu_version
+echo Sofia-SIP version............. : $sofia_version
+echo
+echo Compiler...................... : $CC
+echo Compiler flags................ : $CFLAGS
+echo Preprocessor definitions...... : $CPPFLAGS
+echo Linker flags.................. : $LDFLAGS
+echo
+echo Demo synthesizer plugin....... : $enable_demosynth_plugin
+echo Demo recognizer plugin........ : $enable_demorecog_plugin
+echo Demo verifier plugin.......... : $enable_demoverifier_plugin
+echo Recorder plugin............... : $enable_recorder_plugin
+echo PocketSphinx plugin........... : $enable_pocketsphinx_plugin
+echo Flite plugin.................. : $enable_flite_plugin
+echo
+echo Installation directory........ : $prefix
+echo
+echo '********************************************************************'
