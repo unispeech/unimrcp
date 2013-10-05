@@ -43,6 +43,10 @@ m4_undefine([AC_PROG_F77])
 m4_defun([AC_PROG_F77],[])
 AC_PROG_LIBTOOL
 
+dnl Do not use autoconf generated compiler DEFS
+rm confdefs.h
+touch confdefs.h
+
 dnl Search for pkg-config
 AC_PATH_PROG(PKG_CONFIG, pkg-config)
 
