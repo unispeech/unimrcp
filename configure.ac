@@ -1,6 +1,6 @@
-dnl 
+dnl
 dnl Autoconf configuration file for the UniMRCP project.
-dnl 
+dnl
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
@@ -9,15 +9,29 @@ AC_INIT([unimrcp],[1.1.0])
 
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/acmacros])
-AC_PREFIX_DEFAULT(/usr/local/unimrcp)
 
 dnl Set ac_macro_dir variable manually for autoconf 2.61 and above
-ac_macro_dir='build/acmacros'
+ac_macro_dir="build/acmacros"
 
-plugindir='${prefix}/plugin'
-confdir='${prefix}/conf'
-logdir='${prefix}/log'
-datadir='${prefix}/data'
+AC_SUBST(ac_aux_dir)
+AC_SUBST(ac_macro_dir)
+
+AC_PREFIX_DEFAULT(/usr/local/unimrcp)
+dnl Since AC_PREFIX_DEFAULT is expanded late, explicitly set the prefix.
+if test "x$prefix" = "xNONE" ; then
+    prefix="/usr/local/unimrcp"
+fi
+
+dnl Set plugin, conf, log and data dir variables
+plugindir="${prefix}/plugin"
+confdir="${prefix}/conf"
+logdir="${prefix}/log"
+datadir="${prefix}/data"
+
+AC_SUBST(plugindir)
+AC_SUBST(confdir)
+AC_SUBST(logdir)
+AC_SUBST(datadir)
 
 dnl Include m4 macros for libtool 2
 sinclude(build/acmacros/libtool.m4)
@@ -67,18 +81,12 @@ AC_SUBST(PLUGIN_LT_VERSION)
 
 echo "UniMRCP Version: ${UNI_DOTTED_VERSION}"
 
-dnl Check the APR library
+dnl Check for the APR library
 UNIMRCP_CHECK_APR
+dnl Check for the APR-util library
 UNIMRCP_CHECK_APU
-
-dnl Check the SOFIA-SIP library 
+dnl Check for the Sofia-SIP library
 UNIMRCP_CHECK_SOFIA
-
-AC_SUBST(ac_aux_dir)
-AC_SUBST(ac_macro_dir)
-AC_SUBST(plugindir)
-AC_SUBST(confdir)
-AC_SUBST(logdir)
 
 dnl Enable inter-library dependencies
 AC_ARG_ENABLE(interlib-deps,
