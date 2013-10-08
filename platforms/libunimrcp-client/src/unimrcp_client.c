@@ -146,7 +146,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create2(const char *xmlconfig)
 /** Check whether specified attribute is valid */
 static APR_INLINE apt_bool_t is_attr_valid(const apr_xml_attr *attr)
 {
-	return (attr && attr->value && attr->value != '\0');
+	return (attr && attr->value && *attr->value != '\0');
 }
 
 /** Check whether specified attribute is enabled (true) */
@@ -1133,7 +1133,7 @@ static apt_bool_t unimrcp_client_doc_process(unimrcp_client_loader_t *loader, co
 		}
 	}
 
-	if(subfolder && subfolder != '\0') {
+	if(subfolder && *subfolder != '\0') {
 		apr_dir_t *dir;
 		apr_finfo_t finfo;
 		apr_status_t rv;

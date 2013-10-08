@@ -273,7 +273,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 	sofia_session->descriptor = NULL;
 	session->obj = sofia_session;
 
-	if(settings->user_name && settings->user_name != '\0') {
+	if(settings->user_name && *settings->user_name != '\0') {
 		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%hu",
 										settings->user_name,
 										settings->server_ip,
@@ -459,7 +459,7 @@ static void mrcp_sofia_on_session_redirect(
 		return;
 	}
 	
-	if(sip_contact->m_url->url_user && sip_contact->m_url->url_user != '\0') {
+	if(sip_contact->m_url->url_user && *sip_contact->m_url->url_user != '\0') {
 		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%s",
 										sip_contact->m_url->url_user,
 										sip_contact->m_url->url_host,

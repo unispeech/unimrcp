@@ -344,7 +344,7 @@ APT_DECLARE(apt_bool_t) apt_pair_array_generate(const apt_pair_arr_t *arr, apt_s
 			}
 		}
 	}
-	pos = '\0';
+	*pos = '\0';
 	return TRUE;
 }
 

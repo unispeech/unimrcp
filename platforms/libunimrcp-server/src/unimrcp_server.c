@@ -118,7 +118,7 @@ MRCP_DECLARE(apt_bool_t) unimrcp_server_shutdown(mrcp_server_t *server)
 /** Check whether specified attribute is valid */
 static APR_INLINE apt_bool_t is_attr_valid(const apr_xml_attr *attr)
 {
-	return (attr && attr->value && attr->value != '\0');
+	return (attr && attr->value && *attr->value != '\0');
 }
 
 /** Check whether specified attribute is enabled (true) */

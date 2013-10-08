@@ -84,7 +84,7 @@ static apt_bool_t mrcp_request_id_list_generate(const mrcp_request_id_list_t *re
 			return FALSE;
 		pos += length;
 	}
-	pos = '\0';
+	*pos = '\0';
 	return TRUE;
 }
 
