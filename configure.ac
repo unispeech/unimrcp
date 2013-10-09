@@ -10,7 +10,7 @@ AC_INIT([unimrcp],[1.1.0])
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/acmacros])
 
-dnl Set ac_macro_dir variable manually for autoconf 2.61 and above
+dnl Set ac_macro_dir variable manually for autoconf 2.61 and above.
 ac_macro_dir="build/acmacros"
 
 AC_SUBST(ac_aux_dir)
@@ -22,7 +22,7 @@ if test "x$prefix" = "xNONE" ; then
     prefix="/usr/local/unimrcp"
 fi
 
-dnl Set plugin, conf, log and data dir variables
+dnl Set plugin, conf, log and data dir variables.
 plugindir="${prefix}/plugin"
 confdir="${prefix}/conf"
 logdir="${prefix}/log"
@@ -33,7 +33,10 @@ AC_SUBST(confdir)
 AC_SUBST(logdir)
 AC_SUBST(datadir)
 
-dnl Include m4 macros for libtool 2
+dnl Generate ./config.nice to reuse ./configure command-line.
+APR_CONFIG_NICE(config.nice)
+
+dnl Include m4 macros for libtool 2.
 sinclude(build/acmacros/libtool.m4)
 sinclude(build/acmacros/ltoptions.m4)
 sinclude(build/acmacros/ltsugar.m4)
@@ -42,32 +45,32 @@ sinclude(build/acmacros/lt~obsolete.m4)
 
 AM_INIT_AUTOMAKE([no-define nostdinc foreign])
 
-dnl Enable silent build rules (available since automake 1.11)
+dnl Enable silent build rules available since automake 1.11.
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-dnl Set default language
+dnl Set default language.
 AC_LANG_C
 
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
 
-dnl Skip detection of Fortran
+dnl Skip detection of Fortran.
 m4_undefine([AC_PROG_F77])
 m4_defun([AC_PROG_F77],[])
 AC_PROG_LIBTOOL
 
-dnl Do not use autoconf generated compiler DEFS
+dnl Do not use autoconf generated compiler DEFS.
 rm confdefs.h
 touch confdefs.h
 
-dnl Check for C compiler vendor
+dnl Check for C compiler vendor.
 AX_COMPILER_VENDOR
 
-dnl Search for pkg-config
+dnl Search for pkg-config.
 AC_PATH_PROG(PKG_CONFIG, pkg-config)
 
-dnl Get version information
+dnl Get version information.
 get_version="build/get-version.sh"
 version_hdr="build/uni_version.h"
 plugin_version_hdr="libs/mrcp-engine/include/mrcp_engine_plugin.h"
