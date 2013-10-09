@@ -22,10 +22,10 @@ AC_DEFUN([UNIMRCP_CHECK_APR],
 
   dnl Get build information from APR
 
-  CPPFLAGS="$CPPFLAGS `$apr_config --cppflags`"
-  CFLAGS="$CFLAGS `$apr_config --cflags`"
-  LDFLAGS="$LDFLAGS `$apr_config --ldflags`"
-
+  APR_ADDTO(CPPFLAGS,`$apr_config --cppflags`)
+  APR_ADDTO(CFLAGS,`$apr_config --cflags`)
+  APR_ADDTO(LDFLAGS,`$apr_config --ldflags`)
+     
   UNIMRCP_APR_INCLUDES="`$apr_config --includes`"
   UNIMRCP_APR_LIBS="`$apr_config --link-ld`"
 

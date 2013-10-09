@@ -81,14 +81,14 @@ AC_SUBST(PLUGIN_LT_VERSION)
 
 echo "UniMRCP Version: ${UNI_DOTTED_VERSION}"
 
-dnl Check for the APR library
+dnl Check for the APR library.
 UNIMRCP_CHECK_APR
-dnl Check for the APR-util library
+dnl Check for the APR-util library.
 UNIMRCP_CHECK_APU
-dnl Check for the Sofia-SIP library
+dnl Check for the Sofia-SIP library.
 UNIMRCP_CHECK_SOFIA
 
-dnl Enable inter-library dependencies
+dnl Enable inter-library dependencies.
 AC_ARG_ENABLE(interlib-deps,
     [AC_HELP_STRING([--disable-interlib-deps  ],[disable inter-library dependencies (might break builds)])],
     [enable_interlib_deps="$enableval"],
@@ -103,20 +103,21 @@ else
     link_all_deplibs_CXX=no
 fi
 
-dnl Enable maintainer mode
+dnl Enable maintainer mode.
 AC_ARG_ENABLE(maintainer-mode,
     [AC_HELP_STRING([--enable-maintainer-mode  ],[turn on debugging and compile time warnings])],
     [enable_maintainer_mode="$enableval"],
     [enable_maintainer_mode="no"])
 
+AC_MSG_NOTICE([enable maintainer mode: $enable_maintainer_mode])
 if test "${enable_maintainer_mode}" != "no"; then
-    CFLAGS="$CFLAGS -g"
+    APR_ADDTO(CFLAGS,-g)
     if test "x${ax_cv_c_compiler_vendor}"  =  "xgnu" ; then
-        CFLAGS="$CFLAGS -Wall -Werror"
+        APR_ADDTO(CFLAGS,-Wall -Werror)
     fi
 fi
 
-dnl Enable test suites
+dnl Enable test suites.
 AC_ARG_ENABLE(test-suites,
     [AC_HELP_STRING([--enable-test-suites  ],[build test suites])],
     [enable_test_suites="$enableval"],
@@ -124,9 +125,9 @@ AC_ARG_ENABLE(test-suites,
 
 AM_CONDITIONAL([TEST_SUITES],[test "${enable_test_suites}" != "no"])
 
-dnl Enable/disable plugins
+dnl Enable/disable plugins.
 
-dnl Enable demo synthesizer plugin
+dnl Enable demo synthesizer plugin.
 AC_ARG_ENABLE(demosynth-plugin,
     [AC_HELP_STRING([--disable-demosynth-plugin  ],[exclude demo synthesizer plugin from build])],
     [enable_demosynth_plugin="$enableval"],
@@ -134,7 +135,7 @@ AC_ARG_ENABLE(demosynth-plugin,
 
 AM_CONDITIONAL([DEMOSYNTH_PLUGIN],[test "${enable_demosynth_plugin}" = "yes"])
 
-dnl Enable demo recognizer plugin
+dnl Enable demo recognizer plugin.
 AC_ARG_ENABLE(demorecog-plugin,
     [AC_HELP_STRING([--disable-demorecog-plugin  ],[exclude demo recognizer plugin from build])],
     [enable_demorecog_plugin="$enableval"],
@@ -142,7 +143,7 @@ AC_ARG_ENABLE(demorecog-plugin,
 
 AM_CONDITIONAL([DEMORECOG_PLUGIN],[test "${enable_demorecog_plugin}" = "yes"])
 
-dnl Enable demo verifier plugin
+dnl Enable demo verifier plugin.
 AC_ARG_ENABLE(demoverifier-plugin,
     [AC_HELP_STRING([--disable-demoverifier-plugin  ],[exclude demo verifier plugin from build])],
     [enable_demoverifier_plugin="$enableval"],
@@ -150,7 +151,7 @@ AC_ARG_ENABLE(demoverifier-plugin,
 
 AM_CONDITIONAL([DEMOVERIFIER_PLUGIN],[test "${enable_demoverifier_plugin}" = "yes"])
 
-dnl Enable recorder plugin
+dnl Enable recorder plugin.
 AC_ARG_ENABLE(recorder-plugin,
     [AC_HELP_STRING([--disable-recorder-plugin  ],[exclude recorder plugin from build])],
     [enable_recorder_plugin="$enableval"],
@@ -158,7 +159,7 @@ AC_ARG_ENABLE(recorder-plugin,
 
 AM_CONDITIONAL([RECORDER_PLUGIN],[test "${enable_recorder_plugin}" = "yes"])
 
-dnl Enable PocketSphinx plugin
+dnl Enable PocketSphinx plugin.
 AC_ARG_ENABLE(pocketsphinx-plugin,
     [AC_HELP_STRING([--enable-pocketsphinx-plugin  ],[enable pocketsphinx plugin])],
     [enable_pocketsphinx_plugin="$enableval"],
@@ -173,7 +174,7 @@ AM_CONDITIONAL([POCKETSPHINX_PLUGIN],[test "${enable_pocketsphinx_plugin}" = "ye
                                       test "${found_pocketsphinx}" = "yes" &&\
                                       test "${found_sphinxbase}" = "yes"])
 
-dnl Enable Flite plugin
+dnl Enable Flite plugin.
 AC_ARG_ENABLE(flite-plugin,
     [AC_HELP_STRING([--enable-flite-plugin  ],[enable flite plugin])],
     [enable_flite_plugin="$enableval"],

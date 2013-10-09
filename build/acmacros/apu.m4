@@ -22,7 +22,7 @@ AC_DEFUN([UNIMRCP_CHECK_APU],
 
   dnl Get build information from APU
 
-  LDFLAGS="$LDFLAGS `$apu_config --ldflags`"
+  APR_ADDTO(LDFLAGS,`$apu_config --ldflags`)
 
   UNIMRCP_APU_INCLUDES="`$apu_config --includes`"
   UNIMRCP_APU_LIBS="`$apu_config --link-ld`"
