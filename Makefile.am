@@ -18,7 +18,7 @@ MACRO_DIST           = $(macrodir)/libtool.m4 \
 EXTRA_DIST           = bootstrap
 
 AUTOMAKE_OPTIONS     = foreign
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure $(AUX_DIST) $(MACRO_DIST)
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure config.nice $(AUX_DIST) $(MACRO_DIST)
 
 ACLOCAL              = aclocal -I $(macrodir)
 
