@@ -1,7 +1,7 @@
 dnl UNIMRCP_CHECK_SOFIA
 
 AC_DEFUN([UNIMRCP_CHECK_SOFIA],
-[  
+[
     AC_MSG_NOTICE([Sofia SIP library configuration])
 
     AC_MSG_CHECKING([for Sofia-SIP])

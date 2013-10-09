@@ -1,7 +1,7 @@
 dnl UNIMRCP_CHECK_SPHINXBASE
 
 AC_DEFUN([UNIMRCP_CHECK_SPHINXBASE],
-[  
+[
     AC_MSG_NOTICE([SphinxBase library configuration])
 
     AC_MSG_CHECKING([for SphinxBase])

@@ -25,7 +25,7 @@ AC_DEFUN([UNIMRCP_CHECK_APR],
   APR_ADDTO(CPPFLAGS,`$apr_config --cppflags`)
   APR_ADDTO(CFLAGS,`$apr_config --cflags`)
   APR_ADDTO(LDFLAGS,`$apr_config --ldflags`)
-     
+
   UNIMRCP_APR_INCLUDES="`$apr_config --includes`"
   UNIMRCP_APR_LIBS="`$apr_config --link-ld`"
 

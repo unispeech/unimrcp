@@ -1,7 +1,7 @@
 dnl UNIMRCP_CHECK_POCKETSPHINX
 
 AC_DEFUN([UNIMRCP_CHECK_POCKETSPHINX],
-[  
+[
     AC_MSG_NOTICE([PocketSphinx library configuration])
 
     AC_MSG_CHECKING([for PocketSphinx])

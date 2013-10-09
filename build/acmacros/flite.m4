@@ -1,7 +1,7 @@
 dnl UNIMRCP_CHECK_FLITE
 
 AC_DEFUN([UNIMRCP_CHECK_FLITE],
-[  
+[
     AC_MSG_NOTICE([Flite library configuration])
 
     AC_MSG_CHECKING([for Flite])
@@ -10,9 +10,9 @@ AC_DEFUN([UNIMRCP_CHECK_FLITE],
                 [flite_path=$withval],
                 [flite_path="/usr/src/flite"]
                 )
-    
+
     found_flite="no"
-    
+
     flite_config="config/config"
     for dir in $flite_path ; do
         cd $dir && flite_dir=`pwd` && cd - > /dev/null
