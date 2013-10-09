@@ -128,45 +128,28 @@ AC_ARG_ENABLE(test-suites,
 
 AM_CONDITIONAL([TEST_SUITES],[test "${enable_test_suites}" != "no"])
 
-dnl Enable/disable plugins.
-
-dnl Enable demo synthesizer plugin.
-AC_ARG_ENABLE(demosynth-plugin,
-    [AC_HELP_STRING([--disable-demosynth-plugin  ],[exclude demo synthesizer plugin from build])],
-    [enable_demosynth_plugin="$enableval"],
-    [enable_demosynth_plugin="yes"])
+dnl Demo synthesizer plugin.
+UNI_PLUGIN_ENABLED(demosynth)
 
 AM_CONDITIONAL([DEMOSYNTH_PLUGIN],[test "${enable_demosynth_plugin}" = "yes"])
 
-dnl Enable demo recognizer plugin.
-AC_ARG_ENABLE(demorecog-plugin,
-    [AC_HELP_STRING([--disable-demorecog-plugin  ],[exclude demo recognizer plugin from build])],
-    [enable_demorecog_plugin="$enableval"],
-    [enable_demorecog_plugin="yes"])
+dnl Demo recognizer plugin.
+UNI_PLUGIN_ENABLED(demorecog)
 
 AM_CONDITIONAL([DEMORECOG_PLUGIN],[test "${enable_demorecog_plugin}" = "yes"])
 
-dnl Enable demo verifier plugin.
-AC_ARG_ENABLE(demoverifier-plugin,
-    [AC_HELP_STRING([--disable-demoverifier-plugin  ],[exclude demo verifier plugin from build])],
-    [enable_demoverifier_plugin="$enableval"],
-    [enable_demoverifier_plugin="yes"])
+dnl Demo verifier plugin.
+UNI_PLUGIN_ENABLED(demoverifier)
 
 AM_CONDITIONAL([DEMOVERIFIER_PLUGIN],[test "${enable_demoverifier_plugin}" = "yes"])
 
-dnl Enable recorder plugin.
-AC_ARG_ENABLE(recorder-plugin,
-    [AC_HELP_STRING([--disable-recorder-plugin  ],[exclude recorder plugin from build])],
-    [enable_recorder_plugin="$enableval"],
-    [enable_recorder_plugin="yes"])
+dnl Recorder plugin.
+UNI_PLUGIN_ENABLED(recorder)
 
 AM_CONDITIONAL([RECORDER_PLUGIN],[test "${enable_recorder_plugin}" = "yes"])
 
-dnl Enable PocketSphinx plugin.
-AC_ARG_ENABLE(pocketsphinx-plugin,
-    [AC_HELP_STRING([--enable-pocketsphinx-plugin  ],[enable pocketsphinx plugin])],
-    [enable_pocketsphinx_plugin="$enableval"],
-    [enable_pocketsphinx_plugin="no"])
+dnl PocketSphinx plugin.
+UNI_PLUGIN_DISABLED(pocketsphinx)
 
 if test "${enable_pocketsphinx_plugin}" != "no"; then
     UNIMRCP_CHECK_SPHINXBASE
@@ -177,11 +160,8 @@ AM_CONDITIONAL([POCKETSPHINX_PLUGIN],[test "${enable_pocketsphinx_plugin}" = "ye
                                       test "${found_pocketsphinx}" = "yes" &&\
                                       test "${found_sphinxbase}" = "yes"])
 
-dnl Enable Flite plugin.
-AC_ARG_ENABLE(flite-plugin,
-    [AC_HELP_STRING([--enable-flite-plugin  ],[enable flite plugin])],
-    [enable_flite_plugin="$enableval"],
-    [enable_flite_plugin="no"])
+dnl Flite plugin.
+UNI_PLUGIN_DISABLED(flite)
 
 if test "${enable_flite_plugin}" != "no"; then
     UNIMRCP_CHECK_FLITE
