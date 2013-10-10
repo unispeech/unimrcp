@@ -476,7 +476,6 @@ APT_DECLARE(apt_bool_t) nlsml_instance_swi_suppress(nlsml_instance_t *instance)
 	apr_xml_elem *child_elem;
 	apr_xml_elem *prev_elem = NULL;
 	apr_xml_elem *swi_literal = NULL;
-	apr_xml_elem *swi_meaning = NULL;
 	apt_bool_t remove;
 	if(!instance->elem)
 		return FALSE;
@@ -488,7 +487,6 @@ APT_DECLARE(apt_bool_t) nlsml_instance_swi_suppress(nlsml_instance_t *instance)
 			remove = TRUE;
 		}
 		else if(strcasecmp(child_elem->name,"SWI_meaning") == 0) {
-			swi_meaning = child_elem;
 			remove = TRUE;
 		}
 

@@ -209,9 +209,6 @@ int main(int argc, char *argv[])
   char prefix[MAX_SYMBOLLENGTH], suffix[MAX_SYMBOLLENGTH];
   char modified_suffix[2];
   int write_java = 0;   /* flag for Java output, 0=.h output, 1=.java output */
-  /* java package to put revision info in.
-   * REVIEW - I assume if you want Java output you will specify a package. */
-  char *java_package = NULL;
 
   if (argc <= 1)
     about();
@@ -247,10 +244,6 @@ int main(int argc, char *argv[])
       } /* case */
       case 'i':
         process_self = 1;
-        break;
-      case 'j':
-        write_java=1;
-        java_package = &argv[index][2];
         break;
       case 'o':
         outname = &argv[index][2];
