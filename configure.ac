@@ -84,10 +84,8 @@ AC_SUBST(PLUGIN_LT_VERSION)
 
 echo "UniMRCP Version: ${UNI_DOTTED_VERSION}"
 
-dnl Check for the APR library.
+dnl Check for the APR and APR-util libraries.
 UNIMRCP_CHECK_APR
-dnl Check for the APR-util library.
-UNIMRCP_CHECK_APU
 dnl Check for the Sofia-SIP library.
 UNIMRCP_CHECK_SOFIA
 

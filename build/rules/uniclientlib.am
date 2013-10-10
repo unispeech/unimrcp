@@ -14,7 +14,7 @@ UNIMRCP_CLIENTLIB_INCLUDES = -Iinclude \
                              -I$(top_srcdir)/libs/mpf/include \
                              -I$(top_srcdir)/libs/apr-toolkit/include \
                              -I$(top_srcdir)/build \
-                             $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+                             $(UNIMRCP_APR_INCLUDES)
 
 # Libraries (LIBADD)
 UNIMRCP_CLIENTLIB_LIBS     = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofiasip.la \
@@ -25,7 +25,7 @@ UNIMRCP_CLIENTLIB_LIBS     = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofias
                              $(top_builddir)/libs/mrcp/libmrcp.la \
                              $(top_builddir)/libs/mpf/libmpf.la \
                              $(top_builddir)/libs/apr-toolkit/libaprtoolkit.la \
-                             $(UNIMRCP_APR_LIBS) $(UNIMRCP_APU_LIBS) $(UNIMRCP_SOFIA_LIBS) -lm
+                             $(UNIMRCP_APR_LIBS) $(UNIMRCP_SOFIA_LIBS) -lm
 
 # Linker options (LDFLAGS)
 UNIMRCP_CLIENTLIB_OPTS     = $(UNI_LT_VERSION)

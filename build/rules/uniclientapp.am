@@ -13,7 +13,7 @@ UNIMRCP_CLIENTAPP_INCLUDES = -Iinclude \
                              -I$(top_srcdir)/libs/mpf/include \
                              -I$(top_srcdir)/libs/apr-toolkit/include \
                              -I$(top_srcdir)/build \
-                             $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+                             $(UNIMRCP_APR_INCLUDES)
 
 # Libraries (LDADD)
 UNIMRCP_CLIENTAPP_LIBS     = $(top_builddir)/platforms/libunimrcp-client/libunimrcpclient.la
