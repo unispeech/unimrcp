@@ -1,15 +1,4 @@
-MAINTAINERCLEANFILES        = Makefile.in
-
-INCLUDES                    = -Iinclude \
-                              -I$(top_srcdir)/libs/mrcp-engine/include \
-                              -I$(top_srcdir)/libs/mrcp/include \
-                              -I$(top_srcdir)/libs/mrcp/message/include \
-                              -I$(top_srcdir)/libs/mrcp/control/include \
-                              -I$(top_srcdir)/libs/mrcp/resources/include \
-                              -I$(top_srcdir)/libs/mpf/include \
-                              -I$(top_srcdir)/libs/apr-toolkit/include \
-                              $(UNIMRCP_APR_INCLUDES) \
-                              $(UNIMRCP_APU_INCLUDES) \
+INCLUDES                    = $(UNIMRCP_PLUGIN_INCLUDES) \
                               $(UNIMRCP_SPHINXBASE_INCLUDES) \
                               $(UNIMRCP_POCKETSPHINX_INCLUDES)
 
@@ -17,9 +6,8 @@ plugin_LTLIBRARIES          = mrcppocketsphinx.la
 
 mrcppocketsphinx_la_SOURCES = src/mrcp_pocketsphinx.c \
                               src/pocketsphinx_properties.c
-mrcppocketsphinx_la_LDFLAGS = -module $(PLUGIN_LT_VERSION)
+mrcppocketsphinx_la_LDFLAGS = $(UNIMRCP_PLUGIN_OPTS)
 mrcppocketsphinx_la_LIBADD  = $(UNIMRCP_POCKETSPHINX_LIBS) $(UNIMRCP_SPHINXBASE_LIBS) -lm
-
 
 dictionary:
 	!(test -f $(UNIMRCP_POCKETSPHINX_MODELS)/lm/cmudict.0.6d) || \
@@ -34,3 +22,5 @@ install-data-local:
 	test -f $(DESTDIR)$(confdir)/pocketsphinx.xml || $(INSTALL) -m 644 conf/pocketsphinx.xml $(DESTDIR)$(confdir)
 	test -f $(DESTDIR)$(datadir)/default.dic || $(MAKE) dictionary
 	test -d $(DESTDIR)$(datadir)/wsj1 || $(MAKE) model
+
+include $(top_srcdir)/build/rules/uniplugin.am
