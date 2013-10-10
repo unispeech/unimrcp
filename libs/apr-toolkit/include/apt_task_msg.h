@@ -52,7 +52,7 @@ struct apt_task_msg_t {
 	/** Message pool the task message is allocated from */
 	apt_task_msg_pool_t *msg_pool;
 	/** Task msg type */
-	apt_task_msg_type_e  type;
+	int                  type;
 	/** Task msg sub type */
 	int                  sub_type;
 	/** Context specific data */
