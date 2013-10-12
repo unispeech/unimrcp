@@ -5,7 +5,7 @@ INCLUDES                 = -I$(top_srcdir)/libs/mrcp/include \
                            -I$(top_srcdir)/libs/mrcp/control/include \
                            -I$(top_srcdir)/libs/mrcp/resources/include \
                            -I$(top_srcdir)/libs/apr-toolkit/include \
-                           $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+                           $(UNIMRCP_APR_INCLUDES)
 
 noinst_LTLIBRARIES       = libmrcp.la
 

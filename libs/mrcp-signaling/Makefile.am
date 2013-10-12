@@ -4,7 +4,7 @@ INCLUDES                    = -I$(top_srcdir)/libs/mrcp-signaling/include \
                               -I$(top_srcdir)/libs/mrcp/include \
                               -I$(top_srcdir)/libs/mpf/include \
                               -I$(top_srcdir)/libs/apr-toolkit/include \
-                              $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+                              $(UNIMRCP_APR_INCLUDES)
 
 noinst_LTLIBRARIES          = libmrcpsignaling.la
 

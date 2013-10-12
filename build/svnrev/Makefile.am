@@ -1,9 +1,9 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-INCLUDES             = $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES)
+INCLUDES             = $(UNIMRCP_APR_INCLUDES)
 
 noinst_PROGRAMS      = svnrev
-svnrev_LDADD         = $(UNIMRCP_APR_LIBS) $(UNIMRCP_APU_LIBS)
+svnrev_LDADD         = $(UNIMRCP_APR_LIBS)
 svnrev_SOURCES       = svnrev.c
 
 rev:

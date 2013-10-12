@@ -9,7 +9,7 @@ INCLUDES                   = -Iinclude \
                              -I$(top_srcdir)/libs/mpf/include \
                              -I$(top_srcdir)/libs/uni-rtsp/include \
                              -I$(top_srcdir)/libs/apr-toolkit/include \
-                             $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_APU_INCLUDES) $(UNIMRCP_SOFIA_INCLUDES)
+                             $(UNIMRCP_APR_INCLUDES) $(UNIMRCP_SOFIA_INCLUDES)
 
 noinst_LTLIBRARIES         = libmrcpunirtsp.la
 
