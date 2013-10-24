@@ -45,7 +45,7 @@ Prerequisites:
 
 Procedure:
 
-If the UniMRCP source is checked out from the repository, the "bootstrap" script must be ran first
+If the UniMRCP source is checked out from the repository, the "bootstrap" script must be run first
 in order to generate the "configure" script and other required files.
 
 	./bootstrap
