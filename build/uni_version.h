@@ -74,7 +74,15 @@
 /** The Copyright. */
 #define UNI_COPYRIGHT "Copyright 2008-2013 Arsen Chaloyan"
 
-/** The License. */
+/*
+ * Use the brief description of the license for Win32 .rc files;
+ * otherwise, use the full description.
+ */
+#if defined(APSTUDIO_INVOKED) || defined(RC_INVOKED)
+/** The License (brief description). */
+#define UNI_LICENSE "The Apache License, Version 2.0"
+#else
+/** The License (full description). */
 #define UNI_LICENSE \
  " * Licensed under the Apache License, Version 2.0 (the ""License"");\n" \
  " * you may not use this file except in compliance with the License.\n" \
@@ -87,5 +95,6 @@
  " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" \
  " * See the License for the specific language governing permissions and\n" \
  " * limitations under the License.\n"
+#endif /* APSTUDIO_INVOKED || RC_INVOKED */
 
 #endif /* UNI_VERSION_H */
