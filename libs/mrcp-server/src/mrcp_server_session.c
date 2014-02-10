@@ -737,7 +737,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 
 		/* create new MRCP channel instance */
 		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i,control_descriptor->cmid_arr);
-		if(!channel) continue;
+		if(!channel || !channel->resource) continue;
 
 		control_descriptor->session_id = session->base.id;
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Control Channel "APT_NAMESIDRES_FMT" [%d]",
