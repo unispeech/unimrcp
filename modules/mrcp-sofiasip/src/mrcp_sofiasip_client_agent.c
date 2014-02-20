@@ -515,6 +515,7 @@ static void mrcp_sofia_on_session_terminate(
 	apr_thread_mutex_unlock(sofia_session->mutex);
 
 	if(terminate_requested == TRUE) {
+		sofia_session->nua_state = nua_callstate_terminated;
 		mrcp_sofia_session_cleanup(sofia_session);
 		mrcp_session_terminate_response(session);
 		return;
@@ -528,6 +529,7 @@ static void mrcp_sofia_on_session_terminate(
 		descriptor->response_code = status;
 		mrcp_session_answer(session,descriptor);
 	}
+	sofia_session->nua_state = nua_callstate_terminated;
 }
 
 static void mrcp_sofia_on_state_change(
@@ -551,13 +553,13 @@ static void mrcp_sofia_on_state_change(
 		sofia_session->session->name,
 		nua_callstate_name(nua_state));
 
-	switch(nua_state) {
-		case nua_callstate_ready:
-			mrcp_sofia_on_session_ready(status,sofia_agent,nh,sofia_session,sip,tags);
-			break;
-		case nua_callstate_terminated:
-			mrcp_sofia_on_session_terminate(status,sofia_agent,nh,sofia_session,sip,tags);
-			break;
+	if(nua_state == nua_callstate_terminated) {
+		mrcp_sofia_on_session_terminate(status,sofia_agent,nh,sofia_session,sip,tags);
+		return;
+	}
+
+	if(nua_state == nua_callstate_ready) {
+		mrcp_sofia_on_session_ready(status,sofia_agent,nh,sofia_session,sip,tags);
 	}
 	sofia_session->nua_state = nua_state;
 }
