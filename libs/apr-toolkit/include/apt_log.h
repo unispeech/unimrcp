@@ -33,7 +33,7 @@ APT_BEGIN_EXTERN_C
 /** Default max size of the log file (8Mb) */
 #define MAX_LOG_FILE_SIZE (8 * 1024 * 1024)
 /** Default max number of rotated log files */
-#define MAX_LOG_FILE_COUNT 10
+#define MAX_LOG_FILE_COUNT 100
 
 /** File:line mark */
 #define APT_LOG_MARK	__FILE__,__LINE__
