@@ -456,6 +456,23 @@ APT_DECLARE(apt_bool_t) apt_obj_log(const char *file, int line, apt_log_priority
 	return status;
 }
 
+APT_DECLARE(apt_bool_t) apt_va_log(const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr)
+{
+	apt_bool_t status = TRUE;
+	if(!apt_logger) {
+		return FALSE;
+	}
+	if(priority <= apt_logger->priority) {
+		if(apt_logger->ext_handler) {
+			status = apt_logger->ext_handler(file,line,NULL,priority,format,arg_ptr);
+		}
+		else {
+			status = apt_do_log(file,line,priority,format,arg_ptr);
+		}
+	}
+	return status;
+}
+
 static APR_INLINE unsigned long apt_thread_id_get()
 {
 #ifdef WIN32
