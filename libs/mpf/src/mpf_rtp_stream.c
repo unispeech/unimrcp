@@ -92,7 +92,8 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_rtp_stream_transmit
 };
 
-static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media);
+static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media, apt_bool_t bind);
+static apt_bool_t mpf_rtp_socket_pair_bind(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media);
 static void mpf_rtp_socket_pair_close(mpf_rtp_stream_t *stream);
 
 static apt_bool_t mpf_rtcp_report_send(mpf_rtp_stream_t *stream);
@@ -168,33 +169,43 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 		local_media->ext_ip = rtp_stream->config->ext_ip;
 	}
 	if(local_media->port == 0) {
-		/* RTP port management */
-		mpf_rtp_config_t *rtp_config = rtp_stream->config;
-		apr_port_t first_port_in_search = rtp_config->rtp_port_cur;
-		apt_bool_t is_port_ok = FALSE;
+		if(mpf_rtp_socket_pair_create(rtp_stream,local_media,FALSE) == TRUE) {
+			/* RTP port management */
+			mpf_rtp_config_t *rtp_config = rtp_stream->config;
+			apr_port_t first_port_in_search = rtp_config->rtp_port_cur;
+			apt_bool_t is_port_ok = FALSE;
+			do {
+				local_media->port = rtp_config->rtp_port_cur;
+				rtp_config->rtp_port_cur += 2;
+				if(rtp_config->rtp_port_cur == rtp_config->rtp_port_max) {
+					rtp_config->rtp_port_cur = rtp_config->rtp_port_min;
+				}
+				
+				if(mpf_rtp_socket_pair_bind(rtp_stream,local_media) == TRUE) {
+					is_port_ok = TRUE;
+					break;
+				}
+			} while(first_port_in_search != rtp_config->rtp_port_cur);
 
-		do {
-			local_media->port = rtp_config->rtp_port_cur;
-			rtp_config->rtp_port_cur += 2;
-			if(rtp_config->rtp_port_cur == rtp_config->rtp_port_max) {
-				rtp_config->rtp_port_cur = rtp_config->rtp_port_min;
+			if(is_port_ok == FALSE) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Free RTP Port %s:[%hu,%hu]",
+										rtp_config->ip.buf,
+										rtp_config->rtp_port_min,
+										rtp_config->rtp_port_max);
+				mpf_rtp_socket_pair_close(rtp_stream);
+				status = FALSE;
 			}
-			if(mpf_rtp_socket_pair_create(rtp_stream,local_media) == TRUE) {
-				is_port_ok = TRUE;
-			}
-		} while((is_port_ok == FALSE) && (first_port_in_search != rtp_config->rtp_port_cur));
-		if(is_port_ok == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find Free RTP Port %s:[%hu,%hu]",
-									rtp_config->ip.buf,
-									rtp_config->rtp_port_min,
-									rtp_config->rtp_port_max);
-			local_media->state = MPF_MEDIA_DISABLED;
+		}
+		else {
 			status = FALSE;
 		}
 	}
-	else if(mpf_rtp_socket_pair_create(rtp_stream,local_media) == FALSE) {
-		local_media->state = MPF_MEDIA_DISABLED;
+	else if(mpf_rtp_socket_pair_create(rtp_stream,local_media,TRUE) == FALSE) {
 		status = FALSE;
+	}
+
+	if(status == FALSE) {
+		local_media->state = MPF_MEDIA_DISABLED;
 	}
 
 	if(rtp_stream->settings->ptime) {
@@ -235,7 +246,9 @@ static apt_bool_t mpf_rtp_stream_local_media_update(mpf_rtp_stream_t *rtp_stream
 	if(apt_string_compare(&rtp_stream->local_media->ip,&media->ip) == FALSE ||
 		rtp_stream->local_media->port != media->port) {
 
-		if(mpf_rtp_socket_pair_create(rtp_stream,media) == FALSE) {
+		mpf_rtp_socket_pair_close(rtp_stream);
+
+		if(mpf_rtp_socket_pair_create(rtp_stream,media,TRUE) == FALSE) {
 			media->state = MPF_MEDIA_DISABLED;
 			status = FALSE;
 		}
@@ -1082,9 +1095,27 @@ static apt_bool_t mpf_rtp_stream_transmit(mpf_audio_stream_t *stream, const mpf_
 	return status;
 }
 
-static apr_socket_t* mpf_socket_create(apr_sockaddr_t **l_sockaddr, const char *ip, apr_port_t port, apr_pool_t *pool)
+static apt_bool_t mpf_socket_create(apr_pool_t *pool, apr_socket_t **socket)
 {
-	apr_socket_t *socket = NULL;
+	if(!socket)
+		return FALSE;
+
+	if(apr_socket_create(socket,APR_INET,SOCK_DGRAM,0,pool) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Socket");
+		*socket = NULL;
+		return FALSE;
+	}
+	
+	apr_socket_opt_set(*socket,APR_SO_NONBLOCK,1);
+	apr_socket_timeout_set(*socket,0);
+	return TRUE;
+}
+
+static apt_bool_t mpf_socket_bind(apr_socket_t *socket, const char *ip, apr_port_t port, apr_pool_t *pool, apr_sockaddr_t **l_sockaddr)
+{
+	if(!socket || !l_sockaddr)
+		return FALSE;
+
 	*l_sockaddr = NULL;
 	apr_sockaddr_info_get(
 		l_sockaddr,
@@ -1094,40 +1125,56 @@ static apr_socket_t* mpf_socket_create(apr_sockaddr_t **l_sockaddr, const char *
 		0,
 		pool);
 	if(!*l_sockaddr) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Get Sockaddr %s:%hu",ip,port);
-		return NULL;
-	}
-	if(apr_socket_create(&socket,(*l_sockaddr)->family,SOCK_DGRAM,0,pool) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Create Socket %s:%hu", ip,port);
-		return NULL;
-	}
-	
-	apr_socket_opt_set(socket,APR_SO_NONBLOCK,1);
-	apr_socket_timeout_set(socket,0);
-
-	if(apr_socket_bind(socket,*l_sockaddr) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Bind Socket to %s:%hu", ip,port);
-		apr_socket_close(socket);
-		return NULL;
-	}
-	return socket;
-}
-
-static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media)
-{
-	stream->rtp_socket = mpf_socket_create(&stream->rtp_l_sockaddr,local_media->ip.buf,local_media->port,stream->pool);
-	if(!stream->rtp_socket) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Create RTP Socket");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Sockaddr %s:%hu",ip,port);
 		return FALSE;
 	}
-
-	stream->rtcp_socket = mpf_socket_create(&stream->rtcp_l_sockaddr,local_media->ip.buf,local_media->port+1,stream->pool);
-	if(!stream->rtcp_socket) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Create RTCP Socket");
+	
+	if(apr_socket_bind(socket,*l_sockaddr) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Failed to Bind Socket to %s:%hu", ip,port);
+		return FALSE;
 	}
 	return TRUE;
 }
 
+/* Create RTP/RTCP sockets */
+static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media, apt_bool_t bind)
+{
+	/* Create and optionally bind RTP socket. Return FALSE in case of an error. */
+	if(mpf_socket_create(stream->pool,&stream->rtp_socket) == FALSE) {
+		return FALSE;
+	}
+	if(bind == TRUE) {
+		if(mpf_socket_bind(stream->rtp_socket,local_media->ip.buf,local_media->port,stream->pool,&stream->rtp_l_sockaddr) == FALSE) {
+			apr_socket_close(stream->rtp_socket);
+			stream->rtp_socket = NULL;
+			return FALSE;
+		}
+	}
+
+	/* Create and optionally bind RCTP socket. Continue in either way. */
+	if(mpf_socket_create(stream->pool,&stream->rtcp_socket) == TRUE && bind == TRUE) {
+		if(mpf_socket_bind(stream->rtcp_socket,local_media->ip.buf,local_media->port+1,stream->pool,&stream->rtcp_l_sockaddr) == FALSE) {
+			apr_socket_close(stream->rtcp_socket);
+			stream->rtcp_socket = NULL;
+		}
+	}
+	return TRUE;
+}
+
+/* Bind RTP/RTCP sockets */
+static apt_bool_t mpf_rtp_socket_pair_bind(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media)
+{
+	/* Bind RTP socket. Return FALSE in case of an error. */
+	if(mpf_socket_bind(stream->rtp_socket,local_media->ip.buf,local_media->port,stream->pool,&stream->rtp_l_sockaddr) == FALSE) {
+		return FALSE;
+	}
+	
+	/* Try to bind RTCP socket. Continue in either way. */
+	mpf_socket_bind(stream->rtcp_socket,local_media->ip.buf,local_media->port+1,stream->pool,&stream->rtcp_l_sockaddr);
+	return TRUE;
+}
+
+/* Close RTP/RTCP sockets */
 static void mpf_rtp_socket_pair_close(mpf_rtp_stream_t *stream)
 {
 	if(stream->rtp_socket) {
