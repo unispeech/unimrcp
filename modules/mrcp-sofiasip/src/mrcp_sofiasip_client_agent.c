@@ -81,7 +81,6 @@ static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_sofia_session_discover_request
 };
 
-
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool);
 static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_settings_t *settings);
 
@@ -95,6 +94,7 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 									   sip_t const          *sip,
 									   tagi_t                tags[]);
 
+apt_bool_t mrcp_sofiasip_log_init(const char *name, const char *level_str, apt_bool_t redirect);
 
 /** Create Sofia-SIP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(const char *id, mrcp_sofia_client_config_t *config, apr_pool_t *pool)
@@ -151,6 +151,11 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 	config->tport_dump_file = NULL;
 
 	return config;
+}
+
+MRCP_DECLARE(apt_bool_t) mrcp_sofiasip_client_logger_init(const char *name, const char *level_str, apt_bool_t redirect)
+{
+	return mrcp_sofiasip_log_init(name,level_str,redirect);
 }
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool)

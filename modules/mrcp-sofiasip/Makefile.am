@@ -18,4 +18,5 @@ include_HEADERS            = include/mrcp_sdp.h \
                              include/mrcp_sofiasip_client_agent.h
 libmrcpsofiasip_la_SOURCES = src/mrcp_sdp.c \
                              src/mrcp_sofiasip_server_agent.c \
-                             src/mrcp_sofiasip_client_agent.c
+                             src/mrcp_sofiasip_client_agent.c \
+                             src/mrcp_sofiasip_logger.c

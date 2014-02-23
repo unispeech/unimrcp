@@ -72,6 +72,11 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(const char *id
  */
 MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_pool_t *pool);
 
+/**
+ * Initialize Sofia-SIP logger.
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_sofiasip_client_logger_init(const char *name, const char *level_str, apt_bool_t redirect);
+
 APT_END_EXTERN_C
 
 #endif /* MRCP_SOFIASIP_CLIENT_AGENT_H */

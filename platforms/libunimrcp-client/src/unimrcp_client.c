@@ -1012,7 +1012,7 @@ static apt_bool_t unimrcp_client_settings_load(unimrcp_client_loader_t *loader, 
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	return TRUE;
 }
 
@@ -1047,6 +1047,46 @@ static apt_bool_t unimrcp_client_profiles_load(unimrcp_client_loader_t *loader, 
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}    
+	return TRUE;
+}
+
+/** Load misc parameters */
+static apt_bool_t unimrcp_client_misc_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root)
+{
+	const apr_xml_elem *elem;
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Misc Parameters");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		if(strcasecmp(elem->name,"sofiasip-logger") == 0) {
+			char *logger_list_str;
+			char *logger_name;
+			char *state;
+			apr_xml_attr *attr;
+			apt_bool_t redirect = FALSE;
+			const char *loglevel_str = NULL;
+			for(attr = elem->attr; attr; attr = attr->next) {
+				if(strcasecmp(attr->name,"redirect") == 0) {
+					if(attr->value && strcasecmp(attr->value,"true") == 0)
+						redirect = TRUE;
+				}
+				else if(strcasecmp(attr->name,"loglevel") == 0) {
+					loglevel_str = attr->value;
+				}
+			}
+			
+			logger_list_str = apr_pstrdup(loader->pool,cdata_text_get(elem));
+			do {
+				logger_name = apr_strtok(logger_list_str, ",", &state);
+				if(logger_name) {
+					mrcp_sofiasip_client_logger_init(logger_name,loglevel_str,redirect);
+				}
+				logger_list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
+			} 
+			while(logger_name);
+		}
+		else {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
+		}
+	}
 	return TRUE;
 }
 
@@ -1127,6 +1167,9 @@ static apt_bool_t unimrcp_client_doc_process(unimrcp_client_loader_t *loader, co
 		}
 		else if(strcasecmp(elem->name,"profiles") == 0) {
 			unimrcp_client_profiles_load(loader,elem);
+		}
+		else if(strcasecmp(elem->name,"misc") == 0) {
+			unimrcp_client_misc_load(loader,elem);
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
