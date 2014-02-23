@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * $Id: mrcp_sdp.c 1647 2010-04-12 19:34:53Z achaloyan $
+ * $Id$
  */
 
 #include <stdlib.h>
