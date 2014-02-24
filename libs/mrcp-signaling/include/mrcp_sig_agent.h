@@ -62,8 +62,6 @@ struct mrcp_sig_agent_t {
 	void                    *obj;
 	/** Parent object (client/server) */
 	void                    *parent;
-	/** MRCP version */
-	mrcp_version_e           mrcp_version;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t *resource_factory;
 	/** Task interface */
@@ -78,7 +76,7 @@ struct mrcp_sig_agent_t {
 };
 
 /** Create signaling agent. */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void *obj, mrcp_version_e mrcp_version, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void *obj, apr_pool_t *pool);
 
 /** Allocate MRCP signaling settings. */
 MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_signaling_settings_alloc(apr_pool_t *pool);

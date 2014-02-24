@@ -118,7 +118,7 @@ mrcp_server_session_t* mrcp_server_session_create()
 
 static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t *session)
 {
-	return session->base.signaling_agent->mrcp_version;
+	return session->profile->mrcp_version;
 }
 
 static mrcp_engine_channel_t* mrcp_server_engine_channel_create(

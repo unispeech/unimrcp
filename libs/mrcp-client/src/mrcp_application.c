@@ -328,7 +328,7 @@ MRCP_DECLARE(mrcp_message_t*) mrcp_application_message_create(mrcp_session_t *se
 	}
 	mrcp_message = mrcp_request_create(
 						channel->resource,
-						profile->signaling_agent->mrcp_version,
+						profile->mrcp_version,
 						method_id,
 						session->pool);
 	return mrcp_message;

@@ -140,6 +140,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_register(
 /** Create MRCP profile */
 MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 								const char *id,
+								mrcp_version_e mrcp_version,
 								mrcp_resource_factory_t *resource_factory,
 								mrcp_sig_agent_t *signaling_agent,
 								mrcp_connection_agent_t *connection_agent,

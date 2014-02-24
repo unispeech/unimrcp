@@ -834,7 +834,8 @@ static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *lo
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv2 Profile [%s]",id);
-	profile = mrcp_client_profile_create(
+	profile = mrcp_client_profile_create_ex(
+		MRCP_VERSION_2,
 		NULL,sip_agent,mrcpv2_agent,
 		media_engine,rtp_factory,
 		rtp_settings,sip_settings,
@@ -882,7 +883,8 @@ static apt_bool_t unimrcp_client_mrcpv1_profile_load(unimrcp_client_loader_t *lo
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv1 Profile [%s]",id);
-	profile = mrcp_client_profile_create(
+	profile = mrcp_client_profile_create_ex(
+		MRCP_VERSION_1,
 		NULL,rtsp_agent,NULL,
 		media_engine,rtp_factory,
 		rtp_settings,rtsp_settings,

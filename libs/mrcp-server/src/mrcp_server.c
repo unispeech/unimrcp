@@ -460,6 +460,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_get(const mr
 /** Create MRCP profile */
 MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 									const char *id,
+									mrcp_version_e mrcp_version,
 									mrcp_resource_factory_t *resource_factory,
 									mrcp_sig_agent_t *signaling_agent,
 									mrcp_connection_agent_t *connection_agent,
@@ -470,6 +471,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_server_profile_create(
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
 	profile->id = id;
+	profile->mrcp_version = mrcp_version;
 	profile->resource_factory = resource_factory;
 	profile->engine_table = NULL;
 	profile->media_engine = media_engine;
@@ -543,7 +545,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",profile->id);
 		return FALSE;
 	}
-	if(profile->signaling_agent->mrcp_version == MRCP_VERSION_2 &&
+	if(profile->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",profile->id);
 		return FALSE;

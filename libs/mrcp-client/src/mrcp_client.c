@@ -479,7 +479,36 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mrcp_sig_settings_t *signaling_settings,
 									apr_pool_t *pool)
 {
+	mrcp_version_e mrcp_version = MRCP_VERSION_2;
+	if(!connection_agent)
+		mrcp_version = MRCP_VERSION_1;
+
+	return mrcp_client_profile_create_ex(
+				mrcp_version,
+				resource_factory,
+				signaling_agent,
+				connection_agent,
+				media_engine,
+				rtp_factory,
+				rtp_settings,
+				signaling_settings,
+				pool);
+}
+
+/** Create MRCP profile (extended version) */
+MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
+									mrcp_version_e mrcp_version,
+									mrcp_resource_factory_t *resource_factory,
+									mrcp_sig_agent_t *signaling_agent,
+									mrcp_connection_agent_t *connection_agent,
+									mpf_engine_t *media_engine,
+									mpf_termination_factory_t *rtp_factory,
+									mpf_rtp_settings_t *rtp_settings,
+									mrcp_sig_settings_t *signaling_settings,
+									apr_pool_t *pool)
+{
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
+	profile->mrcp_version = mrcp_version;
 	profile->resource_factory = resource_factory;
 	profile->media_engine = media_engine;
 	profile->rtp_termination_factory = rtp_factory;
@@ -504,7 +533,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",name);
 		return FALSE;
 	}
-	if(profile->signaling_agent->mrcp_version == MRCP_VERSION_2 &&
+	if(profile->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
 		return FALSE;

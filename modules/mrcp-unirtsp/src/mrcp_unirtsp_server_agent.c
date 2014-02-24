@@ -77,7 +77,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(const char *id,
 	apt_task_t *task;
 	mrcp_unirtsp_agent_t *agent;
 	agent = apr_palloc(pool,sizeof(mrcp_unirtsp_agent_t));
-	agent->sig_agent = mrcp_signaling_agent_create(id,agent,MRCP_VERSION_1,pool);
+	agent->sig_agent = mrcp_signaling_agent_create(id,agent,pool);
 	agent->config = config;
 
 	if(rtsp_config_validate(agent,config,pool) == FALSE) {

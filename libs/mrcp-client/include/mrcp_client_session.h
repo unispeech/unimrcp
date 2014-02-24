@@ -136,6 +136,8 @@ struct rtp_termination_slot_t {
 
 /** MRCP profile */
 struct mrcp_profile_t {
+	/** MRCP version */
+	mrcp_version_e             mrcp_version;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;
 	/** Media processing engine */
@@ -146,7 +148,6 @@ struct mrcp_profile_t {
 	mrcp_sig_agent_t          *signaling_agent;
 	/** Connection agent */
 	mrcp_connection_agent_t   *connection_agent;
-
 	/** Signaling settings */
 	mrcp_sig_settings_t       *signaling_settings;
 	/** RTP settings */

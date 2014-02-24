@@ -56,7 +56,7 @@ static mrcp_channel_t* mrcp_client_channel_find_by_name(mrcp_client_session_t *s
 
 static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_client_session_t *session)
 {
-	return session->base.signaling_agent->mrcp_version;
+	return session->profile->mrcp_version;
 }
 
 static APR_INLINE void mrcp_client_session_state_set(mrcp_client_session_t *session, mrcp_client_session_state_e state)

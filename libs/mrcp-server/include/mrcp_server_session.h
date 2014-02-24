@@ -113,6 +113,8 @@ struct mrcp_server_session_t {
 struct mrcp_profile_t {
 	/** Identifier of the profile */
 	const char                *id;
+	/** MRCP version */
+	mrcp_version_e             mrcp_version;
 	/** Table of engines (mrcp_engine_t*) */
 	apr_hash_t                *engine_table;
 	/** MRCP resource factory */
