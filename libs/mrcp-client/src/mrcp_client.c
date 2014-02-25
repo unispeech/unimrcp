@@ -539,6 +539,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent factory",name);
 		return FALSE;
 	}
+	if(mrcp_sa_factory_is_empty(profile->sa_factory) == TRUE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: empty signaling agent factory",name);
+		return FALSE;
+	}
 	if(profile->mrcp_version == MRCP_VERSION_2 &&
 		!profile->connection_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);

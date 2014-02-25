@@ -20,6 +20,14 @@
 #include "mrcp_session.h"
 #include "apt_pool.h"
 
+/** Factory of MRCP signaling agents */
+struct mrcp_sa_factory_t {
+	/** Array of pointers to signaling agents */
+	apr_array_header_t   *agents_arr;
+	/** Index of the current agent */
+	int                   index;
+};
+
 /** Create signaling agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void *obj, apr_pool_t *pool)
 {
@@ -33,7 +41,6 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void
 	sig_agent->msg_pool = NULL;
 	sig_agent->create_server_session = NULL;
 	sig_agent->create_client_session = NULL;
-	APR_RING_ELEM_INIT(sig_agent,link);
 	return sig_agent;
 }
 
@@ -41,28 +48,37 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void
 MRCP_DECLARE(mrcp_sa_factory_t*) mrcp_sa_factory_create(apr_pool_t *pool)
 {
 	mrcp_sa_factory_t *sa_factory = apr_palloc(pool,sizeof(mrcp_sa_factory_t));
-	APR_RING_INIT(&sa_factory->head, mrcp_sig_agent_t, link);
-	sa_factory->current = APR_RING_SENTINEL(&sa_factory->head,mrcp_sig_agent_t,link);
+	sa_factory->agents_arr = apr_array_make(pool,1,sizeof(mrcp_sig_agent_t*));
+	sa_factory->index = 0;
 	return sa_factory;
 }
 
 /** Add signaling agent to pool */
 MRCP_DECLARE(apt_bool_t) mrcp_sa_factory_agent_add(mrcp_sa_factory_t *sa_factory, mrcp_sig_agent_t *sig_agent)
 {
+	mrcp_sig_agent_t **slot;
 	if(!sig_agent)
 		return FALSE;
 
-	APR_RING_INSERT_TAIL(&sa_factory->head,sig_agent,mrcp_sig_agent_t,link);
+	slot = apr_array_push(sa_factory->agents_arr);
+	*slot = sig_agent;
 	return TRUE;
 }
 
-/** Get next available signaling agent */
-MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sa_factory_agent_get(mrcp_sa_factory_t *sa_factory)
+/** Determine whether factory is empty. */
+MRCP_DECLARE(apt_bool_t) mrcp_sa_factory_is_empty(const mrcp_sa_factory_t *sa_factory)
 {
-	sa_factory->current = APR_RING_NEXT(sa_factory->current,link);
-	if(sa_factory->current == APR_RING_SENTINEL(&sa_factory->head,mrcp_sig_agent_t,link))
-		sa_factory->current = APR_RING_NEXT(sa_factory->current,link);
-	return sa_factory->current;
+	return apr_is_empty_array(sa_factory->agents_arr);
+}
+
+/** Select next available signaling agent */
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sa_factory_agent_select(mrcp_sa_factory_t *sa_factory)
+{
+	mrcp_sig_agent_t *sig_agent = APR_ARRAY_IDX(sa_factory->agents_arr, sa_factory->index, mrcp_sig_agent_t*);
+	if(++sa_factory->index == sa_factory->agents_arr->nelts) {
+		sa_factory->index = 0;
+	}
+	return sig_agent;
 }
 
 /** Allocate MRCP signaling settings */

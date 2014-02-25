@@ -1227,7 +1227,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 	}
 
 	if(session->registered == FALSE) {
-		session->base.signaling_agent = mrcp_sa_factory_agent_get(session->profile->sa_factory);
+		session->base.signaling_agent = mrcp_sa_factory_agent_select(session->profile->sa_factory);
 		if(!session->base.signaling_agent) {
 			/* raise app response */
 			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Get Signaling Agent "APT_NAMESID_FMT" [%d]",
