@@ -26,6 +26,10 @@
 
 #include <apr_network_io.h>
 #include <apr_tables.h>
+#ifdef WIN32
+#pragma warning(disable: 4127)
+#endif
+#include <apr_ring.h>
 #include "mrcp_sig_types.h"
 #include "apt_task.h"
 
@@ -50,8 +54,6 @@ struct mrcp_sig_settings_t {
 	char        *feature_tags;
 };
 
-
-
 /** MRCP signaling agent  */
 struct mrcp_sig_agent_t {
 	/** Agent identifier */
@@ -73,10 +75,30 @@ struct mrcp_sig_agent_t {
 	mrcp_session_t* (*create_server_session)(mrcp_sig_agent_t *signaling_agent);
 	/** Virtual create_client_session */
 	apt_bool_t (*create_client_session)(mrcp_session_t *session, mrcp_sig_settings_t *settings);
+
+	/** Ring entry */
+	APR_RING_ENTRY(mrcp_sig_agent_t) link;
+};
+
+/** Factory of MRCP signaling agents */
+struct mrcp_sa_factory_t {
+	/** Ring head */
+	APR_RING_HEAD(mrcp_sa_factory_t, mrcp_sig_agent_t) head;
+	/** Current element in ring */
+	mrcp_sig_agent_t                               *current;
 };
 
 /** Create signaling agent. */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_signaling_agent_create(const char *id, void *obj, apr_pool_t *pool);
+
+/** Create factory of signaling agents. */
+MRCP_DECLARE(mrcp_sa_factory_t*) mrcp_sa_factory_create(apr_pool_t *pool);
+
+/** Add signaling agent to factory. */
+MRCP_DECLARE(apt_bool_t) mrcp_sa_factory_agent_add(mrcp_sa_factory_t *sa_factory, mrcp_sig_agent_t *sig_agent);
+
+/** Get next available signaling agent. */
+MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sa_factory_agent_get(mrcp_sa_factory_t *sa_factory);
 
 /** Allocate MRCP signaling settings. */
 MRCP_DECLARE(mrcp_sig_settings_t*) mrcp_signaling_settings_alloc(apr_pool_t *pool);

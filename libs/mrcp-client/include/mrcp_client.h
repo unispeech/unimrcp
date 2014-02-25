@@ -147,7 +147,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 									mrcp_version_e mrcp_version,
 									mrcp_resource_factory_t *resource_factory,
-									mrcp_sig_agent_t *signaling_agent,
+									mrcp_sa_factory_t *sa_factory,
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,

@@ -479,14 +479,20 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									mrcp_sig_settings_t *signaling_settings,
 									apr_pool_t *pool)
 {
+	mrcp_sa_factory_t *sa_factory = NULL;
 	mrcp_version_e mrcp_version = MRCP_VERSION_2;
 	if(!connection_agent)
 		mrcp_version = MRCP_VERSION_1;
 
+	if(signaling_agent) {
+		sa_factory = mrcp_sa_factory_create(pool);
+		mrcp_sa_factory_agent_add(sa_factory,signaling_agent);
+	}
+
 	return mrcp_client_profile_create_ex(
 				mrcp_version,
 				resource_factory,
-				signaling_agent,
+				sa_factory,
 				connection_agent,
 				media_engine,
 				rtp_factory,
@@ -499,7 +505,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 									mrcp_version_e mrcp_version,
 									mrcp_resource_factory_t *resource_factory,
-									mrcp_sig_agent_t *signaling_agent,
+									mrcp_sa_factory_t *sa_factory,
 									mrcp_connection_agent_t *connection_agent,
 									mpf_engine_t *media_engine,
 									mpf_termination_factory_t *rtp_factory,
@@ -513,7 +519,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 	profile->media_engine = media_engine;
 	profile->rtp_termination_factory = rtp_factory;
 	profile->rtp_settings = rtp_settings;
-	profile->signaling_agent = signaling_agent;
+	profile->sa_factory = sa_factory;
 	profile->connection_agent = connection_agent;
 	profile->signaling_settings = signaling_settings;
 	return profile;
@@ -529,8 +535,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 	if(!profile->resource_factory) {
 		profile->resource_factory = client->resource_factory;
 	}
-	if(!profile->signaling_agent) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",name);
+	if(!profile->sa_factory) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent factory",name);
 		return FALSE;
 	}
 	if(profile->mrcp_version == MRCP_VERSION_2 &&
