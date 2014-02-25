@@ -35,6 +35,9 @@
 #define MRCP_SESSION_NAMESID(session) \
 	session->base.name, MRCP_SESSION_SID(&session->base)
 
+#define IS_SESSION_TERMINATE(app_message) \
+	(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING && \
+	app_message->sig_message.command_id == MRCP_SIG_COMMAND_SESSION_TERMINATE)
 
 void mrcp_client_session_add(mrcp_client_t *client, mrcp_client_session_t *session);
 void mrcp_client_session_remove(mrcp_client_t *client, mrcp_client_session_t *session);
@@ -1217,16 +1220,21 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 
 	if(session->disconnected == TRUE) {
 		/* cancel all the requests besides session termination one */
-		if(!(app_message->message_type == MRCP_APP_MESSAGE_TYPE_SIGNALING &&
-			app_message->sig_message.command_id == MRCP_SIG_COMMAND_SESSION_TERMINATE)) {
-				apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Cancel App Request "APT_NAMESID_FMT" [%d]",
-					MRCP_SESSION_NAMESID(session), app_message->sig_message.command_id);
-				session->status = MRCP_SIG_STATUS_CODE_CANCEL;
-				return mrcp_app_failure_message_raise(session);
+		if(!IS_SESSION_TERMINATE(app_message)) {
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Cancel App Request "APT_NAMESID_FMT" [%d]",
+				MRCP_SESSION_NAMESID(session), app_message->sig_message.command_id);
+			session->status = MRCP_SIG_STATUS_CODE_CANCEL;
+			return mrcp_app_failure_message_raise(session);
 		}
 	}
 
 	if(session->registered == FALSE) {
+		if(IS_SESSION_TERMINATE(app_message)) {
+			/* if session is not registered, nothing to terminate, just respond with success */
+			session->status = MRCP_SIG_STATUS_CODE_SUCCESS;
+			return mrcp_app_sig_response_raise(session,FALSE);
+		}
+
 		session->base.signaling_agent = mrcp_sa_factory_agent_select(session->profile->sa_factory);
 		if(!session->base.signaling_agent) {
 			/* raise app response */
