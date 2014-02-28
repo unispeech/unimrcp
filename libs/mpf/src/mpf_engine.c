@@ -259,7 +259,7 @@ static apt_bool_t mpf_engine_event_raise(mpf_termination_t *termination, int eve
 	mpf_message_container_t *event_msg;
 	mpf_message_t *mpf_message;
 	mpf_engine_t *engine;
-	engine = termination->event_handler_obj;
+	engine = termination->media_engine;
 	if(!engine) {
 		return FALSE;
 	}
@@ -324,7 +324,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		switch(mpf_request->command_id) {
 			case MPF_ADD_TERMINATION:
 			{
-				termination->event_handler_obj = engine;
+				termination->media_engine = engine;
 				termination->event_handler = mpf_engine_event_raise;
 				termination->codec_manager = engine->codec_manager;
 				termination->timer_queue = engine->timer_queue;

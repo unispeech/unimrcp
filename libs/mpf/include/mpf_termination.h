@@ -57,8 +57,8 @@ struct mpf_termination_t {
 	const char                     *name;
 	/** External object */
 	void                           *obj;
-	/** Object to send events to */
-	void                           *event_handler_obj;
+	/** Media engine to send events to */
+	void                           *media_engine;
 	/** Event handler */
 	mpf_termination_event_handler_f event_handler;
 	/** Codec manager */

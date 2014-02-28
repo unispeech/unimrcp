@@ -32,7 +32,7 @@ MPF_DECLARE(mpf_termination_t*) mpf_termination_base_create(
 	termination->pool = pool;
 	termination->name = "media-tm";
 	termination->obj = obj;
-	termination->event_handler_obj = NULL;
+	termination->media_engine = NULL;
 	termination->event_handler = NULL;
 	termination->codec_manager = NULL;
 	termination->timer_queue = NULL;
