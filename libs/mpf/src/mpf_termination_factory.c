@@ -19,6 +19,17 @@
 #include "mpf_termination_factory.h"
 #include "mpf_termination.h"
 
+/** Assign media engine to termination factory */
+MPF_DECLARE(apt_bool_t) mpf_termination_factory_engine_assign(
+										mpf_termination_factory_t *termination_factory,
+										mpf_engine_t *media_engine)
+{
+	if(termination_factory && termination_factory->assign_engine && media_engine) {
+		return termination_factory->assign_engine(termination_factory,media_engine);
+	}
+	return FALSE;
+}
+
 /** Create MPF termination from termination factory */
 MPF_DECLARE(mpf_termination_t*) mpf_termination_create(
 										mpf_termination_factory_t *termination_factory,

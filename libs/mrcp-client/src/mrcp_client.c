@@ -22,6 +22,7 @@
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_session.h"
 #include "mrcp_client_connection.h"
+#include "mpf_termination_factory.h"
 #include "apt_consumer_task.h"
 #include "apt_pool.h"
 #include "apt_log.h"
@@ -522,6 +523,8 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 	profile->sa_factory = sa_factory;
 	profile->connection_agent = connection_agent;
 	profile->signaling_settings = signaling_settings;
+
+	mpf_termination_factory_engine_assign(rtp_factory,media_engine);
 	return profile;
 }
 

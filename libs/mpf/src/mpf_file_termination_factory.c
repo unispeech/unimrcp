@@ -81,5 +81,6 @@ MPF_DECLARE(mpf_termination_factory_t*) mpf_file_termination_factory_create(apr_
 {
 	mpf_termination_factory_t *file_termination_factory = apr_palloc(pool,sizeof(mpf_termination_factory_t));
 	file_termination_factory->create_termination = mpf_file_termination_create;
+	file_termination_factory->assign_engine = NULL;
 	return file_termination_factory;
 }

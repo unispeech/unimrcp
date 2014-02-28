@@ -32,9 +32,18 @@ APT_BEGIN_EXTERN_C
 struct mpf_termination_factory_t {
 	/** Virtual create */
 	mpf_termination_t* (*create_termination)(mpf_termination_factory_t *factory, void *obj, apr_pool_t *pool);
+	/** Virtual assign engine */
+	apt_bool_t (*assign_engine)(mpf_termination_factory_t *factory, mpf_engine_t *media_engine);
 };
 
-
+/**
+ * Assign media engine to termination factory.
+ * @param termination_factory the termination factory to assign media engine to
+ * @param media_engine the media engine to assign
+ */
+MPF_DECLARE(apt_bool_t) mpf_termination_factory_engine_assign(
+										mpf_termination_factory_t *termination_factory,
+										mpf_engine_t *media_engine);
 
 /**
  * Create MPF termination from termination factory.
