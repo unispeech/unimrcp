@@ -104,6 +104,9 @@
     <ClCompile Include="src\mpf_termination_factory.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\mpf_engine_factory.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="codecs\g711\g711.h">
@@ -227,6 +230,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\mpf_types.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mpf_engine_factory.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

@@ -21,6 +21,7 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_dtmf_detector.h \
                            include/mpf_dtmf_generator.h \
                            include/mpf_engine.h \
+                           include/mpf_engine_factory.h \
                            include/mpf_frame.h \
                            include/mpf_frame_buffer.h \
                            include/mpf_message.h \
@@ -62,6 +63,7 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_dtmf_detector.c \
                            src/mpf_dtmf_generator.c \
                            src/mpf_engine.c \
+                           src/mpf_engine_factory.c \
                            src/mpf_mixer.c \
                            src/mpf_multiplier.c \
                            src/mpf_named_event.c \

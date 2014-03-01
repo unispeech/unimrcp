@@ -25,6 +25,7 @@
  */ 
 
 #include "mrcp_sig_types.h"
+#include "mpf_types.h"
 #include "apt_string.h"
 
 APT_BEGIN_EXTERN_C
@@ -59,6 +60,10 @@ struct mrcp_session_t {
 	const char       *name;
 	/** Back pointer to signaling agent */
 	mrcp_sig_agent_t *signaling_agent;
+	/** Media processing engine */
+	mpf_engine_t     *media_engine;
+	/** RTP termination factory */
+	mpf_termination_factory_t *rtp_factory;
 
 	/** Session identifier */
 	apt_str_t         id;

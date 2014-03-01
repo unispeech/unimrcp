@@ -214,7 +214,7 @@ MRCP_DECLARE(mrcp_channel_t*) mrcp_application_channel_create(
 
 	if(termination) {
 		/* Media engine and RTP factory must be specified in this case */
-		if(!profile->media_engine || !profile->rtp_termination_factory) {
+		if(!profile->mpf_factory || !profile->rtp_termination_factory) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Channel: invalid profile");
 			return FALSE;
 		}

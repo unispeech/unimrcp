@@ -25,6 +25,7 @@
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
 #include "mrcp_message.h"
+#include "mpf_engine_factory.h"
 #include "mpf_termination_factory.h"
 #include "mpf_stream.h"
 #include "apt_consumer_task.h"
@@ -158,7 +159,7 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 		if(session->context) {
 			/* first, reset/destroy existing associations and topology */
 			if(mpf_engine_topology_message_add(
-						session->profile->media_engine,
+						session->base.media_engine,
 						MPF_RESET_ASSOCIATIONS,session->context,
 						&session->mpf_task_msg) == TRUE){
 				mrcp_client_session_subrequest_add(session);
@@ -178,13 +179,13 @@ apt_bool_t mrcp_client_session_answer_process(mrcp_client_session_t *session, mr
 		if(session->context) {
 			/* apply topology based on assigned associations */
 			if(mpf_engine_topology_message_add(
-						session->profile->media_engine,
+						session->base.media_engine,
 						MPF_APPLY_TOPOLOGY,session->context,
 						&session->mpf_task_msg) == TRUE) {
 				mrcp_client_session_subrequest_add(session);
 			}
 
-			mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
+			mpf_engine_message_send(session->base.media_engine,&session->mpf_task_msg);
 		}
 	}
 	else {
@@ -736,7 +737,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		if(!session->context) {
 			/* create media context first */
 			session->context = mpf_engine_context_create(
-				profile->media_engine,
+				session->base.media_engine,
 				session->base.name,
 				session,5,pool);
 		}
@@ -744,7 +745,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 			MRCP_SESSION_NAMESID(session),
 			mpf_termination_name_get(channel->termination));
 		if(mpf_engine_termination_message_add(
-				profile->media_engine,
+				session->base.media_engine,
 				MPF_ADD_TERMINATION,session->context,channel->termination,NULL,
 				&session->mpf_task_msg) == TRUE) {
 			channel->waiting_for_termination = TRUE;
@@ -770,7 +771,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		}
 
 		/* create rtp termination */
-		termination = mpf_termination_create(profile->rtp_termination_factory,session,pool);
+		termination = mpf_termination_create(session->base.rtp_factory,session,pool);
 		slot->termination = termination;
 		apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Add Media Termination "APT_NAMESIDRES_FMT, 
 			MRCP_SESSION_NAMESID(session),
@@ -778,13 +779,13 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 
 		/* send add termination request (add to media context) */
 		if(mpf_engine_termination_message_add(
-				profile->media_engine,
+				session->base.media_engine,
 				MPF_ADD_TERMINATION,session->context,termination,rtp_descriptor,
 				&session->mpf_task_msg) == TRUE) {
 			slot->waiting = TRUE;
 			mrcp_client_session_subrequest_add(session);
 		}
-		mpf_engine_message_send(profile->media_engine,&session->mpf_task_msg);
+		mpf_engine_message_send(session->base.media_engine,&session->mpf_task_msg);
 	}
 	else {
 		/* bypass media mode */
@@ -837,7 +838,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 	if(session->context) {
 		/* first destroy existing topology */
 		if(mpf_engine_topology_message_add(
-					session->profile->media_engine,
+					session->base.media_engine,
 					MPF_DESTROY_TOPOLOGY,session->context,
 					&session->mpf_task_msg) == TRUE){
 			mrcp_client_session_subrequest_add(session);
@@ -865,7 +866,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 				MRCP_SESSION_NAMESID(session),
 				mpf_termination_name_get(channel->termination));
 			if(mpf_engine_termination_message_add(
-					profile->media_engine,
+					session->base.media_engine,
 					MPF_SUBTRACT_TERMINATION,session->context,channel->termination,NULL,
 					&session->mpf_task_msg) == TRUE) {
 				channel->waiting_for_termination = TRUE;
@@ -886,7 +887,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 				MRCP_SESSION_NAMESID(session),
 				mpf_termination_name_get(slot->termination));
 			if(mpf_engine_termination_message_add(
-					profile->media_engine,
+					session->base.media_engine,
 					MPF_SUBTRACT_TERMINATION,session->context,slot->termination,NULL,
 					&session->mpf_task_msg) == TRUE) {
 				slot->waiting = TRUE;
@@ -894,7 +895,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 			}
 		}
 
-		mpf_engine_message_send(profile->media_engine,&session->mpf_task_msg);
+		mpf_engine_message_send(session->base.media_engine,&session->mpf_task_msg);
 	}
 
 	mrcp_client_session_subrequest_add(session);
@@ -1188,7 +1189,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 				MRCP_SESSION_NAMESID(session),
 				mpf_termination_name_get(slot->termination));
 			if(mpf_engine_termination_message_add(
-					session->profile->media_engine,
+					session->base.media_engine,
 					MPF_MODIFY_TERMINATION,session->context,slot->termination,rtp_descriptor,
 					&session->mpf_task_msg) == TRUE) {
 				slot->waiting = TRUE;
@@ -1196,7 +1197,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 			}
 			if(slot->channel && slot->channel->termination) {
 				if(mpf_engine_assoc_message_add(
-						session->profile->media_engine,
+						session->base.media_engine,
 						MPF_ADD_ASSOCIATION,session->context,slot->termination,slot->channel->termination,
 						&session->mpf_task_msg) == TRUE) {
 					mrcp_client_session_subrequest_add(session);
@@ -1235,15 +1236,33 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 			return mrcp_app_sig_response_raise(session,FALSE);
 		}
 
+		/* select signaling agent */
 		session->base.signaling_agent = mrcp_sa_factory_agent_select(session->profile->sa_factory);
 		if(!session->base.signaling_agent) {
-			/* raise app response */
-			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Get Signaling Agent "APT_NAMESID_FMT" [%d]",
+			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Select Signaling Agent "APT_NAMESID_FMT" [%d]",
 				MRCP_SESSION_NAMESID(session),
 				app_message->sig_message.command_id);
 			session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+		}
+		/* select media engine */
+		if(session->profile->mpf_factory) {
+			session->base.media_engine = mpf_engine_factory_engine_select(session->profile->mpf_factory);
+			if(!session->base.media_engine) {
+				/* raise app response */
+				apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Select Media Engine "APT_NAMESID_FMT" [%d]",
+					MRCP_SESSION_NAMESID(session),
+					app_message->sig_message.command_id);
+				session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+			}
+		}
+		/* set rtp termination factory */
+		session->base.rtp_factory = session->profile->rtp_termination_factory;
+
+		if(session->status == MRCP_SIG_STATUS_CODE_FAILURE) {
+			/* raise app response in case of failure */
 			return mrcp_app_failure_message_raise(session);
 		}
+
 		if(session->base.signaling_agent->create_client_session(&session->base,session->profile->signaling_settings) != TRUE) {
 			/* raise app response */
 			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Create Session "APT_NAMESID_FMT" [%d]",

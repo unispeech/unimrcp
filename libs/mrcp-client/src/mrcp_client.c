@@ -22,7 +22,7 @@
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_session.h"
 #include "mrcp_client_connection.h"
-#include "mpf_termination_factory.h"
+#include "mpf_engine_factory.h"
 #include "apt_consumer_task.h"
 #include "apt_pool.h"
 #include "apt_log.h"
@@ -481,6 +481,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									apr_pool_t *pool)
 {
 	mrcp_sa_factory_t *sa_factory = NULL;
+	mpf_engine_factory_t *mpf_factory = NULL;
 	mrcp_version_e mrcp_version = MRCP_VERSION_2;
 	if(!connection_agent)
 		mrcp_version = MRCP_VERSION_1;
@@ -490,12 +491,17 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 		mrcp_sa_factory_agent_add(sa_factory,signaling_agent);
 	}
 
+	if(media_engine) {
+		mpf_factory = mpf_engine_factory_create(pool);
+		mpf_engine_factory_engine_add(mpf_factory,media_engine);
+	}
+
 	return mrcp_client_profile_create_ex(
 				mrcp_version,
 				resource_factory,
 				sa_factory,
 				connection_agent,
-				media_engine,
+				mpf_factory,
 				rtp_factory,
 				rtp_settings,
 				signaling_settings,
@@ -508,7 +514,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 									mrcp_resource_factory_t *resource_factory,
 									mrcp_sa_factory_t *sa_factory,
 									mrcp_connection_agent_t *connection_agent,
-									mpf_engine_t *media_engine,
+									mpf_engine_factory_t *mpf_factory,
 									mpf_termination_factory_t *rtp_factory,
 									mpf_rtp_settings_t *rtp_settings,
 									mrcp_sig_settings_t *signaling_settings,
@@ -517,14 +523,14 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
 	profile->mrcp_version = mrcp_version;
 	profile->resource_factory = resource_factory;
-	profile->media_engine = media_engine;
+	profile->mpf_factory = mpf_factory;
 	profile->rtp_termination_factory = rtp_factory;
 	profile->rtp_settings = rtp_settings;
 	profile->sa_factory = sa_factory;
 	profile->connection_agent = connection_agent;
 	profile->signaling_settings = signaling_settings;
 
-	mpf_termination_factory_engine_assign(rtp_factory,media_engine);
+	mpf_engine_factory_rtp_factory_assign(mpf_factory,rtp_factory);
 	return profile;
 }
 
@@ -550,6 +556,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 		!profile->connection_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
 		return FALSE;
+	}
+
+	/* mpf_factory may not be specified; but if it is specified, it must not be empty */
+	if(profile->mpf_factory) {
+		if(mpf_engine_factory_is_empty(profile->mpf_factory) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: empty media engine factory",name);
+			return FALSE;
+		}
 	}
 
 	if(!profile->signaling_settings) {

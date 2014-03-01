@@ -31,6 +31,9 @@ APT_BEGIN_EXTERN_C
 /** Opaque MPF engine declaration */
 typedef struct mpf_engine_t mpf_engine_t;
 
+/** Opaque MPF engine factory declaration */
+typedef struct mpf_engine_factory_t mpf_engine_factory_t;
+
 /** Opaque MPF scheduler declaration */
 typedef struct mpf_scheduler_t mpf_scheduler_t;
 
