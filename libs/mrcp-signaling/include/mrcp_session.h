@@ -58,10 +58,13 @@ struct mrcp_session_t {
 	void             *log_obj;
 	/** Informative name of the session used for debugging */
 	const char       *name;
-	/** Back pointer to signaling agent */
-	mrcp_sig_agent_t *signaling_agent;
+
+	/** Signaling (session managment) agent */
+	mrcp_sig_agent_t          *signaling_agent;
+	/** MRCPv2 connection agent, if any */
+	void                      *connection_agent;
 	/** Media processing engine */
-	mpf_engine_t     *media_engine;
+	mpf_engine_t              *media_engine;
 	/** RTP termination factory */
 	mpf_termination_factory_t *rtp_factory;
 

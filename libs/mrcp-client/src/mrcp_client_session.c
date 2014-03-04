@@ -25,6 +25,7 @@
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
 #include "mrcp_message.h"
+#include "mrcp_ca_factory.h"
 #include "mpf_engine_factory.h"
 #include "mpf_termination_factory.h"
 #include "mpf_stream.h"
@@ -702,7 +703,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	else {
 		mrcp_control_descriptor_t *control_media;
 		if(!channel->control_channel) {
-			channel->control_channel = mrcp_client_control_channel_create(profile->connection_agent,channel,pool);
+			channel->control_channel = mrcp_client_control_channel_create(session->base.connection_agent,channel,pool);
 			mrcp_client_control_channel_log_obj_set(channel->control_channel,session->base.log_obj);
 		}
 		control_media = mrcp_control_offer_create(pool);
@@ -1244,11 +1245,20 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 				app_message->sig_message.command_id);
 			session->status = MRCP_SIG_STATUS_CODE_FAILURE;
 		}
-		/* select media engine */
+		if(session->profile->mrcp_version == MRCP_VERSION_2) {
+			/* select connection agent */
+			session->base.connection_agent = mrcp_ca_factory_agent_select(session->profile->ca_factory);
+			if(!session->base.connection_agent) {
+				apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Select Connection Agent "APT_NAMESID_FMT" [%d]",
+					MRCP_SESSION_NAMESID(session),
+					app_message->sig_message.command_id);
+				session->status = MRCP_SIG_STATUS_CODE_FAILURE;
+			}
+		}
 		if(session->profile->mpf_factory) {
+			/* select media engine */
 			session->base.media_engine = mpf_engine_factory_engine_select(session->profile->mpf_factory);
 			if(!session->base.media_engine) {
-				/* raise app response */
 				apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Select Media Engine "APT_NAMESID_FMT" [%d]",
 					MRCP_SESSION_NAMESID(session),
 					app_message->sig_message.command_id);

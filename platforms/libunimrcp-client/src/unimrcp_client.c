@@ -30,6 +30,7 @@
 #include "mrcp_sofiasip_client_agent.h"
 #include "mrcp_unirtsp_client_agent.h"
 #include "mrcp_client_connection.h"
+#include "mrcp_ca_factory.h"
 #include "apt_net.h"
 #include "apt_log.h"
 
@@ -819,6 +820,34 @@ static mrcp_sa_factory_t* unimrcp_client_sa_factory_create(unimrcp_client_loader
 	return sa_factory;
 }
 
+/** Create factory of MRCPv2 connection agents */
+static mrcp_ca_factory_t* unimrcp_client_ca_factory_create(unimrcp_client_loader_t *loader, const apr_xml_elem *elem)
+{
+	mrcp_ca_factory_t *ca_factory = NULL;
+	mrcp_connection_agent_t *agent;
+	char *name;
+	char *state;
+	char *list_str = apr_pstrdup(loader->pool,cdata_text_get(elem));
+	do {
+		name = apr_strtok(list_str, ",", &state);
+		if(name) {
+			agent = mrcp_client_connection_agent_get(loader->client,name);
+			if(agent) {
+				if(!ca_factory)
+					ca_factory = mrcp_ca_factory_create(loader->pool);
+
+				mrcp_ca_factory_agent_add(ca_factory,agent);
+			}
+			else {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown MRCPv2-UAC Name <%s>",name);
+			}
+		}
+		list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
+	} 
+	while(name);
+	return ca_factory;
+}
+
 /** Create factory of media engines */
 static mpf_engine_factory_t* unimrcp_client_mpf_factory_create(unimrcp_client_loader_t *loader, const apr_xml_elem *elem)
 {
@@ -855,7 +884,7 @@ static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *lo
 	const apr_xml_elem *elem;
 	mrcp_profile_t *profile;
 	mrcp_sa_factory_t *sa_factory = NULL;
-	mrcp_connection_agent_t *mrcpv2_agent = NULL;
+	mrcp_ca_factory_t *ca_factory = NULL;
 	mpf_engine_factory_t *mpf_factory = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
 	mpf_rtp_settings_t *rtp_settings = NULL;
@@ -873,7 +902,7 @@ static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *lo
 			sa_factory = unimrcp_client_sa_factory_create(loader,elem);
 		}
 		else if(strcasecmp(elem->name,"mrcpv2-uac") == 0) {
-			mrcpv2_agent = mrcp_client_connection_agent_get(loader->client,cdata_text_get(elem));
+			ca_factory = unimrcp_client_ca_factory_create(loader,elem);
 		}
 		else if(strcasecmp(elem->name,"media-engine") == 0) {
 			mpf_factory = unimrcp_client_mpf_factory_create(loader,elem);
@@ -894,8 +923,8 @@ static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *lo
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create MRCPv2 Profile [%s]",id);
 	profile = mrcp_client_profile_create_ex(
-		MRCP_VERSION_2,
-		NULL,sa_factory,mrcpv2_agent,
+		MRCP_VERSION_2,NULL,
+		sa_factory,ca_factory,
 		mpf_factory,rtp_factory,
 		rtp_settings,sip_settings,
 		loader->pool);

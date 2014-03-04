@@ -109,6 +109,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding)
 	session->log_obj = NULL;
 	session->name = NULL;
 	session->signaling_agent = NULL;
+	session->connection_agent = NULL;
 	session->media_engine = NULL;
 	session->rtp_factory = NULL;
 	session->request_vtable = NULL;

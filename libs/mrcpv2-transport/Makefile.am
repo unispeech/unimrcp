@@ -13,9 +13,11 @@ include_HEADERS               = include/mrcp_connection_types.h \
                                 include/mrcp_control_descriptor.h \
                                 include/mrcp_connection.h \
                                 include/mrcp_client_connection.h \
-                                include/mrcp_server_connection.h
+                                include/mrcp_server_connection.h \
+                                include/mrcp_ca_factory.h
 
 libmrcpv2transport_la_SOURCES = src/mrcp_control_descriptor.c \
                                 src/mrcp_connection.c \
                                 src/mrcp_client_connection.c \
-                                src/mrcp_server_connection.c
+                                src/mrcp_server_connection.c \
+                                src/mrcp_ca_factory.c

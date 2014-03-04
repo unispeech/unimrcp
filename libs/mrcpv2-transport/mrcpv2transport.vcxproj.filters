@@ -26,6 +26,9 @@
     <ClInclude Include="include\mrcp_server_connection.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\mrcp_ca_factory.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\mrcp_client_connection.c">
@@ -38,6 +41,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\mrcp_server_connection.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mrcp_ca_factory.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

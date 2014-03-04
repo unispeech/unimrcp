@@ -22,6 +22,7 @@
 #include "mrcp_sig_agent.h"
 #include "mrcp_client_session.h"
 #include "mrcp_client_connection.h"
+#include "mrcp_ca_factory.h"
 #include "mpf_engine_factory.h"
 #include "apt_consumer_task.h"
 #include "apt_pool.h"
@@ -481,6 +482,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 									apr_pool_t *pool)
 {
 	mrcp_sa_factory_t *sa_factory = NULL;
+	mrcp_ca_factory_t *ca_factory = NULL;
 	mpf_engine_factory_t *mpf_factory = NULL;
 	mrcp_version_e mrcp_version = MRCP_VERSION_2;
 	if(!connection_agent)
@@ -489,6 +491,11 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 	if(signaling_agent) {
 		sa_factory = mrcp_sa_factory_create(pool);
 		mrcp_sa_factory_agent_add(sa_factory,signaling_agent);
+	}
+
+	if(connection_agent) {
+		ca_factory = mrcp_ca_factory_create(pool);
+		mrcp_ca_factory_agent_add(ca_factory,connection_agent);
 	}
 
 	if(media_engine) {
@@ -500,7 +507,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create(
 				mrcp_version,
 				resource_factory,
 				sa_factory,
-				connection_agent,
+				ca_factory,
 				mpf_factory,
 				rtp_factory,
 				rtp_settings,
@@ -513,7 +520,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 									mrcp_version_e mrcp_version,
 									mrcp_resource_factory_t *resource_factory,
 									mrcp_sa_factory_t *sa_factory,
-									mrcp_connection_agent_t *connection_agent,
+									mrcp_ca_factory_t *ca_factory,
 									mpf_engine_factory_t *mpf_factory,
 									mpf_termination_factory_t *rtp_factory,
 									mpf_rtp_settings_t *rtp_settings,
@@ -527,7 +534,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 	profile->rtp_termination_factory = rtp_factory;
 	profile->rtp_settings = rtp_settings;
 	profile->sa_factory = sa_factory;
-	profile->connection_agent = connection_agent;
+	profile->ca_factory = ca_factory;
 	profile->signaling_settings = signaling_settings;
 
 	mpf_engine_factory_rtp_factory_assign(mpf_factory,rtp_factory);
@@ -552,10 +559,15 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: empty signaling agent factory",name);
 		return FALSE;
 	}
-	if(profile->mrcp_version == MRCP_VERSION_2 &&
-		!profile->connection_agent) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent",name);
-		return FALSE;
+	if(profile->mrcp_version == MRCP_VERSION_2) {
+		if(!profile->ca_factory) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing connection agent factory",name);
+			return FALSE;
+		}
+		if(mrcp_ca_factory_is_empty(profile->ca_factory) == TRUE) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: empty connection agent factory",name);
+			return FALSE;
+		}
 	}
 
 	/* mpf_factory may not be specified; but if it is specified, it must not be empty */

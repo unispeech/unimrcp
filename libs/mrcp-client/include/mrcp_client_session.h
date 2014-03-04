@@ -146,8 +146,8 @@ struct mrcp_profile_t {
 	mpf_termination_factory_t *rtp_termination_factory;
 	/** Signaling agent factory */
 	mrcp_sa_factory_t         *sa_factory;
-	/** Connection agent */
-	mrcp_connection_agent_t   *connection_agent;
+	/** Connection agent factory */
+	mrcp_ca_factory_t         *ca_factory;
 	/** Signaling settings */
 	mrcp_sig_settings_t       *signaling_settings;
 	/** RTP settings */

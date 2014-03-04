@@ -43,6 +43,9 @@ typedef struct mrcp_control_channel_t mrcp_control_channel_t;
 /** Opaque MRCPv2 connection agent declaration */
 typedef struct mrcp_connection_agent_t mrcp_connection_agent_t;
 
+/** Opaque MRCPv2 connection agent factory declaration */
+typedef struct mrcp_ca_factory_t mrcp_ca_factory_t;
+
 /** MRCPv2 connection event vtable declaration */
 typedef struct mrcp_connection_event_vtable_t mrcp_connection_event_vtable_t;
 

@@ -99,6 +99,7 @@
     </Midl>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\mrcp_ca_factory.h" />
     <ClInclude Include="include\mrcp_client_connection.h" />
     <ClInclude Include="include\mrcp_connection.h" />
     <ClInclude Include="include\mrcp_connection_types.h" />
@@ -106,6 +107,7 @@
     <ClInclude Include="include\mrcp_server_connection.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\mrcp_ca_factory.c" />
     <ClCompile Include="src\mrcp_client_connection.c" />
     <ClCompile Include="src\mrcp_connection.c" />
     <ClCompile Include="src\mrcp_control_descriptor.c" />
