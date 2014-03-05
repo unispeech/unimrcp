@@ -150,6 +150,10 @@ static apt_bool_t mpf_rtp_factory_engine_assign(mpf_termination_factory_t *termi
 		/* split RTP port range evenly among assigned media engines */
 		apr_uint16_t ports_per_engine = (apr_uint16_t)((rtp_termination_factory->config->rtp_port_max - rtp_termination_factory->config->rtp_port_min) / 
 														rtp_termination_factory->media_engine_slots->nelts);
+		if(ports_per_engine % 2 != 0) {
+			/* number of ports per engine should be even (RTP/RTCP pair)*/
+			ports_per_engine--;
+		}
 		/* rewrite max RTP port for the first slot */
 		slot = &APR_ARRAY_IDX(rtp_termination_factory->media_engine_slots,0,media_engine_slot_t);
 		rtp_config_prev = slot->rtp_config;
