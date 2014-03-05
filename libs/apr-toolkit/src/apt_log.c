@@ -515,7 +515,9 @@ static apt_bool_t apt_do_log(const char *file, int line, apt_log_priority_e prio
 		offset += MAX_PRIORITY_NAME_LENGTH;
 	}
 
-	offset += apr_vsnprintf(log_entry+offset,max_size-offset,format,arg_ptr);
+	/* Instead of apr_vsnprintf(), use ordinary vsnprintf() 
+	since apr_vformatter doesn't support the format %p. */
+	offset += vsnprintf(log_entry+offset,max_size-offset,format,arg_ptr);
 	log_entry[offset++] = '\n';
 	log_entry[offset] = '\0';
 	if((apt_logger->mode & APT_LOG_OUTPUT_CONSOLE) == APT_LOG_OUTPUT_CONSOLE) {
