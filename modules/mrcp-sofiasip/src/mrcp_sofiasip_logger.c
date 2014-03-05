@@ -59,6 +59,8 @@ apt_bool_t mrcp_sofiasip_log_init(const char *name, const char *level_str, apt_b
 		return FALSE;
 	}
 
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Init SofiaSIP Logger [%s] level:%s redirect:%d",
+			name, level_str, redirect);
 	su_log_init(logger);
 
 	if(redirect == TRUE) {
