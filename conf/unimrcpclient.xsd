@@ -67,6 +67,8 @@
                     <xsd:element name="sip-t2" type="xsd:long" minOccurs="0" />
                     <xsd:element name="sip-t4" type="xsd:long" minOccurs="0" />
                     <xsd:element name="sip-t1x64" type="xsd:long" minOccurs="0" />
+                    <xsd:element name="sip-message-output" type="xsd:boolean" />
+                    <xsd:element name="sip-message-dump" type="xsd:string" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />
                   <xsd:attribute name="type" type="xsd:string" use="required" />
@@ -257,6 +259,13 @@
                   <xsd:attribute name="enable" type="xsd:boolean" use="optional" />
                 </xsd:complexType>
               </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="misc" minOccurs="0">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="sofiasip-logger" type="xsd:string" />
             </xsd:sequence>
           </xsd:complexType>
         </xsd:element>
