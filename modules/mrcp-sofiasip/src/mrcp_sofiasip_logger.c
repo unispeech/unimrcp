@@ -30,8 +30,13 @@ SOFIAPUBVAR su_log_t su_log_default[]; /* Default debug */
 
 static void mrcp_sofiasip_log(void *stream, char const *format, va_list arg_ptr)
 {
-	if(format)
-		apt_va_log(APT_LOG_MARK,APT_PRIO_DEBUG,format,arg_ptr);
+	if(format) {
+		/* use generic vsnprintf() since apr_vformatter doesn't support 
+		the format %p widely used by SofiaSIP. */
+		char buf[4096];
+		int len = vsnprintf(buf, sizeof(buf), format, arg_ptr);
+		apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "%.*s", len, buf);
+	}
 }
 
 static su_log_t* mrcp_sofiasip_logger_get(const char *name)
