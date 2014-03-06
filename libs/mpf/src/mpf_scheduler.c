@@ -188,6 +188,8 @@ MPF_DECLARE(apt_bool_t) mpf_scheduler_stop(mpf_scheduler_t *scheduler)
 
 #else
 
+#include "apt_task.h"
+
 static APR_INLINE void mpf_scheduler_init(mpf_scheduler_t *scheduler)
 {
 	scheduler->thread = NULL;
@@ -201,6 +203,7 @@ static void* APR_THREAD_FUNC timer_thread_proc(apr_thread_t *thread, void *data)
 	apr_interval_time_t time_drift = 0;
 	apr_time_t time_now, time_last;
 	
+	apt_set_thread_name(thread, "MPF Scheduler");
 	time_now = apr_time_now();
 	while(scheduler->running == TRUE) {
 		time_last = time_now;
