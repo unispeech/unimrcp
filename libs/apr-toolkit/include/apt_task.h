@@ -24,6 +24,7 @@
  * @brief Thread Execution Abstraction
  */ 
 
+#include <apr_thread_proc.h>
 #include "apt.h"
 #include "apt_task_msg.h"
 
@@ -207,6 +208,14 @@ APT_DECLARE(apt_bool_t) apt_task_terminate_request_remove(apt_task_t *task);
  * @param msec the time to hold
  */
 APT_DECLARE(void) apt_task_delay(apr_size_t msec);
+
+/**
+ * Set thread name for debugging.
+ * @param thread the thread whose name to set.
+ * @param name   the name to set. Should not exceed 16 characters (bytes).
+ * @remarks No-op for release builds.
+ */
+APT_DECLARE(apt_bool_t) apt_set_thread_name(apr_thread_t *thread, const char *name);
 
 
 /** Table of task virtual methods */
