@@ -514,20 +514,18 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 	vtable->on_terminate_complete = NULL;
 }
 
-#if !defined(DEBUG) && !defined(_DEBUG)
-
-/* apt_set_thread_name is no-op for release builds */
-APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
-{
-	(void) name;
-	return TRUE;
-}
-
-#else  /* Release build */
-
 APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
 {
 #if defined(_MSC_VER)
+
+/* apt_set_current_thread_name is no-op for release builds */
+#if !defined(DEBUG) && !defined(_DEBUG)
+
+	(void) name;
+	return TRUE;
+
+#else /* Release build */
+
 #pragma pack(push, 8)
 
 	DWORD tid = GetCurrentThreadId();
@@ -552,7 +550,10 @@ APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
 	return FALSE;
 
 #pragma pack(pop)
-#elif  /* _MSC_VER */ \
+
+#endif /* Debug/release build */
+
+#elif /* _MSC_VER */ \
 	defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 12)
 
 	pthread_t pth = pthread_self();
@@ -565,12 +566,10 @@ APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
 	}
 	return ret ? FALSE : TRUE;
 
-#else  /* __GLIBC_PREREQ(2, 12) */
+#else /* __GLIBC_PREREQ(2, 12) */
 
 	(void) name;
 	return FALSE;
 
-#endif  /* _MSC_VER */
+#endif /* _MSC_VER */
 }
-
-#endif  /* Debug/release build */
