@@ -465,7 +465,7 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 {
 	apt_task_t *task = data;
 	
-	apt_set_thread_name(thread_handle, task->name);
+	apt_set_current_thread_name(task->name);
 	/* raise pre-run event */
 	if(task->vtable.on_pre_run) {
 		task->vtable.on_pre_run(task);
@@ -517,48 +517,37 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 #if !defined(DEBUG) && !defined(_DEBUG)
 
 /* apt_set_thread_name is no-op for release builds */
-APT_DECLARE(apt_bool_t) apt_set_thread_name(apr_thread_t *thread, const char *name)
+APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
 {
-	(void) thread;
 	(void) name;
 	return TRUE;
 }
 
 #else  /* Release build */
 
-#ifdef _MSC_VER
-APT_BEGIN_EXTERN_C
-WINBASEAPI DWORD WINAPI GetThreadId(_In_ HANDLE Thread);
-APT_END_EXTERN_C
-#endif  /* _MSC_VER */
-
-APT_DECLARE(apt_bool_t) apt_set_thread_name(apr_thread_t *thread, const char *name)
+APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
 {
 #if defined(_MSC_VER)
 #pragma pack(push, 8)
 
-	HANDLE hThread;
-	apr_status_t status = apr_os_thread_get((apr_os_thread_t**) &hThread, thread);
-	if (status == APR_SUCCESS) {
-		DWORD tid = GetThreadId(hThread);
-		if (tid) {
-			static const DWORD MS_VC_EXCEPTION = 0x406D1388;
-			struct tagTHREADNAME_INFO {
-				DWORD dwType;     /**< Must be 0x1000. */
-				LPCSTR szName;    /**< Pointer to name (in user addr space). */
-				DWORD dwThreadID; /**< Thread ID (-1=caller thread). */
-				DWORD dwFlags;    /**< Reserved for future use, must be zero. */
-			} info;
-			info.dwType = 0x1000;
-			info.szName = name;
-			info.dwThreadID = tid;
-			info.dwFlags = 0;
-			__try {
-				RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*) &info);
-			} __except(EXCEPTION_EXECUTE_HANDLER) {
-			}
-			return TRUE;
+	DWORD tid = GetCurrentThreadId();
+	if (tid) {
+		static const DWORD MS_VC_EXCEPTION = 0x406D1388;
+		struct tagTHREADNAME_INFO {
+			DWORD dwType;     /**< Must be 0x1000. */
+			LPCSTR szName;    /**< Pointer to name (in user addr space). */
+			DWORD dwThreadID; /**< Thread ID (-1=caller thread). */
+			DWORD dwFlags;    /**< Reserved for future use, must be zero. */
+		} info;
+		info.dwType = 0x1000;
+		info.szName = name;
+		info.dwThreadID = tid;
+		info.dwFlags = 0;
+		__try {
+			RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*) &info);
+		} __except(EXCEPTION_EXECUTE_HANDLER) {
 		}
+		return TRUE;
 	}
 	return FALSE;
 
@@ -566,23 +555,18 @@ APT_DECLARE(apt_bool_t) apt_set_thread_name(apr_thread_t *thread, const char *na
 #elif  /* _MSC_VER */ \
 	defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 12)
 
-	pthread_t *pth;
-	apr_status_t status = apr_os_thread_get((apr_os_thread_t**) &pth, thread);
-	if (status == APR_SUCCESS) {
-		int ret = pthread_setname_np(*pth, name);
-		if (ret == ERANGE) {
-			/* This implementation requires max 16 chars including NUL */
-			char shorter_name[16];
-			strncpy(shorter_name, name, sizeof(shorter_name) - 1);
-			ret = pthread_setname_np(*pth, shorter_name);
-		}
-		return ret ? FALSE : TRUE;
+	pthread_t pth = pthread_self();
+	int ret = pthread_setname_np(pth, name);
+	if (ret == ERANGE) {
+		/* This implementation requires max 16 chars including NUL */
+		char shorter_name[16];
+		strncpy(shorter_name, name, sizeof(shorter_name) - 1);
+		ret = pthread_setname_np(pth, shorter_name);
 	}
-	return FALSE;
+	return ret ? FALSE : TRUE;
 
 #else  /* __GLIBC_PREREQ(2, 12) */
 
-	(void) thread;
 	(void) name;
 	return FALSE;
 
