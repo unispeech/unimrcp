@@ -250,6 +250,16 @@ static char* unimrcp_client_ip_address_get(unimrcp_client_loader_t *loader, cons
 		}
 		return apr_pstrdup(loader->pool,loader->auto_ip);
 	}
+	else if(attr && strcasecmp(attr->value,"iface") == 0) {
+		/* get ip address by network interface name */
+		char *ip_addr = DEFAULT_IP_ADDRESS;
+		if(is_cdata_valid(elem) == TRUE) {
+			const char *iface_name = cdata_text_get(elem);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Get IP Address by Interface [%s]", iface_name);
+			apt_ip_get_by_iface(iface_name,&ip_addr,loader->pool);
+		}
+		return ip_addr;
+	}
 
 	if(is_cdata_valid(elem)) {
 		/* use specified ip address */

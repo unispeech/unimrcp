@@ -30,11 +30,18 @@ APT_BEGIN_EXTERN_C
 
 /**
  * Get the IP address (in numeric address string format) by hostname.
- * @param addr the IP address
+ * @param addr the IP address to return
  * @param pool the pool to allocate memory from
  */
 apt_bool_t apt_ip_get(char **addr, apr_pool_t *pool);
 
+/**
+ * Get the IP address (in numeric address string format) by network interface name.
+ * @param iface_name the network interface name (eth0, Local Area Connection, etc)
+ * @param addr the IP address to return
+ * @param pool the pool to allocate memory from
+ */
+apt_bool_t apt_ip_get_by_iface(const char *iface_name, char **addr, apr_pool_t *pool);
 
 /**
  * Get current NTP time
