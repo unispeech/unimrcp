@@ -229,7 +229,7 @@ static apt_bool_t apt_poller_task_run(apt_task_t *base)
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Poller Task");
 		return FALSE;
 	}
-	task_name = apt_task_name_get(task->base),
+	task_name = apt_task_name_get(task->base);
 
 	running = apt_task_running_flag_get(task->base);
 	if(!running) {
