@@ -47,6 +47,10 @@ apt_bool_t mpf_frame_buffer_write(mpf_frame_buffer_t *buffer, const mpf_frame_t 
 /** Read frame from buffer */
 apt_bool_t mpf_frame_buffer_read(mpf_frame_buffer_t *buffer, mpf_frame_t *frame);
 
+#ifdef MPF_FRAME_BUFFER_DEBUG
+apt_bool_t mpf_frame_buffer_file_open(mpf_frame_buffer_t *buffer, const char *utt_file_in, const char *utt_file_out);
+#endif
+
 APT_END_EXTERN_C
 
 #endif /* MPF_FRAME_BUFFER_H */
