@@ -24,8 +24,8 @@
 apt_bool_t apt_ip_get(char **addr, apr_pool_t *pool)
 {
 	apr_sockaddr_t *sockaddr = NULL;
-	char *hostname = apr_palloc(pool,APRMAXHOSTLEN+1);
-	if(apr_gethostname(hostname,APRMAXHOSTLEN,pool) != APR_SUCCESS) {
+	char hostname[APRMAXHOSTLEN+1];
+	if(apr_gethostname(hostname,sizeof(hostname),pool) != APR_SUCCESS) {
 		return FALSE;
 	}
 	if(apr_sockaddr_info_get(&sockaddr,hostname,APR_INET,0,0,pool) != APR_SUCCESS) {
