@@ -35,6 +35,13 @@ static void mrcp_sofiasip_log(void *stream, char const *format, va_list arg_ptr)
 		the format %p widely used by SofiaSIP. */
 		char buf[4096];
 		int len = vsnprintf(buf, sizeof(buf), format, arg_ptr);
+		if(len <= 0)
+			return;
+		if(buf[len-1] == '\n') {
+			/* remove trailing '\n' since apt logger appends it anyway */
+			len--;
+			buf[len] = '\0';
+		}
 		apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "%.*s", len, buf);
 	}
 }
