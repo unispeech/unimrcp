@@ -100,6 +100,11 @@ static apr_xml_doc* nlsml_doc_load(const char *data, apr_size_t length, apr_pool
 	apr_xml_doc *doc = NULL;
 	const apr_xml_elem *root;
 
+	if(!data || !length) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No NLSML data available");
+		return NULL;
+	}
+
 	/* create XML parser */
 	parser = apr_xml_parser_create(pool);
 	if(apr_xml_parser_feed(parser,data,length) != APR_SUCCESS) {
