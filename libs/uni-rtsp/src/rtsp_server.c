@@ -334,7 +334,8 @@ static rtsp_server_session_t* rtsp_server_session_create(rtsp_server_t *server)
 /* Destroy RTSP session */
 static void rtsp_server_session_destroy(rtsp_server_session_t *session)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Session "APT_SID_FMT,session->id.buf);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy RTSP Session "APT_SID_FMT,
+		session ? session->id.buf : "(null)");
 	if(session && session->pool) {
 		apr_pool_destroy(session->pool);
 	}
@@ -368,7 +369,9 @@ static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_s
 	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Session "APT_SID_FMT,session->id.buf);
-	apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
+	if(rtsp_connection) {
+		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,NULL);
+	}
 	rtsp_server_session_destroy(session);
 
 	if(rtsp_connection && !rtsp_connection->it) {

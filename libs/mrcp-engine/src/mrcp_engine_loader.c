@@ -160,6 +160,7 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_engine_loader_plugin_load(mrcp_engine_loader_t
 	engine = plugin_creator(loader->pool);
 	if(!engine) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create MRCP Engine");
+		return NULL;
 	}
 	
 	engine->id = id;

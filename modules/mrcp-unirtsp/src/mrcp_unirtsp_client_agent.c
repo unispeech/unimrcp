@@ -315,10 +315,16 @@ static apt_bool_t mrcp_unirtsp_on_session_event(rtsp_client_t *rtsp_client, rtsp
 {
 	mrcp_unirtsp_agent_t *agent = rtsp_client_object_get(rtsp_client);
 	mrcp_unirtsp_session_t *session	= rtsp_client_session_object_get(rtsp_session);
-	const char *resource_name = mrcp_name_get_by_rtsp_name(
+	const char *resource_name;
+
+	if(!session) {
+		return FALSE;
+	}
+
+	resource_name = mrcp_name_get_by_rtsp_name(
 		session->rtsp_settings->resource_map,
 		message->start_line.common.request_line.resource_name);
-	if(!session || !resource_name) {
+	if(!resource_name) {
 		return FALSE;
 	}
 

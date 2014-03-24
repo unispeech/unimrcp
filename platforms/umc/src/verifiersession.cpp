@@ -266,7 +266,7 @@ bool VerifierSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_messag
 
 			/* create and send END-SESSION request */
 			mrcp_message_t* pMrcpMessage = CreateEndSessionRequest(pMrcpChannel);
-			if(pMrcpMessage)
+			if(pVerifierChannel && pMrcpMessage)
 			{
 				SendMrcpRequest(pVerifierChannel->m_pMrcpChannel,pMrcpMessage);
 			}
