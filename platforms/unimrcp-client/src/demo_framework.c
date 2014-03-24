@@ -118,7 +118,6 @@ apt_bool_t demo_framework_app_run(demo_framework_t *framework, const char *app_n
 		framework_task_data_t *framework_task_data = (framework_task_data_t*)task_msg->data;
 		task_msg->type = TASK_MSG_USER;
 		task_msg->sub_type = DEMO_CONSOLE_MSG_ID;
-		framework_task_data = (framework_task_data_t*) task_msg->data;
 		strcpy(framework_task_data->app_name,app_name);
 		strcpy(framework_task_data->profile_name,profile_name);
 		framework_task_data->app_message = NULL;
@@ -237,7 +236,6 @@ static apt_bool_t demo_framework_message_handler(const mrcp_app_message_t *app_m
 			framework_task_data_t *framework_task_data = (framework_task_data_t*)task_msg->data;
 			task_msg->type = TASK_MSG_USER;
 			task_msg->sub_type = DEMO_APPLICATION_MSG_ID;
-			framework_task_data = (framework_task_data_t*) task_msg->data;
 			framework_task_data->app_message = app_message;
 			framework_task_data->demo_application = demo_application;
 			apt_task_msg_signal(task,task_msg);

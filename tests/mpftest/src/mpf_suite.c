@@ -129,7 +129,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	rtp_config = mpf_rtp_config_alloc(suite->pool);
 	apt_string_set(&rtp_config->ip,"127.0.0.1");
 	rtp_config->rtp_port_min = 5000;
-	rtp_config->rtp_port_min = 6000;
+	rtp_config->rtp_port_max = 6000;
 
 	agent->rtp_config = rtp_config;
 

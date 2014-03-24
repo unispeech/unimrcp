@@ -85,7 +85,7 @@ static APR_INLINE mpf_chunk_t* mpf_buffer_chunk_read(mpf_buffer_t *buffer)
 apt_bool_t mpf_buffer_audio_write(mpf_buffer_t *buffer, void *data, apr_size_t size)
 {
 	mpf_chunk_t *chunk;
-	apt_bool_t status = TRUE;
+	apt_bool_t status;
 	apr_thread_mutex_lock(buffer->guard);
 
 	chunk = apr_palloc(buffer->pool,sizeof(mpf_chunk_t));
@@ -103,7 +103,7 @@ apt_bool_t mpf_buffer_audio_write(mpf_buffer_t *buffer, void *data, apr_size_t s
 apt_bool_t mpf_buffer_event_write(mpf_buffer_t *buffer, mpf_frame_type_e event_type)
 {
 	mpf_chunk_t *chunk;
-	apt_bool_t status = TRUE;
+	apt_bool_t status;
 	apr_thread_mutex_lock(buffer->guard);
 
 	chunk = apr_palloc(buffer->pool,sizeof(mpf_chunk_t));

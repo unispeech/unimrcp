@@ -826,14 +826,12 @@ static apt_bool_t mrcp_client_session_update(mrcp_client_session_t *session)
 
 static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 {
-	mrcp_profile_t *profile;
 	mrcp_channel_t *channel;
 	rtp_termination_slot_t *slot;
 	int i;
 	
 	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Terminate Session "APT_NAMESID_FMT, 
 		MRCP_SESSION_NAMESID(session));
-	profile = session->profile;
 
 	mrcp_client_session_state_set(session,SESSION_STATE_TERMINATING);
 	if(session->context) {
