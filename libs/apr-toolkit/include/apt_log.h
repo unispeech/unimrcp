@@ -39,7 +39,7 @@ APT_BEGIN_EXTERN_C
 #define APT_LOG_MARK	__FILE__,__LINE__
 
 /** Format to log pointer values */
-#define APT_PTR_FMT       "0x%x"
+#define APT_PTR_FMT       "0x%pp"
 /** Format to log string identifiers */
 #define APT_SID_FMT       "<%s>"
 /** Format to log string identifiers and resources */

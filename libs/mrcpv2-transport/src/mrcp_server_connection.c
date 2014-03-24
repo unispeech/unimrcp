@@ -341,7 +341,8 @@ static apt_bool_t mrcp_server_agent_listening_socket_create(mrcp_connection_agen
 	agent->listen_sock_pfd.desc.s = agent->listen_sock;
 	agent->listen_sock_pfd.client_data = agent->listen_sock;
 	if(apt_poller_task_descriptor_add(agent->task, &agent->listen_sock_pfd) != TRUE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset [%s]");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset [%s]",
+			apt_task_name_get(apt_poller_task_base_get(agent->task)));
 		apr_socket_close(agent->listen_sock);
 		agent->listen_sock = NULL;
 		return FALSE;

@@ -545,7 +545,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrcp_profile_t *profile, const char *name)
 {
 	if(!profile || !name) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no name",name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no name");
 		return FALSE;
 	}
 	if(!profile->resource_factory) {

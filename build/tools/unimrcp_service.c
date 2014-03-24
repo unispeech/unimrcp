@@ -389,7 +389,9 @@ int main(int argc, const char * const *argv)
 					}
 					break;
 				case 'l':
-					if (sscanf(optarg, "%hhu", &log_priority) != 1) {
+					if ((sscanf(optarg, "%d", &log_priority) != 1) ||
+						(log_priority < 0) || (log_priority > 7))
+					{
 						puts("Invalid value for param --log-prio");
 						ret = FALSE;
 					}

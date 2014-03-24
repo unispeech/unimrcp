@@ -59,7 +59,7 @@ APT_DECLARE(void) apt_test_framework_destroy(apt_test_framework_t *framework)
 
 APT_DECLARE(apt_bool_t) apt_test_framework_suite_add(apt_test_framework_t *framework, apt_test_suite_t *suite)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Test Suite [%s]",suite->name);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Test Suite [%s]",suite->name.buf);
 	return (apt_list_push_back(framework->suites,suite,suite->pool) ? TRUE : FALSE);
 }
 
@@ -72,7 +72,7 @@ static apt_bool_t apt_test_framework_suite_run(apt_test_framework_t *framework, 
 											   int argc, const char * const *argv)
 {
 	apt_bool_t status = FALSE;
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"----- Run Test Suite [%s] -----",suite->name);
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"----- Run Test Suite [%s] -----",suite->name.buf);
 	if(suite->tester) {
 		status = suite->tester(suite,argc,argv);
 	}

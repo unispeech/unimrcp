@@ -46,7 +46,7 @@ static void winerror(const char *file, int line, const char *msg)
 /** SCM state change handler */
 static void WINAPI win_service_handler(DWORD control)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Service Handler %d",control);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Service Handler 0x%02lx",control);
 	switch (control)
 	{
 		case SERVICE_CONTROL_INTERROGATE:
