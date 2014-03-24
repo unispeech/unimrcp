@@ -28,6 +28,11 @@
 UmcConsole::UmcConsole() :
 	m_pFramework(NULL)
 {
+	/* set the default options */
+	m_Options.m_RootDirPath = "../";
+	m_Options.m_LogPriority = NULL;
+	m_Options.m_LogOutput = NULL;
+
 	m_pFramework = new UmcFramework;
 }
 
