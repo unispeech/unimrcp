@@ -228,7 +228,7 @@ bool UmcConsole::RunCmdLine()
 	return true;
 }
 
-void UmcConsole::Usage() const
+void UmcConsole::Usage()
 {
 	printf(
 		"\n"

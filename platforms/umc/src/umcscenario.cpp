@@ -126,7 +126,7 @@ bool UmcScenario::LoadCapabilities(const apr_xml_elem* pElem, apr_pool_t* pool)
 	return true;
 }
 
-int UmcScenario::ParseRates(const char* pStr, apr_pool_t* pool) const
+int UmcScenario::ParseRates(const char* pStr, apr_pool_t* pool)
 {
 	int rates = 0;
 	if(pStr)
@@ -181,7 +181,7 @@ bool UmcScenario::InitCapabilities(mpf_stream_capabilities_t* pCapabilities) con
 	return true;
 }
 
-bool UmcScenario::IsElementEnabled(const apr_xml_elem* pElem) const
+bool UmcScenario::IsElementEnabled(const apr_xml_elem* pElem)
 {
 	const apr_xml_attr* pAttr;
 	for(pAttr = pElem->attr; pAttr; pAttr = pAttr->next) 

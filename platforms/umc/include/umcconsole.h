@@ -42,7 +42,7 @@ protected:
 	bool LoadOptions(int argc, const char * const *argv, apr_pool_t *pool);
 	bool RunCmdLine();
 	bool ProcessCmdLine(char* pCmdLine);
-	void Usage() const;
+	static void Usage();
 
 private:
 /* ============================ DATA ======================================= */

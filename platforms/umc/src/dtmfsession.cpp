@@ -267,7 +267,7 @@ mrcp_message_t* DtmfSession::CreateRecognizeRequest(mrcp_channel_t* pMrcpChannel
 	return pMrcpMessage;
 }
 
-bool DtmfSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const
+bool DtmfSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage)
 {
 	nlsml_result_t *pResult = nlsml_result_parse(pMrcpMessage->body.buf, pMrcpMessage->body.length, pMrcpMessage->pool);
 	if(!pResult)

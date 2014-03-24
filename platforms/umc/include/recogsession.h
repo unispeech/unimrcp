@@ -48,7 +48,7 @@ protected:
 	mrcp_message_t* CreateDefineGrammarRequest(mrcp_channel_t* pMrcpChannel);
 	mrcp_message_t* CreateRecognizeRequest(mrcp_channel_t* pMrcpChannel);
 
-	bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const;
+	static bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage);
 	FILE* GetAudioIn(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const;
 
 /* ============================ HANDLERS =================================== */

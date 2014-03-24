@@ -45,7 +45,7 @@ protected:
 
 	mrcp_message_t* CreateRecognizeRequest(mrcp_channel_t* pMrcpChannel);
 
-	bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const;
+	static bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage);
 
 /* ============================ HANDLERS =================================== */
 	virtual bool OnSessionTerminate(mrcp_sig_status_code_e status);

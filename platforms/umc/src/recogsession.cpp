@@ -421,7 +421,7 @@ mrcp_message_t* RecogSession::CreateRecognizeRequest(mrcp_channel_t* pMrcpChanne
 	return pMrcpMessage;
 }
 
-bool RecogSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage) const
+bool RecogSession::ParseNLSMLResult(mrcp_message_t* pMrcpMessage)
 {
 	nlsml_result_t *pResult = nlsml_result_parse(pMrcpMessage->body.buf, pMrcpMessage->body.length, pMrcpMessage->pool);
 	if(!pResult)

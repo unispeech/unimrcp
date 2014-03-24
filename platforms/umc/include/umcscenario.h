@@ -67,10 +67,10 @@ protected:
 
 	const char* LoadFileContent(const char* pFileName, apr_size_t& size, apr_pool_t* pool) const;
 	const char* LoadFileContent(const char* pFileName, apr_pool_t* pool) const;
-	int ParseRates(const char* pStr, apr_pool_t* pool) const;
+	static int ParseRates(const char* pStr, apr_pool_t* pool);
 
 /* ============================ INQUIRIES ================================== */
-	bool IsElementEnabled(const apr_xml_elem* pElem) const;
+	static bool IsElementEnabled(const apr_xml_elem* pElem);
 
 /* ============================ DATA ======================================= */
 	const char*                       m_pName;
