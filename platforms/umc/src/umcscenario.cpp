@@ -95,7 +95,7 @@ bool UmcScenario::LoadCapabilities(const apr_xml_elem* pElem, apr_pool_t* pool)
 {
 	const apr_xml_elem* pChildElem;
 	/* Load Child Elements */
-	m_pCapabilities = (mpf_codec_capabilities_t*) apr_palloc(pool,sizeof(mpf_codec_capabilities_t*));
+	m_pCapabilities = (mpf_codec_capabilities_t*) apr_palloc(pool,sizeof(mpf_codec_capabilities_t));
 	mpf_codec_capabilities_init(m_pCapabilities,1,pool);
 	for(pChildElem = pElem->first_child; pChildElem; pChildElem = pChildElem->next)
 	{
