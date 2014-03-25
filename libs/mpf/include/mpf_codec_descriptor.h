@@ -244,7 +244,7 @@ static APR_INLINE apt_bool_t mpf_codec_capabilities_merge(mpf_codec_capabilities
 static APR_INLINE apt_bool_t mpf_codec_capabilities_add(mpf_codec_capabilities_t *capabilities, int sample_rates, const char *codec_name)
 {
 	mpf_codec_attribs_t *attribs = (mpf_codec_attribs_t*)apr_array_push(capabilities->attrib_arr);
-	apt_string_set(&attribs->name,codec_name);
+	apt_string_assign(&attribs->name,codec_name,capabilities->attrib_arr->pool);
 	attribs->sample_rates = sample_rates;
 	attribs->bits_per_sample = 0;
 	return TRUE;
