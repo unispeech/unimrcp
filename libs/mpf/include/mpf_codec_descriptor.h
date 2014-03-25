@@ -250,7 +250,7 @@ static APR_INLINE apt_bool_t mpf_codec_capabilities_add(mpf_codec_capabilities_t
 	return TRUE;
 }
 
-/** Add default (liear PCM) capabilities */
+/** Add default (linear PCM) capabilities */
 MPF_DECLARE(apt_bool_t) mpf_codec_default_capabilities_add(mpf_codec_capabilities_t *capabilities);
 
 /** Validate codec capabilities */
