@@ -32,14 +32,27 @@ APT_BEGIN_EXTERN_C
 
 /** Default max size of the log file (8Mb) */
 #define MAX_LOG_FILE_SIZE (8 * 1024 * 1024)
-/** Default max number of rotated log files */
+/** Default max number of log files used in rotation */
 #define MAX_LOG_FILE_COUNT 100
 
 /** File:line mark */
-#define APT_LOG_MARK	__FILE__,__LINE__
+#define APT_LOG_MARK   __FILE__,__LINE__
 
+/*
+ * Definition of common formats used with apt_log().
+ *
+ * Note that the generic %p format can not be used for pointers
+ * since apr_vformatter doesn't accept it. The format %pp introduced
+ * by apr_vformatter can not be used either since it breaks compatibility
+ * with generic printf style loggers.
+ */
+#if defined(WIN32) && APR_SIZEOF_VOIDP == 8
+/** Format to log pointer values on Win x64 */
+#define APT_PTR_FMT       "0x%I64x"
+#else
 /** Format to log pointer values */
-#define APT_PTR_FMT       "0x%pp"
+#define APT_PTR_FMT       "0x%lx"
+#endif
 /** Format to log string identifiers */
 #define APT_SID_FMT       "<%s>"
 /** Format to log string identifiers and resources */
@@ -50,7 +63,6 @@ APT_BEGIN_EXTERN_C
 #define APT_NAMESID_FMT   "%s "APT_SID_FMT
 /** Format to log names, identifiers and resources */
 #define APT_NAMESIDRES_FMT "%s "APT_SIDRES_FMT
-
 
 /** Priority of log messages ordered from highest priority to lowest (rfc3164) */
 typedef enum {
@@ -96,8 +108,9 @@ typedef enum {
 typedef struct apt_logger_t apt_logger_t;
 
 /** Prototype of extended log handler function */
-typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line, const char *obj, 
-											apt_log_priority_e priority, const char *format, va_list arg_ptr);
+typedef apt_bool_t (*apt_log_ext_handler_f)(const char *file, int line,
+											const char *obj, apt_log_priority_e priority,
+											const char *format, va_list arg_ptr);
 
 /**
  * Create the singleton instance of the logger.
