@@ -10,6 +10,9 @@
     <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(AprDir)\$(Platform)\$(Configuration);$(AprUtilDir)\$(Platform)\$(Configuration);$(SofiaDir)\win32\libsofia-sip-ua\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration)\lib;$(SolutionDir)$(Platform)\$(Configuration)\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <TargetMachine>MachineX64</TargetMachine>

@@ -5,4 +5,9 @@
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\lib\</OutDir>
     <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
 </Project>
