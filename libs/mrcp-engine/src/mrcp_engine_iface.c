@@ -70,6 +70,8 @@ mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine,
 		return NULL;
 	}
 	if(engine->config->max_channel_count && engine->cur_channel_count >= engine->config->max_channel_count) {
+		apt_log(APT_LOG_MARK, APT_PRIO_NOTICE, "Maximum channel count %"APR_SIZE_T_FMT" exceeded for engine [%s]",
+			engine->config->max_channel_count, engine->id);
 		return NULL;
 	}
 	channel = engine->method_vtable->create_channel(engine,pool);
