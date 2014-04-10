@@ -102,9 +102,6 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_parse(const apt_str_t *str, apt_bool_t
 /** Generate apr_size_t value from pool (buffer is allocated from pool) */
 APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_str_t *str, apr_pool_t *pool);
 
-/** Insert boolean-value */
-APT_DECLARE(apt_bool_t) apt_text_boolean_value_insert(apt_text_stream_t *stream, apt_bool_t value);
-
 /** Parse apr_size_t value */
 APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str);
 /** Generate apr_size_t value from pool (buffer is allocated from pool) */

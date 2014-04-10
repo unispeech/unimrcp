@@ -381,26 +381,6 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_str_t *
 	return TRUE;
 }
 
-/** Generate boolean-value */
-APT_DECLARE(apt_bool_t) apt_boolean_value_insert(apt_text_stream_t *stream, apt_bool_t value)
-{
-	if(value == TRUE) {
-		if(stream->pos + TOKEN_TRUE_LENGTH >= stream->end) {
-			return FALSE;
-		}
-		memcpy(stream->pos,TOKEN_TRUE,TOKEN_TRUE_LENGTH);
-		stream->pos += TOKEN_TRUE_LENGTH;
-	}
-	else {
-		if(stream->pos + TOKEN_FALSE_LENGTH >= stream->end) {
-			return FALSE;
-		}
-		memcpy(stream->pos,TOKEN_FALSE,TOKEN_FALSE_LENGTH);
-		stream->pos += TOKEN_FALSE_LENGTH;
-	}
-	return TRUE;
-}
-
 
 /** Parse size_t value */
 APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str)
