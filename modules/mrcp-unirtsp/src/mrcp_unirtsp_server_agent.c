@@ -54,7 +54,8 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *session, mrcp_
 static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_unirtsp_on_session_answer,
 	mrcp_unirtsp_on_session_terminate,
-	mrcp_unirtsp_on_session_control
+	mrcp_unirtsp_on_session_control,
+	NULL /* mrcp_unirtsp_on_session_discover */
 };
 
 static apt_bool_t mrcp_unirtsp_session_create(rtsp_server_t *server, rtsp_server_session_t *session);

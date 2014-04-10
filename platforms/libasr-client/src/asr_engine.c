@@ -96,6 +96,7 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	asr_stream_read,
 	NULL,
 	NULL,
+	NULL,
 	NULL
 };
 

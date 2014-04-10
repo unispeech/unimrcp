@@ -184,6 +184,7 @@ RecogChannel* RecogSession::CreateRecogChannel()
 		ReadStream,
 		NULL,
 		NULL,
+		NULL,
 		NULL
 	};
 

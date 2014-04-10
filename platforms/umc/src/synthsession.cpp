@@ -146,7 +146,8 @@ SynthChannel* SynthSession::CreateSynthChannel()
 		NULL,
 		NULL,
 		NULL,
-		WriteStream
+		WriteStream,
+		NULL
 	};
 
 	pTermination = CreateAudioTermination(

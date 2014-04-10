@@ -112,7 +112,8 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_audio_file_frame_read,
 	mpf_audio_file_writer_open,
 	mpf_audio_file_writer_close,
-	mpf_audio_file_frame_write
+	mpf_audio_file_frame_write,
+	NULL /* mpf_audio_file_trace */
 };
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_file_stream_create(mpf_termination_t *termination, apr_pool_t *pool)

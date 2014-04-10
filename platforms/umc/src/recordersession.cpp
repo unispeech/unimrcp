@@ -129,6 +129,7 @@ RecorderChannel* RecorderSession::CreateRecorderChannel()
 		ReadStream,
 		NULL,
 		NULL,
+		NULL,
 		NULL
 	};
 

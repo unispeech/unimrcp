@@ -79,6 +79,7 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	demo_synth_stream_read,
 	NULL,
 	NULL,
+	NULL,
 	NULL
 };
 

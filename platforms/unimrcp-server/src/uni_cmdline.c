@@ -52,7 +52,7 @@ apt_bool_t uni_cmdline_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 {
 	apt_bool_t running = TRUE;
 	char cmdline[1024];
-	int i;
+	apr_size_t i;
 	mrcp_server_t *server;
 
 	/* start server */

@@ -89,7 +89,8 @@ static const mpf_audio_stream_vtable_t vtable = {
 	mpf_rtp_stream_receive,
 	mpf_rtp_tx_stream_open,
 	mpf_rtp_tx_stream_close,
-	mpf_rtp_stream_transmit
+	mpf_rtp_stream_transmit,
+	NULL /* mpf_rtp_stream_trace */
 };
 
 static apt_bool_t mpf_rtp_socket_pair_create(mpf_rtp_stream_t *stream, mpf_rtp_media_descriptor_t *local_media, apt_bool_t bind);

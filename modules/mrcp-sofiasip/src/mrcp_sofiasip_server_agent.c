@@ -66,7 +66,9 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session);
 
 static const mrcp_session_response_vtable_t session_response_vtable = {
 	mrcp_sofia_on_session_answer,
-	mrcp_sofia_on_session_terminate
+	mrcp_sofia_on_session_terminate,
+	NULL /* mrcp_sofia_on_session_control */,
+	NULL /* mrcp_sofia_on_session_discover */
 };
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_server_config_t *config, apr_pool_t *pool);

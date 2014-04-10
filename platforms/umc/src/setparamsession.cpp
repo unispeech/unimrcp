@@ -97,6 +97,7 @@ RecogChannel* SetParamSession::CreateRecogChannel()
 		ReadStream,
 		NULL,
 		NULL,
+		NULL,
 		NULL
 	};
 

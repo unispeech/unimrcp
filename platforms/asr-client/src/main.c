@@ -146,7 +146,7 @@ static apt_bool_t cmdline_run(asr_engine_t *engine)
 {
 	apt_bool_t running = TRUE;
 	char cmdline[1024];
-	int i;
+	apr_size_t i;
 	do {
 		printf(">");
 		memset(&cmdline, 0, sizeof(cmdline));
@@ -165,7 +165,7 @@ static apt_bool_t cmdline_run(asr_engine_t *engine)
 	return TRUE;
 }
 
-static void usage()
+static void usage(void)
 {
 	printf(
 		"\n"

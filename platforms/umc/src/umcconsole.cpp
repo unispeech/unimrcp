@@ -205,7 +205,7 @@ bool UmcConsole::RunCmdLine()
 {
 	apt_bool_t running = true;
 	char cmdline[1024];
-	int i;
+	apr_size_t i;
 	do 
 	{
 		printf(">");

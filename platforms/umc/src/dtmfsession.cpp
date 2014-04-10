@@ -117,6 +117,7 @@ RecogChannel* DtmfSession::CreateRecogChannel()
 		ReadStream,
 		NULL,
 		NULL,
+		NULL,
 		NULL
 	};
 

@@ -62,7 +62,9 @@ static const mrcp_app_message_dispatcher_t demo_application_dispatcher = {
 	demo_application_on_session_terminate,
 	demo_application_on_channel_add,
 	demo_application_on_channel_remove,
-	demo_application_on_message_receive
+	demo_application_on_message_receive,
+	NULL /* demo_application_on_terminate_event */,
+	NULL /* demo_application_on_resource_discover */
 };
 
 

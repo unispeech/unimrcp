@@ -80,7 +80,8 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	NULL,
 	demo_recog_stream_open,
 	demo_recog_stream_close,
-	demo_recog_stream_write
+	demo_recog_stream_write,
+	NULL
 };
 
 /** Declaration of demo recognizer engine */

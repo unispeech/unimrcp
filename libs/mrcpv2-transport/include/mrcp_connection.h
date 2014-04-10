@@ -84,7 +84,7 @@ struct mrcp_connection_t {
 };
 
 /** Create MRCP connection. */
-mrcp_connection_t* mrcp_connection_create();
+mrcp_connection_t* mrcp_connection_create(void);
 
 /** Destroy MRCP connection. */
 void mrcp_connection_destroy(mrcp_connection_t *connection);

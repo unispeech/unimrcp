@@ -65,7 +65,9 @@ static const mrcp_app_message_dispatcher_t synth_application_dispatcher = {
 	synth_application_on_session_terminate,
 	synth_application_on_channel_add,
 	synth_application_on_channel_remove,
-	synth_application_on_message_receive
+	synth_application_on_message_receive,
+	NULL /* synth_application_on_terminate_event */,
+	NULL /* synth_application_on_resource_discover */
 };
 
 /** Declaration of synthesizer audio stream methods */
@@ -81,7 +83,8 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	NULL,
 	synth_app_stream_open,
 	synth_app_stream_close,
-	synth_app_stream_write
+	synth_app_stream_write,
+	NULL
 };
 
 

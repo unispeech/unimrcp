@@ -72,7 +72,9 @@ static const mrcp_app_message_dispatcher_t recog_application_dispatcher = {
 	recog_application_on_session_terminate,
 	recog_application_on_channel_add,
 	recog_application_on_channel_remove,
-	recog_application_on_message_receive
+	recog_application_on_message_receive,
+	NULL /* recog_application_on_terminate_event */,
+	NULL /* recog_application_on_resource_discover */
 };
 
 /** Declaration of recognizer audio stream methods */
@@ -86,6 +88,7 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	recog_app_stream_open,
 	recog_app_stream_close,
 	recog_app_stream_read,
+	NULL,
 	NULL,
 	NULL,
 	NULL

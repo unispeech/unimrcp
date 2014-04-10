@@ -164,6 +164,7 @@ VerifierChannel* VerifierSession::CreateVerifierChannel()
 		ReadStream,
 		NULL,
 		NULL,
+		NULL,
 		NULL
 	};
 

@@ -80,7 +80,7 @@ static apt_bool_t demo_framework_cmdline_run(demo_framework_t *framework)
 {
 	apt_bool_t running = TRUE;
 	char cmdline[1024];
-	int i;
+	apr_size_t i;
 	do {
 		printf(">");
 		memset(&cmdline, 0, sizeof(cmdline));
@@ -99,7 +99,7 @@ static apt_bool_t demo_framework_cmdline_run(demo_framework_t *framework)
 	return TRUE;
 }
 
-static void usage()
+static void usage(void)
 {
 	printf(
 		"\n"

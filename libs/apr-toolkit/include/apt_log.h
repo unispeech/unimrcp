@@ -215,7 +215,7 @@ APT_DECLARE(apt_bool_t) apt_log_masking_set(apt_log_masking_e masking);
 /**
  * Get the current masking mode of private data.
  */
-APT_DECLARE(apt_log_masking_e) apt_log_masking_get();
+APT_DECLARE(apt_log_masking_e) apt_log_masking_get(void);
 
 /**
  * Translate the masking mode string to enum.

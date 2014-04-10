@@ -92,7 +92,8 @@ static apt_bool_t mrcp_server_control_signal(mrcp_session_t *session, mrcp_messa
 static const mrcp_session_request_vtable_t session_request_vtable = {
 	mrcp_server_offer_signal,
 	mrcp_server_terminate_signal,
-	mrcp_server_control_signal
+	mrcp_server_control_signal,
+	NULL /* mrcp_server_discover_signal */
 };
 
 

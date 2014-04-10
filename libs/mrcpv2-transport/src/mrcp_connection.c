@@ -19,7 +19,7 @@
 #include "mrcp_connection.h"
 #include "apt_pool.h"
 
-mrcp_connection_t* mrcp_connection_create()
+mrcp_connection_t* mrcp_connection_create(void)
 {
 	mrcp_connection_t *connection;
 	apr_pool_t *pool = apt_pool_create();

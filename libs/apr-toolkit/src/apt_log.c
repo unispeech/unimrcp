@@ -376,7 +376,7 @@ APT_DECLARE(apt_bool_t) apt_log_masking_set(apt_log_masking_e masking)
 	return TRUE;
 }
 
-APT_DECLARE(apt_log_masking_e) apt_log_masking_get()
+APT_DECLARE(apt_log_masking_e) apt_log_masking_get(void)
 {
 	if(!apt_logger) {
 		return APT_LOG_MASKING_NONE;
@@ -473,7 +473,7 @@ APT_DECLARE(apt_bool_t) apt_va_log(const char *file, int line, apt_log_priority_
 	return status;
 }
 
-static APR_INLINE unsigned long apt_thread_id_get()
+static APR_INLINE unsigned long apt_thread_id_get(void)
 {
 #ifdef WIN32
 	return (unsigned long) GetCurrentThreadId();

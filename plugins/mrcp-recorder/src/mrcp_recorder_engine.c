@@ -77,7 +77,8 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
 	NULL,
 	recorder_stream_open,
 	recorder_stream_close,
-	recorder_stream_write
+	recorder_stream_write,
+	NULL
 };
 
 /** Declaration of recorder channel */
