@@ -528,6 +528,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 									apr_pool_t *pool)
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
+	profile->name = NULL;
 	profile->mrcp_version = mrcp_version;
 	profile->resource_factory = resource_factory;
 	profile->mpf_factory = mpf_factory;
@@ -585,6 +586,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profile_register(mrcp_client_t *client, mrc
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Profile [%s]",name);
 	apr_hash_set(client->profile_table,name,APR_HASH_KEY_STRING,profile);
+	profile->name = name;
 	return TRUE;
 }
 

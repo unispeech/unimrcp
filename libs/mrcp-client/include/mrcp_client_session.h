@@ -136,6 +136,8 @@ struct rtp_termination_slot_t {
 
 /** MRCP profile */
 struct mrcp_profile_t {
+	/** Profile name */
+	const char                *name;
 	/** MRCP version */
 	mrcp_version_e             mrcp_version;
 	/** MRCP resource factory */
