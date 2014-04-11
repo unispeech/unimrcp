@@ -594,6 +594,34 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *clien
 	return apr_hash_get(client->profile_table,name,APR_HASH_KEY_STRING);
 }
 
+/** Get available profiles */
+MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, mrcp_profile_t *profiles[], apr_size_t *count)
+{
+	apr_hash_index_t *it;
+	void *val;
+	apr_size_t i = 0;
+	apt_bool_t status = TRUE;
+
+	if(!profiles || !count) {
+		return FALSE;
+	}
+
+	for(it = apr_hash_first(client->pool, client->profile_table); it; it = apr_hash_next(it)) {
+		apr_hash_this(it, NULL, NULL, &val);
+		if(!val) continue;
+
+		if(i >= *count) {
+			status = FALSE;
+			break;
+		}
+		
+		profiles[i] = val;
+		i++;
+	}
+	*count = i;
+	return status;
+}
+
 /** Register MRCP application */
 MRCP_DECLARE(apt_bool_t) mrcp_client_application_register(mrcp_client_t *client, mrcp_application_t *application, const char *name)
 {

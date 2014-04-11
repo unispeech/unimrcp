@@ -227,6 +227,15 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_client_connection_agent_get(const mr
 MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *client, const char *name);
 
 /**
+ * Get available profiles.
+ * @param client the MRCP client to get the profile from
+ * @param profiles the array of profiles to be filled in
+ * @param count the max number of profiles on entry; and the number of profiles filled in on exit
+ * @return FALSE if the provided max number of profiles is less than the actual number of profiles
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, mrcp_profile_t *profiles[], apr_size_t *count);
+
+/**
  * Get directory layout.
  * @param client the MRCP client to get from
  */
