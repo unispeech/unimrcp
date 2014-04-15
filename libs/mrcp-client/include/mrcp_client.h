@@ -156,6 +156,13 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 									apr_pool_t *pool);
 
 /**
+ * Set a tag to the profile.
+ * @param profile the profile to set a tag for
+ * @param tag the tag to set
+ */
+MRCP_DECLARE(void) mrcp_client_profile_tag_set(mrcp_profile_t *profile, const char *tag);
+
+/**
  * Register MRCP profile.
  * @param client the MRCP client to set profile for
  * @param profile the profile to set
@@ -231,9 +238,10 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *clien
  * @param client the MRCP client to get the profile from
  * @param profiles the array of profiles to be filled in
  * @param count the max number of profiles on entry; and the number of profiles filled in on exit
+ * @param tag the tag to be used as a filter (no filter is specified if tag is NULL)
  * @return FALSE if the provided max number of profiles is less than the actual number of profiles
  */
-MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, mrcp_profile_t *profiles[], apr_size_t *count);
+MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, mrcp_profile_t *profiles[], apr_size_t *count, const char *tag);
 
 /**
  * Get directory layout.

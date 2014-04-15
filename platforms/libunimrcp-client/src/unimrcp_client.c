@@ -210,6 +210,36 @@ static apt_bool_t header_attribs_get(const apr_xml_elem *elem, const apr_xml_att
 	return TRUE;
 }
 
+/** Get profile attributes such as "id", "enable" and "tag" */
+static apt_bool_t profile_attribs_get(const apr_xml_elem *elem, const apr_xml_attr **id, const apr_xml_attr **enable, const apr_xml_attr **tag)
+{
+	const apr_xml_attr *attr;
+	if(!id || !enable || !tag) {
+		return FALSE;
+	}
+
+	*id = NULL;
+	*enable = NULL;
+	*tag = NULL;
+	for(attr = elem->attr; attr; attr = attr->next) {
+		if(strcasecmp(attr->name,"id") == 0) {
+			*id = attr;
+		}
+		else if(strcasecmp(attr->name,"enable") == 0) {
+			*enable = attr;
+		}
+		else if(strcasecmp(attr->name,"tag") == 0) {
+			*tag = attr;
+		}
+	}
+	
+	if(is_attr_valid(*id) == FALSE) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Required Attribute <id> in Element <%s>",elem->name);
+		return FALSE;
+	}
+	return TRUE;
+}
+
 /** Get generic "name" and "value" attributes */
 static apt_bool_t name_value_attribs_get(const apr_xml_elem *elem, const apr_xml_attr **name, const apr_xml_attr **value)
 {
@@ -668,7 +698,7 @@ static apt_bool_t unimrcp_client_rtsp_settings_load(unimrcp_client_loader_t *loa
 					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",name_attr->value,value_attr->value);
 					apr_table_set(settings->resource_map,name_attr->value,value_attr->value);
 				}
-			}    
+			}
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
@@ -797,7 +827,7 @@ static apt_bool_t unimrcp_client_rtp_settings_load(unimrcp_client_loader_t *load
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 
 	return mrcp_client_rtp_settings_register(loader->client,rtp_settings,id);
 }
@@ -889,7 +919,7 @@ static mpf_engine_factory_t* unimrcp_client_mpf_factory_create(unimrcp_client_lo
 }
 
 /** Load MRCPv2 profile */
-static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root, const char *id)
+static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root, const char *id, const char *tag)
 {
 	const apr_xml_elem *elem;
 	mrcp_profile_t *profile;
@@ -938,11 +968,14 @@ static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *lo
 		mpf_factory,rtp_factory,
 		rtp_settings,sip_settings,
 		loader->pool);
+	if(tag) {
+		mrcp_client_profile_tag_set(profile,tag);
+	}
 	return mrcp_client_profile_register(loader->client,profile,id);
 }
 
 /** Load MRCPv1 profile */
-static apt_bool_t unimrcp_client_mrcpv1_profile_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root, const char *id)
+static apt_bool_t unimrcp_client_mrcpv1_profile_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root, const char *id, const char *tag)
 {
 	const apr_xml_elem *elem;
 	mrcp_profile_t *profile;
@@ -987,6 +1020,9 @@ static apt_bool_t unimrcp_client_mrcpv1_profile_load(unimrcp_client_loader_t *lo
 		mpf_factory,rtp_factory,
 		rtp_settings,rtsp_settings,
 		loader->pool);
+	if(tag) {
+		mrcp_client_profile_tag_set(profile,tag);
+	}
 	return mrcp_client_profile_register(loader->client,profile,id);
 }
 
@@ -1075,7 +1111,7 @@ static apt_bool_t unimrcp_client_components_load(unimrcp_client_loader_t *loader
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	return TRUE;
 }
 
@@ -1122,12 +1158,14 @@ static apt_bool_t unimrcp_client_profiles_load(unimrcp_client_loader_t *loader, 
 	const apr_xml_elem *elem;
 	const apr_xml_attr *id_attr;
 	const apr_xml_attr *enable_attr;
+	const apr_xml_attr *tag_attr;
 	const char *id;
+	const char *tag;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Profiles");
 	for(elem = root->first_child; elem; elem = elem->next) {
 		/* get common "id" and "enable" attributes */
-		if(header_attribs_get(elem,&id_attr,&enable_attr) == FALSE) {
+		if(profile_attribs_get(elem,&id_attr,&enable_attr,&tag_attr) == FALSE) {
 			/* invalid id */
 			continue;
 		}
@@ -1136,17 +1174,18 @@ static apt_bool_t unimrcp_client_profiles_load(unimrcp_client_loader_t *loader, 
 			continue;
 		}
 		id = apr_pstrdup(loader->pool,id_attr->value);
+		tag = tag_attr ? apr_pstrdup(loader->pool,tag_attr->value) : NULL;
 
 		if(strcasecmp(elem->name,"mrcpv2-profile") == 0) {
-			unimrcp_client_mrcpv2_profile_load(loader,elem,id);
+			unimrcp_client_mrcpv2_profile_load(loader,elem,id,tag);
 		}
 		else if(strcasecmp(elem->name,"mrcpv1-profile") == 0) {
-			unimrcp_client_mrcpv1_profile_load(loader,elem,id);
+			unimrcp_client_mrcpv1_profile_load(loader,elem,id,tag);
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	return TRUE;
 }
 

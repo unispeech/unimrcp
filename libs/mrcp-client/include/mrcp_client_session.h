@@ -136,8 +136,10 @@ struct rtp_termination_slot_t {
 
 /** MRCP profile */
 struct mrcp_profile_t {
-	/** Profile name */
+	/** Unique profile name */
 	const char                *name;
+	/** Arbitrary tag set/used by user application */
+	const char                *tag;
 	/** MRCP version */
 	mrcp_version_e             mrcp_version;
 	/** MRCP resource factory */

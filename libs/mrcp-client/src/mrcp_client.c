@@ -529,6 +529,7 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 {
 	mrcp_profile_t *profile = apr_palloc(pool,sizeof(mrcp_profile_t));
 	profile->name = NULL;
+	profile->tag = NULL;
 	profile->mrcp_version = mrcp_version;
 	profile->resource_factory = resource_factory;
 	profile->mpf_factory = mpf_factory;
@@ -540,6 +541,15 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 
 	mpf_engine_factory_rtp_factory_assign(mpf_factory,rtp_factory);
 	return profile;
+}
+
+/** Set a tag to the profile */
+MRCP_DECLARE(void) mrcp_client_profile_tag_set(mrcp_profile_t *profile, const char *tag)
+{
+	if(profile) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Set Profile Tag [%s]",tag);
+		profile->tag = tag;
+	}
 }
 
 /** Register MRCP profile */
@@ -597,10 +607,11 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_get(const mrcp_client_t *clien
 }
 
 /** Get available profiles */
-MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, mrcp_profile_t *profiles[], apr_size_t *count)
+MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, mrcp_profile_t *profiles[], apr_size_t *count, const char *tag)
 {
 	apr_hash_index_t *it;
 	void *val;
+	mrcp_profile_t *profile;
 	apr_size_t i = 0;
 	apt_bool_t status = TRUE;
 
@@ -617,8 +628,11 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, m
 			break;
 		}
 		
-		profiles[i] = val;
-		i++;
+		profile = val;
+		if(!tag || strcasecmp(tag,profile->tag) == 0) {
+			profiles[i] = profile;
+			i++;
+		}
 	}
 	*count = i;
 	return status;
