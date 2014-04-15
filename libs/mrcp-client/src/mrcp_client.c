@@ -629,7 +629,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_client_profiles_get(const mrcp_client_t *client, m
 		}
 		
 		profile = val;
-		if(!tag || strcasecmp(tag,profile->tag) == 0) {
+		if(!tag || (profile->tag && strcasecmp(tag,profile->tag) == 0)) {
 			profiles[i] = profile;
 			i++;
 		}
