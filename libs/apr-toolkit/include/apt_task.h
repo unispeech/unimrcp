@@ -208,13 +208,6 @@ APT_DECLARE(apt_bool_t) apt_task_terminate_request_remove(apt_task_t *task);
  */
 APT_DECLARE(void) apt_task_delay(apr_size_t msec);
 
-/**
- * Set current thread name for debugging.
- * @param name   the name to set. Should not exceed 16 characters (bytes).
- * @remarks No-op for release builds.
- */
-APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name);
-
 
 /** Table of task virtual methods */
 struct apt_task_vtable_t {

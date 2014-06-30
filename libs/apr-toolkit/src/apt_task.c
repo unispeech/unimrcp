@@ -465,7 +465,9 @@ static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *dat
 {
 	apt_task_t *task = data;
 	
-	apt_set_current_thread_name(task->name);
+#if APR_HAS_SETTHREADNAME
+	apr_thread_name_set(task->name);
+#endif
 	/* raise pre-run event */
 	if(task->vtable.on_pre_run) {
 		task->vtable.on_pre_run(task);
@@ -512,64 +514,4 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 	vtable->on_start_complete = NULL;
 	vtable->on_terminate_request = NULL;
 	vtable->on_terminate_complete = NULL;
-}
-
-APT_DECLARE(apt_bool_t) apt_set_current_thread_name(const char *name)
-{
-#if defined(_MSC_VER)
-
-/* apt_set_current_thread_name is no-op for release builds */
-#if !defined(DEBUG) && !defined(_DEBUG)
-
-	(void) name;
-	return TRUE;
-
-#else /* Release build */
-
-#pragma pack(push, 8)
-
-	DWORD tid = GetCurrentThreadId();
-	if (tid) {
-		static const DWORD MS_VC_EXCEPTION = 0x406D1388;
-		struct tagTHREADNAME_INFO {
-			DWORD dwType;     /**< Must be 0x1000. */
-			LPCSTR szName;    /**< Pointer to name (in user addr space). */
-			DWORD dwThreadID; /**< Thread ID (-1=caller thread). */
-			DWORD dwFlags;    /**< Reserved for future use, must be zero. */
-		} info;
-		info.dwType = 0x1000;
-		info.szName = name;
-		info.dwThreadID = tid;
-		info.dwFlags = 0;
-		__try {
-			RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*) &info);
-		} __except(EXCEPTION_EXECUTE_HANDLER) {
-		}
-		return TRUE;
-	}
-	return FALSE;
-
-#pragma pack(pop)
-
-#endif /* Debug/release build */
-
-#elif /* _MSC_VER */ \
-	defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 12)
-
-	pthread_t pth = pthread_self();
-	int ret = pthread_setname_np(pth, name);
-	if (ret == ERANGE) {
-		/* This implementation requires max 16 chars including NUL */
-		char shorter_name[16];
-		strncpy(shorter_name, name, sizeof(shorter_name) - 1);
-		ret = pthread_setname_np(pth, shorter_name);
-	}
-	return ret ? FALSE : TRUE;
-
-#else /* __GLIBC_PREREQ(2, 12) */
-
-	(void) name;
-	return FALSE;
-
-#endif /* _MSC_VER */
 }

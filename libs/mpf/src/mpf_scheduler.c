@@ -203,7 +203,9 @@ static void* APR_THREAD_FUNC timer_thread_proc(apr_thread_t *thread, void *data)
 	apr_interval_time_t time_drift = 0;
 	apr_time_t time_now, time_last;
 	
-	apt_set_current_thread_name("MPF Scheduler");
+#if APR_HAS_SETTHREADNAME
+	apr_thread_name_set("MPF Scheduler");
+#endif
 	time_now = apr_time_now();
 	while(scheduler->running == TRUE) {
 		time_last = time_now;
