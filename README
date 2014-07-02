@@ -1,7 +1,7 @@
 INTRODUCTION
 ============
 
-UniMRCP is an open source MRCP project compliant with the IETF RFC6787 (MRCPv2) and RFC4463 (MRCPv1)
+UniMRCP is an open source project compliant with the IETF RFC6787 (MRCPv2) and RFC4463 (MRCPv1)
 specifications.
 
 
@@ -24,11 +24,14 @@ REFERENCES
 Website:
    http://www.unimrcp.org
 
-Project Home:
-   http://code.google.com/p/unimrcp
+Downloads:
+   http://www.unimrcp.org/downloads
 
-Wiki:
-   http://code.google.com/p/unimrcp/w/list
+Documentation:
+   http://www.unimrcp.org/documentation
+
+Google Code:
+   http://code.google.com/p/unimrcp
 
 Issue Tracker:
    http://code.google.com/p/unimrcp/issues/list
@@ -50,7 +53,7 @@ Commit Monitor:
 LICENSING
 =========
 
-UniMRCP is licensed under terms of the Apache 2.0 license.
+UniMRCP is licensed under terms of the Apache License 2.0.
 See the file "LICENSE" for more information.
 
-Copyright 2008 - 2013 Arsen Chaloyan
+Copyright 2008 - 2014 Arsen Chaloyan
