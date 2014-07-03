@@ -109,7 +109,8 @@ Changes for UniMRCP-1.2.0
     unused variable/value, method can be made static. Thanks Vali.
   * Define _WIN64 in Visual Studio x64 targets (for IDE only, the compiler defines _WIN64 anyway). Thanks Vali.
   * Fixed some GCC warnings. Thanks Vali.
-  
+  * Moved mrcp-flite and mrcp-pocketsphinx plugins out of the source tree into the external solutions directory.
+
 
 Changes for UniMRCP-1.1.0
 
