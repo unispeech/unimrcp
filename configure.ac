@@ -146,28 +146,6 @@ UNI_PLUGIN_ENABLED(recorder)
 
 AM_CONDITIONAL([RECORDER_PLUGIN],[test "${enable_recorder_plugin}" = "yes"])
 
-dnl PocketSphinx plugin.
-UNI_PLUGIN_DISABLED(pocketsphinx)
-
-if test "${enable_pocketsphinx_plugin}" != "no"; then
-    UNIMRCP_CHECK_SPHINXBASE
-    UNIMRCP_CHECK_POCKETSPHINX
-fi
-
-AM_CONDITIONAL([POCKETSPHINX_PLUGIN],[test "${enable_pocketsphinx_plugin}" = "yes" &&\
-                                      test "${found_pocketsphinx}" = "yes" &&\
-                                      test "${found_sphinxbase}" = "yes"])
-
-dnl Flite plugin.
-UNI_PLUGIN_DISABLED(flite)
-
-if test "${enable_flite_plugin}" != "no"; then
-    UNIMRCP_CHECK_FLITE
-fi
-
-AM_CONDITIONAL([FLITE_PLUGIN],[test "${enable_flite_plugin}" = "yes" &&\
-                               test "${found_flite}" = "yes"])
-
 AM_CONDITIONAL(ISMAC, [test `uname -s` = Darwin])
 
 AC_CONFIG_FILES([
@@ -186,8 +164,6 @@ AC_CONFIG_FILES([
     modules/mrcp-sofiasip/Makefile
     modules/mrcp-unirtsp/Makefile
     plugins/Makefile
-    plugins/mrcp-pocketsphinx/Makefile
-    plugins/mrcp-flite/Makefile
     plugins/mrcp-recorder/Makefile
     plugins/demo-synth/Makefile
     plugins/demo-recog/Makefile
@@ -237,8 +213,6 @@ echo Demo synthesizer plugin....... : $enable_demosynth_plugin
 echo Demo recognizer plugin........ : $enable_demorecog_plugin
 echo Demo verifier plugin.......... : $enable_demoverifier_plugin
 echo Recorder plugin............... : $enable_recorder_plugin
-echo PocketSphinx plugin........... : $enable_pocketsphinx_plugin
-echo Flite plugin.................. : $enable_flite_plugin
 echo
 echo Installation directory........ : $prefix
 echo
