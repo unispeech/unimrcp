@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2013 Arsen Chaloyan
+ * Copyright 2008-2014 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@
                              ##UNI_PATCH_VERSION
 
 /** The Copyright. */
-#define UNI_COPYRIGHT "Copyright 2008-2013 Arsen Chaloyan"
+#define UNI_COPYRIGHT "Copyright 2008-2014 Arsen Chaloyan"
 
 /*
  * Use the brief description of the license for Win32 .rc files;
