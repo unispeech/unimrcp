@@ -5,8 +5,13 @@
 @section Introduction
 
 UniMRCP is an open source project compliant with the IETF RFC6787 (MRCPv2) and RFC4463 (MRCPv1) specifications. 
-The project encapsulates SIP, RTSP, SDP, MRCPv2, and RTP/RTCP stacks and provides an MRCP version independent API to client user applications. 
-It also defines a plugin interface for integration of media resource engines into the UniMRCP server.
+The project encapsulates SIP, RTSP, SDP, MRCPv2, and RTP/RTCP stacks and provides integrators with a protocol version consistent interface.
+
+- Compliance: MRCPv1, MRCPv2 (client and server)
+- Resources: Synthesizer (TTS), Recognizer (ASR), Verifier (SVI), Recorder
+- License: Apache 2.0
+- OS: Cross-platform (Windows, Linux, ...)
+- Language: C, C++
 <br> 
 <br> 
 @section _ Source Tree Structure
