@@ -93,8 +93,6 @@
 
     <!-- Factory of plugins (MRCP engines) -->
     <plugin-factory>
-      <engine id="PocketSphinx-1" name="mrcppocketsphinx" enable="false"/>
-      <engine id="Flite-1" name="mrcpflite" enable="false"/>
       <engine id="Demo-Synth-1" name="demosynth" enable="true"/>
       <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
       <engine id="Demo-Verifier-1" name="demoverifier" enable="true"/>
