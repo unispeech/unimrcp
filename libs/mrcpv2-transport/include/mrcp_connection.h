@@ -26,7 +26,10 @@
 
 #include <apr_poll.h>
 #include <apr_hash.h>
-#include "apt_obj_list.h"
+#ifdef WIN32
+#pragma warning(disable: 4127)
+#endif
+#include <apr_ring.h>
 #include "mrcp_connection_types.h"
 #include "mrcp_stream.h"
 
@@ -37,6 +40,9 @@ APT_BEGIN_EXTERN_C
 
 /** MRCPv2 connection */
 struct mrcp_connection_t {
+	/** Ring entry */
+	APR_RING_ENTRY(mrcp_connection_t) link;
+
 	/** Memory pool */
 	apr_pool_t       *pool;
 
@@ -58,8 +64,6 @@ struct mrcp_connection_t {
 
 	/** Reference count */
 	apr_size_t        access_count;
-	/** Agent list element */
-	apt_list_elem_t  *it;
 	/** Opaque agent */
 	void             *agent;
 

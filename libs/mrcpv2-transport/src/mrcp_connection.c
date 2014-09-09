@@ -36,7 +36,7 @@ mrcp_connection_t* mrcp_connection_create(void)
 	connection->id = NULL;
 	connection->verbose = TRUE;
 	connection->access_count = 0;
-	connection->it = NULL;
+	APR_RING_ELEM_INIT(connection,link);
 	connection->channel_table = apr_hash_make(pool);
 	connection->parser = NULL;
 	connection->generator = NULL;
