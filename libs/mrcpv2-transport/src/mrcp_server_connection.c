@@ -410,12 +410,10 @@ static apt_bool_t mrcp_connection_remove(mrcp_connection_agent_t *agent, mrcp_co
 {
 	APR_RING_REMOVE(connection,link);
 
-	if(agent->null_connection) {
-		if(APR_RING_EMPTY(&agent->connection_list, mrcp_connection_t, link) && apr_hash_count(agent->null_connection->channel_table) == 0) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
-			mrcp_connection_destroy(agent->null_connection);
-			agent->null_connection = NULL;
-		}
+	if(agent->null_connection && apr_hash_count(agent->null_connection->channel_table) == 0) {
+		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
+		mrcp_connection_destroy(agent->null_connection);
+		agent->null_connection = NULL;
 	}
 	return TRUE;
 }
@@ -424,35 +422,19 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 {
 	char *local_ip = NULL;
 	char *remote_ip = NULL;
-	apr_socket_t *sock;
-	apr_pool_t *pool;
-	mrcp_connection_t *connection;
+	
+	mrcp_connection_t *connection = mrcp_connection_create();
 
-	if(!agent->null_connection) {
-		pool = apt_pool_create();
-		if(apr_socket_accept(&sock,agent->listen_sock,pool) != APR_SUCCESS) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Accept Connection");
-			return FALSE;
-		}
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Rejected TCP/MRCPv2 Connection");
-		apr_socket_close(sock);
-		apr_pool_destroy(pool);
-		return FALSE;
-	}
-
-	pool = agent->null_connection->pool;
-	if(apr_socket_accept(&sock,agent->listen_sock,pool) != APR_SUCCESS) {
+	if(apr_socket_accept(&connection->sock,agent->listen_sock,connection->pool) != APR_SUCCESS) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Accept Connection");
+		mrcp_connection_destroy(connection);
 		return FALSE;
 	}
 
-	connection = mrcp_connection_create();
-	connection->sock = sock;
-
-	if(apr_socket_addr_get(&connection->r_sockaddr,APR_REMOTE,sock) != APR_SUCCESS ||
-		apr_socket_addr_get(&connection->l_sockaddr,APR_LOCAL,sock) != APR_SUCCESS) {
+	if(apr_socket_addr_get(&connection->r_sockaddr,APR_REMOTE,connection->sock) != APR_SUCCESS ||
+		apr_socket_addr_get(&connection->l_sockaddr,APR_LOCAL,connection->sock) != APR_SUCCESS) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Socket Address");
-		apr_socket_close(sock);
+		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
 		return FALSE;
 	}
@@ -464,6 +446,13 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 		local_ip,connection->l_sockaddr->port,
 		remote_ip,connection->r_sockaddr->port);
 
+	if(!agent->null_connection) {
+		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Reject Unexpected TCP/MRCPv2 Connection %s",connection->id);
+		apr_socket_close(connection->sock);
+		mrcp_connection_destroy(connection);
+		return FALSE;
+	}
+
 	memset(&connection->sock_pfd,0,sizeof(apr_pollfd_t));
 	connection->sock_pfd.desc_type = APR_POLL_SOCKET;
 	connection->sock_pfd.reqevents = APR_POLLIN;
@@ -471,7 +460,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection->sock_pfd.client_data = connection;
 	if(apt_poller_task_descriptor_add(agent->task, &connection->sock_pfd) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Add to Pollset %s",connection->id);
-		apr_socket_close(sock);
+		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
 		return FALSE;
 	}
@@ -567,11 +556,9 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 			apr_hash_count(connection->channel_table));
 	if(!connection->access_count) {
 		if(connection == agent->null_connection) {
-			if(APR_RING_EMPTY(&agent->connection_list, mrcp_connection_t, link)) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
-				mrcp_connection_destroy(agent->null_connection);
-				agent->null_connection = NULL;
-			}
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
+			mrcp_connection_destroy(agent->null_connection);
+			agent->null_connection = NULL;
 		}
 		else if(!connection->sock) {
 			mrcp_connection_remove(agent,connection);
