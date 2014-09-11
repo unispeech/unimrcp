@@ -28,14 +28,14 @@
 
 
 struct mrcp_connection_agent_t {
-	/** List (ring) of MRCP connections */
-	APR_RING_HEAD(mrcp_connection_head_t, mrcp_connection_t) connection_list;
-
 	apr_pool_t                           *pool;
 	apt_poller_task_t                    *task;
 	const mrcp_resource_factory_t        *resource_factory;
 
-	mrcp_connection_t                    *null_connection;
+	/** List (ring) of MRCP connections */
+	APR_RING_HEAD(mrcp_connection_head_t, mrcp_connection_t) connection_list;
+	/** Table of pending control channels */
+	apr_hash_t                           *pending_channel_table;
 
 	apt_bool_t                            force_new_connection;
 	apr_size_t                            tx_buffer_size;
@@ -102,7 +102,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->rx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 	agent->tx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 
-	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,agent->pool);
+	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,pool);
 	if(!agent->sockaddr) {
 		return NULL;
 	}
@@ -131,7 +131,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	}
 
 	APR_RING_INIT(&agent->connection_list, mrcp_connection_t, link);
-	agent->null_connection = NULL;
+	agent->pending_channel_table = apr_hash_make(pool);
 
 	if(mrcp_server_agent_listening_socket_create(agent) != TRUE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Listening Socket [%s] %s:%hu", 
@@ -174,8 +174,8 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_connection_agent_terminate(mrcp_connection_
 
 /** Set connection event handler. */
 MRCP_DECLARE(void) mrcp_server_connection_agent_handler_set(
-									mrcp_connection_agent_t *agent, 
-									void *obj, 
+									mrcp_connection_agent_t *agent,
+									void *obj,
 									const mrcp_connection_event_vtable_t *vtable)
 {
 	agent->obj = obj;
@@ -184,7 +184,7 @@ MRCP_DECLARE(void) mrcp_server_connection_agent_handler_set(
 
 /** Set MRCP resource factory */
 MRCP_DECLARE(void) mrcp_server_connection_resource_factory_set(
-								mrcp_connection_agent_t *agent, 
+								mrcp_connection_agent_t *agent,
 								const mrcp_resource_factory_t *resource_factroy)
 {
 	agent->resource_factory = resource_factroy;
@@ -373,13 +373,14 @@ static mrcp_control_channel_t* mrcp_connection_channel_associate(mrcp_connection
 	apt_id_resource_generate(&message->channel_id.session_id,&message->channel_id.resource_name,'@',&identifier,connection->pool);
 	channel = mrcp_connection_channel_find(connection,&identifier);
 	if(!channel) {
-		channel = mrcp_connection_channel_find(agent->null_connection,&identifier);
+		channel = apr_hash_get(agent->pending_channel_table,identifier.buf,identifier.length);
 		if(channel) {
-			mrcp_connection_channel_remove(agent->null_connection,channel);
+			apr_hash_set(agent->pending_channel_table,identifier.buf,identifier.length,NULL);
 			mrcp_connection_channel_add(connection,channel);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign Control Channel <%s> to Connection %s [%d]",
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign Control Channel <%s> to Connection %s [%d] -> [%d]",
 				channel->identifier.buf,
 				connection->id,
+				apr_hash_count(agent->pending_channel_table),
 				apr_hash_count(connection->channel_table));
 		}
 	}
@@ -409,12 +410,6 @@ static mrcp_connection_t* mrcp_connection_find(mrcp_connection_agent_t *agent, c
 static apt_bool_t mrcp_connection_remove(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
 	APR_RING_REMOVE(connection,link);
-
-	if(agent->null_connection && apr_hash_count(agent->null_connection->channel_table) == 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
-		mrcp_connection_destroy(agent->null_connection);
-		agent->null_connection = NULL;
-	}
 	return TRUE;
 }
 
@@ -446,7 +441,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 		local_ip,connection->l_sockaddr->port,
 		remote_ip,connection->r_sockaddr->port);
 
-	if(!agent->null_connection) {
+	if(apr_hash_count(agent->pending_channel_table) == 0) {
 		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Reject Unexpected TCP/MRCPv2 Connection %s",connection->id);
 		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
@@ -524,14 +519,10 @@ static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, 
 		}
 	}
 
-	if(!agent->null_connection) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Container for Pending Control Channels");
-		agent->null_connection = mrcp_connection_create();
-	}
-	mrcp_connection_channel_add(agent->null_connection,channel);
+	apr_hash_set(agent->pending_channel_table,channel->identifier.buf,channel->identifier.length,channel);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add Pending Control Channel <%s> [%d]",
 			channel->identifier.buf,
-			apr_hash_count(agent->null_connection->channel_table));
+			apr_hash_count(agent->pending_channel_table));
 	/* send response */
 	return mrcp_control_channel_add_respond(agent->vtable,channel,answer,TRUE);
 }
@@ -550,23 +541,26 @@ static apt_bool_t mrcp_server_agent_channel_modify(mrcp_connection_agent_t *agen
 static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel)
 {
 	mrcp_connection_t *connection = channel->connection;
-	mrcp_connection_channel_remove(connection,channel);
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Control Channel <%s> [%d]",
-			channel->identifier.buf,
-			apr_hash_count(connection->channel_table));
-	if(!connection->access_count) {
-		if(connection == agent->null_connection) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Container for Pending Control Channels");
-			mrcp_connection_destroy(agent->null_connection);
-			agent->null_connection = NULL;
+	if(connection) {
+		mrcp_connection_channel_remove(connection,channel);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Control Channel <%s> [%d]",
+				channel->identifier.buf,
+				apr_hash_count(connection->channel_table));
+		if(!connection->access_count) {
+			if(!connection->sock) {
+				mrcp_connection_remove(agent,connection);
+				/* set connection to be destroyed on channel destroy */
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark Connection for Removal %s",connection->id);
+				channel->connection = connection;
+				channel->removed = TRUE;
+			}
 		}
-		else if(!connection->sock) {
-			mrcp_connection_remove(agent,connection);
-			/* set connection to be destroyed on channel destroy */
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark Connection for Removal %s",connection->id);
-			channel->connection = connection;
-			channel->removed = TRUE;
-		}
+	}
+	else {
+		apr_hash_set(agent->pending_channel_table,channel->identifier.buf,channel->identifier.length,NULL);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove Pending Control Channel <%s> [%d]",
+				channel->identifier.buf,
+				apr_hash_count(agent->pending_channel_table));
 	}
 	/* send response */
 	return mrcp_control_channel_remove_respond(agent->vtable,channel,TRUE);
