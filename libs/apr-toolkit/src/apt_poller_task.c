@@ -149,7 +149,7 @@ APT_DECLARE(apt_task_t*) apt_poller_task_base_get(const apt_poller_task_t *task)
 }
 
 /** Get task vtable */
-APT_DECLARE(apt_task_vtable_t*) apt_poller_task_vtable_get(apt_poller_task_t *task)
+APT_DECLARE(apt_task_vtable_t*) apt_poller_task_vtable_get(const apt_poller_task_t *task)
 {
 	return apt_task_vtable_get(task->base);
 }
