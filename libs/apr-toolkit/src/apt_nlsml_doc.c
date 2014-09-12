@@ -148,6 +148,7 @@ static nlsml_instance_t* nlsml_instance_parse(apr_xml_elem *elem, apr_pool_t *po
 {
 	/* Initialize instance */
 	nlsml_instance_t *instance = apr_palloc(pool, sizeof(*instance));
+	APR_RING_ELEM_INIT(instance,link);
 	instance->elem = elem;
 
 	return instance;
@@ -197,6 +198,7 @@ static nlsml_interpretation_t* nlsml_interpretation_parse(apr_xml_elem *elem, ap
 
 	/* Initialize interpretation */
 	nlsml_interpretation_t *interpretation = apr_palloc(pool, sizeof(*interpretation));
+	APR_RING_ELEM_INIT(interpretation,link);
 	interpretation->grammar = NULL;
 	interpretation->confidence = 1.0;
 	interpretation->input = NULL;
