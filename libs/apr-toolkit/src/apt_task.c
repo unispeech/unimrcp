@@ -234,8 +234,14 @@ APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *ms
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] ["APT_PTR_FMT";%d;%d]",
 		task->name, msg, msg->type, msg->sub_type);
 	if(task->vtable.signal_msg) {
-		return task->vtable.signal_msg(task,msg);
+		if(task->vtable.signal_msg(task,msg) == TRUE) {
+			return TRUE;
+		}
 	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Signal Task Message [%s] [0x%x;%d;%d]",
+		task->name, msg, msg->type, msg->sub_type);
+	apt_task_msg_release(msg);
 	return FALSE;
 }
 
@@ -243,15 +249,13 @@ APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_ms
 {
 	apt_task_t *parent_task = task->parent_task;
 	if(parent_task) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] ["APT_PTR_FMT";%d;%d]",
-			parent_task->name, msg, msg->type, msg->sub_type);
-		if(parent_task->vtable.signal_msg) {
-			return parent_task->vtable.signal_msg(parent_task,msg);
-		}
+		return apt_task_msg_signal(parent_task,msg);
 	}
+	
+	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Null Parent Task [%s]",task->name);
+	apt_task_msg_release(msg);
 	return FALSE;
 }
-
 
 static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
