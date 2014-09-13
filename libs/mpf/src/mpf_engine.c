@@ -240,7 +240,7 @@ static apt_bool_t mpf_engine_start(apt_task_t *task)
 	mpf_engine_t *engine = apt_task_object_get(task);
 
 	mpf_scheduler_start(engine->scheduler);
-	apt_task_child_start(task);
+	apt_task_start_request_process(task);
 	return TRUE;
 }
 
@@ -249,7 +249,7 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task)
 	mpf_engine_t *engine = apt_task_object_get(task);
 
 	mpf_scheduler_stop(engine->scheduler);
-	apt_task_child_terminate(task);
+	apt_task_terminate_request_process(task);
 	return TRUE;
 }
 

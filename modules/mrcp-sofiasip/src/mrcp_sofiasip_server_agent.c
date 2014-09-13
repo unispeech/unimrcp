@@ -221,7 +221,7 @@ static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
 	sofia_agent->root = NULL;
 	su_deinit();
 
-	apt_task_child_terminate(task);
+	apt_task_terminate_request_process(task);
 	return TRUE;
 }
 

@@ -165,11 +165,11 @@ const mrcp_engine_channel_event_vtable_t engine_channel_vtable = {
 };
 
 /* Task interface */
-static void mrcp_server_on_start_request(apt_task_t *task);
-static void mrcp_server_on_terminate_request(apt_task_t *task);
+static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+static apt_bool_t mrcp_server_start_request_process(apt_task_t *task);
+static apt_bool_t mrcp_server_terminate_request_process(apt_task_t *task);
 static void mrcp_server_on_start_complete(apt_task_t *task);
 static void mrcp_server_on_terminate_complete(apt_task_t *task);
-static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
 static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *signaling_agent);
 
@@ -217,8 +217,8 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = mrcp_server_msg_process;
-		vtable->on_start_request = mrcp_server_on_start_request;
-		vtable->on_terminate_request = mrcp_server_on_terminate_request;
+		vtable->process_start = mrcp_server_start_request_process;
+		vtable->process_terminate = mrcp_server_terminate_request_process;
 		vtable->on_start_complete = mrcp_server_on_start_complete;
 		vtable->on_terminate_complete = mrcp_server_on_terminate_complete;
 	}
@@ -619,7 +619,7 @@ static APR_INLINE mrcp_server_session_t* mrcp_server_session_find(mrcp_server_t 
 	return apr_hash_get(server->session_table,session_id->buf,session_id->length);
 }
 
-static void mrcp_server_on_start_request(apt_task_t *task)
+static apt_bool_t mrcp_server_start_request_process(apt_task_t *task)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
@@ -637,9 +637,11 @@ static void mrcp_server_on_start_request(apt_task_t *task)
 			}
 		}
 	}
+
+	return apt_task_start_request_process(task);
 }
 
-static void mrcp_server_on_terminate_request(apt_task_t *task)
+static apt_bool_t mrcp_server_terminate_request_process(apt_task_t *task)
 {
 	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
 	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
@@ -657,6 +659,8 @@ static void mrcp_server_on_terminate_request(apt_task_t *task)
 			}
 		}
 	}
+
+	return apt_task_terminate_request_process(task);
 }
 
 static void mrcp_server_on_start_complete(apt_task_t *task)

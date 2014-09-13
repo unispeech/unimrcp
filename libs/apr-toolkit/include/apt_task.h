@@ -78,18 +78,6 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task);
 APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_till_complete);
 
 /**
- * Start child tasks.
- * @param task the parent task
- */
-APT_DECLARE(apt_bool_t) apt_task_child_start(apt_task_t *task);
-
-/**
- * Terminate child tasks.
- * @param task the parent task
- */
-APT_DECLARE(apt_bool_t) apt_task_child_terminate(apt_task_t *task);
-
-/**
  * Wait for task till complete.
  * @param task the task to wait for
  */
@@ -121,6 +109,19 @@ APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_ms
  * @param msg the message to process
  */
 APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
+
+/**
+ * Process task start request.
+ * @param task the task being started
+ */
+APT_DECLARE(apt_bool_t) apt_task_start_request_process(apt_task_t *task);
+
+/**
+ * Process task termination request.
+ * @param task the task being terminated
+ */
+APT_DECLARE(apt_bool_t) apt_task_terminate_request_process(apt_task_t *task);
+
 
 /**
  * Get parent (master) task.
@@ -220,21 +221,22 @@ struct apt_task_vtable_t {
 	/** Virtual run method*/
 	apt_task_method_f run;
 
-	/** Virtual signal method  */
+	/** Virtual signal_msg method  */
 	apt_bool_t (*signal_msg)(apt_task_t *task, apt_task_msg_t *msg);
-	/** Virtual process method */
+	/** Virtual process_msg method */
 	apt_bool_t (*process_msg)(apt_task_t *task, apt_task_msg_t *msg);
+
+	/** Virtual process_start method */
+	apt_bool_t (*process_start)(apt_task_t *task);
+	/** Virtual process_terminate method */
+	apt_bool_t (*process_terminate)(apt_task_t *task);
 
 	/** Virtual pre-run event handler */
 	apt_task_event_f on_pre_run;
 	/** Virtual post-run event handler */
 	apt_task_event_f on_post_run;
-	/** Virtual start-request event handler */
-	apt_task_event_f on_start_request;
 	/** Virtual start-complete event handler */
 	apt_task_event_f on_start_complete;
-	/** Virtual terminate-request event handler */
-	apt_task_event_f on_terminate_request;
 	/** Virtual terminate-complete event handler */
 	apt_task_event_f on_terminate_complete;
 };
