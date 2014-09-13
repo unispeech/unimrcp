@@ -43,6 +43,8 @@ struct apt_task_t {
 	apt_obj_list_t      *child_tasks;   /* list of the child (slave) tasks */
 	apr_size_t           pending_start; /* number of pending start requests */
 	apr_size_t           pending_term;  /* number of pending terminate requests */
+	apr_size_t           pending_off;   /* number of pending taking-offline requests */
+	apr_size_t           pending_on;    /* number of pending bringing-online requests */
 	apt_bool_t           running;       /* task is running (TRUE if even terminate has already been requested) */
 	apt_bool_t           auto_ready;    /* if TRUE, task is implicitly ready to process messages */
 	const char          *name;          /* name of the task */
@@ -50,11 +52,23 @@ struct apt_task_t {
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
 static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable);
+
+static apt_bool_t apt_task_core_msg_signal(apt_task_t *task, apt_task_msg_pool_t *msg_pool, apt_core_task_msg_type_e type);
+
 static apt_bool_t apt_task_terminate_request(apt_task_t *task);
+
 static apt_bool_t apt_task_start_process_internal(apt_task_t *task);
 static apt_bool_t apt_task_terminate_process_internal(apt_task_t *task);
+static apt_bool_t apt_task_offline_request_process(apt_task_t *task);
+static apt_bool_t apt_task_online_request_process(apt_task_t *task);
+
+static apt_bool_t apt_task_offline_request_complete(apt_task_t *task);
+static apt_bool_t apt_task_online_request_complete(apt_task_t *task);
+
 static void apt_task_start_complete_raise(apt_task_t *task);
 static void apt_task_terminate_complete_raise(apt_task_t *task);
+static void apt_task_offline_complete_raise(apt_task_t *task);
+static void apt_task_online_complete_raise(apt_task_t *task);
 
 
 APT_DECLARE(apt_task_t*) apt_task_create(
@@ -77,7 +91,7 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 		return NULL;
 	}
 
-	/* reset and copy vtable */
+	/* reset vtable */
 	apt_task_vtable_reset(&task->vtable);
 	task->vtable.terminate = apt_task_terminate_request;
 	task->vtable.process_start = apt_task_start_process_internal;
@@ -87,6 +101,8 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 	task->child_tasks = apt_list_create(pool);
 	task->pending_start = 0;
 	task->pending_term = 0;
+	task->pending_off = 0;
+	task->pending_on = 0;
 	task->auto_ready = TRUE;
 	task->name = "Task";
 	return task;
@@ -133,7 +149,7 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 		task->state = TASK_STATE_START_REQUESTED;
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task [%s]",task->name);
 		if(task->vtable.start) {
-			/* raise virtual start method */
+			/* invoke virtual start method */
 			task->vtable.start(task);
 		}
 		else {
@@ -152,6 +168,16 @@ APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
 	return status;
 }
 
+APT_DECLARE(apt_bool_t) apt_task_offline(apt_task_t *task)
+{
+	return apt_task_core_msg_signal(task,task->msg_pool,CORE_TASK_MSG_TAKEOFFLINE_REQUEST);
+}
+
+APT_DECLARE(apt_bool_t) apt_task_online(apt_task_t *task)
+{
+	return apt_task_core_msg_signal(task,task->msg_pool,CORE_TASK_MSG_BRINGONLINE_REQUEST);
+}
+
 APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_till_complete)
 {
 	apt_bool_t status = FALSE;
@@ -162,7 +188,7 @@ APT_DECLARE(apt_bool_t) apt_task_terminate(apt_task_t *task, apt_bool_t wait_til
 	apr_thread_mutex_unlock(task->data_guard);
 
 	if(task->state == TASK_STATE_TERMINATE_REQUESTED) {
-		/* raise virtual terminate method */
+		/* invoke virtual terminate method */
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Terminate Task [%s]",task->name);
 		if(task->vtable.terminate) {
 			status = task->vtable.terminate(task);
@@ -257,26 +283,44 @@ APT_DECLARE(apt_bool_t) apt_task_msg_parent_signal(apt_task_t *task, apt_task_ms
 	return FALSE;
 }
 
+static apt_bool_t apt_task_core_msg_signal(apt_task_t *task, apt_task_msg_pool_t *msg_pool, apt_core_task_msg_type_e type)
+{
+	if(task && msg_pool) {
+		apt_task_msg_t *msg = apt_task_msg_acquire(msg_pool);
+		/* signal core task message */
+		msg->type = TASK_MSG_CORE;
+		msg->sub_type = type;
+		return apt_task_msg_signal(task,msg);
+	}
+	return FALSE;
+}
+
 static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	switch(msg->sub_type) {
 		case CORE_TASK_MSG_START_COMPLETE:
-		{
 			apt_task_start_request_remove(task);
 			break;
-		}
 		case CORE_TASK_MSG_TERMINATE_REQUEST:
-		{
 			if(task->vtable.process_terminate) {
 				task->vtable.process_terminate(task);
 			}
 			break;
-		}
 		case CORE_TASK_MSG_TERMINATE_COMPLETE:
-		{
 			apt_task_terminate_request_remove(task);
 			break;
-		}
+		case CORE_TASK_MSG_TAKEOFFLINE_REQUEST:
+			apt_task_offline_request_process(task);
+			break;
+		case CORE_TASK_MSG_TAKEOFFLINE_COMPLETE:
+			apt_task_offline_request_complete(task);
+			break;
+		case CORE_TASK_MSG_BRINGONLINE_REQUEST:
+			apt_task_online_request_process(task);
+			break;
+		case CORE_TASK_MSG_BRINGONLINE_COMPLETE:
+			apt_task_online_request_complete(task);
+			break;
 		default: break;
 	}
 	return TRUE;
@@ -302,14 +346,7 @@ APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *m
 
 static apt_bool_t apt_task_terminate_request(apt_task_t *task)
 {
-	if(task->msg_pool) {
-		apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-		/* signal terminate-request message */
-		msg->type = TASK_MSG_CORE;
-		msg->sub_type = CORE_TASK_MSG_TERMINATE_REQUEST;
-		return apt_task_msg_signal(task,msg);
-	}
-	return FALSE;
+	return apt_task_core_msg_signal(task,task->msg_pool,CORE_TASK_MSG_TERMINATE_REQUEST);
 }
 
 APT_DECLARE(apt_bool_t) apt_task_start_request_process(apt_task_t *task)
@@ -371,6 +408,50 @@ static apt_bool_t apt_task_terminate_process_internal(apt_task_t *task)
 		/* no child task to terminate, just raise terminate-complete event */
 		apt_task_terminate_complete_raise(task);
 		task->running = FALSE;
+	}
+	return TRUE;
+}
+
+static apt_bool_t apt_task_offline_request_process(apt_task_t *task)
+{
+	apt_task_t *child_task = NULL;
+	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
+	/* walk through the list of the child tasks */
+	while(elem) {
+		child_task = apt_list_elem_object_get(elem);
+		if(child_task) {
+			if(apt_task_offline(child_task) == TRUE) {
+				task->pending_off++;
+			}
+		}
+		elem = apt_list_next_elem_get(task->child_tasks,elem);
+	}
+
+	if(!task->pending_off) {
+		/* no child task, just raise offline-complete event */
+		apt_task_offline_complete_raise(task);
+	}
+	return TRUE;
+}
+
+static apt_bool_t apt_task_online_request_process(apt_task_t *task)
+{
+	apt_task_t *child_task = NULL;
+	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
+	/* walk through the list of the child tasks */
+	while(elem) {
+		child_task = apt_list_elem_object_get(elem);
+		if(child_task) {
+			if(apt_task_online(child_task) == TRUE) {
+				task->pending_on++;
+			}
+		}
+		elem = apt_list_next_elem_get(task->child_tasks,elem);
+	}
+
+	if(!task->pending_on) {
+		/* no child task, just raise online-complete event */
+		apt_task_online_complete_raise(task);
 	}
 	return TRUE;
 }
@@ -437,21 +518,39 @@ APT_DECLARE(apt_bool_t) apt_task_terminate_request_remove(apt_task_t *task)
 	return TRUE;
 }
 
+static apt_bool_t apt_task_offline_request_complete(apt_task_t *task)
+{
+	if(!task->pending_off) {
+		/* error case, no pending request */
+		return FALSE;
+	}
+	task->pending_off--;
+	if(!task->pending_off) {
+		apt_task_offline_complete_raise(task);
+	}
+	return TRUE;
+}
+
+static apt_bool_t apt_task_online_request_complete(apt_task_t *task)
+{
+	if(!task->pending_on) {
+		/* error case, no pending request */
+		return FALSE;
+	}
+	task->pending_on--;
+	if(!task->pending_on) {
+		apt_task_online_complete_raise(task);
+	}
+	return TRUE;
+}
+
 static void apt_task_start_complete_raise(apt_task_t *task)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Started [%s]",task->name);
 	if(task->vtable.on_start_complete) {
 		task->vtable.on_start_complete(task);
 	}
-	if(task->parent_task) {
-		if(task->msg_pool) {
-			apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-			/* signal start-complete message */
-			msg->type = TASK_MSG_CORE;
-			msg->sub_type = CORE_TASK_MSG_START_COMPLETE;
-			apt_task_msg_signal(task->parent_task,msg);
-		}
-	}
+	apt_task_core_msg_signal(task->parent_task,task->msg_pool,CORE_TASK_MSG_START_COMPLETE);
 }
 
 static void apt_task_terminate_complete_raise(apt_task_t *task)
@@ -461,16 +560,26 @@ static void apt_task_terminate_complete_raise(apt_task_t *task)
 		task->vtable.on_terminate_complete(task);
 	}
 #ifdef ENABLE_SIMULT_TASK_TERMINATION
-	if(task->parent_task) {
-		if(task->msg_pool) {
-			apt_task_msg_t *msg = apt_task_msg_acquire(task->msg_pool);
-			/* signal terminate-complete message */
-			msg->type = TASK_MSG_CORE;
-			msg->sub_type = CORE_TASK_MSG_TERMINATE_COMPLETE;
-			apt_task_msg_signal(task->parent_task,msg);
-		}
-	}
+	apt_task_core_msg_signal(task->parent_task,task->msg_pool,CORE_TASK_MSG_TERMINATE_COMPLETE);
 #endif
+}
+
+static void apt_task_offline_complete_raise(apt_task_t *task)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Taken Offline [%s]",task->name);
+	if(task->vtable.on_offline_complete) {
+		task->vtable.on_offline_complete(task);
+	}
+	apt_task_core_msg_signal(task->parent_task,task->msg_pool,CORE_TASK_MSG_TAKEOFFLINE_COMPLETE);
+}
+
+static void apt_task_online_complete_raise(apt_task_t *task)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Task Brought Online [%s]",task->name);
+	if(task->vtable.on_online_complete) {
+		task->vtable.on_online_complete(task);
+	}
+	apt_task_core_msg_signal(task->parent_task,task->msg_pool,CORE_TASK_MSG_BRINGONLINE_COMPLETE);
 }
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data)
@@ -528,4 +637,6 @@ static APR_INLINE void apt_task_vtable_reset(apt_task_vtable_t *vtable)
 	vtable->on_post_run = NULL;
 	vtable->on_start_complete = NULL;
 	vtable->on_terminate_complete = NULL;
+	vtable->on_offline_complete = NULL;
+	vtable->on_online_complete = NULL;
 }

@@ -30,16 +30,20 @@ APT_BEGIN_EXTERN_C
 
 /** Enumeration of task message types */
 typedef enum {
-	TASK_MSG_CORE,                   /**< core task message type */
-	TASK_MSG_USER                    /**< user defined task messages start from here */
+	TASK_MSG_CORE,                      /**< core task message type */
+	TASK_MSG_USER                       /**< user defined task messages start from here */
 } apt_task_msg_type_e;
 
 /** Enumeration of core task messages */
 typedef enum {
-	CORE_TASK_MSG_NONE,              /**< indefinite message */
-	CORE_TASK_MSG_START_COMPLETE,    /**< start-complete message */
-	CORE_TASK_MSG_TERMINATE_REQUEST, /**< terminate-request message */
-	CORE_TASK_MSG_TERMINATE_COMPLETE /**< terminate-complete message */
+	CORE_TASK_MSG_NONE,                 /**< indefinite message */
+	CORE_TASK_MSG_START_COMPLETE,       /**< start-complete message */
+	CORE_TASK_MSG_TERMINATE_REQUEST,    /**< terminate-request message */
+	CORE_TASK_MSG_TERMINATE_COMPLETE,   /**< terminate-complete message */
+	CORE_TASK_MSG_TAKEOFFLINE_REQUEST,  /**< take-offline-request message */
+	CORE_TASK_MSG_TAKEOFFLINE_COMPLETE, /**< take-offline-complete message */
+	CORE_TASK_MSG_BRINGONLINE_REQUEST,  /**< bring-online-request message */
+	CORE_TASK_MSG_BRINGONLINE_COMPLETE, /**< bring-online-complete message */
 } apt_core_task_msg_type_e;
 
 /** Opaque task message declaration */

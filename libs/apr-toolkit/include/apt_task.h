@@ -70,6 +70,18 @@ APT_DECLARE(apt_bool_t) apt_task_add(apt_task_t *task, apt_task_t *child_task);
 APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task);
 
 /**
+ * Take task offline.
+ * @param task the task to take offline
+ */
+APT_DECLARE(apt_bool_t) apt_task_offline(apt_task_t *task);
+
+/**
+ * Bring task online.
+ * @param task the task to bring online
+ */
+APT_DECLARE(apt_bool_t) apt_task_online(apt_task_t *task);
+
+/**
  * Terminate task.
  * @param task the task to terminate
  * @param wait_till_complete whether to wait for task to complete or
@@ -239,6 +251,10 @@ struct apt_task_vtable_t {
 	apt_task_event_f on_start_complete;
 	/** Virtual terminate-complete event handler */
 	apt_task_event_f on_terminate_complete;
+	/** Virtual take-offline-complete event handler */
+	apt_task_event_f on_offline_complete;
+	/** Virtual bring-online-complete event handler */
+	apt_task_event_f on_online_complete;
 };
 
 APT_END_EXTERN_C
