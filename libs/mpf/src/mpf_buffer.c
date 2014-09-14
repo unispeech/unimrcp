@@ -89,6 +89,7 @@ apt_bool_t mpf_buffer_audio_write(mpf_buffer_t *buffer, void *data, apr_size_t s
 	apr_thread_mutex_lock(buffer->guard);
 
 	chunk = apr_palloc(buffer->pool,sizeof(mpf_chunk_t));
+	APR_RING_ELEM_INIT(chunk,link);
 	chunk->frame.codec_frame.buffer = apr_palloc(buffer->pool,size);
 	memcpy(chunk->frame.codec_frame.buffer,data,size);
 	chunk->frame.codec_frame.size = size;
@@ -107,6 +108,7 @@ apt_bool_t mpf_buffer_event_write(mpf_buffer_t *buffer, mpf_frame_type_e event_t
 	apr_thread_mutex_lock(buffer->guard);
 
 	chunk = apr_palloc(buffer->pool,sizeof(mpf_chunk_t));
+	APR_RING_ELEM_INIT(chunk,link);
 	chunk->frame.codec_frame.buffer = NULL;
 	chunk->frame.codec_frame.size = 0;
 	chunk->frame.type = event_type;

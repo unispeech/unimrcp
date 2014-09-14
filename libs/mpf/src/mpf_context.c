@@ -122,6 +122,7 @@ MPF_DECLARE(mpf_context_t*) mpf_context_create(
 	matrix_item_t *matrix_item;
 	header_item_t *header_item;
 	mpf_context_t *context = apr_palloc(pool,sizeof(mpf_context_t));
+	APR_RING_ELEM_INIT(context,link);
 	context->factory = factory;
 	context->obj = obj;
 	context->pool = pool;
