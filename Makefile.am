@@ -1,7 +1,8 @@
 macrodir             = @ac_macro_dir@
 auxdir               = @ac_aux_dir@
 
-AUX_DIST             = $(auxdir)/config.guess \
+AUX_DIST             = $(auxdir)/compile \
+                       $(auxdir)/config.guess \
                        $(auxdir)/config.sub \
                        $(auxdir)/install-sh \
                        $(auxdir)/ltconfig \
