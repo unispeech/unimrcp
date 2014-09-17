@@ -1,4 +1,4 @@
-INCLUDES               = $(UNIMRCP_SERVERAPP_INCLUDES)
+AM_CPPFLAGS            = $(UNIMRCP_SERVERAPP_INCLUDES)
 
 bin_PROGRAMS           = unimrcpserver
 unimrcpserver_SOURCES  = src/main.c src/uni_cmdline.c src/uni_daemon.c

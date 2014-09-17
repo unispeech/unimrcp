@@ -1,4 +1,4 @@
-INCLUDES                   = $(UNIMRCP_PLUGIN_INCLUDES)
+AM_CPPFLAGS                = $(UNIMRCP_PLUGIN_INCLUDES)
 
 plugin_LTLIBRARIES         = demoverifier.la
 

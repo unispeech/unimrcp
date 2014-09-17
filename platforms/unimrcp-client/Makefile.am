@@ -1,4 +1,4 @@
-INCLUDES               = $(UNIMRCP_CLIENTAPP_INCLUDES)
+AM_CPPFLAGS            = $(UNIMRCP_CLIENTAPP_INCLUDES)
 
 bin_PROGRAMS           = unimrcpclient
 

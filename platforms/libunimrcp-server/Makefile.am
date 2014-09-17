@@ -1,4 +1,4 @@
-INCLUDES                    = $(UNIMRCP_SERVERLIB_INCLUDES)
+AM_CPPFLAGS                 = $(UNIMRCP_SERVERLIB_INCLUDES)
 
 lib_LTLIBRARIES             = libunimrcpserver.la
 

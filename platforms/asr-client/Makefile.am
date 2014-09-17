@@ -1,4 +1,4 @@
-INCLUDES               = -I$(top_srcdir)/platforms/libasr-client/include \
+AM_CPPFLAGS            = -I$(top_srcdir)/platforms/libasr-client/include \
                          $(UNIMRCP_CLIENTAPP_INCLUDES)
 
 bin_PROGRAMS           = asrclient
