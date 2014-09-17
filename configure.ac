@@ -43,7 +43,7 @@ sinclude(build/acmacros/ltsugar.m4)
 sinclude(build/acmacros/ltversion.m4)
 sinclude(build/acmacros/lt~obsolete.m4)
 
-AM_INIT_AUTOMAKE([no-define nostdinc foreign])
+AM_INIT_AUTOMAKE([no-define nostdinc foreign subdir-objects])
 
 dnl Enable silent build rules available since automake 1.11.
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
