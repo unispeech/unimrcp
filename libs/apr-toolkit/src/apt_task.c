@@ -16,11 +16,14 @@
  * $Id$
  */
 
+#ifdef WIN32
+#pragma warning(disable: 4127)
+#endif
+#include <apr_ring.h> 
 #include <apr_thread_proc.h>
 #include <apr_thread_cond.h>
 #include <apr_portable.h>
 #include "apt_task.h"
-#include "apt_obj_list.h"
 #include "apt_log.h"
 
 /** Internal states of the task */
@@ -32,6 +35,10 @@ typedef enum {
 } apt_task_state_e;
 
 struct apt_task_t {
+	APR_RING_ENTRY(apt_task_t) link;                 /* entry to parent task ring */
+	APR_RING_HEAD(apt_task_head_t, apt_task_t) head; /* head of child tasks ring */
+
+	const char          *name;          /* name of the task */
 	void                *obj;           /* external object associated with the task */
 	apr_pool_t          *pool;          /* memory pool to allocate task data from */
 	apt_task_msg_pool_t *msg_pool;      /* message pool to allocate task messages from */
@@ -40,14 +47,12 @@ struct apt_task_t {
 	apt_task_state_e     state;         /* current task state */
 	apt_task_vtable_t    vtable;        /* table of virtual methods */
 	apt_task_t          *parent_task;   /* parent (master) task */
-	apt_obj_list_t      *child_tasks;   /* list of the child (slave) tasks */
 	apr_size_t           pending_start; /* number of pending start requests */
 	apr_size_t           pending_term;  /* number of pending terminate requests */
 	apr_size_t           pending_off;   /* number of pending taking-offline requests */
 	apr_size_t           pending_on;    /* number of pending bringing-online requests */
 	apt_bool_t           running;       /* task is running (TRUE if even terminate has already been requested) */
 	apt_bool_t           auto_ready;    /* if TRUE, task is implicitly ready to process messages */
-	const char          *name;          /* name of the task */
 };
 
 static void* APR_THREAD_FUNC apt_task_run(apr_thread_t *thread_handle, void *data);
@@ -97,8 +102,10 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 	task->vtable.process_start = apt_task_start_process_internal;
 	task->vtable.process_terminate = apt_task_terminate_process_internal;
 	
+	APR_RING_ELEM_INIT(task, link);
+	APR_RING_INIT(&task->head, apt_task_t, link);
+
 	task->parent_task = NULL;
-	task->child_tasks = apt_list_create(pool);
 	task->pending_start = 0;
 	task->pending_term = 0;
 	task->pending_off = 0;
@@ -110,15 +117,11 @@ APT_DECLARE(apt_task_t*) apt_task_create(
 
 APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 {
-	apt_task_t *child_task = NULL;
-	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
-	/* walk through the list of the child tasks and destroy them */
-	while(elem) {
-		child_task = apt_list_elem_object_get(elem);
+	apt_task_t *child_task;
+	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
 		if(child_task) {
 			apt_task_destroy(child_task);
 		}
-		elem = apt_list_next_elem_get(task->child_tasks,elem);
 	}
 
 	if(task->state != TASK_STATE_IDLE) {
@@ -136,8 +139,12 @@ APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 
 APT_DECLARE(apt_bool_t) apt_task_add(apt_task_t *task, apt_task_t *child_task)
 {
+	if(!child_task)
+		return FALSE;
+
 	child_task->parent_task = task;
-	return (apt_list_push_back(task->child_tasks,child_task, child_task->pool) ? TRUE : FALSE);
+	APR_RING_INSERT_TAIL(&task->head,child_task,apt_task_t,link);
+	return TRUE;
 }
 
 APT_DECLARE(apt_bool_t) apt_task_start(apt_task_t *task)
@@ -356,17 +363,13 @@ APT_DECLARE(apt_bool_t) apt_task_start_request_process(apt_task_t *task)
 
 static apt_bool_t apt_task_start_process_internal(apt_task_t *task)
 {
-	apt_task_t *child_task = NULL;
-	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
-	/* walk through the list of the child tasks and start them */
-	while(elem) {
-		child_task = apt_list_elem_object_get(elem);
+	apt_task_t *child_task;
+	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
 		if(child_task) {
 			if(apt_task_start(child_task) == TRUE) {
 				task->pending_start++;
 			}
 		}
-		elem = apt_list_next_elem_get(task->child_tasks,elem);
 	}
 
 	if(!task->pending_start) {
@@ -383,11 +386,8 @@ APT_DECLARE(apt_bool_t) apt_task_terminate_request_process(apt_task_t *task)
 
 static apt_bool_t apt_task_terminate_process_internal(apt_task_t *task)
 {
-	apt_task_t *child_task = NULL;
-	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
-	/* walk through the list of the child tasks and terminate them */
-	while(elem) {
-		child_task = apt_list_elem_object_get(elem);
+	apt_task_t *child_task;
+	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
 		if(child_task) {
 #ifdef ENABLE_SIMULT_TASK_TERMINATION
 			if(child_task->thread_handle) {
@@ -401,7 +401,6 @@ static apt_bool_t apt_task_terminate_process_internal(apt_task_t *task)
 			apt_task_terminate(child_task,TRUE);
 #endif
 		}
-		elem = apt_list_next_elem_get(task->child_tasks,elem);
 	}
 
 	if(!task->pending_term) {
@@ -414,17 +413,13 @@ static apt_bool_t apt_task_terminate_process_internal(apt_task_t *task)
 
 static apt_bool_t apt_task_offline_request_process(apt_task_t *task)
 {
-	apt_task_t *child_task = NULL;
-	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
-	/* walk through the list of the child tasks */
-	while(elem) {
-		child_task = apt_list_elem_object_get(elem);
+	apt_task_t *child_task;
+	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
 		if(child_task) {
 			if(apt_task_offline(child_task) == TRUE) {
 				task->pending_off++;
 			}
 		}
-		elem = apt_list_next_elem_get(task->child_tasks,elem);
 	}
 
 	if(!task->pending_off) {
@@ -436,17 +431,13 @@ static apt_bool_t apt_task_offline_request_process(apt_task_t *task)
 
 static apt_bool_t apt_task_online_request_process(apt_task_t *task)
 {
-	apt_task_t *child_task = NULL;
-	apt_list_elem_t *elem = apt_list_first_elem_get(task->child_tasks);
-	/* walk through the list of the child tasks */
-	while(elem) {
-		child_task = apt_list_elem_object_get(elem);
+	apt_task_t *child_task;
+	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
 		if(child_task) {
 			if(apt_task_online(child_task) == TRUE) {
 				task->pending_on++;
 			}
 		}
-		elem = apt_list_next_elem_get(task->child_tasks,elem);
 	}
 
 	if(!task->pending_on) {
