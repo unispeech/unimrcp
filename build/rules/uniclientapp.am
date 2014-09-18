@@ -1,8 +1,7 @@
 MAINTAINERCLEANFILES       = Makefile.in
 
 # Includes
-UNIMRCP_CLIENTAPP_INCLUDES = -Iinclude \
-                             -I$(top_srcdir)/platforms/libunimrcp-client/include \
+UNIMRCP_CLIENTAPP_INCLUDES = -I$(top_srcdir)/platforms/libunimrcp-client/include \
                              -I$(top_srcdir)/libs/mrcp-client/include \
                              -I$(top_srcdir)/libs/mrcp-signaling/include \
                              -I$(top_srcdir)/libs/mrcpv2-transport/include \

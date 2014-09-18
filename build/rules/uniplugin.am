@@ -1,8 +1,7 @@
 MAINTAINERCLEANFILES       = Makefile.in
 
 # Includes
-UNIMRCP_PLUGIN_INCLUDES    = -Iinclude \
-                             -I$(top_srcdir)/libs/mrcp-engine/include \
+UNIMRCP_PLUGIN_INCLUDES    = -I$(top_srcdir)/libs/mrcp-engine/include \
                              -I$(top_srcdir)/libs/mrcp/include \
                              -I$(top_srcdir)/libs/mrcp/message/include \
                              -I$(top_srcdir)/libs/mrcp/control/include \

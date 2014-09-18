@@ -1,8 +1,7 @@
 MAINTAINERCLEANFILES       = Makefile.in
 
 # Includes
-UNIMRCP_SERVERAPP_INCLUDES = -Iinclude \
-                             -I$(top_srcdir)/platforms/libunimrcp-server/include \
+UNIMRCP_SERVERAPP_INCLUDES = -I$(top_srcdir)/platforms/libunimrcp-server/include \
                              -I$(top_srcdir)/libs/mrcp-server/include \
                              -I$(top_srcdir)/libs/mrcp-engine/include \
                              -I$(top_srcdir)/libs/mrcp-signaling/include \

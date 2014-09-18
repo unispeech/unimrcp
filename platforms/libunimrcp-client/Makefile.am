@@ -1,4 +1,5 @@
-AM_CPPFLAGS                 = $(UNIMRCP_CLIENTLIB_INCLUDES)
+AM_CPPFLAGS                 = -I$(top_srcdir)/platforms/libunimrcp-client/include \
+                              $(UNIMRCP_CLIENTLIB_INCLUDES)
 
 lib_LTLIBRARIES             = libunimrcpclient.la
 

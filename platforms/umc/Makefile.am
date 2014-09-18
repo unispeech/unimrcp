@@ -1,4 +1,5 @@
-AM_CPPFLAGS            = $(UNIMRCP_CLIENTAPP_INCLUDES)
+AM_CPPFLAGS            = -I$(top_srcdir)/platforms/umc/include \
+                         $(UNIMRCP_CLIENTAPP_INCLUDES)
 
 bin_PROGRAMS           = umc
 
