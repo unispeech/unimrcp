@@ -1,7 +1,8 @@
 dnl
-dnl Autoconf configuration file for the UniMRCP project.
+dnl Autoconf configuration file for UniMRCP.
 dnl
-dnl Process this file with autoconf to produce a configure script.
+dnl Use ./bootstrap to produce a configure script.
+dnl
 
 AC_PREREQ(2.59)
 
@@ -16,30 +17,25 @@ ac_macro_dir="build/acmacros"
 AC_SUBST(ac_aux_dir)
 AC_SUBST(ac_macro_dir)
 
-AC_PREFIX_DEFAULT(/usr/local/unimrcp)
-dnl Since AC_PREFIX_DEFAULT is expanded late, explicitly set the prefix.
-if test "x$prefix" = "xNONE" ; then
-    prefix="/usr/local/unimrcp"
-fi
-
-dnl Set plugin, conf, log and data dir variables.
-plugindir="${prefix}/plugin"
-sysconfdir="${prefix}/conf"
-logdir="${prefix}/log"
-datadir="${prefix}/data"
-
-AC_SUBST(plugindir)
-AC_SUBST(logdir)
-
-dnl Generate ./config.nice to reuse ./configure command-line.
-APR_CONFIG_NICE(config.nice)
-
 dnl Include m4 macros for libtool 2.
 sinclude(build/acmacros/libtool.m4)
 sinclude(build/acmacros/ltoptions.m4)
 sinclude(build/acmacros/ltsugar.m4)
 sinclude(build/acmacros/ltversion.m4)
 sinclude(build/acmacros/lt~obsolete.m4)
+
+AC_PREFIX_DEFAULT(/usr/local/unimrcp)
+
+dnl Define the directory layout.
+APR_ENABLE_LAYOUT(classic, [plugindir logdir])
+AC_SUBST(plugindir)
+AC_SUBST(logdir)
+
+dnl Reparse the configure arguments.
+APR_PARSE_ARGUMENTS
+
+dnl Generate ./config.nice to reuse ./configure command-line.
+APR_CONFIG_NICE(config.nice)
 
 AM_INIT_AUTOMAKE([no-define nostdinc foreign subdir-objects])
 
@@ -212,6 +208,7 @@ echo Demo recognizer plugin........ : $enable_demorecog_plugin
 echo Demo verifier plugin.......... : $enable_demoverifier_plugin
 echo Recorder plugin............... : $enable_recorder_plugin
 echo
+echo Installation layout........... : $layout_name
 echo Installation directory........ : $prefix
 echo
 echo '********************************************************************'
