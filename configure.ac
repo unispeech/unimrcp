@@ -24,14 +24,12 @@ fi
 
 dnl Set plugin, conf, log and data dir variables.
 plugindir="${prefix}/plugin"
-confdir="${prefix}/conf"
+sysconfdir="${prefix}/conf"
 logdir="${prefix}/log"
 datadir="${prefix}/data"
 
 AC_SUBST(plugindir)
-AC_SUBST(confdir)
 AC_SUBST(logdir)
-AC_SUBST(datadir)
 
 dnl Generate ./config.nice to reuse ./configure command-line.
 APR_CONFIG_NICE(config.nice)
