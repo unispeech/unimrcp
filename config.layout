@@ -19,6 +19,7 @@
     datadir:         ${prefix}/data
     plugindir:       ${exec_prefix}/plugin
     logdir:          ${exec_prefix}/log
+    vardir:          ${exec_prefix}/var
     installbuilddir: ${exec_prefix}/build
     includedir:      ${prefix}/include
     localstatedir:   ${prefix}

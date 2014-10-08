@@ -221,7 +221,7 @@ static apt_bool_t recorder_file_open(recorder_channel_t *recorder_channel, mrcp_
 		descriptor->sampling_rate/1000,
 		request->channel_id.session_id.buf,
 		request->start_line.request_id);
-	file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
+	file_path = apt_vardir_filepath_get(dir_layout,file_name,channel->pool);
 	if(!file_path) {
 		return FALSE;
 	}
@@ -231,8 +231,10 @@ static apt_bool_t recorder_file_open(recorder_channel_t *recorder_channel, mrcp_
 		recorder_channel->audio_out = NULL;
 	}
 
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Utterance Output File [%s] for Writing",file_path);
 	recorder_channel->audio_out = fopen(file_path,"wb");
 	if(!recorder_channel->audio_out) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Utterance Output File [%s] for Writing",file_path);
 		return FALSE;
 	}
 

@@ -289,9 +289,13 @@ static apt_bool_t demo_recog_channel_recognize(mrcp_engine_channel_t *channel, m
 		char *file_name = apr_psprintf(channel->pool,"utter-%dkHz-%s.pcm",
 							descriptor->sampling_rate/1000,
 							request->channel_id.session_id.buf);
-		char *file_path = apt_datadir_filepath_get(dir_layout,file_name,channel->pool);
+		char *file_path = apt_vardir_filepath_get(dir_layout,file_name,channel->pool);
 		if(file_path) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Utterance Output File [%s] for Writing",file_path);
 			recog_channel->audio_out = fopen(file_path,"wb");
+			if(!recog_channel->audio_out) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Utterance Output File [%s] for Writing",file_path);
+			}
 		}
 	}
 

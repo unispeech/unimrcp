@@ -26,6 +26,7 @@ static apt_dir_layout_t* apt_dir_layout_alloc(apr_pool_t *pool)
 	dir_layout->plugin_dir_path = NULL;
 	dir_layout->log_dir_path = NULL;
 	dir_layout->data_dir_path = NULL;
+	dir_layout->var_dir_path = NULL;
 	return dir_layout;
 }
 
@@ -37,6 +38,7 @@ APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_di
 		apr_filepath_merge(&dir_layout->plugin_dir_path,root_dir_path,"plugin",0,pool);
 		apr_filepath_merge(&dir_layout->log_dir_path,root_dir_path,"log",0,pool);
 		apr_filepath_merge(&dir_layout->data_dir_path,root_dir_path,"data",0,pool);
+		apr_filepath_merge(&dir_layout->var_dir_path,root_dir_path,"var",0,pool);
 	}
 	return dir_layout;
 }
@@ -46,6 +48,7 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 									const char *plugin_dir_path,
 									const char *log_dir_path,
 									const char *data_dir_path,
+									const char *var_dir_path,
 									apr_pool_t *pool)
 {
 	apt_dir_layout_t *dir_layout = apt_dir_layout_alloc(pool);
@@ -61,7 +64,21 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 	if(data_dir_path) {
 		dir_layout->data_dir_path = apr_pstrdup(pool,data_dir_path);
 	}
+	if(var_dir_path) {
+		dir_layout->var_dir_path = apr_pstrdup(pool,var_dir_path);
+	}
 	return dir_layout;
+}
+
+APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
+{
+	if(dir_layout && dir_layout->conf_dir_path && file_name) {
+		char *file_path = NULL;
+		if(apr_filepath_merge(&file_path,dir_layout->conf_dir_path,file_name,0,pool) == APR_SUCCESS) {
+			return file_path;
+		}
+	}
+	return NULL;
 }
 
 APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
@@ -75,11 +92,11 @@ APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, 
 	return NULL;
 }
 
-APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
+APT_DECLARE(char*) apt_vardir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
 {
-	if(dir_layout && dir_layout->conf_dir_path && file_name) {
+	if(dir_layout && dir_layout->var_dir_path && file_name) {
 		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->conf_dir_path,file_name,0,pool) == APR_SUCCESS) {
+		if(apr_filepath_merge(&file_path,dir_layout->var_dir_path,file_name,0,pool) == APR_SUCCESS) {
 			return file_path;
 		}
 	}

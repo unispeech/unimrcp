@@ -103,6 +103,7 @@ xcopy "$(SolutionDir)conf\client-profiles\*.xml" "$(SolutionDir)$(Configuration)
 
 if not exist "$(SolutionDir)$(Configuration)\data" xcopy "$(SolutionDir)data\*" "$(SolutionDir)$(Configuration)\data\" /Y
 if not exist "$(SolutionDir)$(Configuration)\log" mkdir "$(SolutionDir)$(Configuration)\log\"
+if not exist "$(SolutionDir)$(Configuration)\var" mkdir "$(SolutionDir)$(Configuration)\var\"
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -130,6 +131,7 @@ xcopy "$(SolutionDir)conf\client-profiles\*.xml" "$(SolutionDir)$(Platform)\$(Co
 
 if not exist "$(SolutionDir)$(Platform)\$(Configuration)\data" xcopy "$(SolutionDir)data\*" "$(SolutionDir)$(Platform)\$(Configuration)\data\" /Y
 if not exist "$(SolutionDir)$(Platform)\$(Configuration)\log" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\log\"
+if not exist "$(SolutionDir)$(Platform)\$(Configuration)\var" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\var\"
 </Command>
     </PreBuildEvent>
     <Midl>
@@ -160,6 +162,7 @@ xcopy "$(SolutionDir)conf\client-profiles\*.xml" "$(SolutionDir)$(Configuration)
 
 if not exist "$(SolutionDir)$(Configuration)\data" xcopy "$(SolutionDir)data\*" "$(SolutionDir)$(Configuration)\data\" /Y
 if not exist "$(SolutionDir)$(Configuration)\log" mkdir "$(SolutionDir)$(Configuration)\log\"
+if not exist "$(SolutionDir)$(Configuration)\var" mkdir "$(SolutionDir)$(Configuration)\var\"
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -187,6 +190,7 @@ xcopy "$(SolutionDir)conf\client-profiles\*.xml" "$(SolutionDir)$(Platform)\$(Co
 
 if not exist "$(SolutionDir)$(Platform)\$(Configuration)\data" xcopy "$(SolutionDir)data\*" "$(SolutionDir)$(Platform)\$(Configuration)\data\" /Y
 if not exist "$(SolutionDir)$(Platform)\$(Configuration)\log" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\log\"
+if not exist "$(SolutionDir)$(Platform)\$(Configuration)\var" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\var\"
 </Command>
     </PreBuildEvent>
     <Midl>

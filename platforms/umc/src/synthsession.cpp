@@ -281,11 +281,19 @@ mrcp_message_t* SynthSession::CreateSpeakRequest(mrcp_channel_t* pMrcpChannel)
 
 FILE* SynthSession::GetAudioOut(const mpf_codec_descriptor_t* pDescriptor, apr_pool_t* pool) const
 {
+	FILE* file;
 	char* pFileName = apr_psprintf(pool,"synth-%dkHz-%s.pcm",pDescriptor->sampling_rate/1000, GetMrcpSessionId());
 	apt_dir_layout_t* pDirLayout = GetScenario()->GetDirLayout();
-	char* pFilePath = apt_datadir_filepath_get(pDirLayout,pFileName,pool);
-	if(!pFilePath) 
+	char* pFilePath = apt_vardir_filepath_get(pDirLayout,pFileName,pool);
+	if(!pFilePath)
 		return NULL;
 
-	return fopen(pFilePath,"wb");
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Speech Output File [%s] for Writing",pFilePath);
+	file = fopen(pFilePath,"wb");
+	if(!file)
+	{
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Speech Output File [%s] for Writing",pFilePath);
+		return NULL;
+	}
+	return file;
 }

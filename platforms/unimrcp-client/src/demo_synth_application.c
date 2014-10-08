@@ -223,9 +223,13 @@ static apt_bool_t synth_application_on_channel_add(mrcp_application_t *applicati
 			char *file_name = apr_psprintf(pool,"synth-%dkHz-%s.pcm",
 									descriptor->sampling_rate/1000,
 									id->buf);
-			char *file_path = apt_datadir_filepath_get(dir_layout,file_name,pool);
+			char *file_path = apt_vardir_filepath_get(dir_layout,file_name,pool);
 			if(file_path) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open Speech Output File [%s] for Writing",file_path);
 				synth_channel->audio_out = fopen(file_path,"wb");
+				if(!synth_channel->audio_out) {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Utterance Output File [%s] for Writing",file_path);
+				}
 			}
 		}
 	}

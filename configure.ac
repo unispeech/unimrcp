@@ -27,9 +27,10 @@ sinclude(build/acmacros/lt~obsolete.m4)
 AC_PREFIX_DEFAULT(/usr/local/unimrcp)
 
 dnl Define the directory layout.
-APR_ENABLE_LAYOUT(classic, [plugindir logdir])
+APR_ENABLE_LAYOUT(classic, [plugindir logdir vardir])
 AC_SUBST(plugindir)
 AC_SUBST(logdir)
+AC_SUBST(vardir)
 
 dnl Reparse the configure arguments.
 APR_PARSE_ARGUMENTS

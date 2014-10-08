@@ -33,3 +33,4 @@ dox:
 
 install-data-local:
 	test -d $(DESTDIR)$(logdir) || $(mkinstalldirs) $(DESTDIR)$(logdir)
+	test -d $(DESTDIR)$(vardir) || $(mkinstalldirs) $(DESTDIR)$(vardir)

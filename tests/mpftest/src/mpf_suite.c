@@ -446,13 +446,14 @@ static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(const mpf_
 /** Create file writer descriptor */
 static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(const mpf_suite_agent_t *agent, const mpf_suite_session_t *session)
 {
-	const char *file_path = apt_datadir_filepath_get(agent->dir_layout,"output-8kHz.pcm",session->pool);
+	const char *file_path = apt_vardir_filepath_get(agent->dir_layout,"output-8kHz.pcm",session->pool);
 	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
 	descriptor->mask = FILE_WRITER;
 	descriptor->max_write_size = 500000; /* ~500Kb */
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s] for Writing",file_path);
 	descriptor->write_handle = fopen(file_path,"wb");
 	if(!descriptor->write_handle) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File [%s]",file_path);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File [%s] for Writing",file_path);
 	}
 	descriptor->read_handle = NULL;
 	descriptor->codec_descriptor = mpf_codec_lpcm_descriptor_create(8000,1,session->pool);
