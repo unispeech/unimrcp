@@ -49,12 +49,17 @@ private:
 	struct UmcOptions
 	{
 		const char*        m_RootDirPath;
+		const char*        m_DirLayoutConf;
 		const char*        m_LogPriority;
 		const char*        m_LogOutput;
+
+		UmcOptions() : 
+			m_RootDirPath(NULL), m_DirLayoutConf(NULL), 
+			m_LogPriority(NULL), m_LogOutput(NULL) {}
 	};
 
-	UmcOptions    m_Options;
-	UmcFramework* m_pFramework;
+	UmcOptions      m_Options;
+	UmcFramework*   m_pFramework;
 };
 
 #endif /* UMC_CONSOLE_H */

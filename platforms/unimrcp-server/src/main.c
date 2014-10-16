@@ -26,6 +26,7 @@
 
 typedef struct {
 	const char   *root_dir_path;
+	const char   *dir_layout_conf;
 	apt_bool_t    foreground;
 	const char   *log_priority;
 	const char   *log_output;
@@ -59,6 +60,9 @@ static void usage()
 		"\n"
 		"   -r [--root-dir] path     : Set the path to the project root directory.\n"
 		"\n"
+		"   -c [--dir-layout] path   : Set the path to the dir layout config file.\n"
+		"                              (takes the precedence over --root-dir option)\n"
+		"\n"
 		"   -l [--log-prio] priority : Set the log priority.\n"
 		"                              (0-emergency, ..., 7-debug)\n"
 		"\n"
@@ -89,18 +93,19 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 	const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "root-dir",    'r', TRUE,  "path to root dir" },  /* -r arg or --root-dir arg */
-		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
-		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
+		{ "root-dir",    'r', TRUE,  "path to root dir" },         /* -r arg or --root-dir arg */
+		{ "dir-layout",  'c', TRUE,  "path to dir layout conf" },  /* -c arg or --dir-layout arg */
+		{ "log-prio",    'l', TRUE,  "log priority" },             /* -l arg or --log-prio arg */
+		{ "log-output",  'o', TRUE,  "log output mode" },          /* -o arg or --log-output arg */
 #ifdef WIN32
-		{ "service",     's', FALSE, "run as service" },    /* -s or --service */
-		{ "name",        'n', TRUE,  "service name" },      /* -n or --name arg */
+		{ "service",     's', FALSE, "run as service" },           /* -s or --service */
+		{ "name",        'n', TRUE,  "service name" },             /* -n or --name arg */
 #else
-		{ "daemon",      'd', FALSE, "start as daemon" },   /* -d or --daemon */
+		{ "daemon",      'd', FALSE, "start as daemon" },          /* -d or --daemon */
 #endif
-		{ "version",     'v', FALSE, "show version" },      /* -v or --version */
-		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
-		{ NULL, 0, 0, NULL },                               /* end */
+		{ "version",     'v', FALSE, "show version" },             /* -v or --version */
+		{ "help",        'h', FALSE, "show help" },                /* -h or --help */
+		{ NULL, 0, 0, NULL },                                      /* end */
 	};
 
 	rv = apr_getopt_init(&opt, pool , argc, argv);
@@ -108,10 +113,23 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 		return FALSE;
 	}
 
+	/* reset the options */
+	options->root_dir_path = NULL;
+	options->dir_layout_conf = NULL;
+	options->foreground = TRUE;
+	options->log_priority = NULL;
+	options->log_output = NULL;
+#ifdef WIN32
+	options->svcname = NULL;
+#endif
+
 	while((rv = apr_getopt_long(opt, opt_option, &optch, &optarg)) == APR_SUCCESS) {
 		switch(optch) {
 			case 'r':
 				options->root_dir_path = optarg;
+				break;
+			case 'c':
+				options->dir_layout_conf = optarg;
 				break;
 			case 'l':
 				options->log_priority = optarg;
@@ -150,10 +168,10 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 int main(int argc, const char * const *argv)
 {
-	apr_pool_t *pool = NULL;
+	apr_pool_t *pool;
 	server_options_t options;
-	apt_dir_layout_t *dir_layout;
 	const char *log_conf_path;
+	apt_dir_layout_t *dir_layout = NULL;
 
 	/* APR global initialization */
 	if(apr_initialize() != APR_SUCCESS) {
@@ -168,15 +186,6 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
-	/* set the default options */
-	options.root_dir_path = "../";
-	options.foreground = TRUE;
-	options.log_priority = NULL;
-	options.log_output = NULL;
-#ifdef WIN32
-	options.svcname = NULL;
-#endif
-
 	/* load options */
 	if(options_load(&options,argc,argv,pool) != TRUE) {
 		apr_pool_destroy(pool);
@@ -184,9 +193,22 @@ int main(int argc, const char * const *argv)
 		return 0;
 	}
 
-	/* create the structure of default directories layout */
-	dir_layout = apt_default_dir_layout_create(options.root_dir_path,pool);
-	
+	if(options.dir_layout_conf) {
+		/* load directories layout from the configuration file */
+		dir_layout = apt_dir_layout_load(options.dir_layout_conf,pool);
+	}
+	else {
+		/* create default directories layout */
+		dir_layout = apt_default_dir_layout_create(options.root_dir_path,pool);
+	}
+
+	if(!dir_layout) {
+		printf("Failed to Create Directories Layout\n");
+		apr_pool_destroy(pool);
+		apr_terminate();
+		return 0;
+	}
+
 	/* get path to logger configuration file */
 	log_conf_path = apt_confdir_filepath_get(dir_layout,"logger.xml",pool);
 	/* create and load singleton logger */

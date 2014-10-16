@@ -21,17 +21,17 @@
 
 /**
  * @file apt_dir_layout.h
- * @brief Directory Layout
- */ 
+ * @brief Directories Layout
+ */
 
 #include "apt.h"
 
 APT_BEGIN_EXTERN_C
 
-/** Directory layout declaration */
+/** Directories layout declaration */
 typedef struct apt_dir_layout_t apt_dir_layout_t;
 
-/** Directory layout */
+/** Directories layout */
 struct apt_dir_layout_t {
 	/** Path to config dir */
 	char *conf_dir_path;
@@ -46,12 +46,12 @@ struct apt_dir_layout_t {
 };
 
 /**
- * Create (allocate) the structure of default directories layout.
+ * Create the default directories layout.
  */
 APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_dir_path, apr_pool_t *pool);
 
 /**
- * Create (allocate) the structure of custom directories layout.
+ * Create a custom directories layout.
  */
 APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 									const char *conf_dir_path,
@@ -60,6 +60,11 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 									const char *data_dir_path,
 									const char *var_dir_path,
 									apr_pool_t *pool);
+
+/**
+ * Load a directories layout from the specified configuration file.
+ */
+APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_load(const char *config_file, apr_pool_t *pool);
 
 /** Construct file path relative to conf dir using the file name specified. */
 APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool);

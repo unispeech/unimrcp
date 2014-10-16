@@ -70,8 +70,24 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 		return false;
 	}
 
-	/* create the structure of default directories layout */
-	pDirLayout = apt_default_dir_layout_create(m_Options.m_RootDirPath,pool);
+	if(m_Options.m_DirLayoutConf)
+	{
+		/* load directories layout from the configuration file */
+		pDirLayout = apt_dir_layout_load(m_Options.m_DirLayoutConf,pool);
+	}
+	else
+	{
+		/* create default directories layout */
+		pDirLayout = apt_default_dir_layout_create(m_Options.m_RootDirPath,pool);
+	}
+
+	if(!pDirLayout)
+	{
+		printf("Failed to Create Directories Layout\n");
+		apr_pool_destroy(pool);
+		apr_terminate();
+		return false;
+	}
 
 	/* get path to logger configuration file */
 	logConfPath = apt_confdir_filepath_get(pDirLayout,"logger.xml",pool);
@@ -242,7 +258,10 @@ void UmcConsole::Usage()
 		"\n"
 		"  Available options:\n"
 		"\n"
-		"   -r [--root-dir] path     : Set the project root directory path.\n"
+		"   -r [--root-dir] path     : Set the path to the project root directory.\n"
+		"\n"
+		"   -c [--dir-layout] path   : Set the path to the dir layout config file.\n"
+		"                              (takes the precedence over --root-dir option)\n"
 		"\n"
 		"   -l [--log-prio] priority : Set the log priority.\n"
 		"                              (0-emergency, ..., 7-debug)\n"
@@ -266,18 +285,14 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 	const apr_getopt_option_t opt_option[] = 
 	{
 		/* long-option, short-option, has-arg flag, description */
-		{ "root-dir",    'r', TRUE,  "path to root dir" },  /* -r arg or --root-dir arg */
-		{ "log-prio",    'l', TRUE,  "log priority" },      /* -l arg or --log-prio arg */
-		{ "log-output",  'o', TRUE,  "log output mode" },   /* -o arg or --log-output arg */
-		{ "version",     'v', FALSE, "show version" },      /* -v or --version */
-		{ "help",        'h', FALSE, "show help" },         /* -h or --help */
-		{ NULL, 0, 0, NULL },                               /* end */
+		{ "root-dir",    'r', TRUE,  "path to root dir" },         /* -r arg or --root-dir arg */
+		{ "dir-layout",  'c', TRUE,  "path to dir layout conf" },  /* -c arg or --dir-layout arg */
+		{ "log-prio",    'l', TRUE,  "log priority" },             /* -l arg or --log-prio arg */
+		{ "log-output",  'o', TRUE,  "log output mode" },          /* -o arg or --log-output arg */
+		{ "version",     'v', FALSE, "show version" },             /* -v or --version */
+		{ "help",        'h', FALSE, "show help" },                /* -h or --help */
+		{ NULL, 0, 0, NULL },                                      /* end */
 	};
-
-	/* set the default options */
-	m_Options.m_RootDirPath = "../";
-	m_Options.m_LogPriority = NULL;
-	m_Options.m_LogOutput = NULL;
 
 	rv = apr_getopt_init(&opt, pool , argc, argv);
 	if(rv != APR_SUCCESS)
@@ -289,6 +304,9 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 		{
 			case 'r':
 				m_Options.m_RootDirPath = optarg;
+				break;
+			case 'c':
+				m_Options.m_DirLayoutConf = optarg;
 				break;
 			case 'l':
 				if(optarg) 
