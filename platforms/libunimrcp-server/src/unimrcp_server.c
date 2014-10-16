@@ -591,10 +591,11 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 {
 	mrcp_engine_t *engine;
 	mrcp_engine_config_t *config;
+	char *plugin_file_name;
+	char *plugin_path;
 	const char *plugin_id = NULL;
 	const char *plugin_name = NULL;
 	const char *plugin_ext = NULL;
-	const char *plugin_path = NULL;
 	apt_bool_t plugin_enabled = TRUE;
 	const apr_xml_attr *attr;
 	for(attr = root->attr; attr; attr = attr->next) {
@@ -629,13 +630,14 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 		plugin_ext = DEFAULT_PLUGIN_EXT;
 	}
 
-	if(*loader->dir_layout->plugin_dir_path == '\0') {
-		plugin_path = apr_psprintf(loader->pool,"%s.%s",
-						plugin_name,plugin_ext);
-	}
-	else {
-		plugin_path = apr_psprintf(loader->pool,"%s/%s.%s",
-						loader->dir_layout->plugin_dir_path,plugin_name,plugin_ext);
+	plugin_file_name = apr_psprintf(loader->pool,"%s.%s",plugin_name,plugin_ext);
+	if(apr_filepath_merge(&plugin_path,
+				loader->dir_layout->plugin_dir_path,
+				plugin_file_name,
+				APR_FILEPATH_NATIVE,
+				loader->pool) != APR_SUCCESS) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to compose plugin path %s.%s",plugin_name,plugin_ext);
+		return FALSE;
 	}
 
 	config = mrcp_engine_config_alloc(loader->pool);

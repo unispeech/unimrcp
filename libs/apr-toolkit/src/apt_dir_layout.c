@@ -36,11 +36,11 @@ static const char* apt_default_root_dir_path_get(apr_pool_t *pool)
 	char *root_dir_path;
 	char *cur_dir_path;
 	/* Get the current directory */
-	if(apr_filepath_get(&cur_dir_path,0,pool) != APR_SUCCESS)
+	if(apr_filepath_get(&cur_dir_path,APR_FILEPATH_NATIVE,pool) != APR_SUCCESS)
 		return NULL;
 
 	/* Root directory is supposed to be one level up by default */
-	if(apr_filepath_merge(&root_dir_path,cur_dir_path,"../",0,pool) != APR_SUCCESS)
+	if(apr_filepath_merge(&root_dir_path,cur_dir_path,"../",APR_FILEPATH_NATIVE,pool) != APR_SUCCESS)
 		return FALSE;
 
 	return root_dir_path;
@@ -56,11 +56,11 @@ APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_di
 	}
 	
 	if(root_dir_path) {
-		apr_filepath_merge(&dir_layout->conf_dir_path,root_dir_path,"conf",0,pool);
-		apr_filepath_merge(&dir_layout->plugin_dir_path,root_dir_path,"plugin",0,pool);
-		apr_filepath_merge(&dir_layout->log_dir_path,root_dir_path,"log",0,pool);
-		apr_filepath_merge(&dir_layout->data_dir_path,root_dir_path,"data",0,pool);
-		apr_filepath_merge(&dir_layout->var_dir_path,root_dir_path,"var",0,pool);
+		apr_filepath_merge(&dir_layout->conf_dir_path,root_dir_path,"conf",APR_FILEPATH_NATIVE,pool);
+		apr_filepath_merge(&dir_layout->plugin_dir_path,root_dir_path,"plugin",APR_FILEPATH_NATIVE,pool);
+		apr_filepath_merge(&dir_layout->log_dir_path,root_dir_path,"log",APR_FILEPATH_NATIVE,pool);
+		apr_filepath_merge(&dir_layout->data_dir_path,root_dir_path,"data",APR_FILEPATH_NATIVE,pool);
+		apr_filepath_merge(&dir_layout->var_dir_path,root_dir_path,"var",APR_FILEPATH_NATIVE,pool);
 	}
 	return dir_layout;
 }
@@ -238,7 +238,7 @@ APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, 
 {
 	if(dir_layout && dir_layout->conf_dir_path && file_name) {
 		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->conf_dir_path,file_name,0,pool) == APR_SUCCESS) {
+		if(apr_filepath_merge(&file_path,dir_layout->conf_dir_path,file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
 			return file_path;
 		}
 	}
@@ -249,7 +249,7 @@ APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, 
 {
 	if(dir_layout && dir_layout->data_dir_path && file_name) {
 		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->data_dir_path,file_name,0,pool) == APR_SUCCESS) {
+		if(apr_filepath_merge(&file_path,dir_layout->data_dir_path,file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
 			return file_path;
 		}
 	}
@@ -260,7 +260,7 @@ APT_DECLARE(char*) apt_vardir_filepath_get(const apt_dir_layout_t *dir_layout, c
 {
 	if(dir_layout && dir_layout->var_dir_path && file_name) {
 		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->var_dir_path,file_name,0,pool) == APR_SUCCESS) {
+		if(apr_filepath_merge(&file_path,dir_layout->var_dir_path,file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
 			return file_path;
 		}
 	}

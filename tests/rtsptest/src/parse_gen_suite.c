@@ -132,7 +132,7 @@ static apt_bool_t test_dir_process(apt_test_suite_t *suite)
 		if(rv == APR_SUCCESS) {
 			if(finfo.filetype == APR_REG && finfo.name) {
 				char *file_path;
-				apr_filepath_merge(&file_path,dir_name,finfo.name,0,suite->pool);
+				apr_filepath_merge(&file_path,dir_name,finfo.name,APR_FILEPATH_NATIVE,suite->pool);
 				test_file_process(suite,file_path);
 				printf("\nPress ENTER to continue\n");
 				getchar();

@@ -534,7 +534,11 @@ static const char* apt_log_file_path_make(apt_log_file_data_t *file_data)
 	const char *log_file_name = apr_psprintf(file_data->pool,"%s-%.2"APR_SIZE_T_FMT".log",
 									file_data->log_file_name,
 									file_data->cur_file_index);
-	apr_filepath_merge(&log_file_path,file_data->log_dir_path,log_file_name,0,file_data->pool);
+	apr_filepath_merge(&log_file_path,
+		file_data->log_dir_path,
+		log_file_name,
+		APR_FILEPATH_NATIVE,
+		file_data->pool);
 	return log_file_path;
 }
 
