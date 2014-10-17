@@ -114,13 +114,55 @@ if test "${enable_maintainer_mode}" != "no"; then
     fi
 fi
 
-dnl Enable test suites.
-AC_ARG_ENABLE(test-suites,
-    [AC_HELP_STRING([--enable-test-suites  ],[build test suites])],
-    [enable_test_suites="$enableval"],
-    [enable_test_suites="no"])
+dnl UniMRCP client library.
+AC_ARG_ENABLE(client-lib,
+    [AC_HELP_STRING([--disable-client-lib  ],[exclude unimrcpclient lib from build])],
+    [enable_client_lib="$enableval"],
+    [enable_client_lib="yes"])
 
-AM_CONDITIONAL([TEST_SUITES],[test "${enable_test_suites}" != "no"])
+AM_CONDITIONAL([UNIMRCP_CLIENT_LIB],[test "${enable_client_lib}" = "yes"])
+
+dnl Sample UniMRCP client application in C.
+AC_ARG_ENABLE(client-app,
+    [AC_HELP_STRING([--disable-client-app  ],[exclude sample unimrcpclient app from build])],
+    [enable_client_app="$enableval"],
+    [enable_client_app="yes"])
+
+AM_CONDITIONAL([UNIMRCP_CLIENT_APP],[test "${enable_client_lib}" = "yes" && test "${enable_client_app}" = "yes"])
+
+dnl Sample UniMRCP client application in C++.
+AC_ARG_ENABLE(umc,
+    [AC_HELP_STRING([--disable-umc         ],[exclude sample unimrcpclient C++ app from build])],
+    [enable_umc="$enableval"],
+    [enable_umc="yes"])
+
+AM_CONDITIONAL([UMC],[test "${enable_client_lib}" = "yes" && test "${enable_umc}" = "yes"])
+
+dnl Miscellaneous ASR client library and application.
+AC_ARG_ENABLE(asr-client,
+    [AC_HELP_STRING([--disable-asr-client  ],[exclude misc ASR client lib and app from build])],
+    [enable_asr_client="$enableval"],
+    [enable_asr_client="yes"])
+
+AM_CONDITIONAL([ASR_CLIENT],[test "${enable_client_lib}" = "yes" && test "${enable_asr_client}" = "yes"])
+
+AM_CONDITIONAL([COMMON_CLIENT_DATA],[test "${enable_client_app}" = "yes" || test "${enable_umc}" = "yes" ||test "${enable_asr_client}" = "yes"])
+
+dnl UniMRCP server library.
+AC_ARG_ENABLE(server-lib,
+    [AC_HELP_STRING([--disable-server-lib  ],[exclude unimrcpserver lib from build])],
+    [enable_server_lib="$enableval"],
+    [enable_server_lib="yes"])
+
+AM_CONDITIONAL([UNIMRCP_SERVER_LIB],[test "${enable_server_lib}" = "yes"])
+
+dnl UniMRCP server application.
+AC_ARG_ENABLE(server-app,
+    [AC_HELP_STRING([--disable-server-app  ],[exclude unimrcpserver app from build])],
+    [enable_server_app="$enableval"],
+    [enable_server_app="yes"])
+
+AM_CONDITIONAL([UNIMRCP_SERVER_APP],[test "${enable_server_lib}" = "yes" && test "${enable_server_app}" = "yes"])
 
 dnl Demo synthesizer plugin.
 UNI_PLUGIN_ENABLED(demosynth)
@@ -141,6 +183,14 @@ dnl Recorder plugin.
 UNI_PLUGIN_ENABLED(recorder)
 
 AM_CONDITIONAL([RECORDER_PLUGIN],[test "${enable_recorder_plugin}" = "yes"])
+
+dnl Enable test suites.
+AC_ARG_ENABLE(test-suites,
+    [AC_HELP_STRING([--enable-test-suites  ],[build test suites])],
+    [enable_test_suites="$enableval"],
+    [enable_test_suites="no"])
+
+AM_CONDITIONAL([TEST_SUITES],[test "${enable_test_suites}" != "no"])
 
 AM_CONDITIONAL(ISMAC, [test `uname -s` = Darwin])
 
@@ -204,6 +254,14 @@ echo Compiler...................... : $CC
 echo Compiler flags................ : $CFLAGS
 echo Preprocessor definitions...... : $CPPFLAGS
 echo Linker flags.................. : $LDFLAGS
+echo
+echo UniMRCP client lib............ : $enable_client_lib
+echo Sample UniMRCP client app..... : $enable_client_app
+echo Sample UMC C++ client app..... : $enable_umc
+echo Misc ASR client lib and app... : $enable_asr_client
+echo
+echo UniMRCP server lib............ : $enable_server_lib
+echo UniMRCP server app............ : $enable_server_app
 echo
 echo Demo synthesizer plugin....... : $enable_demosynth_plugin
 echo Demo recognizer plugin........ : $enable_demorecog_plugin
