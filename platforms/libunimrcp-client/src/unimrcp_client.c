@@ -1315,6 +1315,7 @@ static apt_bool_t unimrcp_client_doc_process(unimrcp_client_loader_t *loader, co
 		apr_dir_t *dir;
 		apr_finfo_t finfo;
 		apr_status_t rv;
+		char *subdir_path;
 
 		if (!dir_path) {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Attempt to Process Subdirectory when "
@@ -1322,20 +1323,21 @@ static apt_bool_t unimrcp_client_doc_process(unimrcp_client_loader_t *loader, co
 			return TRUE;
 		}
 
-		dir_path = apr_psprintf(pool,"%s/%s",dir_path,subfolder);
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Enter Directory [%s]",dir_path);
-		rv = apr_dir_open(&dir,dir_path,pool);
-		if(rv == APR_SUCCESS) {
-			while(apr_dir_read(&finfo, APR_FINFO_NAME, dir) == APR_SUCCESS) {
-				if(apr_fnmatch("*.xml", finfo.name, 0) == APR_SUCCESS) {
-					unimrcp_client_load(loader,dir_path,finfo.name);
+		if(apr_filepath_merge(&subdir_path,dir_path,subfolder,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Enter Directory [%s]",subdir_path);
+			rv = apr_dir_open(&dir,subdir_path,pool);
+			if(rv == APR_SUCCESS) {
+				while(apr_dir_read(&finfo, APR_FINFO_NAME, dir) == APR_SUCCESS) {
+					if(apr_fnmatch("*.xml", finfo.name, 0) == APR_SUCCESS) {
+						unimrcp_client_load(loader,subdir_path,finfo.name);
+					}
 				}
+				apr_dir_close(dir);
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Leave Directory [%s]",dir_path);
 			}
-			apr_dir_close(dir);
-			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Leave Directory [%s]",dir_path);
-		}
-		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Directory %s",dir_path);
+			else {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Directory %s",dir_path);
+			}
 		}
 	}
 	return TRUE;
@@ -1346,17 +1348,14 @@ static apt_bool_t unimrcp_client_load(unimrcp_client_loader_t *loader, const cha
 {
 	apr_pool_t *pool = loader->pool;
 	apr_xml_doc *doc;
-	const char *file_path;
+	char *file_path;
 
 	if(!dir_path || !file_name) {
 		return FALSE;
 	}
 
-	if(*dir_path == '\0') {
-		file_path = file_name;
-	}
-	else {
-		file_path = apr_psprintf(pool,"%s/%s",dir_path,file_name);
+	if(apr_filepath_merge(&file_path,dir_path,file_name,APR_FILEPATH_NATIVE,pool) != APR_SUCCESS) {
+		return FALSE;
 	}
 
 	/* Parse XML document */
