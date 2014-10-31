@@ -24,16 +24,20 @@
  * This file contains the revision base number and other relevant information.
  */
 
-/** Revision base number */
-#define UNI_REVISION            2207
+/** Revision base number. */
+#define UNI_REVISION            2208
 
-/** Revision base string */
-#define UNI_REVISION_STRING     "2207"
+/** Revision base string. */
+#define UNI_REVISION_STRING     "2208"
 
-/** Revision base date */
-#define UNI_REVISION_DATE       "2014-10-30"
+/** Revision base date. */
+#define UNI_REVISION_DATE       "2014-10-31"
 
-/** Revision base stamp */
-#define UNI_REVISION_STAMP      20141030L
+/** Revision base stamp. */
+#define UNI_REVISION_STAMP      20141031L
+
+
+/** Check at compile time if the revision base number is at least a certain level. */
+#define UNI_REVISION_AT_LEAST(rev)   ((rev) < UNI_REVISION)
 
 #endif /* UNI_REVISION_H */
