@@ -21,6 +21,7 @@
 #include <apr_fnmatch.h>
 #include <apr_version.h>
 #include "uni_version.h"
+#include "uni_revision.h"
 #include "unimrcp_client.h"
 #include "mrcp_resource_loader.h"
 #include "mpf_engine.h"
@@ -80,7 +81,7 @@ static unimrcp_client_loader_t* unimrcp_client_init(apt_dir_layout_t *dir_layout
 	mrcp_client_t *client;
 	unimrcp_client_loader_t *loader;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Client ["UNI_VERSION_STRING"]");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Client ["UNI_VERSION_STRING"] [r"UNI_REVISION_STRING"]");
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
 	client = mrcp_client_create(dir_layout);
 	if(!client) {
