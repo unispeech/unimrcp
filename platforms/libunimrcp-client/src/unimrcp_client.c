@@ -198,7 +198,7 @@ static apt_bool_t header_attribs_get(const apr_xml_elem *elem, const apr_xml_att
 			*enable = attr;
 		}
 	}
-	
+
 	if(is_attr_valid(*id) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Required Attribute <id> in Element <%s>",elem->name);
 		return FALSE;
@@ -228,7 +228,7 @@ static apt_bool_t profile_attribs_get(const apr_xml_elem *elem, const apr_xml_at
 			*tag = attr;
 		}
 	}
-	
+
 	if(is_attr_valid(*id) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Required Attribute <id> in Element <%s>",elem->name);
 		return FALSE;
@@ -309,7 +309,7 @@ static apt_bool_t unimrcp_client_resource_load(mrcp_resource_loader_t *resource_
 	if(header_attribs_get(root,&id_attr,&enable_attr) == FALSE) {
 		return FALSE;
 	}
-	
+
 	if(is_attr_enabled(enable_attr) == FALSE) {
 		return TRUE;
 	}
@@ -337,7 +337,7 @@ static apt_bool_t unimrcp_client_resource_factory_load(unimrcp_client_loader_t *
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}
-	
+
 	resource_factory = mrcp_resource_factory_get(resource_loader);
 	return mrcp_client_resource_factory_register(loader->client,resource_factory);
 }
@@ -375,7 +375,18 @@ static apt_bool_t unimrcp_client_sip_uac_load(unimrcp_client_loader_t *loader, c
 		}
 		else if(strcasecmp(elem->name,"ua-name") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
-				config->user_agent_name = cdata_copy(elem,loader->pool);
+				const apr_xml_attr *attr = NULL;
+				for(attr = elem->attr; attr; attr = attr->next) {
+					if(strcasecmp(attr->name,"appendversion") == 0) {
+						break;
+					}
+				}
+				if(is_attr_enabled(attr)) {
+					config->user_agent_name = apr_psprintf(loader->pool,"%s "UNI_VERSION_STRING,cdata_text_get(elem));
+				}
+				else {
+					config->user_agent_name = cdata_copy(elem,loader->pool);
+				}
 			}
 		}
 		else if(strcasecmp(elem->name,"sdp-origin") == 0) {
