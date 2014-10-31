@@ -45,7 +45,7 @@
       <!-- <sip-t4>4000</sip-t4> -->
       <!-- <sip-t1x64>32000</sip-t1x64> -->
       <!-- <sip-message-output>true</sip-message-output> -->
-      <!-- <sip-message-dump>/tmp/sofia-sip.log</sip-message-dump> -->
+      <!-- <sip-message-dump>sofia-sip-uac.log</sip-message-dump> -->
     </sip-uac>
 
     <!-- UniRTSP MRCPv1 signaling agent -->

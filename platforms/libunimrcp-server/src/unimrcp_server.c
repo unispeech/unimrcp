@@ -368,7 +368,16 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 		}
 		else if(strcasecmp(elem->name,"sip-message-dump") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
-				config->tport_dump_file = cdata_copy(elem,loader->pool);
+				const char *root_path;
+				const char *path = cdata_text_get(elem);
+				if(loader->dir_layout && apr_filepath_root(&root_path,&path,0,loader->pool) == APR_ERELATIVE)
+					config->tport_dump_file = apt_dir_layout_path_compose(
+													loader->dir_layout,
+													APT_LAYOUT_LOG_DIR,
+													path,
+													loader->pool);
+				else
+					config->tport_dump_file = cdata_copy(elem,loader->pool);
 			}
 		}
 		else {
