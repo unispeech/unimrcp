@@ -35,7 +35,6 @@
 #include "apt_log.h"
 
 #define CONF_FILE_NAME            "unimrcpclient.xml"
-#define DEFAULT_CONF_DIR_PATH     "../conf"
 
 #define DEFAULT_IP_ADDRESS        "127.0.0.1"
 #define DEFAULT_SIP_PORT          8062
@@ -103,7 +102,7 @@ static unimrcp_client_loader_t* unimrcp_client_init(apt_dir_layout_t *dir_layout
 	return loader;
 }
 
-/** Create and load UniMRCP client from directory layout */
+/** Create and load UniMRCP client using the directories layout */
 MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 {
 	const char *dir_path;
@@ -117,10 +116,7 @@ MRCP_DECLARE(mrcp_client_t*) unimrcp_client_create(apt_dir_layout_t *dir_layout)
 	if (!loader)
 		return NULL;
 
-	dir_path = dir_layout->conf_dir_path;
-	if(!dir_path) {
-		dir_path = DEFAULT_CONF_DIR_PATH;
-	}
+	dir_path = apt_dir_layout_path_get(dir_layout,APT_LAYOUT_CONF_DIR);
 
 	if(unimrcp_client_load(loader,dir_path,CONF_FILE_NAME) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load UniMRCP Client Document");
@@ -467,7 +463,7 @@ static apt_bool_t unimrcp_client_rtsp_uac_load(unimrcp_client_loader_t *loader, 
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}
-	
+
 	agent = mrcp_unirtsp_client_agent_create(id,config,loader->pool);
 	return mrcp_client_signaling_agent_register(loader->client,agent);
 }
@@ -550,7 +546,7 @@ static apt_bool_t unimrcp_client_media_engine_load(unimrcp_client_loader_t *load
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}
-	
+
 	media_engine = mpf_engine_create(id,loader->pool);
 	if(media_engine) {
 		mpf_engine_scheduler_rate_set(media_engine,realtime_rate);
@@ -593,8 +589,8 @@ static apt_bool_t unimrcp_client_rtp_factory_load(unimrcp_client_loader_t *loade
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
-	
+	}
+
 	if(rtp_ip) {
 		apt_string_set(&rtp_config->ip,rtp_ip);
 	}
@@ -649,7 +645,7 @@ static apt_bool_t unimrcp_client_sip_settings_load(unimrcp_client_loader_t *load
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}
-	
+
 	if(!settings->server_ip) {
 		settings->server_ip = apr_pstrdup(loader->pool,loader->server_ip);
 	}
@@ -704,7 +700,7 @@ static apt_bool_t unimrcp_client_rtsp_settings_load(unimrcp_client_loader_t *loa
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}
-	
+
 	if(!settings->server_ip) {
 		settings->server_ip = apr_pstrdup(loader->pool,loader->server_ip);
 	}
@@ -855,7 +851,7 @@ static mrcp_sa_factory_t* unimrcp_client_sa_factory_create(unimrcp_client_loader
 			}
 		}
 		uac_list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
-	} 
+	}
 	while(uac_name);
 	return sa_factory;
 }
@@ -883,7 +879,7 @@ static mrcp_ca_factory_t* unimrcp_client_ca_factory_create(unimrcp_client_loader
 			}
 		}
 		list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
-	} 
+	}
 	while(name);
 	return ca_factory;
 }
@@ -912,7 +908,7 @@ static mpf_engine_factory_t* unimrcp_client_mpf_factory_create(unimrcp_client_lo
 			}
 		}
 		list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
-	} 
+	}
 	while(name);
 
 	return mpf_factory;
@@ -1081,7 +1077,7 @@ static apt_bool_t unimrcp_client_components_load(unimrcp_client_loader_t *loader
 			unimrcp_client_resource_factory_load(loader,elem);
 			continue;
 		}
-		
+
 		/* get common "id" and "enable" attributes */
 		if(header_attribs_get(elem,&id_attr,&enable_attr) == FALSE) {
 			/* invalid id */
@@ -1211,7 +1207,7 @@ static apt_bool_t unimrcp_client_misc_load(unimrcp_client_loader_t *loader, cons
 					loglevel_str = attr->value;
 				}
 			}
-			
+
 			logger_list_str = apr_pstrdup(loader->pool,cdata_text_get(elem));
 			do {
 				logger_name = apr_strtok(logger_list_str, ",", &state);

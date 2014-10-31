@@ -219,8 +219,10 @@ int main(int argc, const char * const *argv)
 	}
 
 	if(options.dir_layout_conf) {
-		/* load directories layout from the configuration file */
-		dir_layout = apt_dir_layout_load(options.dir_layout_conf,pool);
+		/* create and load directories layout from the configuration file */
+		dir_layout = apt_dir_layout_create(pool);
+		if(dir_layout)
+			apt_dir_layout_load(dir_layout,options.dir_layout_conf,pool);
 	}
 	else {
 		/* create default directories layout */
@@ -250,7 +252,8 @@ int main(int argc, const char * const *argv)
 
 	if(apt_log_output_mode_check(APT_LOG_OUTPUT_FILE) == TRUE) {
 		/* open the log file */
-		apt_log_file_open(dir_layout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
+		const char *log_dir_path = apt_dir_layout_path_get(dir_layout,APT_LAYOUT_LOG_DIR);
+		apt_log_file_open(log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
 	}
 
 	/* create demo framework */

@@ -32,7 +32,6 @@
 #include "apt_log.h"
 
 #define CONF_FILE_NAME            "unimrcpserver.xml"
-#define DEFAULT_PLUGIN_DIR_PATH   "../plugin"
 #ifdef WIN32
 #define DEFAULT_PLUGIN_EXT        "dll"
 #else
@@ -567,8 +566,8 @@ static apt_bool_t unimrcp_server_rtp_factory_load(unimrcp_server_loader_t *loade
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
-	
+	}
+
 	if(rtp_ip) {
 		apt_string_set(&rtp_config->ip,rtp_ip);
 	}
@@ -620,7 +619,7 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing plugin id or name");
 		return FALSE;
 	}
-		
+
 	if(!plugin_enabled) {
 		/* disabled plugin, just skip it */
 		return TRUE;
@@ -631,12 +630,9 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 	}
 
 	plugin_file_name = apr_psprintf(loader->pool,"%s.%s",plugin_name,plugin_ext);
-	if(apr_filepath_merge(&plugin_path,
-				loader->dir_layout->plugin_dir_path,
-				plugin_file_name,
-				APR_FILEPATH_NATIVE,
-				loader->pool) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to compose plugin path %s.%s",plugin_name,plugin_ext);
+	plugin_path = apt_dir_layout_path_compose(loader->dir_layout,APT_LAYOUT_PLUGIN_DIR,plugin_file_name,loader->pool);
+	if(!plugin_path) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to compose plugin path %s",plugin_file_name);
 		return FALSE;
 	}
 
@@ -672,10 +668,6 @@ static apt_bool_t unimrcp_server_plugin_load(unimrcp_server_loader_t *loader, co
 static apt_bool_t unimrcp_server_plugin_factory_load(unimrcp_server_loader_t *loader, const apr_xml_elem *root)
 {
 	const apr_xml_elem *elem;
-
-	if(!loader->dir_layout->plugin_dir_path) {
-		loader->dir_layout->plugin_dir_path = DEFAULT_PLUGIN_DIR_PATH;
-	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Plugin Factory");
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -812,7 +804,7 @@ static apt_bool_t unimrcp_server_rtp_settings_load(unimrcp_server_loader_t *load
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 
 	return mrcp_server_rtp_settings_register(loader->server,rtp_settings,id);
 }
@@ -1058,7 +1050,7 @@ static apt_bool_t unimrcp_server_settings_load(unimrcp_server_loader_t *loader, 
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	return TRUE;
 }
 
@@ -1092,7 +1084,7 @@ static apt_bool_t unimrcp_server_profiles_load(unimrcp_server_loader_t *loader, 
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
-	}    
+	}
 	return TRUE;
 }
 
@@ -1126,7 +1118,7 @@ static apt_bool_t unimrcp_server_misc_load(unimrcp_server_loader_t *loader, cons
 					mrcp_sofiasip_server_logger_init(logger_name,loglevel_str,redirect);
 				}
 				logger_list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
-			} 
+			}
 			while(logger_name);
 		}
 		else {
@@ -1156,7 +1148,7 @@ static apr_xml_doc* unimrcp_server_doc_parse(const char *file_path, apr_pool_t *
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse Config File [%s]",file_path);
 		xml_doc = NULL;
 	}
-	
+
 	apr_file_close(fd);
 	return xml_doc;
 }

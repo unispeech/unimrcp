@@ -28,11 +28,6 @@
 UmcConsole::UmcConsole() :
 	m_pFramework(NULL)
 {
-	/* set the default options */
-	m_Options.m_RootDirPath = "../";
-	m_Options.m_LogPriority = NULL;
-	m_Options.m_LogOutput = NULL;
-
 	m_pFramework = new UmcFramework;
 }
 
@@ -72,8 +67,10 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 
 	if(m_Options.m_DirLayoutConf)
 	{
-		/* load directories layout from the configuration file */
-		pDirLayout = apt_dir_layout_load(m_Options.m_DirLayoutConf,pool);
+		/* create and load directories layout from the configuration file */
+		pDirLayout = apt_dir_layout_create(pool);
+		if(pDirLayout)
+			apt_dir_layout_load(pDirLayout,m_Options.m_DirLayoutConf,pool);
 	}
 	else
 	{
@@ -108,7 +105,8 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 	if(apt_log_output_mode_check(APT_LOG_OUTPUT_FILE) == TRUE) 
 	{
 		/* open the log file */
-		apt_log_file_open(pDirLayout->log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
+		const char *logDirPath = apt_dir_layout_path_get(pDirLayout,APT_LAYOUT_LOG_DIR);
+		apt_log_file_open(logDirPath,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
 	}
 
 	/* create demo framework */

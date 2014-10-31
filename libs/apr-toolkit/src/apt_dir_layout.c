@@ -20,16 +20,22 @@
 #include <apr_xml.h>
 #include "apt_dir_layout.h"
 
-static apt_dir_layout_t* apt_dir_layout_alloc(apr_pool_t *pool)
-{
-	apt_dir_layout_t *dir_layout = (apt_dir_layout_t*) apr_palloc(pool,sizeof(apt_dir_layout_t));
-	dir_layout->conf_dir_path = NULL;
-	dir_layout->plugin_dir_path = NULL;
-	dir_layout->log_dir_path = NULL;
-	dir_layout->data_dir_path = NULL;
-	dir_layout->var_dir_path = NULL;
-	return dir_layout;
-}
+/** Directories layout */
+struct apt_dir_layout_t {
+	/** Array of the directory paths the layout is composed of */
+	const char **paths;
+	/** Number of directories in the layout */
+	apr_size_t   count;
+};
+
+/** Default labels matching the entries in configuration */
+static const char *default_labels[APT_LAYOUT_DIR_COUNT] = {
+	"confdir",    /* APT_LAYOUT_CONF_DIR */
+	"plugindir",  /* APT_LAYOUT_PLUGIN_DIR */
+	"logdir",     /* APT_LAYOUT_LOG_DIR */
+	"datadir",    /* APT_LAYOUT_DATA_DIR */
+	"vardir",     /* APT_LAYOUT_VAR_DIR */
+};
 
 static const char* apt_default_root_dir_path_get(apr_pool_t *pool)
 {
@@ -46,21 +52,54 @@ static const char* apt_default_root_dir_path_get(apr_pool_t *pool)
 	return root_dir_path;
 }
 
+static apt_bool_t apt_dir_layout_path_set_internal(apt_dir_layout_t *dir_layout, apr_size_t dir_entry_id, const char *path)
+{
+	if(dir_entry_id >= dir_layout->count)
+		return FALSE;
+
+	dir_layout->paths[dir_entry_id] = path;
+	return TRUE;
+}
+
+APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_create(apr_pool_t *pool)
+{
+	return apt_dir_layout_create_ext(APT_LAYOUT_DIR_COUNT,pool);
+}
+
+APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_create_ext(apr_size_t count, apr_pool_t *pool)
+{
+	apt_dir_layout_t *dir_layout = (apt_dir_layout_t*) apr_palloc(pool,sizeof(apt_dir_layout_t));
+	dir_layout->count = count;
+	dir_layout->paths = apr_pcalloc(pool,count*sizeof(char*));
+	return dir_layout;
+}
+
 APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_dir_path, apr_pool_t *pool)
 {
-	apt_dir_layout_t *dir_layout = apt_dir_layout_alloc(pool);
+	apt_dir_layout_t *dir_layout = apt_dir_layout_create_ext(APT_LAYOUT_DIR_COUNT,pool);
 
 	if(!root_dir_path) {
 		/* If root dir path is not specified, get the default one */
 		root_dir_path = apt_default_root_dir_path_get(pool);
 	}
-	
+
 	if(root_dir_path) {
-		apr_filepath_merge(&dir_layout->conf_dir_path,root_dir_path,"conf",APR_FILEPATH_NATIVE,pool);
-		apr_filepath_merge(&dir_layout->plugin_dir_path,root_dir_path,"plugin",APR_FILEPATH_NATIVE,pool);
-		apr_filepath_merge(&dir_layout->log_dir_path,root_dir_path,"log",APR_FILEPATH_NATIVE,pool);
-		apr_filepath_merge(&dir_layout->data_dir_path,root_dir_path,"data",APR_FILEPATH_NATIVE,pool);
-		apr_filepath_merge(&dir_layout->var_dir_path,root_dir_path,"var",APR_FILEPATH_NATIVE,pool);
+		char *path;
+		
+		apr_filepath_merge(&path,root_dir_path,"conf",APR_FILEPATH_NATIVE,pool);
+		apt_dir_layout_path_set_internal(dir_layout,APT_LAYOUT_CONF_DIR,path);
+
+		apr_filepath_merge(&path,root_dir_path,"plugin",APR_FILEPATH_NATIVE,pool);
+		apt_dir_layout_path_set_internal(dir_layout,APT_LAYOUT_PLUGIN_DIR,path);
+
+		apr_filepath_merge(&path,root_dir_path,"log",APR_FILEPATH_NATIVE,pool);
+		apt_dir_layout_path_set_internal(dir_layout,APT_LAYOUT_LOG_DIR,path);
+
+		apr_filepath_merge(&path,root_dir_path,"data",APR_FILEPATH_NATIVE,pool);
+		apt_dir_layout_path_set_internal(dir_layout,APT_LAYOUT_DATA_DIR,path);
+
+		apr_filepath_merge(&path,root_dir_path,"var",APR_FILEPATH_NATIVE,pool);
+		apt_dir_layout_path_set_internal(dir_layout,APT_LAYOUT_VAR_DIR,path);
 	}
 	return dir_layout;
 }
@@ -73,23 +112,28 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 									const char *var_dir_path,
 									apr_pool_t *pool)
 {
-	apt_dir_layout_t *dir_layout = apt_dir_layout_alloc(pool);
-	if(conf_dir_path) {
-		dir_layout->conf_dir_path = apr_pstrdup(pool,conf_dir_path);
-	}
-	if(plugin_dir_path) {
-		dir_layout->plugin_dir_path = apr_pstrdup(pool,plugin_dir_path);
-	}
-	if(log_dir_path) {
-		dir_layout->log_dir_path = apr_pstrdup(pool,log_dir_path);
-	}
-	if(data_dir_path) {
-		dir_layout->data_dir_path = apr_pstrdup(pool,data_dir_path);
-	}
-	if(var_dir_path) {
-		dir_layout->var_dir_path = apr_pstrdup(pool,var_dir_path);
-	}
+	apt_dir_layout_t *dir_layout = apt_dir_layout_create_ext(APT_LAYOUT_DIR_COUNT,pool);
+
+	apt_dir_layout_path_set(dir_layout,APT_LAYOUT_CONF_DIR,conf_dir_path,pool);
+	apt_dir_layout_path_set(dir_layout,APT_LAYOUT_PLUGIN_DIR,plugin_dir_path,pool);
+	apt_dir_layout_path_set(dir_layout,APT_LAYOUT_LOG_DIR,log_dir_path,pool);
+	apt_dir_layout_path_set(dir_layout,APT_LAYOUT_DATA_DIR,data_dir_path,pool);
+	apt_dir_layout_path_set(dir_layout,APT_LAYOUT_VAR_DIR,log_dir_path,pool);
+
 	return dir_layout;
+}
+
+static apt_bool_t apt_dir_entry_id_by_label(const char **labels, apr_size_t count, const char *name, apr_size_t *id)
+{
+	apr_size_t i;
+	for(i=0; i<count; i++) {
+		if(strcasecmp(labels[i],name) == 0) {
+			if(id)
+				*id = i;
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 static apr_xml_doc* apt_dir_layout_doc_parse(const char *file_path, apr_pool_t *pool)
@@ -108,7 +152,7 @@ static apr_xml_doc* apt_dir_layout_doc_parse(const char *file_path, apr_pool_t *
 	if(rv != APR_SUCCESS) {
 		xml_doc = NULL;
 	}
-	
+
 	apr_file_close(fd);
 	return xml_doc;
 }
@@ -129,7 +173,7 @@ static char* apt_dir_layout_subdir_parse(const char *root_dir_path, const apr_xm
 	if(!elem || !elem->first_cdata.first || !elem->first_cdata.first->text) {
 		return NULL;
 	}
-	
+
 	path = apr_pstrdup(pool,elem->first_cdata.first->text);
 	apr_collapse_spaces(path,path);
 
@@ -150,20 +194,29 @@ static char* apt_dir_layout_subdir_parse(const char *root_dir_path, const apr_xm
 	return NULL;
 }
 
-APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_load(const char *config_file, apr_pool_t *pool)
+APT_DECLARE(apt_bool_t) apt_dir_layout_load(apt_dir_layout_t *dir_layout, const char *config_file, apr_pool_t *pool)
 {
-	apt_dir_layout_t *dir_layout;
+	return apt_dir_layout_load_ext(dir_layout,config_file,default_labels,APT_LAYOUT_DIR_COUNT,pool);
+}
+
+APT_DECLARE(apt_bool_t) apt_dir_layout_load_ext(apt_dir_layout_t *dir_layout, const char *config_file, const char **labels, apr_size_t count, apr_pool_t *pool)
+{
 	apr_xml_doc *doc;
 	const apr_xml_elem *elem;
 	const apr_xml_elem *root;
 	const apr_xml_attr *xml_attr;
 	char *path;
 	const char *root_dir_path = NULL;
+	apr_size_t id;
+
+	if(!dir_layout || !config_file || !labels || !count) {
+		return FALSE;
+	}
 
 	/* Parse XML document */
 	doc = apt_dir_layout_doc_parse(config_file,pool);
 	if(!doc) {
-		return NULL;
+		return FALSE;
 	}
 
 	root = doc->root;
@@ -171,10 +224,8 @@ APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_load(const char *config_file, apr_
 	/* Match document name */
 	if(!root || strcasecmp(root->name,"dirlayout") != 0) {
 		/* Unknown document */
-		return NULL;
+		return FALSE;
 	}
-
-	dir_layout = apt_dir_layout_alloc(pool);
 
 	/* Find rootdir attribute */
 	for(xml_attr = root->attr; xml_attr; xml_attr = xml_attr->next) {
@@ -193,11 +244,11 @@ APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_load(const char *config_file, apr_
 			char *cur_dir_path;
 			/* Get the current directory */
 			if(apr_filepath_get(&cur_dir_path,APR_FILEPATH_NATIVE,pool) != APR_SUCCESS)
-				return NULL;
+				return FALSE;
 
 			/* Merge it with path specified */
 			if(apr_filepath_merge(&full_path,cur_dir_path,root_dir_path,APR_FILEPATH_NATIVE,pool) != APR_SUCCESS)
-				return NULL;
+				return FALSE;
 			root_dir_path = full_path;
 		}
 	}
@@ -208,61 +259,59 @@ APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_load(const char *config_file, apr_
 
 	/* Navigate through document */
 	for(elem = root->first_child; elem; elem = elem->next) {
-		path = apt_dir_layout_subdir_parse(root_dir_path,elem,pool);
-		if(!path)
-			continue;
-
-		if(strcasecmp(elem->name,"confdir") == 0) {
-			dir_layout->conf_dir_path = path;
-		}
-		else if(strcasecmp(elem->name,"plugindir") == 0) {
-			dir_layout->plugin_dir_path = path;
-		}
-		else if(strcasecmp(elem->name,"logdir") == 0) {
-			dir_layout->log_dir_path = path;
-		}
-		else if(strcasecmp(elem->name,"datadir") == 0) {
-			dir_layout->data_dir_path = path;
-		}
-		else if(strcasecmp(elem->name,"vardir") == 0) {
-			dir_layout->var_dir_path = path;
+		if(apt_dir_entry_id_by_label(labels,dir_layout->count,elem->name,&id) == TRUE) {
+			path = apt_dir_layout_subdir_parse(root_dir_path,elem,pool);
+			if(path) {
+				apt_dir_layout_path_set_internal(dir_layout,id,path);
+			}
 		}
 		else {
 			/* Unknown element */
 		}
 	}
-	return dir_layout;
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_dir_layout_path_set(apt_dir_layout_t *dir_layout, apr_size_t dir_entry_id, const char *path, apr_pool_t *pool)
+{
+	if(!dir_layout || dir_entry_id >= dir_layout->count || !path)
+		return FALSE;
+
+	dir_layout->paths[dir_entry_id] = apr_pstrdup(pool,path);
+	return TRUE;
+}
+
+APT_DECLARE(const char*) apt_dir_layout_path_get(const apt_dir_layout_t *dir_layout, apr_size_t dir_entry_id)
+{
+	if(!dir_layout || dir_entry_id >= dir_layout->count)
+		return NULL;
+
+	return dir_layout->paths[dir_entry_id];
+}
+
+APT_DECLARE(char*) apt_dir_layout_path_compose(const apt_dir_layout_t *dir_layout, apr_size_t dir_entry_id, const char *file_name, apr_pool_t *pool)
+{
+	char *file_path;
+	if(!dir_layout || dir_entry_id >= dir_layout->count)
+		return NULL;
+
+	if(apr_filepath_merge(&file_path,dir_layout->paths[dir_entry_id],file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
+		return file_path;
+	}
+	return NULL;
 }
 
 APT_DECLARE(char*) apt_confdir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
 {
-	if(dir_layout && dir_layout->conf_dir_path && file_name) {
-		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->conf_dir_path,file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
-			return file_path;
-		}
-	}
-	return NULL;
+	return apt_dir_layout_path_compose(dir_layout,APT_LAYOUT_CONF_DIR,file_name,pool);
 }
 
 APT_DECLARE(char*) apt_datadir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
 {
-	if(dir_layout && dir_layout->data_dir_path && file_name) {
-		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->data_dir_path,file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
-			return file_path;
-		}
-	}
-	return NULL;
+	return apt_dir_layout_path_compose(dir_layout,APT_LAYOUT_DATA_DIR,file_name,pool);
 }
 
 APT_DECLARE(char*) apt_vardir_filepath_get(const apt_dir_layout_t *dir_layout, const char *file_name, apr_pool_t *pool)
 {
-	if(dir_layout && dir_layout->var_dir_path && file_name) {
-		char *file_path = NULL;
-		if(apr_filepath_merge(&file_path,dir_layout->var_dir_path,file_name,APR_FILEPATH_NATIVE,pool) == APR_SUCCESS) {
-			return file_path;
-		}
-	}
-	return NULL;
+	return apt_dir_layout_path_compose(dir_layout,APT_LAYOUT_VAR_DIR,file_name,pool);
 }
