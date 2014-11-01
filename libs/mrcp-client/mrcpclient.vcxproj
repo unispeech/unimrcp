@@ -114,6 +114,10 @@
       <Project>{12a49562-bab9-43a3-a21d-15b60bbb4c31}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\mrcpv2-transport\mrcpv2transport.vcxproj">
+      <Project>{a9edac04-6a5f-4ba7-bc0d-cce7b255b6ea}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

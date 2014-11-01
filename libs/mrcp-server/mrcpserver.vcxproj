@@ -108,6 +108,10 @@
     <ClCompile Include="src\mrcp_server_session.c" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\mrcp-engine\mrcpengine.vcxproj">
+      <Project>{843425be-9a9a-44f4-a4e3-4b57d6abd53c}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\mrcp-signaling\mrcpsignaling.vcxproj">
       <Project>{12a49562-bab9-43a3-a21d-15b60bbb4c31}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

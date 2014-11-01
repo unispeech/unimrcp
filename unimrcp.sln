@@ -35,6 +35,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mrcpserver", "libs\mrcp-ser
 	ProjectSection(ProjectDependencies) = postProject
 		{12A49562-BAB9-43A3-A21D-15B60BBB4C31} = {12A49562-BAB9-43A3-A21D-15B60BBB4C31}
 		{A9EDAC04-6A5F-4BA7-BC0D-CCE7B255B6EA} = {A9EDAC04-6A5F-4BA7-BC0D-CCE7B255B6EA}
+		{843425BE-9A9A-44F4-A4E3-4B57D6ABD53C} = {843425BE-9A9A-44F4-A4E3-4B57D6ABD53C}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libunimrcpserver", "platforms\libunimrcp-server\libunimrcpserver.vcproj", "{C98AF157-352E-4737-BD30-A24E2647F5AE}"
@@ -53,6 +54,7 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mrcpclient", "libs\mrcp-client\mrcpclient.vcproj", "{72782932-37CC-46AE-8C7F-9A7B1A6EE108}"
 	ProjectSection(ProjectDependencies) = postProject
 		{12A49562-BAB9-43A3-A21D-15B60BBB4C31} = {12A49562-BAB9-43A3-A21D-15B60BBB4C31}
+		{A9EDAC04-6A5F-4BA7-BC0D-CCE7B255B6EA} = {A9EDAC04-6A5F-4BA7-BC0D-CCE7B255B6EA}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libunimrcpclient", "platforms\libunimrcp-client\libunimrcpclient.vcproj", "{EE157390-1E85-416C-946E-620E32C9AD33}"
