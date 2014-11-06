@@ -167,11 +167,12 @@ static apt_bool_t test_dir_process(apt_test_suite_t *suite, mrcp_resource_factor
 		rv = apr_dir_read(&finfo,APR_FINFO_DIRENT,dir);
 		if(rv == APR_SUCCESS) {
 			if(finfo.filetype == APR_REG && finfo.name) {
+				int ch;
 				char *file_path;
 				apr_filepath_merge(&file_path,dir_name,finfo.name,APR_FILEPATH_NATIVE,suite->pool);
 				test_file_process(suite,factory,version,file_path);
 				printf("\nPress ENTER to continue\n");
-				getchar();
+				do {ch = getchar(); } while ((ch != '\n') && (ch != EOF));
 			}
 		}
 	} 
