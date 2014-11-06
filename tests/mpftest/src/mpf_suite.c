@@ -110,7 +110,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 
 	agent = apr_palloc(suite->pool,sizeof(mpf_suite_agent_t));
 
-	agent->dir_layout = apt_default_dir_layout_create("../",suite->pool);
+	agent->dir_layout = apt_default_dir_layout_create(NULL,suite->pool);
 	engine = mpf_engine_create("MPF-Engine",suite->pool);
 	if(!engine) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create MPF Engine");
@@ -159,6 +159,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(agent->consumer_task);
+	apt_task_name_set(task,"MPF-Tester");
 	vtable = apt_task_vtable_get(task);
 	if(vtable) {
 		vtable->process_msg = mpf_suite_task_msg_process;
@@ -171,7 +172,6 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	apr_thread_mutex_create(&agent->wait_object_mutex,APR_THREAD_MUTEX_UNNESTED,suite->pool);
 	apr_thread_cond_create(&agent->wait_object,suite->pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Start Task");
 	if(apt_task_start(task) == FALSE) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Start Task");
 		apt_task_destroy(task);
@@ -179,6 +179,7 @@ static apt_bool_t mpf_test_run(apt_test_suite_t *suite, int argc, const char * c
 	}
 
 	apr_thread_mutex_lock(agent->wait_object_mutex);
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Wait for Task to Complete");
 	apr_thread_cond_wait(agent->wait_object,agent->wait_object_mutex);
 	apr_thread_mutex_unlock(agent->wait_object_mutex);
 	
@@ -299,11 +300,11 @@ static void mpf_suite_session_destroy(mpf_suite_agent_t *agent, mpf_suite_sessio
 /** Start execution of MPF test suite scenario  */
 static void mpf_suite_on_start_complete(apt_task_t *task)
 {
-	apt_task_t *consumer_task;
+	apt_consumer_task_t *consumer_task;
 	mpf_suite_agent_t *agent;
 
 	consumer_task = apt_task_object_get(task);
-	agent = apt_task_object_get(consumer_task);
+	agent = apt_consumer_task_object_get(consumer_task);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"On MPF Suite Start");
 
@@ -413,8 +414,8 @@ static apt_bool_t mpf_suite_task_msg_process(apt_task_t *task, apt_task_msg_t *m
 {
 	apr_size_t i;
 	const mpf_message_t *mpf_message;
-	apt_task_t *consumer_task = apt_task_object_get(task);
-	mpf_suite_agent_t *agent = apt_task_object_get(consumer_task);
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mpf_suite_agent_t *agent = apt_consumer_task_object_get(consumer_task);
 	const mpf_message_container_t *container = (const mpf_message_container_t*) msg->data;
 	for(i=0; i<container->count; i++) {
 		mpf_message = &container->messages[i];
@@ -434,12 +435,16 @@ static mpf_audio_file_descriptor_t* mpf_file_reader_descriptor_create(const mpf_
 	const char *file_path = apt_datadir_filepath_get(agent->dir_layout,"demo-8kHz.pcm",session->pool);
 	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
 	descriptor->mask = FILE_READER;
-	descriptor->read_handle = fopen(file_path,"rb");
-	if(!descriptor->read_handle) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File [%s]",file_path);
-	}
+	descriptor->read_handle = NULL;
 	descriptor->write_handle = NULL;
 	descriptor->codec_descriptor = mpf_codec_lpcm_descriptor_create(8000,1,session->pool);
+	if(file_path) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s] for Reading",file_path);
+		descriptor->read_handle = fopen(file_path,"rb");
+		if(!descriptor->read_handle) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File [%s]",file_path);
+		}
+	}
 	return descriptor;
 }
 
@@ -450,13 +455,16 @@ static mpf_audio_file_descriptor_t* mpf_file_writer_descriptor_create(const mpf_
 	mpf_audio_file_descriptor_t *descriptor = apr_palloc(session->pool,sizeof(mpf_audio_file_descriptor_t));
 	descriptor->mask = FILE_WRITER;
 	descriptor->max_write_size = 500000; /* ~500Kb */
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s] for Writing",file_path);
-	descriptor->write_handle = fopen(file_path,"wb");
-	if(!descriptor->write_handle) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File [%s] for Writing",file_path);
-	}
+	descriptor->write_handle = NULL;
 	descriptor->read_handle = NULL;
 	descriptor->codec_descriptor = mpf_codec_lpcm_descriptor_create(8000,1,session->pool);
+	if(file_path) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Open File [%s] for Writing",file_path);
+		descriptor->write_handle = fopen(file_path,"wb");
+		if(!descriptor->write_handle) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open File [%s] for Writing",file_path);
+		}
+	}
 	return descriptor;
 }
 
