@@ -220,7 +220,7 @@ static client_options_t* options_load(int argc, const char * const *argv)
 	options = apr_palloc(pool,sizeof(client_options_t));
 	options->pool = pool;
 	/* set the default options */
-	options->root_dir_path = "../";
+	options->root_dir_path = NULL;
 	options->log_priority = APT_PRIO_INFO;
 	options->log_output = APT_LOG_OUTPUT_CONSOLE;
 
