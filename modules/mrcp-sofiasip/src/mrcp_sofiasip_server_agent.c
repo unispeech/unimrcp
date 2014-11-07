@@ -148,9 +148,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_sofiasip_server_logger_init(const char *name, cons
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_server_config_t *config, apr_pool_t *pool)
 {
-	const char *local_ip = config->ext_ip ? config->ext_ip : config->local_ip;
 	sofia_agent->config = config;
-	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu",local_ip,config->local_port);
+	sofia_agent->sip_contact_str = NULL; /* Let Sofia-SIP implicitly set Contact header by default */
+	if(config->ext_ip) {
+		/* Use external IP address in Contact header, if behind NAT */
+		sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu",config->ext_ip,config->local_port);
+	}
 	if(config->transport) {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%hu;transport=%s",
 											config->local_ip,
@@ -287,7 +290,7 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 	if(descriptor->status != MRCP_SESSION_STATUS_OK) {
 		int status = sip_status_get(descriptor->status);
 		nua_respond(sofia_session->nh, status, sip_status_phrase(status),
-					SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+					TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 					TAG_END());
 		return TRUE;
 	}
@@ -305,7 +308,7 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 	}
 
 	nua_respond(sofia_session->nh, SIP_200_OK, 
-				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				SOATAG_AUDIO_AUX("telephone-event"),
 				NUTAG_AUTOANSWER(0),
@@ -367,7 +370,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 			remote_sdp_str);
 
 		parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
-		sdp = sdp_session(parser);		
+		sdp = sdp_session(parser);
 		status = mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,NULL,sofia_session->session->pool);
 		sdp_parser_free(parser);
 	}
@@ -436,7 +439,7 @@ static void mrcp_sofia_on_resource_discover(mrcp_sofia_agent_t   *sofia_agent,
 
 	nua_respond(nh, SIP_200_OK, 
 				NUTAG_WITH_CURRENT(sofia_agent->nua),
-				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				SOATAG_AUDIO_AUX("telephone-event"),
 				TAG_END());

@@ -160,14 +160,20 @@ MRCP_DECLARE(apt_bool_t) mrcp_sofiasip_client_logger_init(const char *name, cons
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool)
 {
-	const char *local_ip = config->ext_ip ? config->ext_ip : config->local_ip;
 	if(!config->local_ip) {
 		return FALSE;
 	}
 
 	sofia_agent->config = config;
-	sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu", local_ip, config->local_port);
-	sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s:%hu", local_ip, config->local_port);
+	if(config->ext_ip) {
+		/* Use external IP address in Contact and From headers, if behind NAT */
+		sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu", config->ext_ip, config->local_port);
+		sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s:%hu", config->ext_ip, config->local_port);
+	}
+	else {
+		sofia_agent->sip_contact_str = NULL; /* Let Sofia-SIP implicitly set Contact header by default */
+		sofia_agent->sip_from_str = apr_psprintf(pool,"sip:%s:%hu", config->local_ip, config->local_port);
+	}
 
 	if(config->transport) {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%hu;transport=%s",
@@ -295,7 +301,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 				sofia_session,
 				SIPTAG_TO_STR(sofia_session->sip_to_str),
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
-				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 				TAG_IF(settings->feature_tags,SIPTAG_ACCEPT_CONTACT_STR(settings->feature_tags)),
 				TAG_END());
 	sofia_session->nua_state = nua_callstate_init;
@@ -494,7 +500,7 @@ static void mrcp_sofia_on_session_redirect(
 				sofia_session,
 				SIPTAG_TO_STR(sofia_session->sip_to_str),
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
-				SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str),
+				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 				TAG_END());
 
 	apr_thread_mutex_unlock(sofia_session->mutex);
