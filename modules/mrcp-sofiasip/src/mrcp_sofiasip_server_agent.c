@@ -460,7 +460,7 @@ static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 		nua_event_name(nua_event),
 		status,
 		phrase,
-		sofia_agent ? sofia_agent->sig_agent->id : "none");
+		sofia_agent->sig_agent->id);
 
 	switch(nua_event) {
 		case nua_i_state:
