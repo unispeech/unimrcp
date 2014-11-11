@@ -440,7 +440,7 @@ static apt_bool_t rtsp_client_session_terminate_respond(rtsp_client_t *client, r
 {
 	rtsp_client_connection_t *rtsp_connection = session->connection;
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Remove RTSP Handle "APT_PTR_FMT,session);
-	apr_hash_set(rtsp_connection->handle_table,session,sizeof(session),NULL);
+	apr_hash_set(rtsp_connection->handle_table,session,sizeof(void*),NULL);
 
 	session->term_state = TERMINATION_STATE_NONE;
 	client->vtable->on_session_terminate_response(client,session);
@@ -571,7 +571,7 @@ static apt_bool_t rtsp_client_session_request_process(rtsp_client_t *client, rts
 			return FALSE;
 		}
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Add RTSP Handle "APT_PTR_FMT,session);
-		apr_hash_set(session->connection->handle_table,session,sizeof(session),session);
+		apr_hash_set(session->connection->handle_table,session,sizeof(void*),session);
 	}
 
 	rtsp_client_session_url_generate(session,message);

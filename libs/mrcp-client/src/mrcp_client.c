@@ -699,7 +699,7 @@ void mrcp_client_session_add(mrcp_client_t *client, mrcp_client_session_t *sessi
 		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Add MRCP Handle "APT_NAMESID_FMT,
 			session->base.name,
 			MRCP_SESSION_SID(&session->base));
-		apr_hash_set(client->session_table,session,sizeof(session),session);
+		apr_hash_set(client->session_table,session,sizeof(void*),session);
 	}
 }
 
@@ -709,7 +709,7 @@ void mrcp_client_session_remove(mrcp_client_t *client, mrcp_client_session_t *se
 		apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->base.log_obj,"Remove MRCP Handle "APT_NAMESID_FMT,
 			session->base.name,
 			MRCP_SESSION_SID(&session->base));
-		apr_hash_set(client->session_table,session,sizeof(session),NULL);
+		apr_hash_set(client->session_table,session,sizeof(void*),NULL);
 	}
 }
 
