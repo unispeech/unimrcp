@@ -1039,9 +1039,6 @@ static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, 
 static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *session, const mpf_message_t *mpf_message)
 {
 	mrcp_termination_slot_t *termination_slot;
-	if(!session) {
-		return FALSE;
-	}
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Media Termination Modified "APT_NAMESIDRES_FMT,
 		MRCP_SESSION_NAMESID(session),
 		mpf_termination_name_get(mpf_message->termination));
@@ -1075,9 +1072,6 @@ static apt_bool_t mrcp_server_on_termination_modify(mrcp_server_session_t *sessi
 static apt_bool_t mrcp_server_on_termination_subtract(mrcp_server_session_t *session, const mpf_message_t *mpf_message)
 {
 	mrcp_termination_slot_t *termination_slot;
-	if(!session) {
-		return FALSE;
-	}
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Media Termination Subtracted "APT_NAMESIDRES_FMT,
 		MRCP_SESSION_NAMESID(session),
 		mpf_termination_name_get(mpf_message->termination));
@@ -1114,7 +1108,10 @@ apt_bool_t mrcp_server_mpf_message_process(mpf_message_container_t *mpf_message_
 		else {
 			session = NULL;
 		}
-		
+		if(!session) {
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Received MPF Message: NULL session");
+			continue;
+		}
 		if(mpf_message->message_type == MPF_MESSAGE_TYPE_RESPONSE) {
 			switch(mpf_message->command_id) {
 				case MPF_ADD_TERMINATION:
