@@ -119,9 +119,7 @@ APT_DECLARE(apt_bool_t) apt_task_destroy(apt_task_t *task)
 {
 	apt_task_t *child_task;
 	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
-		if(child_task) {
-			apt_task_destroy(child_task);
-		}
+		apt_task_destroy(child_task);
 	}
 
 	if(task->state != TASK_STATE_IDLE) {
@@ -365,10 +363,8 @@ static apt_bool_t apt_task_start_process_internal(apt_task_t *task)
 {
 	apt_task_t *child_task;
 	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
-		if(child_task) {
-			if(apt_task_start(child_task) == TRUE) {
-				task->pending_start++;
-			}
+		if(apt_task_start(child_task) == TRUE) {
+			task->pending_start++;
 		}
 	}
 
@@ -388,19 +384,17 @@ static apt_bool_t apt_task_terminate_process_internal(apt_task_t *task)
 {
 	apt_task_t *child_task;
 	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
-		if(child_task) {
 #ifdef ENABLE_SIMULT_TASK_TERMINATION
-			if(child_task->thread_handle) {
-				apr_thread_detach(child_task->thread_handle);
-				child_task->thread_handle = NULL;
-			}
-			if(apt_task_terminate(child_task,FALSE) == TRUE) {
-				task->pending_term++;
-			}
-#else
-			apt_task_terminate(child_task,TRUE);
-#endif
+		if(child_task->thread_handle) {
+			apr_thread_detach(child_task->thread_handle);
+			child_task->thread_handle = NULL;
 		}
+		if(apt_task_terminate(child_task,FALSE) == TRUE) {
+			task->pending_term++;
+		}
+#else
+		apt_task_terminate(child_task,TRUE);
+#endif
 	}
 
 	if(!task->pending_term) {
@@ -415,10 +409,8 @@ static apt_bool_t apt_task_offline_request_process(apt_task_t *task)
 {
 	apt_task_t *child_task;
 	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
-		if(child_task) {
-			if(apt_task_offline(child_task) == TRUE) {
-				task->pending_off++;
-			}
+		if(apt_task_offline(child_task) == TRUE) {
+			task->pending_off++;
 		}
 	}
 
@@ -433,10 +425,8 @@ static apt_bool_t apt_task_online_request_process(apt_task_t *task)
 {
 	apt_task_t *child_task;
 	APR_RING_FOREACH(child_task, &task->head, apt_task_t, link) {
-		if(child_task) {
-			if(apt_task_online(child_task) == TRUE) {
-				task->pending_on++;
-			}
+		if(apt_task_online(child_task) == TRUE) {
+			task->pending_on++;
 		}
 	}
 
