@@ -238,7 +238,8 @@ static void goertzel_energies_digit(struct mpf_dtmf_detector_t *detector)
 	} else if (0.25 * detector->totenergy > (reng + ceng)) {  /* 16db */
 		/* Signal energy to total energy ratio test failed */
 	} else {
-		digit = freq2digits[rmax][cmax - DTMF_FREQUENCIES/2];
+		if (cmax >= DTMF_FREQUENCIES/2 && cmax < DTMF_FREQUENCIES)
+			digit = freq2digits[rmax][cmax - DTMF_FREQUENCIES/2];
 	}
 
 	/* Three successive detections will trigger the detection */
