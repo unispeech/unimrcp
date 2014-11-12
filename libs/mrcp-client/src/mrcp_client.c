@@ -833,8 +833,9 @@ apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrc
 		app_message->control_message = NULL;
 		app_message->descriptor = NULL;
 		*slot = app_message;
+		return apt_task_msg_signal(task,task_msg);
 	}
-	return apt_task_msg_signal(task,task_msg);
+	return FALSE;
 }
 
 apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
@@ -854,22 +855,25 @@ apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channe
 		app_message->channel = channel;
 		app_message->control_message = message;
 		*slot = app_message;
+		return apt_task_msg_signal(task,task_msg);
 	}
-	return apt_task_msg_signal(task,task_msg);
+	return FALSE;
 }
 
 static apt_bool_t mrcp_client_signaling_task_msg_signal(sig_agent_task_msg_type_e type, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_message_t *message)
 {
 	sig_agent_task_msg_data_t *data;
 	apt_task_msg_t *task_msg = apt_task_msg_acquire(session->signaling_agent->msg_pool);
-	task_msg->type = MRCP_CLIENT_SIGNALING_TASK_MSG;
-	task_msg->sub_type = type;
-	data = (sig_agent_task_msg_data_t*) task_msg->data;
-	data->session = (mrcp_client_session_t*)session;
-	data->descriptor = descriptor;
-	data->message = message;
-
-	return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
+	if(task_msg) {
+		task_msg->type = MRCP_CLIENT_SIGNALING_TASK_MSG;
+		task_msg->sub_type = type;
+		data = (sig_agent_task_msg_data_t*) task_msg->data;
+		data->session = (mrcp_client_session_t*)session;
+		data->descriptor = descriptor;
+		data->message = message;
+		return apt_task_msg_parent_signal(session->signaling_agent->task,task_msg);
+	}
+	return FALSE;
 }
 
 static apt_bool_t mrcp_client_connection_task_msg_signal(
@@ -889,15 +893,17 @@ static apt_bool_t mrcp_client_connection_task_msg_signal(
 	}
 	task = apt_consumer_task_base_get(client->task);
 	task_msg = apt_task_msg_acquire(client->cnt_msg_pool);
-	task_msg->type = MRCP_CLIENT_CONNECTION_TASK_MSG;
-	task_msg->sub_type = type;
-	data = (connection_agent_task_msg_data_t*) task_msg->data;
-	data->channel = channel ? channel->obj : NULL;
-	data->descriptor = descriptor;
-	data->message = message;
-	data->status = status;
-
-	return apt_task_msg_signal(task,task_msg);
+	if(task_msg) {
+		task_msg->type = MRCP_CLIENT_CONNECTION_TASK_MSG;
+		task_msg->sub_type = type;
+		data = (connection_agent_task_msg_data_t*) task_msg->data;
+		data->channel = channel ? channel->obj : NULL;
+		data->descriptor = descriptor;
+		data->message = message;
+		data->status = status;
+		return apt_task_msg_signal(task,task_msg);
+	}
+	return FALSE;
 }
 
 
