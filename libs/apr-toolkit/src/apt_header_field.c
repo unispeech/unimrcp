@@ -83,9 +83,13 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_create_from_line(const apt_str
 	apt_string_copy(&header_field->name,&item,pool);
 
 	/* read value */
-	apt_text_field_read(&stream,0,TRUE,&item);
-	apt_string_copy(&header_field->value,&item,pool);
-	
+	if(apt_text_field_read(&stream,0,TRUE,&item) == TRUE) {
+		apt_string_copy(&header_field->value,&item,pool);
+	}
+	else {
+		apt_string_reset(&header_field->value);
+	}
+
 	header_field->id = UNKNOWN_HEADER_FIELD_ID;
 	APR_RING_ELEM_INIT(header_field,link);
 	return header_field;

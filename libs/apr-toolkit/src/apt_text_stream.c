@@ -273,8 +273,12 @@ static apt_bool_t apt_pair_parse(apt_pair_t *pair, const apt_str_t *field, apr_p
 	apt_string_copy(&pair->name,&item,pool);
 
 	/* read value */
-	apt_text_field_read(&stream,';',TRUE,&item);
-	apt_string_copy(&pair->value,&item,pool);
+	if(apt_text_field_read(&stream,';',TRUE,&item) == TRUE) {
+		apt_string_copy(&pair->value,&item,pool);
+	}
+	else {
+		apt_string_reset(&pair->value);
+	}
 	return TRUE;
 }
 
