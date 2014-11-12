@@ -504,7 +504,7 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 	for(i=0; i<session->terminations->nelts; i++) {
 		/* get existing termination */
 		slot = &APR_ARRAY_IDX(session->terminations,i,mrcp_termination_slot_t);
-		if(!slot || !slot->termination) continue;
+		if(!slot->termination) continue;
 
 		/* send subtract termination request */
 		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Subtract Media Termination "APT_NAMESIDRES_FMT,
@@ -890,7 +890,7 @@ static apt_bool_t mrcp_server_av_media_offer_process(mrcp_server_session_t *sess
 	for(i=0; i<count; i++) {
 		/* get existing termination */
 		slot = &APR_ARRAY_IDX(session->terminations,i,mrcp_termination_slot_t);
-		if(!slot || !slot->termination) continue;
+		if(!slot->termination) continue;
 
 		/* build associations between specified RTP termination and control channels */
 		rtp_descriptor = mrcp_server_associations_build(session,descriptor,slot);
@@ -999,7 +999,7 @@ static mrcp_termination_slot_t* mrcp_server_rtp_termination_find(mrcp_server_ses
 	mrcp_termination_slot_t *slot;
 	for(i=0; i<session->terminations->nelts; i++) {
 		slot = &APR_ARRAY_IDX(session->terminations,i,mrcp_termination_slot_t);
-		if(slot && slot->termination == termination) {
+		if(slot->termination == termination) {
 			return slot;
 		}
 	}

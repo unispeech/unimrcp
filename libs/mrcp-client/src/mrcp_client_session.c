@@ -569,7 +569,7 @@ static rtp_termination_slot_t* mrcp_client_rtp_termination_find(mrcp_client_sess
 	rtp_termination_slot_t *slot;
 	for(i=0; i<session->terminations->nelts; i++) {
 		slot = &APR_ARRAY_IDX(session->terminations,i,rtp_termination_slot_t);
-		if(slot && slot->termination == termination) {
+		if(slot->termination == termination) {
 			return slot;
 		}
 	}
@@ -879,7 +879,7 @@ static apt_bool_t mrcp_client_session_terminate(mrcp_client_session_t *session)
 		for(i=0; i<session->terminations->nelts; i++) {
 			/* get existing termination */
 			slot = &APR_ARRAY_IDX(session->terminations,i,rtp_termination_slot_t);
-			if(!slot || !slot->termination) continue;
+			if(!slot->termination) continue;
 
 			/* send subtract termination request */
 			apt_obj_log(APT_LOG_MARK,APT_PRIO_DEBUG,session->base.log_obj,"Subtract Media Termination "APT_NAMESIDRES_FMT, 
@@ -1165,8 +1165,6 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 		mpf_rtp_termination_descriptor_t *rtp_descriptor;
 		/* get existing termination */
 		slot = &APR_ARRAY_IDX(session->terminations,i,rtp_termination_slot_t);
-		if(!slot) continue;
-
 		remote_media = mrcp_session_audio_media_get(descriptor,i);
 		if(slot->descriptor) {
 			slot->descriptor->audio.remote = remote_media;
