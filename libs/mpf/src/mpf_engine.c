@@ -265,6 +265,9 @@ static apt_bool_t mpf_engine_event_raise(mpf_termination_t *termination, int eve
 	}
 
 	task_msg = apt_task_msg_get(engine->task);
+	if(!task_msg) {
+		return FALSE;
+	}
 	task_msg->type = engine->task_msg_type;
 	event_msg = (mpf_message_container_t*) task_msg->data;
 	mpf_message = event_msg->messages;
@@ -305,6 +308,9 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 	const mpf_message_container_t *request = (const mpf_message_container_t*) msg->data;
 
 	response_msg = apt_task_msg_get(engine->task);
+	if(!response_msg) {
+		return FALSE;
+	}
 	response_msg->type = engine->task_msg_type;
 	response = (mpf_message_container_t*) response_msg->data;
 	*response = *request;
