@@ -539,7 +539,8 @@ MRCP_DECLARE(mrcp_profile_t*) mrcp_client_profile_create_ex(
 	profile->ca_factory = ca_factory;
 	profile->signaling_settings = signaling_settings;
 
-	mpf_engine_factory_rtp_factory_assign(mpf_factory,rtp_factory);
+	if(mpf_factory && rtp_factory)
+		mpf_engine_factory_rtp_factory_assign(mpf_factory,rtp_factory);
 	return profile;
 }
 
