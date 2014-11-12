@@ -74,7 +74,6 @@ MRCP_DECLARE(apt_bool_t) mrcp_header_field_add(mrcp_message_header_t *header, ap
 			header_field->id += GENERIC_HEADER_COUNT;
 		}
 		else if(mrcp_header_field_value_parse(&header->generic_header_accessor,header_field,pool) == TRUE) {
-			status = apt_header_section_field_add(&header->header_section,header_field);
 		}
 		else { 
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Unknown MRCP header field: %s",header_field->name.buf);
