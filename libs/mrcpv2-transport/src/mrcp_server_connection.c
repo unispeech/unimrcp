@@ -397,10 +397,8 @@ static mrcp_connection_t* mrcp_connection_find(mrcp_connection_agent_t *agent, c
 	for(connection = APR_RING_FIRST(&agent->connection_list);
 			connection != APR_RING_SENTINEL(&agent->connection_list, mrcp_connection_t, link);
 				connection = APR_RING_NEXT(connection, link)) {
-		if(connection) {
-			if(apt_string_compare(&connection->remote_ip,remote_ip) == TRUE) {
-				return connection;
-			}
+		if(apt_string_compare(&connection->remote_ip,remote_ip) == TRUE) {
+			return connection;
 		}
 	}
 
