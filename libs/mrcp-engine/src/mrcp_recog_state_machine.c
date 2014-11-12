@@ -234,7 +234,7 @@ static apt_bool_t recog_pending_requests_remove(mrcp_recog_state_machine_t *stat
 	mrcp_generic_header_t *generic_header = mrcp_generic_header_get(request_message);
 	mrcp_generic_header_t *response_generic_header = mrcp_generic_header_prepare(response_message);
 	if(generic_header && mrcp_generic_header_property_check(request_message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST) == TRUE) {
-		if(generic_header->active_request_id_list.ids && generic_header->active_request_id_list.count) {
+		if(generic_header->active_request_id_list.count) {
 			/* selective STOP request */
 			request_id_list = &generic_header->active_request_id_list;
 		}
@@ -269,7 +269,7 @@ static apt_bool_t recog_request_stop(mrcp_recog_state_machine_t *state_machine, 
 		mrcp_request_id_list_t *request_id_list = NULL;
 		mrcp_generic_header_t *generic_header = mrcp_generic_header_get(message);
 		if(generic_header && mrcp_generic_header_property_check(message,GENERIC_HEADER_ACTIVE_REQUEST_ID_LIST) == TRUE) {
-			if(generic_header->active_request_id_list.ids && generic_header->active_request_id_list.count) {
+			if(generic_header->active_request_id_list.count) {
 				/* selective STOP request */
 				request_id_list = &generic_header->active_request_id_list;
 			}
