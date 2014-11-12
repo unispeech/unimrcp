@@ -466,7 +466,7 @@ static void mrcp_sofia_on_session_redirect(
 		return;
 	}
 	sip_contact = sip->sip_contact;
-	if(!sip_contact || !sip_contact->m_url) {
+	if(!sip_contact) {
 		return;
 	}
 	
