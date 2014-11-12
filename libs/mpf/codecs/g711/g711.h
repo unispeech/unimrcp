@@ -326,8 +326,10 @@ static APR_INLINE apr_byte_t linear_to_alaw(int linear)
             /* Out of range. Return maximum value. */
             return (apr_byte_t) (0x7F ^ mask);
         }
+#if 0 /* This code is no longer reachable, since linear must be at least 0.  */
         /* We must be just a tiny step below zero */
         return (apr_byte_t) (0x00 ^ mask);
+#endif
     }
     /* Combine the sign, segment, and quantization bits. */
     return (apr_byte_t) (((seg << 4) | ((linear >> ((seg)  ?  (seg + 3)  :  4)) & 0x0F)) ^ mask);
