@@ -125,7 +125,7 @@ static apt_bool_t apt_consumer_task_run(apt_task_t *task)
 	while(*running) {
 #if APR_HAS_QUEUE_TIMEOUT
 		if(apt_timer_queue_timeout_get(consumer_task->timer_queue,&queue_timeout) == TRUE) {
-			timeout = queue_timeout * 1000;
+			timeout = (apr_interval_time_t)queue_timeout * 1000;
 			time_last = apr_time_now();
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Wait for Messages [%s] timeout [%u]",
 				task_name, queue_timeout);
