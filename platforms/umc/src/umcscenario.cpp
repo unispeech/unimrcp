@@ -40,7 +40,8 @@ bool UmcScenario::Load(const apr_xml_elem* pElem, apr_pool_t* pool)
 	/* Load Child Elements */
 	for(pChildElem = pElem->first_child; pChildElem; pChildElem = pChildElem->next)
 	{
-		LoadElement(pChildElem,pool);
+		if(!LoadElement(pChildElem,pool))
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Load Child Element %s",pChildElem->name);
 	}
 	return true;
 }
