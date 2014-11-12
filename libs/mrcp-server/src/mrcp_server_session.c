@@ -568,7 +568,7 @@ static apt_bool_t mrcp_server_on_message_receive(mrcp_server_session_t *session,
 	if(!channel->resource || !channel->state_machine) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Resource "APT_NAMESIDRES_FMT,
 			MRCP_SESSION_NAMESID(session),
-			channel->resource->name.buf);
+			message->channel_id.resource_name.buf);
 		return FALSE;
 	}
 
