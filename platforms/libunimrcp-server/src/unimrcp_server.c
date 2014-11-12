@@ -1200,7 +1200,7 @@ static apt_bool_t unimrcp_server_load(mrcp_server_t *mrcp_server, apt_dir_layout
 
 	/* Match document name */
 	if(!root || strcasecmp(root->name,"unimrcpserver") != 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Document <%s>",root->name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Document <%s>",root ? root->name : "null");
 		return FALSE;
 	}
 

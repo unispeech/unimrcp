@@ -1291,7 +1291,7 @@ static apt_bool_t unimrcp_client_doc_process(unimrcp_client_loader_t *loader, co
 
 	/* Match document name */
 	if(!root || strcasecmp(root->name,"unimrcpclient") != 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Document <%s>",root->name);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Document <%s>",root ? root->name : "null");
 		return FALSE;
 	}
 
