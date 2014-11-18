@@ -25,6 +25,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include <sofia-sip/su.h>
 #include <sofia-sip/nua.h>
 #include <sofia-sip/sip_status.h>
+#include <sofia-sip/sip_header.h>
 #include <sofia-sip/sdp.h>
 #include <sofia-sip/tport.h>
 #include <sofia-sip/sofia_features.h>
@@ -53,7 +54,6 @@ struct mrcp_sofia_agent_t {
 struct mrcp_sofia_session_t {
 	mrcp_session_t            *session;
 	mrcp_sig_settings_t       *sip_settings;
-	char                      *sip_to_str;
 
 	su_home_t                 *home;
 	nua_handle_t              *nh;
@@ -267,6 +267,7 @@ static APR_INLINE mrcp_sofia_agent_t* mrcp_sofia_agent_get(mrcp_session_t *sessi
 
 static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_settings_t *settings)
 {
+	const char *sip_to_str;
 	mrcp_sofia_agent_t *sofia_agent = mrcp_sofia_agent_get(session);
 	mrcp_sofia_session_t *sofia_session;
 	session->request_vtable = &session_request_vtable;
@@ -285,13 +286,13 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 	session->obj = sofia_session;
 
 	if(settings->user_name && *settings->user_name != '\0') {
-		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%hu",
+		sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%hu",
 										settings->user_name,
 										settings->server_ip,
 										settings->server_port);
 	}
 	else {
-		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s:%hu",
+		sip_to_str = apr_psprintf(session->pool,"sip:%s:%hu",
 										settings->server_ip,
 										settings->server_port);
 	}
@@ -299,7 +300,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_se
 	sofia_session->nh = nua_handle(
 				sofia_agent->nua,
 				sofia_session,
-				SIPTAG_TO_STR(sofia_session->sip_to_str),
+				SIPTAG_TO_STR(sip_to_str),
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
 				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 				TAG_IF(settings->feature_tags,SIPTAG_ACCEPT_CONTACT_STR(settings->feature_tags)),
@@ -461,33 +462,21 @@ static void mrcp_sofia_on_session_redirect(
 						tagi_t                tags[])
 {
 	mrcp_session_t *session = sofia_session->session;
+	sip_to_t *sip_to;
 	sip_contact_t *sip_contact;
-	if(!sip) {
+	if(!sip || !sip->sip_contact) {
 		return;
 	}
 	sip_contact = sip->sip_contact;
-	if(!sip_contact) {
-		return;
-	}
 	
-	if(sip_contact->m_url->url_user && *sip_contact->m_url->url_user != '\0') {
-		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%s",
-										sip_contact->m_url->url_user,
-										sip_contact->m_url->url_host,
-										sip_contact->m_url->url_port);
-	}
-	else {
-		sofia_session->sip_to_str = apr_psprintf(session->pool,"sip:%s:%s",
-										sip_contact->m_url->url_host,
-										sip_contact->m_url->url_port);
-	}
-
 	apr_thread_mutex_lock(sofia_session->mutex);
 
-	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Redirect "APT_NAMESID_FMT" to %s",
+	sip_to = sip_to_create(sofia_session->home, (const url_string_t *) sip_contact->m_url); 
+
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Redirect "APT_NAMESID_FMT" to "URL_PRINT_FORMAT,
 		session->name,
-		MRCP_SESSION_SID(session), 
-		sofia_session->sip_to_str);
+		MRCP_SESSION_SID(session),
+		URL_PRINT_ARGS(sip_to->a_url));
 
 	if(sofia_session->nh) {
 		nua_handle_bind(sofia_session->nh, NULL);
@@ -498,7 +487,7 @@ static void mrcp_sofia_on_session_redirect(
 	sofia_session->nh = nua_handle(
 				sofia_agent->nua,
 				sofia_session,
-				SIPTAG_TO_STR(sofia_session->sip_to_str),
+				SIPTAG_TO(sip_to),
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
 				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
 				TAG_END());
