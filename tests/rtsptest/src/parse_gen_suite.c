@@ -36,15 +36,15 @@ static apt_bool_t test_stream_generate(rtsp_generator_t *generator, rtsp_message
 		if(status == APT_MESSAGE_STATUS_COMPLETE) {
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated RTSP Stream [%"APR_SIZE_T_FMT" bytes]\n%s",stream.text.length,stream.text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated RTSP Data [%"APR_SIZE_T_FMT" bytes]\n%s",stream.text.length,stream.text.buf);
 		}
 		else if(status == APT_MESSAGE_STATUS_INCOMPLETE) {
 			*stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated RTSP Stream [%"APR_SIZE_T_FMT" bytes] continuation awaited\n%s",stream.text.length,stream.text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated RTSP Data [%"APR_SIZE_T_FMT" bytes] continuation awaited\n%s",stream.text.length,stream.text.buf);
 			continuation = TRUE;
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Stream");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate RTSP Data");
 		}
 	}
 	while(continuation == TRUE);
@@ -95,7 +95,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, const char *file_pa
 		/* calculate actual length of the stream */
 		stream.text.length = offset + length;
 		stream.pos[length] = '\0';
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse RTSP Stream [%"APR_SIZE_T_FMT" bytes]\n%s",length,stream.pos);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse RTSP Data [%"APR_SIZE_T_FMT" bytes]\n%s",length,stream.pos);
 		
 		/* reset pos */
 		apt_text_stream_reset(&stream);

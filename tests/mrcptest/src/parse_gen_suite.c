@@ -39,15 +39,15 @@ static apt_bool_t test_stream_generate(mrcp_generator_t *generator, mrcp_message
 		if(status == APT_MESSAGE_STATUS_COMPLETE) {
 			stream.text.length = stream.pos - stream.text.buf;
 			*stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated MRCP Stream [%"APR_SIZE_T_FMT" bytes]\n%s",stream.text.length,stream.text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated MRCPv2 Data [%"APR_SIZE_T_FMT" bytes]\n%s",stream.text.length,stream.text.buf);
 		}
 		else if(status == APT_MESSAGE_STATUS_INCOMPLETE) {
 			*stream.pos = '\0';
-			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated MRCP Stream [%"APR_SIZE_T_FMT" bytes] continuation awaited\n%s",stream.text.length,stream.text.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Generated MRCPv2 Data [%"APR_SIZE_T_FMT" bytes] continuation awaited\n%s",stream.text.length,stream.text.buf);
 			continuation = TRUE;
 		}
 		else if(status == APT_MESSAGE_STATUS_INVALID) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCP Stream");
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv2 Data");
 		}
 	}
 	while(continuation == TRUE);
@@ -128,7 +128,7 @@ static apt_bool_t test_file_process(apt_test_suite_t *suite, mrcp_resource_facto
 		/* calculate actual length of the stream */
 		stream.text.length = offset + length;
 		stream.pos[length] = '\0';
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse MRCP Stream [%"APR_SIZE_T_FMT" bytes]\n%s",length,stream.pos);
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Parse MRCPv2 Data [%"APR_SIZE_T_FMT" bytes]\n%s",length,stream.pos);
 
 		/* reset pos */
 		apt_text_stream_reset(&stream);
