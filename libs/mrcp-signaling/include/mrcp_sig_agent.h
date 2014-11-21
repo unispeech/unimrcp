@@ -43,7 +43,7 @@ struct mrcp_sig_settings_t {
 	char        *resource_location;
 	/** Map of the MRCP resource names (v1 only) */
 	apr_table_t *resource_map;
-	/** Force destination ip address. Should be used only in case 
+	/** Force destination IP address. Should be used only in case 
 	SDP contains incorrect connection address (local IP address behind NAT) */
 	apt_bool_t   force_destination;
 	/** Optional feature tags */

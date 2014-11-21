@@ -271,7 +271,7 @@ RTSP_DECLARE(const rtsp_message_t*) rtsp_server_session_request_get(const rtsp_s
 	return session->active_request;
 }
 
-/** Get the session destination (client) ip address */
+/** Get the session destination (client) IP address */
 RTSP_DECLARE(const char*) rtsp_server_session_destination_get(const rtsp_server_session_t *session)
 {
 	if(session->connection) {

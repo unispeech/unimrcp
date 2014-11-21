@@ -48,7 +48,7 @@ struct mrcp_sofia_server_config_t {
 	char      *origin;
 	/** SIP transport */
 	char      *transport;
-	/** Force destination ip address. Should be used only in case 
+	/** Force destination IP address. Should be used only in case 
 	SDP contains incorrect connection address (local IP address behind NAT) */
 	apt_bool_t force_destination;
 	/** SIP T1 timer */

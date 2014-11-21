@@ -65,12 +65,12 @@ struct unimrcp_server_loader_t {
 	/** Pool to allocate memory from */
 	apr_pool_t       *pool;
 
-	/** Default ip address (named property) */
+	/** Default IP address (named property) */
 	const char       *ip;
-	/** Default external (NAT) ip address (named property) */
+	/** Default external (NAT) IP address (named property) */
 	const char       *ext_ip;
 	
-	/** Implicitly detected, cached ip address */
+	/** Implicitly detected, cached IP address */
 	const char      *auto_ip;
 };
 
@@ -211,7 +211,7 @@ static char* unimrcp_server_ip_address_get(unimrcp_server_loader_t *loader, cons
 	}
 
 	if(attr && strcasecmp(attr->value,"auto") == 0) {
-		/* implicitly detect ip address, if not already detected */
+		/* implicitly detect IP address, if not already detected */
 		if(!loader->auto_ip) {
 			char *auto_addr = DEFAULT_IP_ADDRESS;
 			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Detecting IP Address");
@@ -221,7 +221,7 @@ static char* unimrcp_server_ip_address_get(unimrcp_server_loader_t *loader, cons
 		return apr_pstrdup(loader->pool,loader->auto_ip);
 	}
 	else if(attr && strcasecmp(attr->value,"iface") == 0) {
-		/* get ip address by network interface name */
+		/* get IP address by network interface name */
 		char *ip_addr = DEFAULT_IP_ADDRESS;
 		if(is_cdata_valid(elem) == TRUE) {
 			const char *iface_name = cdata_text_get(elem);
@@ -232,11 +232,11 @@ static char* unimrcp_server_ip_address_get(unimrcp_server_loader_t *loader, cons
 	}
 
 	if(is_cdata_valid(elem)) {
-		/* use provided ip address */
+		/* use provided IP address */
 		return cdata_copy(elem,loader->pool);
 	}
 
-	/* use default ip address */
+	/* use default IP address */
 	return apr_pstrdup(loader->pool,loader->ip);
 }
 
@@ -386,11 +386,11 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 	}
 
 	if(!config->local_ip) {
-		/* use default ip address if not specified */
+		/* use default IP address if not specified */
 		config->local_ip = apr_pstrdup(loader->pool,loader->ip);
 	}
 	if(!config->ext_ip && loader->ext_ip) {
-		/* use default ext ip address if not specified */
+		/* use default ext IP address if not specified */
 		config->ext_ip = apr_pstrdup(loader->pool,loader->ext_ip);
 	}
 
@@ -452,7 +452,7 @@ static apt_bool_t unimrcp_server_rtsp_uas_load(unimrcp_server_loader_t *loader, 
 	}
 
 	if(!config->local_ip) {
-		/* use default ip address if not specified */
+		/* use default IP address if not specified */
 		config->local_ip = apr_pstrdup(loader->pool,loader->ip);
 	}
 
@@ -509,7 +509,7 @@ static apt_bool_t unimrcp_server_mrcpv2_uas_load(unimrcp_server_loader_t *loader
 	}
 
 	if(!mrcp_ip) {
-		/* use default ip address if not specified */
+		/* use default IP address if not specified */
 		mrcp_ip = apr_pstrdup(loader->pool,loader->ip);
 	}
 

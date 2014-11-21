@@ -137,8 +137,8 @@ RTSP_DECLARE(const apt_str_t*) rtsp_server_session_id_get(const rtsp_server_sess
 RTSP_DECLARE(const rtsp_message_t*) rtsp_server_session_request_get(const rtsp_server_session_t *session);
 
 /**
- * Get the session destination (client) ip address.
- * @param session the session to get ip address from
+ * Get the session destination (client) IP address.
+ * @param session the session to get IP address from
  */
 RTSP_DECLARE(const char*) rtsp_server_session_destination_get(const rtsp_server_session_t *session);
 
