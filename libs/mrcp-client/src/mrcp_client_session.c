@@ -684,7 +684,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 	mpf_rtp_termination_descriptor_t *rtp_descriptor = NULL;
 	rtp_termination_slot_t *slot;
 	apr_pool_t *pool = session->base.pool;
-	mrcp_profile_t *profile = session->profile;
+	mrcp_client_profile_t *profile = session->profile;
 	if(mrcp_client_channel_find(session,channel,NULL) == TRUE) {
 		/* update */
 		return mrcp_client_channel_modify(session,channel,TRUE);

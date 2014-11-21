@@ -33,8 +33,8 @@ APT_BEGIN_EXTERN_C
 /** Opaque MRCP server declaration */
 typedef struct mrcp_server_t mrcp_server_t;
 
-/** Opaque MRCP profile declaration */
-typedef struct mrcp_profile_t mrcp_profile_t;
+/** Opaque MRCP server profile declaration */
+typedef struct mrcp_server_profile_t mrcp_server_profile_t;
 
 
 APT_END_EXTERN_C

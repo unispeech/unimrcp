@@ -57,13 +57,12 @@ struct mrcp_client_session_t {
 	/** External object associated with session */
 	void                       *app_obj;
 	/** Profile to use */
-	mrcp_profile_t             *profile;
+	mrcp_client_profile_t      *profile;
 
 	/** Media context */
 	mpf_context_t              *context;
 	/** Codec manager */
 	const mpf_codec_manager_t  *codec_manager;
-
 
 	/** RTP termination array (mrcp_termination_slot_t) */
 	apr_array_header_t         *terminations;
@@ -133,9 +132,8 @@ struct rtp_termination_slot_t {
 	apr_size_t                        id;
 };
 
-
-/** MRCP profile */
-struct mrcp_profile_t {
+/** MRCP client profile */
+struct mrcp_client_profile_t {
 	/** Unique profile name */
 	const char                *name;
 	/** Arbitrary tag set/used by user application */

@@ -942,7 +942,7 @@ static mpf_engine_factory_t* unimrcp_client_mpf_factory_create(unimrcp_client_lo
 static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root, const char *id, const char *tag)
 {
 	const apr_xml_elem *elem;
-	mrcp_profile_t *profile;
+	mrcp_client_profile_t *profile;
 	mrcp_sa_factory_t *sa_factory = NULL;
 	mrcp_ca_factory_t *ca_factory = NULL;
 	mpf_engine_factory_t *mpf_factory = NULL;
@@ -998,7 +998,7 @@ static apt_bool_t unimrcp_client_mrcpv2_profile_load(unimrcp_client_loader_t *lo
 static apt_bool_t unimrcp_client_mrcpv1_profile_load(unimrcp_client_loader_t *loader, const apr_xml_elem *root, const char *id, const char *tag)
 {
 	const apr_xml_elem *elem;
-	mrcp_profile_t *profile;
+	mrcp_client_profile_t *profile;
 	mrcp_sa_factory_t *sa_factory = NULL;
 	mpf_engine_factory_t *mpf_factory = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;

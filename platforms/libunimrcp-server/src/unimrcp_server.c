@@ -853,7 +853,7 @@ static apr_table_t* resource_engine_map_load(const apr_xml_elem *root, apr_pool_
 static apt_bool_t unimrcp_server_mrcpv2_profile_load(unimrcp_server_loader_t *loader, const apr_xml_elem *root, const char *id)
 {
 	const apr_xml_elem *elem;
-	mrcp_profile_t *profile;
+	mrcp_server_profile_t *profile;
 	mrcp_sig_agent_t *sip_agent = NULL;
 	mrcp_connection_agent_t *mrcpv2_agent = NULL;
 	mpf_engine_t *media_engine = NULL;
@@ -910,7 +910,7 @@ static apt_bool_t unimrcp_server_mrcpv2_profile_load(unimrcp_server_loader_t *lo
 static apt_bool_t unimrcp_server_mrcpv1_profile_load(unimrcp_server_loader_t *loader, const apr_xml_elem *root, const char *id)
 {
 	const apr_xml_elem *elem;
-	mrcp_profile_t *profile;
+	mrcp_server_profile_t *profile;
 	mrcp_sig_agent_t *rtsp_agent = NULL;
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
