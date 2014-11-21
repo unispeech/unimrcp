@@ -53,7 +53,7 @@ struct mrcp_sofia_agent_t {
 
 struct mrcp_sofia_session_t {
 	mrcp_session_t            *session;
-	mrcp_sig_settings_t       *sip_settings;
+	const mrcp_sig_settings_t *sip_settings;
 
 	su_home_t                 *home;
 	nua_handle_t              *nh;
@@ -82,7 +82,7 @@ static const mrcp_session_request_vtable_t session_request_vtable = {
 };
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool);
-static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_settings_t *settings);
+static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings);
 
 static void mrcp_sofia_event_callback( nua_event_t           nua_event,
 									   int                   status,
@@ -260,7 +260,7 @@ static APR_INLINE mrcp_sofia_agent_t* mrcp_sofia_agent_get(mrcp_session_t *sessi
 	return session->signaling_agent->obj;
 }
 
-static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, mrcp_sig_settings_t *settings)
+static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings)
 {
 	const char *sip_to_str;
 	mrcp_sofia_agent_t *sofia_agent = mrcp_sofia_agent_get(session);
