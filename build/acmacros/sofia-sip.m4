@@ -48,8 +48,9 @@ AC_DEFUN([UNIMRCP_CHECK_SOFIA],
             sofia_uadir="$dir/libsofia-sip-ua"
             if test -d "$sofia_uadir"; then
                 found_sofia="yes"
-                UNIMRCP_SOFIA_INCLUDES="-I$sofia_uadir -I$sofia_uadir/bnf -I$sofia_uadir/features -I$sofia_uadir/http -I$sofia_uadir/ipt -I$sofia_uadir/iptsec -I$sofia_uadir/msg -I$sofia_uadir/nea -I$sofia_uadir/nta -I$sofia_uadir/nth -I$sofia_uadir/nua -I$sofia_uadir/sdp -I$sofia_uadir/sip -I$sofia_uadir/soa -I$sofia_uadir/sresolv -I$sofia_uadir/stun -I$sofia_uadir/su -I$sofia_uadir/tport -I$sofia_uadir/url"
-                UNIMRCP_SOFIA_LIBS="$sofia_uadir/libsofia-sip-ua.la"
+                sofia_abs_uadir="`cd $sofia_uadir && pwd`"
+                UNIMRCP_SOFIA_INCLUDES="-I$sofia_abs_uadir -I$sofia_abs_uadir/bnf -I$sofia_abs_uadir/features -I$sofia_abs_uadir/http -I$sofia_abs_uadir/ipt -I$sofia_abs_uadir/iptsec -I$sofia_abs_uadir/msg -I$sofia_abs_uadir/nea -I$sofia_abs_uadir/nta -I$sofia_abs_uadir/nth -I$sofia_abs_uadir/nua -I$sofia_abs_uadir/sdp -I$sofia_abs_uadir/sip -I$sofia_abs_uadir/soa -I$sofia_abs_uadir/sresolv -I$sofia_abs_uadir/stun -I$sofia_abs_uadir/su -I$sofia_abs_uadir/tport -I$sofia_abs_uadir/url"
+                UNIMRCP_SOFIA_LIBS="$sofia_abs_uadir/libsofia-sip-ua.la"
                 sofia_version="`sed -n 's/#define SOFIA_SIP_VERSION.* "\(.*\)"/\1/p' $sofia_uadir/features/sofia-sip/sofia_features.h`"
                 break
             fi
