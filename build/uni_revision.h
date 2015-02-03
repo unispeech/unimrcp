@@ -25,16 +25,16 @@
  */
 
 /** Revision base number. */
-#define UNI_REVISION            2208
+#define UNI_REVISION            2271
 
 /** Revision base string. */
-#define UNI_REVISION_STRING     "2208"
+#define UNI_REVISION_STRING     "2271"
 
 /** Revision base date. */
-#define UNI_REVISION_DATE       "2014-10-31"
+#define UNI_REVISION_DATE       "2015-02-02"
 
 /** Revision base stamp. */
-#define UNI_REVISION_STAMP      20141031L
+#define UNI_REVISION_STAMP      20150202L
 
 
 /** Check at compile time if the revision base number is at least a certain level. */
