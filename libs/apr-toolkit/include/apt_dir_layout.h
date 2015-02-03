@@ -64,6 +64,7 @@ APT_DECLARE(apt_dir_layout_t*) apt_default_dir_layout_create(const char *root_di
  * @param conf_dir_path the path to the config dir
  * @param plugin_dir_path the path to the plugin dir
  * @param log_dir_path the path to the log dir
+ * @param data_dir_path the path to the data dir
  * @param var_dir_path the path to the var dir
  * @param pool the memory pool to use
  */
