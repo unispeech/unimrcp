@@ -1,3 +1,111 @@
+Changes for UniMRCP-1.3.0
+
+  APR-toolkit library
+
+  * Allow timers to be re-set. The ongoing timer, if any, will be implicitly stopped.
+  * Added an optional timer support to the consumer task. This change requires the UniMRCP-deps 1.3.0 or above.
+  * Slightly modified processing of start and termination requests in the apt_task interface.
+  * Release task message, if the method signal() fails.
+  * Added new methods to the apt_task interface to take a task offline: apt_task_offline() 
+    and to bring it back online: apt_task_online().
+  * Use apr_ring instead of apt_obj_list to hold the task tree.
+  * Compose native file paths by using APR_FILEPATH_NATIVE flag.
+  * Enhanced apt_dir_layout interface to allow creation and loading of bare and extended layouts.
+  * Made apt_dir_layout_t structure opaque. This change may incur insignificant changes in user applications.
+  * While parsing a header field spanning multiple lines, check the return value of 
+    apt_text_line_read() first, and only then add the read line to the array.
+  * Check the return value of apt_text_field_read() and only then, based on the result, 
+    use either apt_string_copy() or apt_string_reset().
+  * Fixed a possible integer overflow in the poller and consumer tasks.
+
+  MPF library
+
+  * Fixed a possible overflowed array index read (aka out-of-bound read) reported by Coverity.
+  * Use memmove() instead of strcpy() for overlapping buffers.
+  * While making calculations in mpf_codec_descriptor, cast to size_t first and only then multiply.
+
+  MRCP common library
+
+  * In mrcp_header_field_add(), do not try to add the same header field twice. 
+    The second attempt would have failed anyway, though.
+
+  MRCP client library
+
+  * Use apr_ring instead of apt_obj_list for MRCPv2 connections.
+  * Use apr_filepath_merge() to compose native file paths while loading the client stack.
+  * Append a UniMRCP version string to the SIP user agent field.
+  * For SIP message logging, if enabled, compose a path relative to the log directory by default. 
+    Alternatively, a full path can be specified.
+  * Fixed a potential NULL pointer dereference on processing of MPF messages.
+  * Fixed a possible explicit NULL pointer dereference in mrcp_client_profile_create_ex().
+  * Fixed a possible NULL pointer dereference which may occur when an invalid XML document name is
+    specified in the configuration file.
+  * Check the return value of apt_task_msg_acquire().
+  * Separated declarations of MRCP client and server profiles.
+
+  MRCP server library
+
+  * Use apr_ring instead of apt_obj_list for MRCPv2 connections.
+  * Use a connection specific pool for apr_socket_accept(). This makes memory allocation for accepted
+    sockets more predictable and prevents possible indefinite use of the shared pool.
+  * Use apr_hash to hold pending control channels. Before, mrcp_connection was used
+    as a temporary container.
+  * Append a UniMRCP version string to the SIP user agent field.
+  * For SIP message logging, if enabled, compose a path relative to the log directory by default. 
+    Alternatively, a full path can be specified.
+  * Fixed a potential NULL pointer dereference on processing of MPF messages.
+  * Fixed a possible NULL pointer dereference which may occur when an invalid XML document name is
+    specified in the configuration file.
+  * If channel->resource is a NULL pointer, do not dereference it while composing a log statement.
+  * Separated declarations of MRCP client and server profiles.
+
+  RTSP library
+
+  * Use apr_ring to hold a list of RTSP connections. This change allows to get rid of a sub-pool 
+    used for the connection list.
+
+  Sofia-SIP module (MRCPv2 agent)
+
+  * Let Sofia-SIP implicitly set the Contact header included in the transport parameter, when needed.
+    This change fixes an interoperability problem with Avaya using SIP over TCP.
+  * Do not uselessly check sip_contact->m_url against a NULL pointer, 
+    since m_url is actually an array but not a pointer.
+  * In case of redirection (SIP 3xx responses), compose the To header based on the Contact using 
+    the API of Sofia-SIP.
+  * Pass all the parameters to nua_create() and do not unnecessarily call nua_set_params().
+
+  Miscellaneous
+
+  * Remove automake generated build/compile script on maintainer-clean.
+  * Use AM_CPPFLAGS instead of deprecated INCLUDES.
+  * Use subdir-objects with AM_INIT_AUTOMAKE to prevent a bunch of warning messages encountered
+    with automake 1.14.
+  * Fixed support for out of tree build.
+  * Use GNU standard 'sysconfdir' variable instead of custom 'confdir'.
+  * Use APR_ENABLE_LAYOUT macro for pre-defined installation paths layouts.
+  * Separated var and data directories. The var directory is supposed to hold files being created 
+    and modified on run-time.
+  * Enhanced UNIMRCP_CHECK_SOFIA m4 macro to look not only for Sofia-SIP installed prefix and
+    source/build tree but also for the full path to Sofia-SIP pkg-config file.
+  * Added a new optional command-line argument '--dir-layout' to the applications unimrcpserver,
+    unimrcpclient, and umc. The argument, if specified, allows to load a custom directories layout 
+	from the provided configuration file.
+  * Use AM_PROG_CC_C_O macro in configure.ac, since automake 1.9 fails to generate Makefile.in 
+    when/if the option subdir-objects is specified with AM_INIT_AUTOMAKE but AM_PROG_CC_C_O is not used.
+  * Added new configure enable/disable options to control build of libraries and applications
+    located in the platforms directory.
+  * Added uni_revision.h file to the repository. Removed utility project svnrev which was supposed 
+    to generate uni_revision.h.
+  * Added a new #define UNI_REVISION_AT_LEAST(rev) which allows to check at compile time 
+    that the revision base number is at least a certain level.
+  * Added missing project dependencies. This addresses command-line build: msbuild unimrcp-2010.sln
+  * Fixed mpftest application which had been broken for a while.
+  * In log statements, use "Send/Receive Data" in place of "Send/Receive Stream".
+  * Revised and simplified init.d script by using the standard init-script functions.
+  * Took out obsolete inno-setup package creation scripts. The up-to-date versions are being 
+    maintained with other binary installers.
+
+
 Changes for UniMRCP-1.2.0
 
   APR-toolkit library
