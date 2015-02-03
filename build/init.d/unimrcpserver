@@ -18,7 +18,7 @@
 
 # Some global variables
 APP_NAME="unimrcpserver"
-UNIMRCP_DIR="/usr/local/unimrcp/"
+UNIMRCP_DIR="/usr/local/unimrcp"
 APP_ARGS="-o 2"
 
 # Allow configuration overrides in /etc/sysconfig/$APP_NAME
@@ -27,7 +27,7 @@ CONFIG_FILE=/etc/sysconfig/$APP_NAME
 [ -e $CONFIG_FILE ] && . $CONFIG_FILE
 
 DAEMON_ARGS="-d -r ${UNIMRCP_DIR}"
-EXEC=${EXEC-${UNIMRCP_DIR}bin/${APP_NAME}}
+EXEC=${EXEC-${UNIMRCP_DIR}/bin/${APP_NAME}}
 LOCK_FILE=${LOCK_FILE-/var/lock/subsys/${APP_NAME}}
 RETVAL=0
 
