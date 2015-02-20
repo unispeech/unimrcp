@@ -291,6 +291,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 			descriptor = mrcp_session_descriptor_create(pool);
 			apt_string_assign(&descriptor->resource_name,resource_name,pool);
 			descriptor->resource_state = FALSE;
+			descriptor->response_code = response->start_line.common.status_line.status_code;
 		}
 	}
 	else if(request->start_line.common.request_line.method_id == RTSP_METHOD_TEARDOWN) {
