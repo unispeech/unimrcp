@@ -265,7 +265,7 @@ mrcp_message_t* SynthSession::CreateSpeakRequest(mrcp_channel_t* pMrcpChannel)
 
 		/* set message body */
 		if(pScenario->GetContent())
-			apt_string_assign(&pMrcpMessage->body,pScenario->GetContent(),pMrcpMessage->pool);
+			apt_string_assign_n(&pMrcpMessage->body,pScenario->GetContent(),pScenario->GetContentLength(),pMrcpMessage->pool);
 	}
 	/* get/allocate synthesizer header */
 	pSynthHeader = (mrcp_synth_header_t*) mrcp_resource_header_prepare(pMrcpMessage);

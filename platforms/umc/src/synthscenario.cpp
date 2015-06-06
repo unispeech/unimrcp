@@ -28,7 +28,8 @@
 SynthScenario::SynthScenario() :
 	m_Speak(true),
 	m_ContentType("application/synthesis+ssml"),
-	m_Content(NULL)
+	m_Content(NULL),
+	m_ContentLength(0)
 {
 }
 
@@ -69,7 +70,7 @@ bool SynthScenario::LoadSpeak(const apr_xml_elem* pElem, apr_pool_t* pool)
 		}
 		else if(strcasecmp(pAttr->name,"content-location") == 0)
 		{
-			m_Content = LoadFileContent(pAttr->value,pool);
+			m_Content = LoadFileContent(pAttr->value,m_ContentLength,pool);
 		}
 	}
 

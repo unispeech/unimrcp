@@ -77,7 +77,7 @@ bool RecogScenario::LoadRecognize(const apr_xml_elem* pElem, apr_pool_t* pool)
 		}
 		else if(strcasecmp(pAttr->name,"content-location") == 0)
 		{
-			m_Content = LoadFileContent(pAttr->value,pool);
+			m_Content = LoadFileContent(pAttr->value,m_ContentLength,pool);
 		}
 		else if(strcasecmp(pAttr->name,"audio-source") == 0)
 		{
@@ -108,7 +108,6 @@ bool RecogScenario::LoadDefineGrammar(const apr_xml_elem* pElem, apr_pool_t* poo
 	}
 	return true;
 }
-
 
 UmcSession* RecogScenario::CreateSession()
 {

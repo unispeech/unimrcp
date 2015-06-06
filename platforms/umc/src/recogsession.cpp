@@ -394,7 +394,7 @@ mrcp_message_t* RecogSession::CreateRecognizeRequest(mrcp_channel_t* pMrcpChanne
 			mrcp_generic_header_property_add(pMrcpMessage,GENERIC_HEADER_CONTENT_ID);
 			/* set message body */
 			if(pScenario->GetContent())
-				apt_string_assign(&pMrcpMessage->body,pScenario->GetContent(),pMrcpMessage->pool);
+				apt_string_assign_n(&pMrcpMessage->body,pScenario->GetContent(),pScenario->GetContentLength(),pMrcpMessage->pool);
 		}
 		mrcp_generic_header_property_add(pMrcpMessage,GENERIC_HEADER_CONTENT_TYPE);
 	}

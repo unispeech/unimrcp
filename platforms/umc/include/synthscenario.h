@@ -41,6 +41,7 @@ public:
 /* ============================ ACCESSORS ================================== */
 	const char* GetContentType() const;
 	const char* GetContent() const;
+	apr_size_t GetContentLength() const;
 
 /* ============================ INQUIRIES ================================== */
 	bool IsSpeakEnabled() const;
@@ -55,6 +56,7 @@ protected:
 	bool        m_Speak;
 	const char* m_ContentType;
 	const char* m_Content;
+	apr_size_t  m_ContentLength;
 };
 
 /* ============================ INLINE METHODS ============================= */
@@ -66,6 +68,11 @@ inline const char* SynthScenario::GetContentType() const
 inline const char* SynthScenario::GetContent() const
 {
 	return m_Content;
+}
+
+inline apr_size_t SynthScenario::GetContentLength() const
+{
+	return m_ContentLength;
 }
 
 inline bool SynthScenario::IsSpeakEnabled() const

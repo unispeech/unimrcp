@@ -66,7 +66,6 @@ protected:
 	bool LoadRtpTermination(const apr_xml_elem* pElem, apr_pool_t* pool);
 
 	const char* LoadFileContent(const char* pFileName, apr_size_t& size, apr_pool_t* pool) const;
-	const char* LoadFileContent(const char* pFileName, apr_pool_t* pool) const;
 	static int ParseRates(const char* pStr, apr_pool_t* pool);
 
 /* ============================ INQUIRIES ================================== */
@@ -117,13 +116,6 @@ inline const char* UmcScenario::GetMrcpProfile() const
 inline bool UmcScenario::IsDiscoveryEnabled() const
 {
 	return m_ResourceDiscovery;
-}
-
-
-inline const char* UmcScenario::LoadFileContent(const char* pFileName, apr_pool_t* pool) const
-{
-	apr_size_t dummy;
-	return LoadFileContent(pFileName, dummy, pool);
 }
 
 #endif /* UMC_SCENARIO_H */
