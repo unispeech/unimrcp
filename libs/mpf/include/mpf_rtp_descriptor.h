@@ -53,9 +53,9 @@ typedef enum {
 struct mpf_rtp_media_descriptor_t {
 	/** Media state (disabled/enabled)*/
 	mpf_media_state_e      state;
-	/** Ip address */
+	/** IP address */
 	apt_str_t              ip;
-	/** External (NAT) Ip address */
+	/** External (NAT) IP address */
 	apt_str_t              ext_ip;
 	/** Port */
 	apr_port_t             port;
@@ -213,6 +213,25 @@ static APR_INLINE mpf_rtp_settings_t* mpf_rtp_settings_alloc(apr_pool_t *pool)
 	return rtp_settings;
 }
 
+/** Allocate media descriptor */
+static APR_INLINE mpf_rtp_media_descriptor_t* mpf_rtp_media_descriptor_alloc(apr_pool_t *pool)
+{
+	mpf_rtp_media_descriptor_t *media = (mpf_rtp_media_descriptor_t*) apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
+	mpf_rtp_media_descriptor_init(media);
+	return media;
+}
+
+/** Copy media descriptor */
+static APR_INLINE mpf_rtp_media_descriptor_t* mpf_rtp_media_descriptor_copy(const mpf_rtp_media_descriptor_t *src_media, apr_pool_t *pool)
+{
+	mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
+	if(src_media) {
+		*media = *src_media;
+		apt_string_copy(&media->ip,&src_media->ip,pool);
+		apt_string_copy(&media->ext_ip,&src_media->ext_ip,pool);
+	}
+	return media;
+}
 
 APT_END_EXTERN_C
 
