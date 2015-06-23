@@ -355,32 +355,6 @@ apt_bool_t mrcp_server_on_engine_channel_message(mrcp_channel_t *channel, mrcp_m
 	return mrcp_state_machine_update(channel->state_machine,message);
 }
 
-
-static mrcp_session_descriptor_t* mrcp_session_answer_create(mrcp_session_descriptor_t *offer, apr_pool_t *pool)
-{
-	int i;
-	mrcp_session_descriptor_t *answer = apr_palloc(pool,sizeof(mrcp_session_descriptor_t));
-	apt_string_reset(&answer->origin);
-	apt_string_reset(&answer->ip);
-	apt_string_reset(&answer->ext_ip);
-	answer->resource_name = offer->resource_name;
-	answer->resource_state = offer->resource_state;
-	answer->status = offer->status;
-	answer->control_media_arr = apr_array_make(pool,offer->control_media_arr->nelts,sizeof(void*));
-	for(i=0; i<offer->control_media_arr->nelts; i++) {
-		APR_ARRAY_PUSH(answer->control_media_arr,void*) = NULL;
-	}
-	answer->audio_media_arr = apr_array_make(pool,offer->audio_media_arr->nelts,sizeof(mpf_rtp_media_descriptor_t*));
-	for(i=0; i<offer->audio_media_arr->nelts; i++) {
-		APR_ARRAY_PUSH(answer->audio_media_arr,mpf_rtp_media_descriptor_t*) = NULL;
-	}
-	answer->video_media_arr = apr_array_make(pool,offer->video_media_arr->nelts,sizeof(mpf_rtp_media_descriptor_t*));
-	for(i=0; i<offer->video_media_arr->nelts; i++) {
-		APR_ARRAY_PUSH(answer->video_media_arr,mpf_rtp_media_descriptor_t*) = NULL;
-	}
-	return answer;
-}
-
 static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *session, mrcp_session_descriptor_t *descriptor)
 {
 	if(!session->context) {

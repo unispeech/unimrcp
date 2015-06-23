@@ -63,8 +63,11 @@ struct mrcp_session_descriptor_t {
 	apr_array_header_t   *video_media_arr;
 };
 
-/** Create session descriptor  */
+/** Create session descriptor */
 MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool_t *pool);
+
+/** Create session descriptor for answer */
+MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_answer_create(const mrcp_session_descriptor_t *offer, apr_pool_t *pool);
 
 static APR_INLINE apr_size_t mrcp_session_media_count_get(const mrcp_session_descriptor_t *descriptor)
 {
