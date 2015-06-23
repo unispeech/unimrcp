@@ -147,7 +147,6 @@ APT_DECLARE(apt_timer_t*) apt_timer_create(apt_timer_queue_t *timer_queue, apt_t
 
 /** Set one-shot timer */
 APT_DECLARE(apt_bool_t) apt_timer_set(apt_timer_t *timer, apr_uint32_t timeout)
-
 {
 	apt_timer_queue_t *queue = timer->queue;
 
