@@ -25,9 +25,10 @@
 #include "mrcp_resource_factory.h"
 #include "mpf_termination_factory.h"
 #include "apt_dir_layout.h"
+#include "apt_pool.h"
 #include "apt_log.h"
 
-mrcp_client_session_t* mrcp_client_session_create(mrcp_client_t *client);
+mrcp_client_session_t* mrcp_client_session_create_ex(mrcp_client_t *client, apt_bool_t take_ownership, apr_pool_t *pool);
 
 apt_bool_t mrcp_app_signaling_task_msg_signal(mrcp_sig_command_e command_id, mrcp_session_t *session, mrcp_channel_t *channel);
 apt_bool_t mrcp_app_control_task_msg_signal(mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message);
@@ -72,6 +73,28 @@ MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(const mrcp
 /** Create client session */
 MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile_name, void *obj)
 {
+	mrcp_session_t *session;
+	apr_pool_t *pool;
+	pool = apt_pool_create();
+	if(!pool) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create Memory Pool");
+		return NULL;
+	}
+	session = mrcp_application_session_create_ex(application,profile_name,obj,TRUE,pool);
+	if(!session) {
+		apr_pool_destroy(pool);
+	}
+	return session;
+}
+
+/** Create session using the provided memory pool */
+MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create_ex(
+								mrcp_application_t *application,
+								const char *profile_name,
+								void *obj, 
+								apt_bool_t take_ownership,
+								apr_pool_t *pool)
+{
 	mrcp_client_profile_t *profile;
 	mrcp_client_session_t *session;
 	if(!application || !application->client || !profile_name) {
@@ -84,7 +107,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t
 		return NULL;
 	}
 
-	session = mrcp_client_session_create(application->client);
+	session = mrcp_client_session_create_ex(application->client,take_ownership,pool);
 	if(!session) {
 		return NULL;
 	}

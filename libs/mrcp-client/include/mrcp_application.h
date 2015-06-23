@@ -164,12 +164,28 @@ MRCP_DECLARE(const apt_dir_layout_t*) mrcp_application_dir_layout_get(const mrcp
 
 /**
  * Create session.
- * @param application the entire application
+ * @param application the application to use
  * @param profile the name of the profile to use
  * @param obj the external object
  * @return the created session instance
  */
 MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create(mrcp_application_t *application, const char *profile, void *obj);
+
+/**
+ * Create session using the provided memory pool.
+ * @param application the application to use
+ * @param profile the name of the profile to use
+ * @param obj the external object
+ * @param take_ownership whether the session takes ownership over the memory pool or not
+ * @param pool memory pool to use
+ * @return the created session instance
+ */
+MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create_ex(
+		mrcp_application_t *application,
+		const char *profile,
+		void *obj, 
+		apt_bool_t take_ownership,
+		apr_pool_t *pool);
 
 /**
  * Get memory pool the session object is created out of.

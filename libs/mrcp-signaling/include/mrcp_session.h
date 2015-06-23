@@ -52,6 +52,8 @@ typedef struct mrcp_session_event_vtable_t mrcp_session_event_vtable_t;
 struct mrcp_session_t {
 	/** Memory pool to allocate memory from */
 	apr_pool_t       *pool;
+	/** Whether the memory pool is self-owned or not */
+	apt_bool_t        self_owned;
 	/** External object associated with session */
 	void             *obj;
 	/** External logger object associated with session */
@@ -115,6 +117,12 @@ struct mrcp_session_event_vtable_t {
 
 /** Create new memory pool and allocate session object from the pool. */
 MRCP_DECLARE(mrcp_session_t*) mrcp_session_create(apr_size_t padding);
+
+/** Allocate session object from the provided memory pool. Take over the ownership of the pool, if take_ownership is TRUE */
+MRCP_DECLARE(mrcp_session_t*) mrcp_session_create_ex(apr_pool_t *pool, apt_bool_t take_ownership, apr_size_t padding);
+
+/** Allocate session object from the provided memory pool. Take over the ownership of the pool, if take_ownership is TRUE */
+MRCP_DECLARE(mrcp_session_t*) mrcp_session_create_ex(apr_pool_t *pool, apt_bool_t take_ownership, apr_size_t padding);
 
 /** Destroy session and assosiated memory pool. */
 MRCP_DECLARE(void) mrcp_session_destroy(mrcp_session_t *session);

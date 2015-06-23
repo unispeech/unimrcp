@@ -664,12 +664,10 @@ MRCP_DECLARE(apt_dir_layout_t*) mrcp_client_dir_layout_get(const mrcp_client_t *
 	return client->dir_layout;
 }
 
-mrcp_client_session_t* mrcp_client_session_create(mrcp_client_t *client)
+mrcp_client_session_t* mrcp_client_session_create_ex(mrcp_client_t *client, apt_bool_t take_ownership, apr_pool_t *pool)
 {
-	apr_pool_t *pool;
-	mrcp_client_session_t *session = (mrcp_client_session_t*) mrcp_session_create(sizeof(mrcp_client_session_t)-sizeof(mrcp_session_t));
-	
-	pool = session->base.pool;
+	mrcp_client_session_t *session = (mrcp_client_session_t*) mrcp_session_create_ex(pool,take_ownership,sizeof(mrcp_client_session_t)-sizeof(mrcp_session_t));
+
 	session->base.name = apr_psprintf(pool,"0x%pp",session);
 	session->base.response_vtable = &session_response_vtable;
 	session->base.event_vtable = &session_event_vtable;
