@@ -146,7 +146,7 @@ struct mpf_rtp_settings_t {
 	mpf_jb_config_t   jb_config;
 };
 
-/** Initialize media descriptor */
+/** Initialize RTP media descriptor */
 static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t *media)
 {
 	media->state = MPF_MEDIA_DISABLED;
@@ -160,7 +160,7 @@ static APR_INLINE void mpf_rtp_media_descriptor_init(mpf_rtp_media_descriptor_t 
 	media->id = 0;
 }
 
-/** Initialize stream descriptor */
+/** Initialize RTP stream descriptor */
 static APR_INLINE void mpf_rtp_stream_descriptor_init(mpf_rtp_stream_descriptor_t *descriptor)
 {
 	descriptor->capabilities = NULL;
@@ -213,7 +213,15 @@ static APR_INLINE mpf_rtp_settings_t* mpf_rtp_settings_alloc(apr_pool_t *pool)
 	return rtp_settings;
 }
 
-/** Allocate media descriptor */
+/** Allocate RTP termination descriptor */
+static APR_INLINE mpf_rtp_termination_descriptor_t* mpf_rtp_termination_descriptor_alloc(apr_pool_t *pool)
+{
+	mpf_rtp_termination_descriptor_t *rtp_descriptor = (mpf_rtp_termination_descriptor_t*) apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
+	mpf_rtp_termination_descriptor_init(rtp_descriptor);
+	return rtp_descriptor;
+}
+
+/** Allocate RTP media descriptor */
 static APR_INLINE mpf_rtp_media_descriptor_t* mpf_rtp_media_descriptor_alloc(apr_pool_t *pool)
 {
 	mpf_rtp_media_descriptor_t *media = (mpf_rtp_media_descriptor_t*) apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
@@ -221,7 +229,7 @@ static APR_INLINE mpf_rtp_media_descriptor_t* mpf_rtp_media_descriptor_alloc(apr
 	return media;
 }
 
-/** Copy media descriptor */
+/** Copy RTP media descriptor */
 static APR_INLINE mpf_rtp_media_descriptor_t* mpf_rtp_media_descriptor_copy(const mpf_rtp_media_descriptor_t *src_media, apr_pool_t *pool)
 {
 	mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
