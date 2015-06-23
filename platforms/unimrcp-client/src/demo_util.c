@@ -148,8 +148,7 @@ mpf_rtp_termination_descriptor_t* demo_rtp_descriptor_create(apr_pool_t *pool)
 	mpf_rtp_termination_descriptor_t *rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
 	mpf_rtp_termination_descriptor_init(rtp_descriptor);
 	/* create rtp local media */
-	media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-	mpf_rtp_media_descriptor_init(media);
+	media = mpf_rtp_media_descriptor_alloc(pool);
 	apt_string_assign(&media->ip,"127.0.0.1",pool);
 	media->port = 6000;
 	media->state = MPF_MEDIA_ENABLED;

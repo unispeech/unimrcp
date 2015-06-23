@@ -162,16 +162,14 @@ static apt_bool_t mrcp_descriptor_generate_by_rtsp_sdp_session(mrcp_session_desc
 		switch(sdp_media->m_type) {
 			case sdp_media_audio:
 			{
-				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
+				mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
 				media->id = mrcp_session_audio_media_add(descriptor,media);
 				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
 			case sdp_media_video:
 			{
-				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
+				mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
 				media->id = mrcp_session_video_media_add(descriptor,media);
 				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
@@ -223,8 +221,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 			/* create default descriptor in case RTSP SETUP contains no SDP */
 			mpf_rtp_media_descriptor_t *media;
 			descriptor = mrcp_session_descriptor_create(pool);
-			media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-			mpf_rtp_media_descriptor_init(media);
+			media = mpf_rtp_media_descriptor_alloc(pool);
 			media->state = MPF_MEDIA_ENABLED;
 			media->id = mrcp_session_audio_media_add(descriptor,media);
 			if(rtsp_header_property_check(&request->header,RTSP_HEADER_FIELD_TRANSPORT) == TRUE) {

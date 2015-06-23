@@ -104,16 +104,14 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 		switch(sdp_media->m_type) {
 			case sdp_media_audio:
 			{
-				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
+				mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
 				media->id = mrcp_session_audio_media_add(descriptor,media);
 				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;
 			}
 			case sdp_media_video:
 			{
-				mpf_rtp_media_descriptor_t *media = apr_palloc(pool,sizeof(mpf_rtp_media_descriptor_t));
-				mpf_rtp_media_descriptor_init(media);
+				mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
 				media->id = mrcp_session_video_media_add(descriptor,media);
 				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
 				break;

@@ -157,8 +157,7 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 	apt_bool_t status = TRUE;
 	if(!local_media) {
 		/* local media is not specified, create the default one */
-		local_media = apr_palloc(rtp_stream->pool,sizeof(mpf_rtp_media_descriptor_t));
-		mpf_rtp_media_descriptor_init(local_media);
+		local_media = mpf_rtp_media_descriptor_alloc(rtp_stream->pool);
 		local_media->state = MPF_MEDIA_ENABLED;
 		local_media->direction = STREAM_DIRECTION_DUPLEX;
 	}
