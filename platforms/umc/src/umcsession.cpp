@@ -19,6 +19,7 @@
 #include "umcsession.h"
 #include "umcscenario.h"
 #include "mrcp_message.h"
+#include "apt_pool.h"
 
 UmcSession::UmcSession(const UmcScenario* pScenario) :
 	m_pScenario(pScenario),
@@ -34,12 +35,13 @@ UmcSession::UmcSession(const UmcScenario* pScenario) :
 		id = 0;
 	id++;
 
-	int size = apr_snprintf(m_Id,sizeof(m_Id)-1,"%d",id);
-	m_Id[size] = '\0';
+	m_Pool = apt_pool_create();
+	m_Id = apr_psprintf(m_Pool,"%d",id);
 }
 
 UmcSession::~UmcSession()
 {
+	apr_pool_destroy(m_Pool);
 }
 
 bool UmcSession::Run()
@@ -150,11 +152,13 @@ bool UmcSession::OnResourceDiscover(mrcp_session_descriptor_t* descriptor, mrcp_
 
 bool UmcSession::CreateMrcpSession(const char* pProfileName)
 {
-	m_pMrcpSession = mrcp_application_session_create(m_pMrcpApplication,pProfileName,this);
-	char name[32];
-	apr_snprintf(name,sizeof(name),"umc-%s",m_Id);
+	m_pMrcpSession = mrcp_application_session_create_ex(m_pMrcpApplication,pProfileName,this,FALSE,m_Pool);
+	if(!m_pMrcpSession)
+		return false;
+
+	const char* name = apr_psprintf(m_Pool,"umc-%s",m_Id);
 	mrcp_application_session_name_set(m_pMrcpSession,name);
-	return (m_pMrcpSession != NULL);
+	return true;
 }
 
 bool UmcSession::DestroyMrcpSession()
@@ -231,15 +235,6 @@ mrcp_message_t* UmcSession::CreateMrcpMessage(
 		mrcp_method_id method_id)
 {
 	return mrcp_application_message_create(m_pMrcpSession,pMrcpChannel,method_id);
-}
-
-
-
-apr_pool_t* UmcSession::GetSessionPool() const
-{
-	if(!m_pMrcpSession)
-		return NULL;
-	return mrcp_application_session_pool_get(m_pMrcpSession);
 }
 
 const char* UmcSession::GetMrcpSessionId() const

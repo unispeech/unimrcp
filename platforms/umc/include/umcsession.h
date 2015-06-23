@@ -90,7 +90,7 @@ protected:
 /* ============================ DATA ======================================= */
 	const UmcScenario*  m_pScenario;
 	const char*         m_pMrcpProfile;
-	char                m_Id[10];
+	const char*         m_Id;
 
 private:
 /* ============================ DATA ======================================= */
@@ -99,6 +99,7 @@ private:
 	mrcp_message_t*     m_pMrcpMessage; /* last message sent */
 	bool                m_Running;
 	bool                m_Terminating;
+	apr_pool_t*         m_Pool;
 };
 
 
@@ -111,6 +112,11 @@ inline const UmcScenario* UmcSession::GetScenario() const
 inline const char* UmcSession::GetId() const
 {
 	return m_Id;
+}
+
+inline apr_pool_t* UmcSession::GetSessionPool() const
+{
+	return m_Pool;
 }
 
 inline void UmcSession::SetMrcpApplication(mrcp_application_t* pMrcpApplication)
