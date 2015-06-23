@@ -117,7 +117,7 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_create(apr_pool_t *p
 }
 
 /** Create MRCP control answer */
-MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(mrcp_control_descriptor_t *offer, apr_pool_t *pool)
+MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(const mrcp_control_descriptor_t *offer, apr_pool_t *pool)
 {
 	mrcp_control_descriptor_t *answer = mrcp_control_descriptor_create(pool);
 	if(offer) {
@@ -126,6 +126,20 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(mrcp_control
 	}
 	answer->setup_type = MRCP_SETUP_TYPE_PASSIVE;
 	return answer;
+}
+
+/** Copy MRCP control offer */
+MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_copy(const mrcp_control_descriptor_t *offer, apr_pool_t *pool)
+{
+	mrcp_control_descriptor_t *descriptor = mrcp_control_descriptor_create(pool);
+	if(offer) {
+		*descriptor = *offer;
+		descriptor->cmid_arr = apr_array_copy(pool,offer->cmid_arr);
+		apt_string_copy(&descriptor->ip,&offer->ip,pool);
+		apt_string_copy(&descriptor->resource_name,&offer->resource_name,pool);
+		apt_string_copy(&descriptor->session_id,&offer->session_id,pool);
+	}
+	return descriptor;
 }
 
 /** Add cmid to cmid_arr */

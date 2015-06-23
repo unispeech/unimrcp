@@ -106,7 +106,10 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_descriptor_create(apr_pool
 MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_create(apr_pool_t *pool);
 
 /** Create MRCP control answer */
-MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(mrcp_control_descriptor_t *offer, apr_pool_t *pool);
+MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(const mrcp_control_descriptor_t *offer, apr_pool_t *pool);
+
+/** Copy MRCP control offer */
+MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_copy(const mrcp_control_descriptor_t *offer, apr_pool_t *pool);
 
 /** Add cmid to cmid_arr */
 MRCP_DECLARE(void) mrcp_cmid_add(apr_array_header_t *cmid_arr, apr_size_t cmid);
