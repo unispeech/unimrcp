@@ -763,8 +763,7 @@ static mpf_rtp_termination_descriptor_t* mrcp_server_associations_build(mrcp_ser
 		return NULL;
 	}
 	/* construct termination descriptor */
-	rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
-	mpf_rtp_termination_descriptor_init(rtp_descriptor);
+	rtp_descriptor = mpf_rtp_termination_descriptor_alloc(session->base.pool);
 	rtp_descriptor->audio.local = NULL;
 	rtp_descriptor->audio.remote = media_descriptor;
 	rtp_descriptor->audio.settings = session->profile->rtp_settings;

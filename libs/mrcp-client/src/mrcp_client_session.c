@@ -754,8 +754,7 @@ static apt_bool_t mrcp_client_channel_add(mrcp_client_session_t *session, mrcp_c
 		}
 
 		/* initialize rtp descriptor */
-		rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
-		mpf_rtp_termination_descriptor_init(rtp_descriptor);
+		rtp_descriptor = mpf_rtp_termination_descriptor_alloc(pool);
 		rtp_descriptor->audio.settings = profile->rtp_settings;
 		audio_stream = mpf_termination_audio_stream_get(channel->termination);
 		if(audio_stream) {
@@ -1169,8 +1168,7 @@ static apt_bool_t mrcp_client_av_media_answer_process(mrcp_client_session_t *ses
 		}
 		if(slot->termination) {
 			/* construct termination descriptor */
-			rtp_descriptor = apr_palloc(session->base.pool,sizeof(mpf_rtp_termination_descriptor_t));
-			mpf_rtp_termination_descriptor_init(rtp_descriptor);
+			rtp_descriptor = mpf_rtp_termination_descriptor_alloc(session->base.pool);
 			rtp_descriptor->audio.local = NULL;
 			rtp_descriptor->audio.remote = remote_media;
 

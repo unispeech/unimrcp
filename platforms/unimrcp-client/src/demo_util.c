@@ -145,8 +145,7 @@ mpf_rtp_termination_descriptor_t* demo_rtp_descriptor_create(apr_pool_t *pool)
 	mpf_codec_descriptor_t *codec_descriptor;
 	mpf_rtp_media_descriptor_t *media;
 	/* create rtp descriptor */
-	mpf_rtp_termination_descriptor_t *rtp_descriptor = apr_palloc(pool,sizeof(mpf_rtp_termination_descriptor_t));
-	mpf_rtp_termination_descriptor_init(rtp_descriptor);
+	mpf_rtp_termination_descriptor_t *rtp_descriptor = mpf_rtp_termination_descriptor_alloc(pool);
 	/* create rtp local media */
 	media = mpf_rtp_media_descriptor_alloc(pool);
 	apt_string_assign(&media->ip,"127.0.0.1",pool);
