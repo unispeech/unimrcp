@@ -81,7 +81,7 @@ protected:
 	bool AddMrcpChannel(mrcp_channel_t* pMrcpChannel);
 	bool RemoveMrcpChannel(mrcp_channel_t* pMrcpChannel);
 	bool SendMrcpRequest(mrcp_channel_t* pMrcpChannel, mrcp_message_t* pMrcpMessage);
-	bool ResourceDiscover();
+	bool DiscoverResources();
 
 	mrcp_channel_t* CreateMrcpChannel(
 			mrcp_resource_id resource_id,

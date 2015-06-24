@@ -64,10 +64,10 @@ bool UmcSession::Run()
 	
 	bool ret = false;
 	if(m_pScenario->IsDiscoveryEnabled())
-		ret = ResourceDiscover();
+		ret = DiscoverResources();
 	else
 		ret = Start();
-	
+
 	if(!ret)
 	{
 		m_Running = false;
@@ -200,7 +200,7 @@ bool UmcSession::SendMrcpRequest(mrcp_channel_t* pMrcpChannel, mrcp_message_t* p
 	return (mrcp_application_message_send(m_pMrcpSession,pMrcpChannel,pMrcpMessage) == TRUE);
 }
 
-bool UmcSession::ResourceDiscover()
+bool UmcSession::DiscoverResources()
 {
 	if(!m_Running)
 		return false;
