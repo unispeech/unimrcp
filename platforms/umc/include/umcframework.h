@@ -26,13 +26,12 @@
 
 #include <apr_xml.h>
 #include <apr_hash.h>
-#include "mrcp_application.h"
 #include "apt_consumer_task.h"
+#include "umcsession.h"
 
-class UmcSession;
 class UmcScenario;
 
-class UmcFramework
+class UmcFramework : public UmcSessionMethodProvider
 {
 public:
 /* ============================ CREATORS =================================== */
@@ -68,17 +67,19 @@ protected:
 	void ProcessKillRequest(const char* id);
 	void ProcessShowScenarios();
 	void ProcessShowSessions();
+	void ProcessSessionExit(UmcSession* pUmcSession);
 
 	bool AddSession(UmcSession* pSession);
 	bool RemoveSession(UmcSession* pSession);
 
+	void ExitSession(UmcSession* pUmcSession);
+
 /* ============================ HANDLERS =================================== */
+
 	friend apt_bool_t UmcProcessMsg(apt_task_t* pTask, apt_task_msg_t* pMsg);
 	friend void UmcOnStartComplete(apt_task_t* pTask);
 	friend void UmcOnTerminateComplete(apt_task_t* pTask);
-
 	friend apt_bool_t AppMessageHandler(const mrcp_app_message_t* pAppMessage);
-	friend apt_bool_t AppOnSessionTerminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status);
 
 private:
 /* ============================ DATA ======================================= */

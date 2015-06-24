@@ -24,6 +24,7 @@
 UmcSession::UmcSession(const UmcScenario* pScenario) :
 	m_pScenario(pScenario),
 	m_pMrcpProfile(NULL),
+	m_pMethodProvider(NULL),
 	m_pMrcpApplication(NULL),
 	m_pMrcpSession(NULL),
 	m_pMrcpMessage(NULL),
@@ -99,25 +100,28 @@ bool UmcSession::OnSessionTerminate(mrcp_sig_status_code_e status)
 		return false;
 
 	m_Terminating = false;
-	return DestroyMrcpSession();
+	DestroyMrcpSession();
+	if(m_pMethodProvider)
+		m_pMethodProvider->ExitSession(this);
+	return true;
 }
 
-bool UmcSession::OnSessionUpdate(mrcp_sig_status_code_e status) 
+bool UmcSession::OnSessionUpdate(mrcp_sig_status_code_e status)
 {
 	return m_Running;
 }
 
-bool UmcSession::OnChannelAdd(mrcp_channel_t *channel, mrcp_sig_status_code_e status) 
+bool UmcSession::OnChannelAdd(mrcp_channel_t* pMrcpChannel, mrcp_sig_status_code_e status)
 {
 	return m_Running;
 }
 
-bool UmcSession::OnChannelRemove(mrcp_channel_t *channel, mrcp_sig_status_code_e status) 
+bool UmcSession::OnChannelRemove(mrcp_channel_t* pMrcpChannel, mrcp_sig_status_code_e status)
 {
 	return m_Running;
 }
 
-bool UmcSession::OnMessageReceive(mrcp_channel_t *channel, mrcp_message_t *message) 
+bool UmcSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t* pMrcpMessage)
 {
 	if(!m_Running)
 		return false;
@@ -126,13 +130,13 @@ bool UmcSession::OnMessageReceive(mrcp_channel_t *channel, mrcp_message_t *messa
 		return false;
 
 	/* match request identifiers */
-	if(m_pMrcpMessage->start_line.request_id != message->start_line.request_id)
+	if(m_pMrcpMessage->start_line.request_id != pMrcpMessage->start_line.request_id)
 		return false;
 
 	return true;
 }
 
-bool UmcSession::OnTerminateEvent(mrcp_channel_t *channel)
+bool UmcSession::OnTerminateEvent(mrcp_channel_t* pMrcpChannel)
 {
 	if(!m_Running)
 		return false;
@@ -140,7 +144,7 @@ bool UmcSession::OnTerminateEvent(mrcp_channel_t *channel)
 	return Terminate();
 }
 
-bool UmcSession::OnResourceDiscover(mrcp_session_descriptor_t* descriptor, mrcp_sig_status_code_e status)
+bool UmcSession::OnResourceDiscover(mrcp_session_descriptor_t* pDescriptor, mrcp_sig_status_code_e status)
 {
 	if(!m_Running)
 		return false;

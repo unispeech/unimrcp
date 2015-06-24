@@ -17,7 +17,6 @@
  */
 
 #include "umcframework.h"
-#include "umcsession.h"
 #include "synthscenario.h"
 #include "recogscenario.h"
 #include "recorderscenario.h"
@@ -33,6 +32,7 @@ typedef struct
 	char                      m_ScenarioName[128];
 	char                      m_ProfileName[128];
 	const mrcp_app_message_t* m_pAppMessage;
+	UmcSession*               m_pSession;
 } UmcTaskMsg;
 
 enum UmcTaskMsgType
@@ -42,7 +42,8 @@ enum UmcTaskMsgType
 	UMC_TASK_STOP_SESSION_MSG,
 	UMC_TASK_KILL_SESSION_MSG,
 	UMC_TASK_SHOW_SCENARIOS_MSG,
-	UMC_TASK_SHOW_SESSIONS_MSG
+	UMC_TASK_SHOW_SESSIONS_MSG,
+	UMC_TASK_EXIT_SESSION_MSG
 };
 
 apt_bool_t UmcProcessMsg(apt_task_t* pTask, apt_task_msg_t* pMsg);
@@ -336,6 +337,7 @@ bool UmcFramework::ProcessRunRequest(const char* pScenarioName, const char* pPro
 	printf("[%s]\n",pSession->GetId());
 	pSession->SetMrcpProfile(pProfileName);
 	pSession->SetMrcpApplication(m_pMrcpApplication);
+	pSession->SetMethodProvider(this);
 	if(!pSession->Run())
 	{
 		delete pSession;
@@ -416,6 +418,15 @@ void UmcFramework::ProcessShowSessions()
 	}
 }
 
+void UmcFramework::ProcessSessionExit(UmcSession* pUmcSession)
+{
+	if(!pUmcSession)
+		return;
+
+	RemoveSession(pUmcSession);
+	delete pUmcSession;
+}
+
 void UmcFramework::RunSession(const char* pScenarioName, const char* pProfileName)
 {
 	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
@@ -488,6 +499,21 @@ void UmcFramework::ShowSessions()
 	apt_task_msg_signal(pTask,pTaskMsg);
 }
 
+void UmcFramework::ExitSession(UmcSession* pUmcSession)
+{
+	apt_task_t* pTask = apt_consumer_task_base_get(m_pTask);
+	apt_task_msg_t* pTaskMsg = apt_task_msg_get(pTask);
+	if(!pTaskMsg) 
+		return;
+
+	pTaskMsg->type = TASK_MSG_USER;
+	pTaskMsg->sub_type = UMC_TASK_EXIT_SESSION_MSG;
+	
+	UmcTaskMsg* pUmcMsg = (UmcTaskMsg*) pTaskMsg->data;
+	pUmcMsg->m_pSession = pUmcSession;
+	apt_task_msg_signal(pTask,pTaskMsg);
+}
+
 apt_bool_t AppMessageHandler(const mrcp_app_message_t* pMessage)
 {
 	UmcFramework* pFramework = (UmcFramework*) mrcp_application_object_get(pMessage->application);
@@ -505,57 +531,50 @@ apt_bool_t AppMessageHandler(const mrcp_app_message_t* pMessage)
 		pUmcMsg->m_pAppMessage = pMessage;
 		apt_task_msg_signal(pTask,pTaskMsg);
 	}
-	
+
 	return TRUE;
 }
 
-
-apt_bool_t AppOnSessionUpdate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
+apt_bool_t AppOnSessionUpdate(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_sig_status_code_e status)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	return pSession->OnSessionUpdate(status);
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnSessionUpdate(status);
 }
 
-apt_bool_t AppOnSessionTerminate(mrcp_application_t *application, mrcp_session_t *session, mrcp_sig_status_code_e status)
+apt_bool_t AppOnSessionTerminate(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_sig_status_code_e status)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	if(!pSession->OnSessionTerminate(status))
-		return false;
-
-	UmcFramework* pFramework = (UmcFramework*) mrcp_application_object_get(application);
-	pFramework->RemoveSession(pSession);
-	delete pSession;
-	return true;
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnSessionTerminate(status);
 }
 
-apt_bool_t AppOnChannelAdd(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
+apt_bool_t AppOnChannelAdd(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_channel_t* pChannel, mrcp_sig_status_code_e status)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	return pSession->OnChannelAdd(channel,status);
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnChannelAdd(pChannel,status);
 }
 
-apt_bool_t AppOnChannelRemove(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_sig_status_code_e status)
+apt_bool_t AppOnChannelRemove(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_channel_t* pChannel, mrcp_sig_status_code_e status)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	return pSession->OnChannelRemove(channel,status);
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnChannelRemove(pChannel,status);
 }
 
-apt_bool_t AppOnMessageReceive(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel, mrcp_message_t *message)
+apt_bool_t AppOnMessageReceive(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_channel_t* pChannel, mrcp_message_t* pMessage)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	return pSession->OnMessageReceive(channel,message);
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnMessageReceive(pChannel,pMessage);
 }
 
-apt_bool_t AppOnTerminateEvent(mrcp_application_t *application, mrcp_session_t *session, mrcp_channel_t *channel)
+apt_bool_t AppOnTerminateEvent(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_channel_t* pChannel)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	return pSession->OnTerminateEvent(channel);
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnTerminateEvent(pChannel);
 }
 
-apt_bool_t AppOnResourceDiscover(mrcp_application_t *application, mrcp_session_t *session, mrcp_session_descriptor_t *descriptor, mrcp_sig_status_code_e status)
+apt_bool_t AppOnResourceDiscover(mrcp_application_t* pApplication, mrcp_session_t* pSession, mrcp_session_descriptor_t* pDescriptor, mrcp_sig_status_code_e status)
 {
-	UmcSession* pSession = (UmcSession*) mrcp_application_session_object_get(session);
-	return pSession->OnResourceDiscover(descriptor,status);
+	UmcSessionEventHandler* pEventHandler = (UmcSessionEventHandler*) mrcp_application_session_object_get(pSession);
+	return pEventHandler->OnResourceDiscover(pDescriptor,status);
 }
 
 void UmcOnStartComplete(apt_task_t* pTask)
@@ -625,6 +644,11 @@ apt_bool_t UmcProcessMsg(apt_task_t *pTask, apt_task_msg_t *pMsg)
 		case UMC_TASK_SHOW_SESSIONS_MSG:
 		{
 			pFramework->ProcessShowSessions();
+			break;
+		}
+		case UMC_TASK_EXIT_SESSION_MSG:
+		{
+			pFramework->ProcessSessionExit(pUmcMsg->m_pSession);
 			break;
 		}
 	}
