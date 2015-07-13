@@ -30,23 +30,17 @@ Downloads:
 Documentation:
    http://www.unimrcp.org/documentation
 
-Google Code:
-   http://code.google.com/p/unimrcp
+GitHub:
+   https://github.com/unispeech/unimrcp
 
 Issue Tracker:
-   http://code.google.com/p/unimrcp/issues/list
+   https://github.com/unispeech/unimrcp/issues
 
 Discussion Group:
    http://groups.google.com/group/unimrcp
 
-Version Control Repository (SVN):
-   http://unimrcp.googlecode.com/svn/trunk
-
-UML Documentation File (Enterpise Architect):
-   http://unimrcp.googlecode.com/svn/misc/unimrcp.eap
-
-Commit Monitor:
-   http://code.google.com/p/unimrcp/source/list
+Source Changes:
+   https://github.com/unispeech/unimrcp/commits/master
    http://groups.google.com/group/unimrcp-svn-commits
 
 
@@ -56,4 +50,4 @@ LICENSING
 UniMRCP is licensed under terms of the Apache License 2.0.
 See the file "LICENSE" for more information.
 
-Copyright 2008 - 2014 Arsen Chaloyan
+Copyright 2008 - 2015 Arsen Chaloyan
