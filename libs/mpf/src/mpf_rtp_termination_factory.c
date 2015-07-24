@@ -194,7 +194,7 @@ MPF_DECLARE(mpf_termination_factory_t*) mpf_rtp_termination_factory_create(
 	rtp_termination_factory->pool = pool;
 	rtp_termination_factory->config = rtp_config;
 	rtp_termination_factory->media_engine_slots = apr_array_make(pool,1,sizeof(media_engine_slot_t));
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",
+	apt_log(MPF_LOG_MARK,APT_PRIO_NOTICE,"Create RTP Termination Factory %s:[%hu,%hu]",
 									rtp_config->ip.buf,
 									rtp_config->rtp_port_min,
 									rtp_config->rtp_port_max);

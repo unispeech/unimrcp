@@ -19,7 +19,7 @@
 
 MPF_DECLARE(mpf_audio_stream_t*) mpf_resampler_create(mpf_audio_stream_t *source, mpf_audio_stream_t *sink, apr_pool_t *pool)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_WARNING,
+	apt_log(MPF_LOG_MARK,APT_PRIO_WARNING,
 		"Currently resampling is not supported. "
 		"Try to configure and use the same sampling rate on both ends");
 	return NULL;

@@ -170,7 +170,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_enqueue(
 	qlen = strlen(generator->queue);
 	if (qlen + dlen > MPF_DTMFGEN_QUEUE_LEN) {
 		ret = FALSE;
-		apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "DTMF queue too short (%d), "
+		apt_log(MPF_LOG_MARK, APT_PRIO_WARNING, "DTMF queue too short (%d), "
 			"cannot add %"APR_SIZE_T_FMT" digit%s, already has %"APR_SIZE_T_FMT,
 			MPF_DTMFGEN_QUEUE_LEN, dlen, dlen > 1 ? "s" : "", qlen);
 	} else {

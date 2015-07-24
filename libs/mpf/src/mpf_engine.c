@@ -47,6 +47,7 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
+apt_log_source_t *mpf_log_source = &def_log_source;
 
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
@@ -62,9 +63,11 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(const char *id, apr_pool_t *pool)
 	engine->context_factory = NULL;
 	engine->codec_manager = NULL;
 
+	apt_log_source_assign("MPF",&mpf_log_source);
+
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_container_t),pool);
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Create Media Engine [%s]",id);
+	apt_log(MPF_LOG_MARK,APT_PRIO_NOTICE,"Create Media Engine [%s]",id);
 	engine->task = apt_task_create(engine,msg_pool,pool);
 	if(!engine->task) {
 		return NULL;
@@ -287,7 +290,7 @@ static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 	
 	apr_thread_mutex_lock(engine->request_queue_guard);
 	if(apt_cyclic_queue_push(engine->request_queue,msg) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"MPF Request Queue is Full [%s]",apt_task_name_get(task));
+		apt_log(MPF_LOG_MARK,APT_PRIO_ERROR,"MPF Request Queue is Full [%s]",apt_task_name_get(task));
 	}
 	apr_thread_mutex_unlock(engine->request_queue_guard);
 	return TRUE;
@@ -317,7 +320,7 @@ static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 		mpf_response = &response->messages[i];
 
 		if(mpf_request->message_type != MPF_MESSAGE_TYPE_REQUEST) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid MPF Message Type [%d]",mpf_request->message_type);
+			apt_log(MPF_LOG_MARK,APT_PRIO_WARNING,"Invalid MPF Message Type [%d]",mpf_request->message_type);
 			continue;
 		}
 

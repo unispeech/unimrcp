@@ -23,6 +23,7 @@
  */ 
 
 #include <apt.h>
+#include <apt_log.h>
 
 /** lib export/import defines (win32) */
 #ifdef WIN32
@@ -38,5 +39,11 @@
 #else
 #define MPF_DECLARE(type) type
 #endif
+
+/** MPF log source */
+extern apt_log_source_t *mpf_log_source;
+
+/** MPF log mark containing log source, file and line information */
+#define MPF_LOG_MARK   mpf_log_source,__FILE__,__LINE__
 
 #endif /* MPF_H */

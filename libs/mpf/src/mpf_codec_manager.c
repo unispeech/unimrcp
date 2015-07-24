@@ -52,7 +52,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_register(mpf_codec_manager_t *co
 		return FALSE;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Codec [%s]",codec->attribs->name.buf);
+	apt_log(MPF_LOG_MARK,APT_PRIO_INFO,"Register Codec [%s]",codec->attribs->name.buf);
 
 	APR_ARRAY_PUSH(codec_manager->codec_arr,mpf_codec_t*) = codec;
 	return TRUE;
@@ -140,7 +140,7 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 				*descriptor = *event_descriptor;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No Such Codec [%s]",str);
+				apt_log(MPF_LOG_MARK,APT_PRIO_WARNING,"No Such Codec [%s]",str);
 				return FALSE;
 			}
 		}

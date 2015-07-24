@@ -69,7 +69,7 @@ static apt_bool_t mpf_multiplier_destroy(mpf_object_t *object)
 	mpf_audio_stream_t *sink;
 	mpf_multiplier_t *multiplier = (mpf_multiplier_t*) object;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Multiplier %s",object->name);
+	apt_log(MPF_LOG_MARK,APT_PRIO_DEBUG,"Destroy Multiplier %s",object->name);
 	mpf_audio_stream_rx_close(multiplier->source);
 	for(i=0; i<multiplier->sink_count; i++)	{
 		sink = multiplier->sink_arr[i];
@@ -106,7 +106,7 @@ static void mpf_multiplier_trace(mpf_object_t *object)
 	}
 
 	*output.pos = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Media Path %s %s",
+	apt_log(MPF_LOG_MARK,APT_PRIO_INFO,"Media Path %s %s",
 		object->name,
 		output.text.buf);
 }
@@ -128,7 +128,7 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 		return NULL;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Multiplier %s",name);
+	apt_log(MPF_LOG_MARK,APT_PRIO_DEBUG,"Create Multiplier %s",name);
 	multiplier = apr_palloc(pool,sizeof(mpf_multiplier_t));
 	multiplier->source = NULL;
 	multiplier->sink_arr = NULL;

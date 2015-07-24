@@ -90,7 +90,7 @@ static apt_bool_t mpf_mixer_destroy(mpf_object_t *object)
 	mpf_audio_stream_t *source;
 	mpf_mixer_t *mixer = (mpf_mixer_t*) object;
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Destroy Mixer %s",object->name);
+	apt_log(MPF_LOG_MARK,APT_PRIO_DEBUG,"Destroy Mixer %s",object->name);
 	for(i=0; i<mixer->source_count; i++)	{
 		source = mixer->source_arr[i];
 		if(source) {
@@ -127,7 +127,7 @@ static void mpf_mixer_trace(mpf_object_t *object)
 	mpf_audio_stream_trace(mixer->sink,STREAM_DIRECTION_SEND,&output);
 
 	*output.pos = '\0';
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Media Path %s %s",
+	apt_log(MPF_LOG_MARK,APT_PRIO_INFO,"Media Path %s %s",
 		object->name,
 		output.text.buf);
 }
@@ -149,7 +149,7 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 		return NULL;
 	}
 
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Create Mixer %s",name);
+	apt_log(MPF_LOG_MARK,APT_PRIO_DEBUG,"Create Mixer %s",name);
 	mixer = apr_palloc(pool,sizeof(mpf_mixer_t));
 	mixer->source_arr = NULL;
 	mixer->source_count = 0;

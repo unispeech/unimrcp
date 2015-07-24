@@ -177,7 +177,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_add(mpf_context_t *context, mpf_
 			continue;
 		}
 		if(!context->count) {
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Add Media Context %s",context->name);
+			apt_log(MPF_LOG_MARK,APT_PRIO_DEBUG,"Add Media Context %s",context->name);
 			APR_RING_INSERT_TAIL(&context->factory->head,context,mpf_context_t,link);
 		}
 
@@ -233,7 +233,7 @@ MPF_DECLARE(apt_bool_t) mpf_context_termination_subtract(mpf_context_t *context,
 	termination->slot = (apr_size_t)-1;
 	context->count--;
 	if(!context->count) {
-		apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Remove Media Context %s",context->name);
+		apt_log(MPF_LOG_MARK,APT_PRIO_DEBUG,"Remove Media Context %s",context->name);
 		APR_RING_REMOVE(context,link);
 	}
 	return TRUE;
