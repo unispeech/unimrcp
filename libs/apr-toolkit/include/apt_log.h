@@ -33,8 +33,12 @@ APT_BEGIN_EXTERN_C
 /** Default max number of log files used in rotation */
 #define MAX_LOG_FILE_COUNT 100
 
-/** File:line mark */
-#define APT_LOG_MARK   __FILE__,__LINE__
+/** Opaque log source declaration */
+typedef struct apt_log_source_t apt_log_source_t;
+ /** Default (globally available) log source */
+extern apt_log_source_t def_log_source;
+/** Default log mark containing log source, file and line information */
+#define APT_LOG_MARK   &def_log_source,__FILE__,__LINE__
 
 /*
  * Definition of common formats used with apt_log().
@@ -137,8 +141,16 @@ APT_DECLARE(apt_logger_t*) apt_log_instance_get(void);
 
 /**
  * Set the singleton instance of the logger.
+ * @param logger the logger to set
  */
 APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger);
+
+/**
+ * Find and assign log source by its name.
+ * @param name the unique name associated to the log source
+ * @param log_source the log source to be returned, if found
+ */
+APT_DECLARE(apt_bool_t) apt_log_source_assign(const char *name, apt_log_source_t **log_source);
 
 /**
  * Open the log file.
@@ -240,32 +252,35 @@ APT_DECLARE(apt_bool_t) apt_log_ext_handler_set(apt_log_ext_handler_f handler);
 
 /**
  * Do logging.
+ * @param log_source the log source
  * @param file the file name log entry is generated from
  * @param line the line number log entry is generated from
  * @param priority the priority of the entire log entry
  * @param format the format of the entire log entry
  */
-APT_DECLARE(apt_bool_t) apt_log(const char *file, int line, apt_log_priority_e priority, const char *format, ...);
+APT_DECLARE(apt_bool_t) apt_log(apt_log_source_t *log_source, const char *file, int line, apt_log_priority_e priority, const char *format, ...);
 
 /**
  * Do logging (this version uses an object externally associated with the logger).
+ * @param log_source the log source
  * @param file the file name log entry is generated from
  * @param line the line number log entry is generated from
  * @param priority the priority of the entire log entry
  * @param obj the associated object
  * @param format the format of the entire log entry
  */
-APT_DECLARE(apt_bool_t) apt_obj_log(const char *file, int line, apt_log_priority_e priority, void *obj, const char *format, ...);
+APT_DECLARE(apt_bool_t) apt_obj_log(apt_log_source_t *log_source, const char *file, int line, apt_log_priority_e priority, void *obj, const char *format, ...);
 
 /**
  * Do logging (this version accepts va_list argument).
+ * @param log_source the log source
  * @param file the file name log entry is generated from
  * @param line the line number log entry is generated from
  * @param priority the priority of the entire log entry
  * @param format the format of the entire log entry
  * @param arg_ptr the arguments
  */
-APT_DECLARE(apt_bool_t) apt_va_log(const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr);
+APT_DECLARE(apt_bool_t) apt_va_log(apt_log_source_t *log_source, const char *file, int line, apt_log_priority_e priority, const char *format, va_list arg_ptr);
 
 APT_END_EXTERN_C
 

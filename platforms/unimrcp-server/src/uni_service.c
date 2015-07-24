@@ -29,7 +29,7 @@ static apt_dir_layout_t *service_dir_layout = NULL;
 static const char *svcname = NULL;
 
 /** Display error message with Windows error code and description */
-static void winerror(const char *file, int line, const char *msg)
+static void winerror(apt_log_source_t *log_source, const char *file, int line, const char *msg)
 {
 	char buf[128];
 	DWORD err = GetLastError();
@@ -38,7 +38,7 @@ static void winerror(const char *file, int line, const char *msg)
 		err,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		buf, sizeof(buf), NULL);
-	apt_log(file, line, APT_PRIO_WARNING, "%s: %lu %.*s\n", msg, err, ret, buf);
+	apt_log(log_source, file, line, APT_PRIO_WARNING, "%s: %lu %.*s\n", msg, err, ret, buf);
 }
 
 /** SCM state change handler */
