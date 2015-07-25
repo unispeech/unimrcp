@@ -123,6 +123,7 @@
   <ItemGroup>
     <ClInclude Include="include\mrcp_sdp.h" />
     <ClInclude Include="include\mrcp_sofiasip_client_agent.h" />
+    <ClInclude Include="include\mrcp_sofiasip_logger.h" />
     <ClInclude Include="include\mrcp_sofiasip_server_agent.h" />
   </ItemGroup>
   <ItemGroup>

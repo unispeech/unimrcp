@@ -18,6 +18,7 @@
 #include <apr_general.h>
 #include <sofia-sip/sdp.h>
 #include "mrcp_sdp.h"
+#include "mrcp_sofiasip_logger.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_control_descriptor.h"
 #include "mpf_rtp_attribs.h"
@@ -87,7 +88,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 	sdp_media_t *sdp_media;
 
 	if(!sdp) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid SDP Message");
+		apt_log(SIP_LOG_MARK,APT_PRIO_WARNING,"Invalid SDP Message");
 		return FALSE;
 	}
 	
@@ -122,7 +123,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 				break;
 			}
 			default:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
+				apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
 				break;
 		}
 	}
@@ -338,7 +339,8 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 	apt_string_set(&name,sdp_media->m_proto_name);
 	control_media->proto = mrcp_proto_find(&name);
 	if(control_media->proto != MRCP_PROTO_TCP) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]",sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP)->buf);
+		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]",
+			sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP)->buf);
 		return FALSE;
 	}
 	

@@ -249,6 +249,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\mrcp_sofiasip_logger.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\mrcp_sofiasip_client_agent.h"
 				>
 			</File>

@@ -25,6 +25,7 @@
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_server_agent.h"
+#include "mrcp_sofiasip_logger.h"
 #include "mrcp_unirtsp_server_agent.h"
 #include "mrcp_server_connection.h"
 #include "apt_net.h"
@@ -542,7 +543,7 @@ static apt_bool_t unimrcp_server_media_engine_load(unimrcp_server_loader_t *load
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}
 	}
-	
+
 	media_engine = mpf_engine_create(id,loader->pool);
 	if(media_engine) {
 		mpf_engine_scheduler_rate_set(media_engine,realtime_rate);
@@ -1134,7 +1135,7 @@ static apt_bool_t unimrcp_server_misc_load(unimrcp_server_loader_t *loader, cons
 			do {
 				logger_name = apr_strtok(logger_list_str, ",", &state);
 				if(logger_name) {
-					mrcp_sofiasip_server_logger_init(logger_name,loglevel_str,redirect);
+					mrcp_sofiasip_log_init(logger_name,loglevel_str,redirect);
 				}
 				logger_list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
 			}

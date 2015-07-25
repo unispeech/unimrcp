@@ -27,6 +27,7 @@
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_termination_factory.h"
 #include "mrcp_sofiasip_client_agent.h"
+#include "mrcp_sofiasip_logger.h"
 #include "mrcp_unirtsp_client_agent.h"
 #include "mrcp_client_connection.h"
 #include "mrcp_ca_factory.h"
@@ -1234,7 +1235,7 @@ static apt_bool_t unimrcp_client_misc_load(unimrcp_client_loader_t *loader, cons
 			do {
 				logger_name = apr_strtok(logger_list_str, ",", &state);
 				if(logger_name) {
-					mrcp_sofiasip_client_logger_init(logger_name,loglevel_str,redirect);
+					mrcp_sofiasip_log_init(logger_name,loglevel_str,redirect);
 				}
 				logger_list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
 			} 
@@ -1267,7 +1268,7 @@ static apr_xml_doc* unimrcp_client_doc_parse(const char *file_path, apr_pool_t *
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse Config File [%s]",file_path);
 		xml_doc = NULL;
 	}
-	
+
 	apr_file_close(fd);
 	return xml_doc;
 }

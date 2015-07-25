@@ -14,6 +14,7 @@ AM_CPPFLAGS                = -I$(top_srcdir)/modules/mrcp-sofiasip/include \
 noinst_LTLIBRARIES         = libmrcpsofiasip.la
 
 include_HEADERS            = include/mrcp_sdp.h \
+                             include/mrcp_sofiasip_logger.h \
                              include/mrcp_sofiasip_server_agent.h \
                              include/mrcp_sofiasip_client_agent.h
 libmrcpsofiasip_la_SOURCES = src/mrcp_sdp.c \
