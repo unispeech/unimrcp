@@ -35,10 +35,24 @@ APT_BEGIN_EXTERN_C
 
 /** Opaque log source declaration */
 typedef struct apt_log_source_t apt_log_source_t;
- /** Default (globally available) log source */
+
+/** Declaration of log mark to be used by custom log sources */
+#define APT_LOG_MARK_DECLARE(LOG_SOURCE)   LOG_SOURCE,__FILE__,__LINE__
+
+/** Use this macro in a header file to declare a custom log source */
+#define APT_LOG_SOURCE_DECLARE(SCOPE,LOG_SOURCE) \
+	extern apt_log_source_t *LOG_SOURCE; \
+	SCOPE##_DECLARE(void) LOG_SOURCE##_init();
+
+/** Use this macro in a source file to implement a custom log source */
+#define APT_LOG_SOURCE_IMPLEMENT(SCOPE, LOG_SOURCE, LOG_SOURCE_TAG) \
+	apt_log_source_t *LOG_SOURCE = &def_log_source; \
+	SCOPE##_DECLARE(void) LOG_SOURCE##_init() {apt_log_source_assign(LOG_SOURCE_TAG,&LOG_SOURCE);}
+
+/** Default (globally available) log source */
 extern apt_log_source_t def_log_source;
-/** Default log mark containing log source, file and line information */
-#define APT_LOG_MARK   &def_log_source,__FILE__,__LINE__
+/** Default log mark providing log source, file and line information */
+#define APT_LOG_MARK   APT_LOG_MARK_DECLARE(&def_log_source)
 
 /*
  * Definition of common formats used with apt_log().
@@ -234,7 +248,7 @@ APT_DECLARE(apt_log_masking_e) apt_log_masking_get(void);
 APT_DECLARE(apt_log_masking_e) apt_log_masking_translate(const char *str);
 
 /**
- * Mask private data based on the masking mode
+ * Mask private data based on the masking mode.
  * @param data_in the data to mask
  * @param length the length of the data to mask on input, the length of the masked data on output
  * @param pool the memory pool to use if needed

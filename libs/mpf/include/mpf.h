@@ -41,9 +41,9 @@
 #endif
 
 /** MPF log source */
-extern apt_log_source_t *mpf_log_source;
+APT_LOG_SOURCE_DECLARE(MPF, mpf_log_source);
 
-/** MPF log mark containing log source, file and line information */
-#define MPF_LOG_MARK   mpf_log_source,__FILE__,__LINE__
+/** MPF log mark providing log source, file and line information */
+#define MPF_LOG_MARK   APT_LOG_MARK_DECLARE(mpf_log_source)
 
 #endif /* MPF_H */

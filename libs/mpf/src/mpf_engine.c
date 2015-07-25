@@ -47,11 +47,11 @@ static apt_bool_t mpf_engine_terminate(apt_task_t *task);
 static apt_bool_t mpf_engine_msg_signal(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t mpf_engine_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 
-apt_log_source_t *mpf_log_source = &def_log_source;
-
 mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
+
+APT_LOG_SOURCE_IMPLEMENT(MPF,mpf_log_source,"MPF")
 
 MPF_DECLARE(mpf_engine_t*) mpf_engine_create(const char *id, apr_pool_t *pool)
 {
@@ -62,8 +62,6 @@ MPF_DECLARE(mpf_engine_t*) mpf_engine_create(const char *id, apr_pool_t *pool)
 	engine->request_queue = NULL;
 	engine->context_factory = NULL;
 	engine->codec_manager = NULL;
-
-	apt_log_source_assign("MPF",&mpf_log_source);
 
 	msg_pool = apt_task_msg_pool_create_dynamic(sizeof(mpf_message_container_t),pool);
 
