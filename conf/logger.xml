@@ -43,7 +43,7 @@
   -->
   <sources>
     <source name="MPF" priority="INFO" masking="NONE"/>
-    <source name="RTSP" priority="INFO" masking="NONE"/>
-    <source name="MRCP" priority="INFO" masking="NONE"/>
+    <source name="UNIRTSP" priority="INFO" masking="NONE"/>
+    <source name="SOFIASIP" priority="INFO" masking="NONE"/>
   </sources>
 </aptlogger>
