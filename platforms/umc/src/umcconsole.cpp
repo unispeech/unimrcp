@@ -20,7 +20,7 @@
 #include "umcconsole.h"
 #include "umcframework.h"
 #include "apt_pool.h"
-#include "uni_version.h"
+#include "uni_revision.h"
 
 
 UmcConsole::UmcConsole() :
@@ -313,7 +313,7 @@ bool UmcConsole::LoadOptions(int argc, const char * const *argv, apr_pool_t *poo
 				m_Options.m_LogOutput = optarg;
 				break;
 			case 'v':
-				printf(UNI_VERSION_STRING);
+				printf("%s", UNI_FULL_VERSION_STRING);
 				return FALSE;
 			case 'h':
 				Usage();

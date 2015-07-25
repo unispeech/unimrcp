@@ -86,7 +86,7 @@ static unimrcp_client_loader_t* unimrcp_client_init(apt_dir_layout_t *dir_layout
 
 	unimrcp_log_sources_setup();
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Client ["UNI_VERSION_STRING"] [r"UNI_REVISION_STRING"]");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Client [%s]", UNI_FULL_VERSION_STRING);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
 	client = mrcp_client_create(dir_layout);
 	if(!client) {

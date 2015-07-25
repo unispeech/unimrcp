@@ -20,7 +20,7 @@
 #include "demo_framework.h"
 #include "apt_pool.h"
 #include "apt_log.h"
-#include "uni_version.h"
+#include "uni_revision.h"
 
 typedef struct {
 	const char   *root_dir_path;
@@ -172,7 +172,7 @@ static apt_bool_t demo_framework_options_load(client_options_t *options, int arg
 				options->log_output = optarg;
 				break;
 			case 'v':
-				printf(UNI_VERSION_STRING);
+				printf("%s", UNI_FULL_VERSION_STRING);
 				return FALSE;
 			case 'h':
 				usage();

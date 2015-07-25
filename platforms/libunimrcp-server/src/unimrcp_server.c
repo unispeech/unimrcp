@@ -89,7 +89,7 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 
 	unimrcp_log_sources_setup();
 
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Server ["UNI_VERSION_STRING"] [r"UNI_REVISION_STRING"]");
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Server [%s]", UNI_FULL_VERSION_STRING);
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
 	server = mrcp_server_create(dir_layout);
 	if(!server) {
