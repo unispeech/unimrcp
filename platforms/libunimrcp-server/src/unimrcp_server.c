@@ -27,6 +27,7 @@
 #include "mrcp_sofiasip_server_agent.h"
 #include "mrcp_sofiasip_logger.h"
 #include "mrcp_unirtsp_server_agent.h"
+#include "mrcp_unirtsp_logger.h"
 #include "mrcp_server_connection.h"
 #include "apt_net.h"
 #include "apt_log.h"
@@ -74,6 +75,7 @@ struct unimrcp_server_loader_t {
 };
 
 static apt_bool_t unimrcp_server_load(mrcp_server_t *mrcp_server, apt_dir_layout_t *dir_layout, apr_pool_t *pool);
+static void unimrcp_log_sources_setup();
 
 /** Start UniMRCP server */
 MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
@@ -84,6 +86,8 @@ MRCP_DECLARE(mrcp_server_t*) unimrcp_server_start(apt_dir_layout_t *dir_layout)
 	if(!dir_layout) {
 		return NULL;
 	}
+
+	unimrcp_log_sources_setup();
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"UniMRCP Server ["UNI_VERSION_STRING"] [r"UNI_REVISION_STRING"]");
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"APR ["APR_VERSION_STRING"]");
@@ -1247,4 +1251,17 @@ static apt_bool_t unimrcp_server_load(mrcp_server_t *mrcp_server, apt_dir_layout
 		}
 	}
 	return TRUE;
+}
+
+/** Set up custom log sources */
+static void unimrcp_log_sources_setup()
+{
+	/* Initialize a log source used by the MPF library */
+	mpf_log_source_init();
+
+	/* Initialize a log source used by the Sofia-SIP module and also for redirected logs of the Sofia-SIP library */
+	mrcp_sofiasip_logsource_init();
+
+	/* Initialize a log source used by the UniRTSP library and module */
+	mrcp_unirtsp_logsource_init();
 }
