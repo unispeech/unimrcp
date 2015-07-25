@@ -19,6 +19,7 @@
 #include <sofia-sip/sdp.h>
 #include "rtsp_message.h"
 #include "mrcp_unirtsp_sdp.h"
+#include "mrcp_unirtsp_logger.h"
 #include "mpf_rtp_attribs.h"
 #include "mpf_rtp_pt.h"
 #include "apt_text_stream.h"
@@ -173,7 +174,7 @@ static apt_bool_t mrcp_descriptor_generate_by_rtsp_sdp_session(mrcp_session_desc
 				break;
 			}
 			default:
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
+				apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
 				break;
 		}
 	}
@@ -211,7 +212,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_reques
 				mrcp_descriptor_generate_by_rtsp_sdp_session(descriptor,sdp,force_destination_ip,pool);
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
+				apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
 			}
 			sdp_parser_free(parser);
 		}
@@ -277,7 +278,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_descriptor_generate_by_rtsp_respon
 				descriptor->response_code = response->start_line.common.status_line.status_code;
 			}
 			else {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
+				apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse SDP Message");
 			}
 
 			sdp_parser_free(parser);
@@ -578,7 +579,7 @@ MRCP_DECLARE(const char*) mrcp_name_get_by_rtsp_name(const apr_table_t *resource
 				return entry[i].key;
 			}
 		}
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown RTSP Resource Name [%s]", rtsp_name);
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Unknown RTSP Resource Name [%s]", rtsp_name);
 	}
 	return "unknown";
 }

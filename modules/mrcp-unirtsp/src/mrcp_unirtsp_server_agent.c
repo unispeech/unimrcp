@@ -18,6 +18,7 @@
 #include <sofia-sip/sdp.h>
 
 #include "mrcp_unirtsp_server_agent.h"
+#include "mrcp_unirtsp_logger.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_message.h"
@@ -44,7 +45,6 @@ struct mrcp_unirtsp_session_t {
 	su_home_t             *home;
 };
 
-
 static apt_bool_t mrcp_unirtsp_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_unirtsp_on_session_terminate(mrcp_session_t *session);
 static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *session, mrcp_message_t *message);
@@ -65,7 +65,6 @@ static const rtsp_server_vtable_t session_request_vtable = {
 	mrcp_unirtsp_session_terminate,
 	mrcp_unirtsp_message_handle
 };
-
 
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_server_config_t *config, apr_pool_t *pool);
 
@@ -151,7 +150,7 @@ static apt_bool_t mrcp_unirtsp_session_create(rtsp_server_t *rtsp_server, rtsp_s
 	session = apr_palloc(mrcp_session->pool,sizeof(mrcp_unirtsp_session_t));
 	session->mrcp_session = mrcp_session;
 	mrcp_session->obj = session;
-	
+
 	session->home = su_home_new(sizeof(*session->home));
 
 	rtsp_server_session_object_set(rtsp_session,session);
@@ -175,7 +174,7 @@ static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
 		session->home = NULL;
 	}
 	rtsp_server_session_object_set(session->rtsp_session,NULL);
-	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session "APT_SID_FMT,MRCP_SESSION_SID(session->mrcp_session));
+	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session "APT_SID_FMT,MRCP_SESSION_SID(session->mrcp_session));
 	mrcp_session_destroy(session->mrcp_session);
 }
 
@@ -209,7 +208,7 @@ static apt_bool_t mrcp_unirtsp_session_announce(mrcp_unirtsp_agent_t *agent, mrc
 		}
 		else {
 			/* error response */
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
 			status = FALSE;
 		}
 	}
@@ -335,7 +334,7 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 
 	mrcp_message->start_line.version = MRCP_VERSION_1;
 	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&stream) != TRUE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
 		return FALSE;
 	}
 	stream.text.length = stream.pos - stream.text.buf;

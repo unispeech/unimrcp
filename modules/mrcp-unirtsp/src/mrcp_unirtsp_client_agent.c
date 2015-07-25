@@ -18,6 +18,7 @@
 #include <sofia-sip/sdp.h>
 
 #include "mrcp_unirtsp_client_agent.h"
+#include "mrcp_unirtsp_logger.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_message.h"
@@ -211,7 +212,7 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		}
 		else {
 			/* error case */
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Parse MRCPv1 Message");
 		}
 	}
 	else {
@@ -366,7 +367,7 @@ static apt_bool_t mrcp_unirtsp_session_control(mrcp_session_t *mrcp_session, mrc
 
 	mrcp_message->start_line.version = MRCP_VERSION_1;
 	if(mrcp_message_generate(agent->sig_agent->resource_factory,mrcp_message,&stream) != TRUE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Generate MRCPv1 Message");
 		return FALSE;
 	}
 	stream.text.length = stream.pos - stream.text.buf;
