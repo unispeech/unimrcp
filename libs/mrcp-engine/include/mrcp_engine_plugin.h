@@ -60,6 +60,14 @@ typedef apt_bool_t (*mrcp_plugin_log_accessor_f)(apt_logger_t *logger);
 	MRCP_PLUGIN_DECLARE(apt_bool_t) mrcp_plugin_logger_set(apt_logger_t *logger) \
 		{ return apt_log_instance_set(logger); }
 
+/** Declare this macro in plugins to use log routine of the server */
+#define MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(LOG_SOURCE, LOG_SOURCE_TAG) \
+	apt_log_source_t *LOG_SOURCE = &def_log_source; \
+	MRCP_PLUGIN_DECLARE(apt_bool_t) mrcp_plugin_logger_set(apt_logger_t *logger) \
+		{ apt_log_instance_set(logger); \
+		  apt_log_source_assign(LOG_SOURCE_TAG,&LOG_SOURCE); \
+		  return TRUE; }
+
 /** Declare this macro in plugins to set plugin version */
 #define MRCP_PLUGIN_VERSION_DECLARE \
 	MRCP_PLUGIN_DECLARE(mrcp_plugin_version_t) mrcp_plugin_version; \
