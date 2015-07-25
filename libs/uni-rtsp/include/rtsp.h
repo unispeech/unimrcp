@@ -24,6 +24,7 @@
 
 #include <apt.h>
 #include <apr_network_io.h>
+#include <apt_log.h>
 
 /** Library export/import defines */
 #ifdef WIN32
@@ -39,5 +40,11 @@
 #else
 #define RTSP_DECLARE(type) type
 #endif
+
+/** RTSP log source */
+APT_LOG_SOURCE_DECLARE(RTSP,rtsp_log_source)
+
+/** RTSP log mark providing log source, file and line information */
+#define RTSP_LOG_MARK   APT_LOG_MARK_DECLARE(rtsp_log_source)
 
 #endif /* RTSP_H */

@@ -18,6 +18,8 @@
 #include "apt_string_table.h"
 #include "apt_log.h"
 
+APT_LOG_SOURCE_IMPLEMENT(RTSP,rtsp_log_source,"RTSP")
+
 /** Protocol name used in version string */
 #define RTSP_NAME "RTSP"
 #define RTSP_NAME_LENGTH        (sizeof(RTSP_NAME)-1)
@@ -181,7 +183,7 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 
 	apt_text_stream_init(&line,str->buf,str->length);
 	if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot read the first field in start-line");
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Cannot read the first field in start-line");
 		return FALSE;
 	}
 
@@ -194,13 +196,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 		status_line->version = rtsp_version_parse(&field);
 
 		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse status-code in status-line");
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Cannot parse status-code in status-line");
 			return FALSE;
 		}
 		status_line->status_code = rtsp_status_code_parse(&field);
 
 		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse reason phrase in status-line");
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Cannot parse reason phrase in status-line");
 			return FALSE;
 		}
 		apt_string_copy(&status_line->reason,&field,pool);
@@ -215,13 +217,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_start_line_parse(rtsp_start_line_t *start_line, ap
 		request_line->method_id = apt_string_table_id_find(rtsp_method_string_table,RTSP_METHOD_COUNT,&field);
 
 		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse URL in request-line");
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Cannot parse URL in request-line");
 			return FALSE;
 		}
 		rtsp_resource_uri_parse(&field,request_line,pool);
 
 		if(apt_text_field_read(&line,APT_TOKEN_SP,TRUE,&field) == FALSE) {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot parse version in request-line");
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Cannot parse version in request-line");
 			return FALSE;
 		}
 		request_line->version = rtsp_version_parse(&field);
