@@ -23,6 +23,7 @@
 #                              (only needed when linking statically on Win32)
 # If Sofia-SIP not installed, it can be used from the source directory:
 #  SOFIA_SOURCE_DIR          - path to compiled Sofia-SIP source directory
+#                              or Sofia-SIP installation prefix
 
 #=============================================================================
 # Copyright 2014 SpeechTech, s.r.o. http://www.speechtech.cz/en
@@ -124,108 +125,199 @@ macro (find_sofia_dynamic)
 	find_libs (SOFIA "sofia-sip-ua;libsofia_sip_ua" "${_sofia_hints}")
 endmacro (find_sofia_dynamic)
 
+# Try to transform "-L/path/to -llib -flag" into "/path/to/lib -flag"
+# to turn libraries to CMake fashion for e.g. rpath to work
+macro (sanitize_ldflags var ldflags)
+	set (_apr_hints)
+	set (${var})
+	foreach (flag ${ldflags})
+		if ("${flag}" MATCHES "^-L(.+)$")
+			set (_apr_hints ${_apr_hints} "${CMAKE_MATCH_1}")
+		endif()
+	endforeach (flag)
+	foreach (flag ${ldflags})
+		if ("${flag}" MATCHES "^-l(.+)$")
+			find_library (_lib ${CMAKE_MATCH_1} HINTS ${_apr_hints})
+			if (_lib)
+				set (${var} ${${var}} ${_lib})
+			else (_lib)
+				set (${var} ${${var}} ${flag})
+			endif (_lib)
+			unset (_lib CACHE)
+		elseif (NOT "${flag}" MATCHES "^-[lL]")
+			set (${var} ${${var}} ${flag})
+		endif ()
+	endforeach (flag)
+	unset(flag)
+endmacro (sanitize_ldflags)
+
 include (FindPackageMessage)
-if (SOFIA_STATIC)
-	find_sofia_static ()
-	if (NOT SOFIA_LIBRARIES)
-		find_package_message (Sofia "Static Sofia-SIP library not found, trying dynamic"
-			"[${SOFIA_LIBRARY}][${SOFIA_INCLUDE_DIR}][${SOFIA_STATIC}]")
-		find_sofia_dynamic ()
-	else (NOT SOFIA_LIBRARIES)
-		set (CMAKE_THREAD_PREFER_PTHREAD 1)
-		find_package (Threads REQUIRED)
-		set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-		find_package (OpenSSL)
-		if (OPENSSL_LIBRARIES)
-			set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} ${OPENSSL_LIBRARIES})
-		endif (OPENSSL_LIBRARIES)
-		if (UNIX)
-			set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} rt)
-		endif (UNIX)
-	endif (NOT SOFIA_LIBRARIES)
-	set (SOFIA_DEFINES -DLIBSOFIA_SIP_UA_STATIC)
-	if (WIN32 AND SOFIA_PTW32_STATIC)
-		set (SOFIA_DEFINES "${SOFIA_DEFINES} -DPTW32_STATIC_LIB")
-	endif (WIN32 AND SOFIA_PTW32_STATIC)
-else (SOFIA_STATIC)
-	find_sofia_dynamic ()
-	if (NOT SOFIA_LIBRARIES)
-		find_package_message (Sofia "Dynamic Sofia-SIP library not found, trying static"
-			"[${SOFIA_LIBRARY}][${SOFIA_INCLUDE_DIR}][${SOFIA_STATIC}]")
+
+
+# Do not override already found Sofia-SIP
+if ((SOFIA_LIBRARY OR SOFIA_LIBRARY_DEBUG) AND SOFIA_INCLUDE_DIR)
+	set (SOFIA_FOUND TRUE)
+endif ((SOFIA_LIBRARY OR SOFIA_LIBRARY_DEBUG) AND SOFIA_INCLUDE_DIR)
+
+
+# First, try pkg-config
+if (NOT SOFIA_FOUND)
+	find_package (PkgConfig)
+	if (PKGCONFIG_FOUND)
+		# Sofia-SIP might not be installed in standard system paths
+		set (_sofia_hints
+			/usr/local/lib/pkgconfig
+			/usr/local/pkgconfig
+			/usr/local/lib)
+		if (SOFIA_SOURCE_DIR)
+			set (_sofia_hints
+				"${SOFIA_SOURCE_DIR}/lib/pkgconfig"
+				"${SOFIA_SOURCE_DIR}/pkgconfig"
+				"${SOFIA_SOURCE_DIR}/lib"
+				"${SOFIA_SOURCE_DIR}/packages"
+				"${SOFIA_SOURCE_DIR}"
+				${_sofia_hints})
+		endif (SOFIA_SOURCE_DIR)
+		find_path (SOFIA_PKGCONFIG sofia-sip-ua.pc HINTS ${_sofia_hints})
+		mark_as_advanced (SOFIA_PKGCONFIG)
+		set (_sofia_PKG_CONFIG_PATH "$ENV{PKG_CONFIG_PATH}")
+		if (SOFIA_PKGCONFIG)
+			set (ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${SOFIA_PKGCONFIG}")
+		endif (SOFIA_PKGCONFIG)
+		pkg_search_module (XSOFIA sofia-sip-ua)
+		if (XSOFIA_FOUND)
+			if (SOFIA_STATIC)
+				set (SOFIA_LIBRARIES ${XSOFIA_STATIC_LDFLAGS})
+				set (SOFIA_INCLUDE_DIRS ${XSOFIA_STATIC_INCLUDE_DIRS})
+				set (SOFIA_DEFINES ${XSOFIA_STATIC_CFLAGS_OTHER} CACHE STRING "Sofia-SIP compile flags")
+				set (SOFIA_VERSION_STRING ${XSOFIA_STATIC_VERSION} CACHE INTERNAL "Sofia-SIP version")
+			else (SOFIA_STATIC)
+				set (SOFIA_LIBRARIES ${XSOFIA_LDFLAGS})
+				set (SOFIA_INCLUDE_DIRS ${XSOFIA_INCLUDE_DIRS})
+				set (SOFIA_DEFINES ${XSOFIA_CFLAGS_OTHER} CACHE STRING "Sofia-SIP compile flags")
+				set (SOFIA_VERSION_STRING ${XSOFIA_VERSION} CACHE INTERNAL "Sofia-SIP version")
+			endif (SOFIA_STATIC)
+			if (SOFIA_LIBRARIES AND SOFIA_INCLUDE_DIRS)
+				sanitize_ldflags (SOFIA_LIBRARIES "${SOFIA_LIBRARIES}")
+				set (SOFIA_LIBRARY ${SOFIA_LIBRARIES} CACHE STRING "Sofia-SIP link libraries")
+				set (SOFIA_INCLUDE_DIR ${SOFIA_INCLUDE_DIRS} CACHE PATH "Sofia-SIP include directory")
+				set (SOFIA_FOUND TRUE)
+				set (SOFIA_FROM_CONFIG TRUE CACHE INTERNAL "Sofia-SIP found by a config program")
+				find_package_message (Sofia "Sofia-SIP found by pkg-config" "${SOFIA_PKGCONFIG}")
+			endif (SOFIA_LIBRARIES AND SOFIA_INCLUDE_DIRS)
+		endif (XSOFIA_FOUND)
+		set (ENV{PKG_CONFIG_PATH} "${_sofia_PKG_CONFIG_PATH}")
+	endif (PKGCONFIG_FOUND)
+endif (NOT SOFIA_FOUND)
+
+
+# Lastly, try heuristics
+if (NOT SOFIA_FOUND OR NOT SOFIA_FROM_CONFIG)
+	set (SOFIA_FROM_CONFIG FALSE CACHE INTERNAL "Sofia-SIP found by a config program")
+	if (SOFIA_STATIC)
 		find_sofia_static ()
-	endif (NOT SOFIA_LIBRARIES)
-	set (SOFIA_DEFINES)
-endif (SOFIA_STATIC)
+		if (NOT SOFIA_LIBRARIES)
+			find_package_message (Sofia "Static Sofia-SIP library not found, trying dynamic"
+				"[${SOFIA_LIBRARY}][${SOFIA_INCLUDE_DIR}][${SOFIA_STATIC}]")
+			find_sofia_dynamic ()
+		else (NOT SOFIA_LIBRARIES)
+			set (CMAKE_THREAD_PREFER_PTHREAD 1)
+			find_package (Threads REQUIRED)
+			set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+			find_package (OpenSSL)
+			if (OPENSSL_LIBRARIES)
+				set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} ${OPENSSL_LIBRARIES})
+			endif (OPENSSL_LIBRARIES)
+			if (UNIX)
+				set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} rt)
+			endif (UNIX)
+		endif (NOT SOFIA_LIBRARIES)
+		set (SOFIA_DEFINES -DLIBSOFIA_SIP_UA_STATIC)
+		if (WIN32 AND SOFIA_PTW32_STATIC)
+			set (SOFIA_DEFINES "${SOFIA_DEFINES} -DPTW32_STATIC_LIB")
+		endif (WIN32 AND SOFIA_PTW32_STATIC)
+	else (SOFIA_STATIC)
+		find_sofia_dynamic ()
+		if (NOT SOFIA_LIBRARIES)
+			find_package_message (Sofia "Dynamic Sofia-SIP library not found, trying static"
+				"[${SOFIA_LIBRARY}][${SOFIA_INCLUDE_DIR}][${SOFIA_STATIC}]")
+			find_sofia_static ()
+		endif (NOT SOFIA_LIBRARIES)
+		set (SOFIA_DEFINES)
+	endif (SOFIA_STATIC)
 
-if (SOFIA_STATIC AND SOFIA_LIBRARIES AND WIN32)
-	if (SOFIA_PTW32_LIBRARIES)
-		set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} ${SOFIA_PTW32_LIBRARIES})
-	else (SOFIA_PTW32_LIBRARIES)
-		message ("Statically linked Sofia-SIP requires pthreads-win32, please set SOFIA_PTW32_LIBRARY")
-	endif (SOFIA_PTW32_LIBRARIES)
-endif (SOFIA_STATIC AND SOFIA_LIBRARIES AND WIN32)
+	if (SOFIA_STATIC AND SOFIA_LIBRARIES AND WIN32)
+		if (SOFIA_PTW32_LIBRARIES)
+			set (SOFIA_LIBRARIES ${SOFIA_LIBRARIES} ${SOFIA_PTW32_LIBRARIES})
+		else (SOFIA_PTW32_LIBRARIES)
+			message ("Statically linked Sofia-SIP requires pthreads-win32, please set SOFIA_PTW32_LIBRARY")
+		endif (SOFIA_PTW32_LIBRARIES)
+	endif (SOFIA_STATIC AND SOFIA_LIBRARIES AND WIN32)
 
-set (_sofia_dirs)
-set (SOFIA_PARTS su nua url sip msg sdp nta nea soa iptsec bnf features tport)
-if (WIN32)
-	set (SOFIA_PARTS ${SOFIA_PARTS} win32)
-endif (WIN32)
-set (_sofia_hints)
-if (SOFIA_SOURCE_DIR)
+	set (_sofia_dirs)
+	set (SOFIA_PARTS su nua url sip msg sdp nta nea soa iptsec bnf features tport)
+	if (WIN32)
+		set (SOFIA_PARTS ${SOFIA_PARTS} win32)
+	endif (WIN32)
+	set (_sofia_hints)
+	if (SOFIA_SOURCE_DIR)
+		foreach (part IN LISTS SOFIA_PARTS)
+			if (part STREQUAL win32)
+				set (_sofia_hints ${_sofia_hints} "${SOFIA_SOURCE_DIR}/${part}")
+			else (part STREQUAL win32)
+				set (_sofia_hints ${_sofia_hints} "${SOFIA_SOURCE_DIR}/libsofia-sip-ua/${part}")
+			endif (part STREQUAL win32)
+		endforeach (part)
+		if (WIN32 AND SOFIA_STATIC)
+			find_path (SOFIA_PTW32_INCLUDE_DIR pthread.h
+				HINTS ${_sofia_hints} "${SOFIA_SOURCE_DIR}/win32/pthread")
+			if (SOFIA_PTW32_INCLUDE_DIR)
+				set (_sofia_dirs ${_sofia_dirs} ${SOFIA_PTW32_INCLUDE_DIR})
+			endif (SOFIA_PTW32_INCLUDE_DIR)
+		endif (WIN32 AND SOFIA_STATIC)
+		set (_sofia_hints ${_sofia_hints} "${SOFIA_SOURCE_DIR}/include/sofia-sip-1.12"
+			"${SOFIA_SOURCE_DIR}/include/sofia-sip-1.1?"
+			"${SOFIA_SOURCE_DIR}/include/sofia-sip-1.*"
+			"${SOFIA_SOURCE_DIR}/include/sofia-sip-*")
+	endif (SOFIA_SOURCE_DIR)
+	set (_sofia_hints ${_sofia_hints} /usr/local/include/sofia-sip-1.12
+		/usr/local/include/sofia-sip-1.1?
+		/usr/local/include/sofia-sip-1.*
+		/usr/local/include/sofia-sip-*)
 	foreach (part IN LISTS SOFIA_PARTS)
-		if (part STREQUAL win32)
-			set (_sofia_hints ${_sofia_hints} "${SOFIA_SOURCE_DIR}/${part}")
-		else (part STREQUAL win32)
-			set (_sofia_hints ${_sofia_hints} "${SOFIA_SOURCE_DIR}/libsofia-sip-ua/${part}")
-		endif (part STREQUAL win32)
+		if (part STREQUAL features)
+			set (header sofia_features.h)
+		elseif (part STREQUAL iptsec)
+			set (header auth_client.h)
+		elseif (part STREQUAL win32)
+			set (header su_configure.h)
+		else (part STREQUAL features)
+			set (header ${part}.h)
+		endif (part STREQUAL features)
+		find_path (SOFIA_INC_${part} "sofia-sip/${header}"
+			HINTS ${_sofia_hints})
+		mark_as_advanced (SOFIA_INC_${part})
+		if (SOFIA_INC_${part})
+			list (APPEND _sofia_dirs ${SOFIA_INC_${part}})
+		else (SOFIA_INC_${part})
+			message ("Sofia warning: ${header} not found")
+		endif (SOFIA_INC_${part})
 	endforeach (part)
-	if (WIN32 AND SOFIA_STATIC)
-		find_path (SOFIA_PTW32_INCLUDE_DIR pthread.h
-			HINTS ${_sofia_hints} "${SOFIA_SOURCE_DIR}/win32/pthread")
-		if (SOFIA_PTW32_INCLUDE_DIR)
-			set (_sofia_dirs ${_sofia_dirs} ${SOFIA_PTW32_INCLUDE_DIR})
-		endif (SOFIA_PTW32_INCLUDE_DIR)
-	endif (WIN32 AND SOFIA_STATIC)
-	set (_sofia_hints ${_sofia_hints} "${SOFIA_SOURCE_DIR}/include/sofia-sip-1.12"
-		"${SOFIA_SOURCE_DIR}/include/sofia-sip-1.1?"
-		"${SOFIA_SOURCE_DIR}/include/sofia-sip-1.*"
-		"${SOFIA_SOURCE_DIR}/include/sofia-sip-*")
-endif (SOFIA_SOURCE_DIR)
-set (_sofia_hints ${_sofia_hints} /usr/local/include/sofia-sip-1.12
-	/usr/local/include/sofia-sip-1.1?
-	/usr/local/include/sofia-sip-1.*
-	/usr/local/include/sofia-sip-*)
-foreach (part IN LISTS SOFIA_PARTS)
-	if (part STREQUAL features)
-		set (header sofia_features.h)
-	elseif (part STREQUAL iptsec)
-		set (header auth_client.h)
-	elseif (part STREQUAL win32)
-		set (header su_configure.h)
-	else (part STREQUAL features)
-		set (header ${part}.h)
-	endif (part STREQUAL features)
-	find_path (SOFIA_INC_${part} "sofia-sip/${header}"
+	if (_sofia_dirs)
+		list (REMOVE_DUPLICATES _sofia_dirs)
+	endif (_sofia_dirs)
+	set (SOFIA_INCLUDE_DIRS ${_sofia_dirs})
+	find_path (SOFIA_INCLUDE_DIR sofia-sip/sofia_features.h
 		HINTS ${_sofia_hints})
-	mark_as_advanced (SOFIA_INC_${part})
-	if (SOFIA_INC_${part})
-		list (APPEND _sofia_dirs ${SOFIA_INC_${part}})
-	else (SOFIA_INC_${part})
-		message ("Sofia warning: ${header} not found")
-	endif (SOFIA_INC_${part})
-endforeach (part)
-if (_sofia_dirs)
-	list (REMOVE_DUPLICATES _sofia_dirs)
-endif (_sofia_dirs)
-set (SOFIA_INCLUDE_DIRS ${_sofia_dirs})
-find_path (SOFIA_INCLUDE_DIR sofia-sip/sofia_features.h
-	HINTS ${_sofia_hints})
 
-if (SOFIA_INCLUDE_DIR)
-	file (STRINGS "${SOFIA_INCLUDE_DIR}/sofia-sip/sofia_features.h" _sofia_ver
-		REGEX "^#define[ \t]+SOFIA_SIP_VERSION[ \t]+\"[^\"]+\"")
-	string (REGEX REPLACE ".*[ \t]SOFIA_SIP_VERSION[ \t]+\"([^\"]+)\".*" "\\1" SOFIA_VERSION_STRING "${_sofia_ver}")
-endif (SOFIA_INCLUDE_DIR)
+	if (SOFIA_INCLUDE_DIR)
+		file (STRINGS "${SOFIA_INCLUDE_DIR}/sofia-sip/sofia_features.h" _sofia_ver
+			REGEX "^#define[ \t]+SOFIA_SIP_VERSION[ \t]+\"[^\"]+\"")
+		string (REGEX REPLACE ".*[ \t]SOFIA_SIP_VERSION[ \t]+\"([^\"]+)\".*" "\\1" SOFIA_VERSION_STRING "${_sofia_ver}")
+		set (SOFIA_VERSION_STRING ${SOFIA_VERSION_STRING} CACHE INTERNAL "Sofia-SIP version")
+	endif (SOFIA_INCLUDE_DIR)
+endif (NOT SOFIA_FOUND OR NOT SOFIA_FROM_CONFIG)
+
 
 mark_as_advanced (
 	SOFIA_LIBRARY
@@ -234,6 +326,13 @@ mark_as_advanced (
 	SOFIA_PTW32_LIBRARY
 	SOFIA_PTW32_LIBRARY_DEBUG)
 
+# Sanitize repeated calls from cache
+if (SOFIA_FROM_CONFIG)
+	set (SOFIA_LIBRARIES ${SOFIA_LIBRARY})
+	set (SOFIA_INCLUDE_DIRS ${SOFIA_INCLUDE_DIR})
+endif (SOFIA_FROM_CONFIG)
+
+mark_as_advanced (SOFIA_DEFINES)
 unset (SOFIA_FOUND)
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (Sofia
