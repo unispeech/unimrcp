@@ -217,6 +217,7 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 	}
 	else {
 		/* error case */
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Determine MRCPv1 Message Content");
 	}
 
 	if(!mrcp_message) {
@@ -227,7 +228,9 @@ static apt_bool_t mrcp_unirtsp_on_announce_response(mrcp_unirtsp_agent_t *agent,
 		mrcp_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 	}
 
-	session->mrcp_message = NULL;
+	if(session->mrcp_message && mrcp_message->start_line.request_id == session->mrcp_message->start_line.request_id) {
+		session->mrcp_message = NULL;
+	}
 	mrcp_session_control_response(session->mrcp_session,mrcp_message);
 	return TRUE;
 }
