@@ -28,7 +28,7 @@ APT_BEGIN_EXTERN_C
 
 /*
  * This define allows user applications to support both the old interface,
- * where members of apt_dir_layout_t structure were accessable to the
+ * where members of apt_dir_layout_t structure were accessible to the
  * application, and the new opaque interface, where OPAQUE_DIR_LAYOUT
  * is defined.
  */
@@ -81,7 +81,7 @@ APT_DECLARE(apt_dir_layout_t*) apt_custom_dir_layout_create(
 APT_DECLARE(apt_dir_layout_t*) apt_dir_layout_create(apr_pool_t *pool);
 
 /**
- * Create am extended bare directories layout.
+ * Create an extended bare directories layout.
  * @param count the number of directories in the layout
  * @param pool the memory pool to use
  */
