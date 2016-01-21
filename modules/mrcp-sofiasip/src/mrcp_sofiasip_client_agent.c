@@ -143,6 +143,7 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 	config->sip_t2 = 0;
 	config->sip_t4 = 0;
 	config->sip_t1x64 = 0;
+	config->sip_timer_c = 0;
 
 	config->tport_log = FALSE;
 	config->tport_dump_file = NULL;
@@ -205,6 +206,7 @@ static void mrcp_sofia_task_initialize(apt_task_t *task)
 		TAG_IF(sofia_config->sip_t2,NTATAG_SIP_T2(sofia_config->sip_t2)),
 		TAG_IF(sofia_config->sip_t4,NTATAG_SIP_T4(sofia_config->sip_t4)),
 		TAG_IF(sofia_config->sip_t1x64,NTATAG_SIP_T1X64(sofia_config->sip_t1x64)),
+		TAG_IF(sofia_config->sip_timer_c,NTATAG_TIMER_C(sofia_config->sip_timer_c)),
 		SIPTAG_USER_AGENT_STR(sofia_config->user_agent_name),
 		TAG_IF(sofia_config->tport_log == TRUE,TPTAG_LOG(1)), /* Print out SIP messages to the console */
 		TAG_IF(sofia_config->tport_dump_file,TPTAG_DUMP(sofia_config->tport_dump_file)), /* Dump SIP messages to the file */

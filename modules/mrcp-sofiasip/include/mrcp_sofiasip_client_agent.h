@@ -54,6 +54,8 @@ struct mrcp_sofia_client_config_t {
 	apr_size_t sip_t4;
 	/** SIP T1x64 timer */
 	apr_size_t sip_t1x64;
+	/** SIP timer C */
+	apr_size_t sip_timer_c;
 	/** Print out SIP messages to the console */
 	apt_bool_t tport_log;
 	/** Dump SIP messages to the specified file */

@@ -421,6 +421,11 @@ static apt_bool_t unimrcp_client_sip_uac_load(unimrcp_client_loader_t *loader, c
 				config->sip_t1x64 = atol(cdata_text_get(elem));
 			}
 		}
+		else if(strcasecmp(elem->name,"sip-timer-c") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->sip_timer_c = atol(cdata_text_get(elem));
+			}
+		}
 		else if(strcasecmp(elem->name,"sip-message-output") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
 				config->tport_log = cdata_bool_get(elem);
