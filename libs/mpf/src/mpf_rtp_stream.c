@@ -175,7 +175,7 @@ static apt_bool_t mpf_rtp_stream_local_media_create(mpf_rtp_stream_t *rtp_stream
 			do {
 				local_media->port = rtp_config->rtp_port_cur;
 				rtp_config->rtp_port_cur += 2;
-				if(rtp_config->rtp_port_cur == rtp_config->rtp_port_max) {
+				if(rtp_config->rtp_port_cur >= rtp_config->rtp_port_max) {
 					rtp_config->rtp_port_cur = rtp_config->rtp_port_min;
 				}
 				
