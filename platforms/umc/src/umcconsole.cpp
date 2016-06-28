@@ -244,9 +244,9 @@ void UmcConsole::Usage()
 {
 	printf(
 		"\n"
-		" * "UNI_COPYRIGHT"\n"
+		" * " UNI_COPYRIGHT "\n"
 		" *\n"
-		UNI_LICENSE"\n"
+		UNI_LICENSE "\n"
 		"\n"
 		"Usage:\n"
 		"\n"

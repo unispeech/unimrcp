@@ -234,6 +234,9 @@ bool RecogSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t
 		return false;
 
 	RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
+	if(!pRecogChannel)
+		return false;
+
 	if(pMrcpMessage->start_line.message_type == MRCP_MESSAGE_TYPE_RESPONSE) 
 	{
 		/* received MRCP response */
@@ -255,13 +258,10 @@ bool RecogSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t
 			/* received the response to RECOGNIZE request */
 			if(pMrcpMessage->start_line.request_state == MRCP_REQUEST_STATE_INPROGRESS)
 			{
-				RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
-				if(pRecogChannel)
-					pRecogChannel->m_pRecogRequest = GetMrcpMessage();
+				pRecogChannel->m_pRecogRequest = GetMrcpMessage();
 
 				/* start to stream the speech to recognize */
-				if(pRecogChannel) 
-					pRecogChannel->m_Streaming = true;
+				pRecogChannel->m_Streaming = true;
 			}
 			else 
 			{
@@ -279,12 +279,9 @@ bool RecogSession::OnMessageReceive(mrcp_channel_t* pMrcpChannel, mrcp_message_t
 		if(pMrcpMessage->start_line.method_id == RECOGNIZER_RECOGNITION_COMPLETE) 
 		{
 			ParseNLSMLResult(pMrcpMessage);
-			if(pRecogChannel) 
-				pRecogChannel->m_Streaming = false;
 
-			RecogChannel* pRecogChannel = (RecogChannel*) mrcp_application_channel_object_get(pMrcpChannel);
-			if(pRecogChannel)
-				pRecogChannel->m_pRecogRequest = NULL;
+			pRecogChannel->m_Streaming = false;
+			pRecogChannel->m_pRecogRequest = NULL;
 
 			Terminate();
 		}

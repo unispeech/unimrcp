@@ -276,7 +276,7 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 }
 
 /** Create DEFINE-GRAMMAR request */
-static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_file)
+static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_file_name)
 {
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(
@@ -289,7 +289,7 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 		/* set message body */
 		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
 		apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
-		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,pool);
+		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file_name,pool);
 		if(grammar_file_path) {
 			apr_finfo_t finfo;
 			apr_file_t *grammar_file;

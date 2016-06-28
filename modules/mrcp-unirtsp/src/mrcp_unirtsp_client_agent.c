@@ -293,7 +293,6 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 		}
 		case RTSP_METHOD_ANNOUNCE:
 		{
-			mrcp_unirtsp_agent_t *agent = rtsp_client_object_get(rtsp_client);
 			const char *resource_name = mrcp_name_get_by_rtsp_name(
 				session->rtsp_settings->resource_map,
 				request->start_line.common.request_line.resource_name);
@@ -302,7 +301,6 @@ static apt_bool_t mrcp_unirtsp_on_session_response(rtsp_client_t *rtsp_client, r
 		}
 		case RTSP_METHOD_DESCRIBE:
 		{
-			mrcp_unirtsp_agent_t *agent = rtsp_client_object_get(rtsp_client);
 			mrcp_unirtsp_on_resource_discover(agent,session,request,response);
 			break;
 		}
