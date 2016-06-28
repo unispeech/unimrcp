@@ -430,6 +430,8 @@ static void mrcp_sofia_on_resource_discover(mrcp_sofia_agent_t   *sofia_agent,
 				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				SOATAG_AUDIO_AUX("telephone-event"),
 				TAG_END());
+
+	nua_handle_destroy(nh);
 }
 
 /** This callback will be called by SIP stack to process incoming events */
