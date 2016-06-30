@@ -119,7 +119,6 @@ private:
 	mrcp_application_t*         m_pMrcpApplication;
 	mrcp_session_t*             m_pMrcpSession;
 	mrcp_message_t*             m_pMrcpMessage; /* last message sent */
-	apt_timer_t*                m_pTimer;
 	bool                        m_Running;
 	bool                        m_Terminating;
 };
