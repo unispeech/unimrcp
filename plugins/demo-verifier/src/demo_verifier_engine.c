@@ -523,17 +523,19 @@ static apt_bool_t demo_verifier_stream_write(mpf_audio_stream_t *stream, const m
 				break;
 		}
 
-		if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
-			if(frame->marker == MPF_MARKER_START_OF_EVENT) {
-				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Start of Event "APT_SIDRES_FMT" id:%d",
-					MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request),
-					frame->event_frame.event_id);
-			}
-			else if(frame->marker == MPF_MARKER_END_OF_EVENT) {
-				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected End of Event "APT_SIDRES_FMT" id:%d duration:%d ts",
-					MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request),
-					frame->event_frame.event_id,
-					frame->event_frame.duration);
+		if(verifier_channel->verifier_request) {
+			if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
+				if(frame->marker == MPF_MARKER_START_OF_EVENT) {
+					apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Start of Event "APT_SIDRES_FMT" id:%d",
+						MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request),
+						frame->event_frame.event_id);
+				}
+				else if(frame->marker == MPF_MARKER_END_OF_EVENT) {
+					apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected End of Event "APT_SIDRES_FMT" id:%d duration:%d ts",
+						MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request),
+						frame->event_frame.event_id,
+						frame->event_frame.duration);
+				}
 			}
 		}
 
