@@ -12,11 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * $Id$
  */
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
 
 /* APR includes */
 #include <apr_thread_cond.h>
@@ -26,7 +28,6 @@
 #include "unimrcp_client.h"
 #include "mrcp_application.h"
 #include "mrcp_message.h"
-#include "mrcp_generic_header.h"
 /* Recognizer includes */
 #include "mrcp_recog_header.h"
 #include "mrcp_recog_resource.h"
@@ -233,8 +234,14 @@ static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const char *in
 	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
 	apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
 	char *input_file_path = apt_datadir_filepath_get(dir_layout,input_file,pool);
+  FILE *external_audio = NULL;
 	if(!input_file_path) {
-		return FALSE;
+    external_audio = fopen(input_file,"rb");
+    if(external_audio == NULL) {
+      return FALSE;
+    } else {
+      *input_file_path = *input_file;
+    }
 	}
 	
 	if(asr_session->audio_in) {
@@ -247,6 +254,8 @@ static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const char *in
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open [%s]",input_file_path);
 		return FALSE;
 	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Openned file: %s",input_file_path);
 
 	return TRUE;
 }
@@ -277,70 +286,8 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 	return TRUE;
 }
 
-/** Create DEFINE-GRAMMAR request */
-static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_file)
-{
-	/* create MRCP message */
-	mrcp_message_t *mrcp_message = mrcp_application_message_create(
-						asr_session->mrcp_session,
-						asr_session->mrcp_channel,
-						RECOGNIZER_DEFINE_GRAMMAR);
-	if(mrcp_message) {
-		mrcp_generic_header_t *generic_header;
-
-		/* set message body */
-		const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
-		apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
-		char *grammar_file_path = apt_datadir_filepath_get(dir_layout,grammar_file,pool);
-		if(grammar_file_path) {
-			apr_finfo_t finfo;
-			apr_file_t *grammar_file;
-			apt_str_t *content = &mrcp_message->body;
-
-			if(apr_file_open(&grammar_file,grammar_file_path,APR_FOPEN_READ|APR_FOPEN_BINARY,0,pool) != APR_SUCCESS) {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Open Grammar File %s",grammar_file_path);
-				return NULL;
-			}
-
-			if(apr_file_info_get(&finfo,APR_FINFO_SIZE,grammar_file) != APR_SUCCESS) {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Grammar File Info %s",grammar_file_path);
-				apr_file_close(grammar_file);
-				return NULL;
-			}
-
-			content->length = (apr_size_t)finfo.size;
-			content->buf = (char*) apr_palloc(pool,content->length+1);
-			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Load Grammar File Content size [%"APR_SIZE_T_FMT" bytes] %s",
-				content->length,grammar_file_path);
-			if(apr_file_read(grammar_file,content->buf,&content->length) != APR_SUCCESS) {
-				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Read Grammar File Content %s",grammar_file_path);
-				apr_file_close(grammar_file);
-				return NULL;
-			}
-			content->buf[content->length] = '\0';
-			apr_file_close(grammar_file);
-		}
-
-		/* get/allocate generic header */
-		generic_header = mrcp_generic_header_prepare(mrcp_message);
-		if(generic_header) {
-			/* set generic header fields */
-			if(mrcp_message->start_line.version == MRCP_VERSION_2) {
-				apt_string_assign(&generic_header->content_type,"application/srgs+xml",mrcp_message->pool);
-			}
-			else {
-				apt_string_assign(&generic_header->content_type,"application/grammar+xml",mrcp_message->pool);
-			}
-			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
-			apt_string_assign(&generic_header->content_id,"demo-grammar",mrcp_message->pool);
-			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
-		}
-	}
-	return mrcp_message;
-}
-
 /** Create RECOGNIZE request */
-static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
+static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, const char *grammar_uri)
 {
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(
@@ -349,16 +296,9 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
 										RECOGNIZER_RECOGNIZE);
 	if(mrcp_message) {
 		mrcp_recog_header_t *recog_header;
-		mrcp_generic_header_t *generic_header;
-		/* get/allocate generic header */
-		generic_header = mrcp_generic_header_prepare(mrcp_message);
-		if(generic_header) {
-			/* set generic header fields */
-			apt_string_assign(&generic_header->content_type,"text/uri-list",mrcp_message->pool);
-			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
-			/* set message body */
-			apt_string_assign(&mrcp_message->body,"session:demo-grammar",mrcp_message->pool);
-		}
+
+    apt_string_assign(&mrcp_message->body,grammar_uri,mrcp_message->pool);
+
 		/* get/allocate recognizer header */
 		recog_header = mrcp_resource_header_prepare(mrcp_message);
 		if(recog_header) {
@@ -366,6 +306,11 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session)
 				/* set recognizer header fields */
 				recog_header->cancel_if_queue = FALSE;
 				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CANCEL_IF_QUEUE);
+
+        apt_str_t grammar_uri_apt;
+        apt_string_set(&grammar_uri_apt,"My Personal Grammar for Enrollment");
+        recog_header->personal_grammar_uri = grammar_uri_apt;
+        mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_PERSONAL_GRAMMAR_URI);
 			}
 			recog_header->no_input_timeout = 5000;
 			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
@@ -395,7 +340,7 @@ static const char* nlsml_result_get(mrcp_message_t *message)
 	if(!result) {
 		return NULL;
 	}
-	
+
 	/* get first interpretation */
 	interpretation = nlsml_first_interpretation_get(result);
 	if(!interpretation) {
@@ -560,37 +505,14 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 /** Initiate recognition based on specified grammar and input file */
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									asr_session_t *asr_session, 
-									const char *grammar_file, 
+									const char *grammar_uri, 
 									const char *input_file)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
 
 	app_message = NULL;
-	mrcp_message = define_grammar_message_create(asr_session,grammar_file);
-	if(!mrcp_message) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create DEFINE-GRAMMAR Request");
-		return NULL;
-	}
-
-	/* Send DEFINE-GRAMMAR request and wait for the response */
-	apr_thread_mutex_lock(asr_session->mutex);
-	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
-		apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
-		app_message = asr_session->app_message;
-		asr_session->app_message = NULL;
-	}
-	apr_thread_mutex_unlock(asr_session->mutex);
-
-	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_COMPLETE) == FALSE) {
-		return NULL;
-	}
-
-	/* Reset prev recog result (if any) */
-	asr_session->recog_complete = NULL;
-
-	app_message = NULL;
-	mrcp_message = recognize_message_create(asr_session);
+	mrcp_message = recognize_message_create(asr_session, grammar_uri);
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
 		return NULL;
@@ -642,36 +564,13 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 /** Initiate recognition based on specified grammar and input stream */
 ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 									asr_session_t *asr_session,
-									const char *grammar_file)
+									const char *grammar_uri)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
 
 	app_message = NULL;
-	mrcp_message = define_grammar_message_create(asr_session,grammar_file);
-	if(!mrcp_message) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create DEFINE-GRAMMAR Request");
-		return NULL;
-	}
-
-	/* Send DEFINE-GRAMMAR request and wait for the response */
-	apr_thread_mutex_lock(asr_session->mutex);
-	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
-		apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
-		app_message = asr_session->app_message;
-		asr_session->app_message = NULL;
-	}
-	apr_thread_mutex_unlock(asr_session->mutex);
-
-	if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_COMPLETE) == FALSE) {
-		return NULL;
-	}
-
-	/* Reset prev recog result (if any) */
-	asr_session->recog_complete = NULL;
-
-	app_message = NULL;
-	mrcp_message = recognize_message_create(asr_session);
+	mrcp_message = recognize_message_create(asr_session, grammar_uri);
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
 		return NULL;

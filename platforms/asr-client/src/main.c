@@ -12,12 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * $Id$
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <apr_getopt.h>
 #include <apr_file_info.h>
 #include <apr_thread_proc.h>
@@ -32,8 +33,9 @@ typedef struct {
 
 typedef struct {
 	asr_engine_t      *engine;
-	const char        *grammar_file;
+	const char        *grammar_uri;
 	const char        *input_file;
+  const char        *recogs_repetition;
 	const char        *profile;
 	
 	apr_thread_t      *thread;
@@ -45,12 +47,20 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 {
 	asr_params_t *params = data;
 	asr_session_t *session = asr_session_create(params->engine,params->profile);
+  const char *result;
 	if(session) {
-		const char *result = asr_session_file_recognize(session,params->grammar_file,params->input_file);
-		if(result) {
-			printf("Recog Result [%s]",result);
-		}
-
+    int i;
+    for(i = 1; i <= atoi(params->recogs_repetition); i++) {
+      result = NULL;
+      result = asr_session_file_recognize(session,params->grammar_uri,params->input_file);
+      printf("\n\n*** Recognition %d finished.", i);
+      if(result) {
+        printf("\n***** Result: %s\n\n", i, result);
+      } else {
+        printf("\n***** Result NULL\n\n", i);
+      }
+      sleep(5);
+    }
 		asr_session_destroy(session);
 	}
 
@@ -60,7 +70,7 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 }
 
 /** Launch demo ASR session */
-static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_file, const char *input_file, const char *profile)
+static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_uri, const char *input_file, const char *profile, const char *recogs_repetition)
 {
 	apr_pool_t *pool;
 	asr_params_t *params;
@@ -71,18 +81,20 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_f
 	params->pool = pool;
 	params->engine = engine;
 
-	if(grammar_file) {
-		params->grammar_file = apr_pstrdup(pool,grammar_file);
+	if(grammar_uri) {
+		params->grammar_uri = apr_pstrdup(pool,grammar_uri);
 	}
 	else {
-		params->grammar_file = "grammar.xml";
+    apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: grammar_uri (input help for usage)");
+    return FALSE;
 	}
 
 	if(input_file) {
 		params->input_file = apr_pstrdup(pool,input_file);
 	}
 	else {
-		params->input_file = "one-8kHz.pcm";
+    apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: input_file (input help for usage)");
+    return FALSE;
 	}
 	
 	if(profile) {
@@ -92,6 +104,12 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_f
 		params->profile = "uni2";
 	}
 
+	if(recogs_repetition) {
+    params->recogs_repetition = apr_pstrdup(pool,recogs_repetition);
+	} else {
+    params->recogs_repetition = "1";
+  }
+  printf("\nParameters: %s - %s - %s - %s\n", params->grammar_uri, params->input_file, params->recogs_repetition, params->profile);
 	/* Launch a thread to run demo ASR session in */
 	if(apr_thread_create(&params->thread,NULL,asr_session_run,params,pool) != APR_SUCCESS) {
 		apr_pool_destroy(pool);
@@ -111,8 +129,9 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 	if(strcasecmp(name,"run") == 0) {
 		char *grammar = apr_strtok(NULL, " ", &last);
 		char *input = apr_strtok(NULL, " ", &last);
+    char *recogs_repetition = apr_strtok(NULL, " ", &last);
 		char *profile = apr_strtok(NULL, " ", &last);
-		asr_session_launch(engine,grammar,input,profile);
+		asr_session_launch(engine,grammar,input,profile,recogs_repetition);
 	}
 	else if(strcasecmp(name,"loglevel") == 0) {
 		char *priority = apr_strtok(NULL, " ", &last);
@@ -124,20 +143,23 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 		running = FALSE;
 	}
 	else if(strcasecmp(name,"help") == 0) {
-		printf("usage:\n"
-			"\n- run [grammar_file] [audio_input_file] [profile_name] (run demo asr client)\n"
-			"       grammar_file is the name of grammar file, (path is relative to data dir)\n"
-			"       audio_input_file is the name of audio file, (path is relative to data dir)\n"
-			"       profile_name is one of 'uni2', 'uni1', ...\n"
-			"\n       examples: \n"
-			"           run\n"
-			"           run grammar.xml one.pcm\n"
-			"           run grammar.xml one.pcm uni1\n"
-		    "\n- loglevel [level] (set loglevel, one of 0,1...7)\n"
-		    "\n- quit, exit\n");
+		printf("\nUsage:"
+			"\n - run <grammar_uri> <audio_input_file> [recogs_repetition] [profile_name]\n\n"
+			"       1- grammar_uri: is the path of the slm or grammar to be used in the recognition\n"
+			"       2- audio_input_file: is the name of an audio file (if the audio is in the data dir)\n"
+      "          or the full path of the audio (if it is not in the data dir)\n"
+      "       3- recogs_repetition: is the number of recognitions in the same session (default = 1)\n"
+			"       4- profile_name: is one of 'uni2', 'uni1'\n"
+      "          (by default. You can add more in the file conf/client-profiles/unimrcp.xml)"
+			"\n   Examples: \n"
+			"         run builtin:lm pt-br-male-8KHz.raw\n"
+      "         run builtin:lm pt-br-male-8KHz.raw 10\n"
+			"         run builtin:lm pt-br-male-8KHz.raw 10 uni1\n"
+      "\n - loglevel [level] (set loglevel, one of 0,1...7)\n"
+      "\n - quit, exit\n");
 	}
 	else {
-		printf("unknown command: %s (input help for usage)\n",name);
+		printf("Unknown command: %s (input help for usage)\n",name);
 	}
 	return running;
 }
@@ -148,7 +170,7 @@ static apt_bool_t cmdline_run(asr_engine_t *engine)
 	char cmdline[1024];
 	apr_size_t i;
 	do {
-		printf(">");
+		printf("\nasrclient-cli> ");
 		memset(&cmdline, 0, sizeof(cmdline));
 		for(i = 0; i < sizeof(cmdline); i++) {
 			cmdline[i] = (char) getchar();
