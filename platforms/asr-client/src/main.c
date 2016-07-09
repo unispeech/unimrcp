@@ -55,9 +55,9 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
       result = asr_session_file_recognize(session,params->grammar_uri,params->input_file);
       printf("\n\n*** Recognition %d finished.", i);
       if(result) {
-        printf("\n***** Result: %s\n\n", i, result);
+        printf("\n***** Result: %s\n\n", result);
       } else {
-        printf("\n***** Result NULL\n\n", i);
+        printf("\n***** Result NULL\n\n");
       }
       sleep(5);
     }
