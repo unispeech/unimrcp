@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * $Id$
  */
 
@@ -107,8 +107,13 @@ static apr_xml_doc* nlsml_doc_load(const char *data, apr_size_t length, apr_pool
 
 	/* create XML parser */
 	parser = apr_xml_parser_create(pool);
-	if(apr_xml_parser_feed(parser,data,length) != APR_SUCCESS) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to feed NLSML input to the parser");
+  apr_status_t rv;
+  char errbuf[4096];
+  rv = apr_xml_parser_feed(parser,data,length);
+	if(rv != APR_SUCCESS) {
+    apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to feed NLSML input to the parser: %d %pm: %s",
+      rv, &rv, errbuf);
 		return NULL;
 	}
 
