@@ -35,9 +35,9 @@ typedef struct {
 	asr_engine_t      *engine;
 	const char        *grammar_uri;
 	const char        *input_file;
-  const char        *recogs_repetition;
+	const char        *recogs_repetition;
 	const char        *profile;
-	
+
 	apr_thread_t      *thread;
 	apr_pool_t        *pool;
 } asr_params_t;
@@ -47,20 +47,20 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 {
 	asr_params_t *params = data;
 	asr_session_t *session = asr_session_create(params->engine,params->profile);
-  const char *result;
+	const char *result = NULL;
 	if(session) {
-    int i;
-    for(i = 1; i <= atoi(params->recogs_repetition); i++) {
-      result = NULL;
-      result = asr_session_file_recognize(session,params->grammar_uri,params->input_file);
-      printf("\n\n*** Recognition %d finished.", i);
-      if(result) {
-        printf("\n***** Result: %s\n\n", result);
-      } else {
-        printf("\n***** Result NULL\n\n");
-      }
-      sleep(5);
-    }
+		int i;
+		for(i = 1; i <= atoi(params->recogs_repetition); i++) {
+			result = asr_session_file_recognize(session,params->grammar_uri,params->input_file);
+			printf("\n\n*** Profile: %s: Recognition %d finished.", params->profile, i);
+			if(result) {
+				printf("\n***** Result: %s\n\n", result);
+			}
+			else {
+				printf("\n***** Result NULL\n\n");
+			}
+			result = NULL;
+		}
 		asr_session_destroy(session);
 	}
 
@@ -74,7 +74,7 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_u
 {
 	apr_pool_t *pool;
 	asr_params_t *params;
-	
+
 	/* create pool to allocate params from */
 	apr_pool_create(&pool,NULL);
 	params = apr_palloc(pool,sizeof(asr_params_t));
@@ -85,18 +85,18 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_u
 		params->grammar_uri = apr_pstrdup(pool,grammar_uri);
 	}
 	else {
-    apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: grammar_uri (input help for usage)");
-    return FALSE;
+		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: grammar_uri (input help for usage)");
+		return FALSE;
 	}
 
 	if(input_file) {
 		params->input_file = apr_pstrdup(pool,input_file);
 	}
 	else {
-    apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: input_file (input help for usage)");
-    return FALSE;
+		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: input_file (input help for usage)");
+		return FALSE;
 	}
-	
+
 	if(profile) {
 		params->profile = apr_pstrdup(pool,profile);
 	}
@@ -105,17 +105,17 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_u
 	}
 
 	if(recogs_repetition) {
-    params->recogs_repetition = apr_pstrdup(pool,recogs_repetition);
+		params->recogs_repetition = apr_pstrdup(pool,recogs_repetition);
 	} else {
-    params->recogs_repetition = "1";
-  }
-  printf("\nParameters: %s - %s - %s - %s\n", params->grammar_uri, params->input_file, params->recogs_repetition, params->profile);
+		params->recogs_repetition = "1";
+	}
+	printf("\nParameters: %s - %s - %s - %s\n", params->grammar_uri, params->input_file, params->recogs_repetition, params->profile);
 	/* Launch a thread to run demo ASR session in */
 	if(apr_thread_create(&params->thread,NULL,asr_session_run,params,pool) != APR_SUCCESS) {
 		apr_pool_destroy(pool);
 		return FALSE;
 	}
-	
+
 	return TRUE;
 }
 

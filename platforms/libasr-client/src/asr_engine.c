@@ -297,7 +297,7 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, cons
 	if(mrcp_message) {
 		mrcp_recog_header_t *recog_header;
 
-    apt_string_assign(&mrcp_message->body,grammar_uri,mrcp_message->pool);
+		apt_string_assign(&mrcp_message->body,grammar_uri,mrcp_message->pool);
 
 		/* get/allocate recognizer header */
 		recog_header = mrcp_resource_header_prepare(mrcp_message);
@@ -306,11 +306,6 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, cons
 				/* set recognizer header fields */
 				recog_header->cancel_if_queue = FALSE;
 				mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CANCEL_IF_QUEUE);
-
-        apt_str_t grammar_uri_apt;
-        apt_string_set(&grammar_uri_apt,"My Personal Grammar for Enrollment");
-        recog_header->personal_grammar_uri = grammar_uri_apt;
-        mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_PERSONAL_GRAMMAR_URI);
 			}
 			recog_header->no_input_timeout = 5000;
 			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
