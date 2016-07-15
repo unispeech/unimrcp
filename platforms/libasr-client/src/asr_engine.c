@@ -286,6 +286,31 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 	return TRUE;
 }
 
+/** Create DEFINE-GRAMMAR request */
+static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_uri)
+{
+	/* create MRCP message */
+	mrcp_message_t *mrcp_message = mrcp_application_message_create(
+						asr_session->mrcp_session,
+						asr_session->mrcp_channel,
+						RECOGNIZER_DEFINE_GRAMMAR);
+	if(mrcp_message) {
+		mrcp_generic_header_t *generic_header;
+		/* get/allocate generic header */
+		generic_header = mrcp_generic_header_prepare(mrcp_message);
+		if(generic_header) {
+			/* set generic header fields */
+			apt_string_assign(&generic_header->content_type,"text/uri-list",mrcp_message->pool);
+			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
+			apt_string_assign(&generic_header->content_id,"CPqD-ASR-demo-uri",mrcp_message->pool);
+			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
+		}
+		/** set message body */
+		apt_string_assign(&mrcp_message->body, grammar_uri, mrcp_message->pool);
+	}
+	return mrcp_message;
+}
+
 /** Create RECOGNIZE request */
 static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, const char *grammar_uri)
 {
@@ -297,7 +322,16 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, cons
 	if(mrcp_message) {
 		mrcp_recog_header_t *recog_header;
 
-		apt_string_assign(&mrcp_message->body,grammar_uri,mrcp_message->pool);
+		mrcp_generic_header_t *generic_header;
+		/* get/allocate generic header */
+		generic_header = mrcp_generic_header_prepare(mrcp_message);
+		if(generic_header) {
+			/* set generic header fields */
+			apt_string_assign(&generic_header->content_type,"text/uri-list",mrcp_message->pool);
+			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
+			/* set message body */
+			apt_string_assign(&mrcp_message->body,grammar_uri,mrcp_message->pool);
+		}
 
 		/* get/allocate recognizer header */
 		recog_header = mrcp_resource_header_prepare(mrcp_message);
@@ -501,18 +535,47 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									asr_session_t *asr_session, 
 									const char *grammar_uri, 
-									const char *input_file)
+									const char *input_file,
+									const char *send_define_grammar)
 {
 	const mrcp_app_message_t *app_message;
 	mrcp_message_t *mrcp_message;
 
 	app_message = NULL;
-	mrcp_message = recognize_message_create(asr_session, grammar_uri);
+	/* Reset prev recog result (if any) */
+	asr_session->recog_complete = NULL;
+	
+	if(strcmp(send_define_grammar, "y") == 0) {
+		mrcp_message = define_grammar_message_create(asr_session,grammar_uri);
+		if(!mrcp_message) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create DEFINE-GRAMMAR Request");
+			return NULL;
+		}
+
+		/* Send DEFINE-GRAMMAR request and wait for the response */
+		apr_thread_mutex_lock(asr_session->mutex);
+		if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
+			apr_thread_cond_wait(asr_session->wait_object,asr_session->mutex);
+			app_message = asr_session->app_message;
+			asr_session->app_message = NULL;
+		}
+		apr_thread_mutex_unlock(asr_session->mutex);
+
+		if(mrcp_response_check(app_message,MRCP_REQUEST_STATE_COMPLETE) == FALSE) {
+			return NULL;
+		}
+
+		mrcp_message = recognize_message_create(asr_session, "session:CPqD-ASR-demo-uri");
+	}
+	else {
+		mrcp_message = recognize_message_create(asr_session, grammar_uri);
+	}
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
 		return NULL;
 	}
 
+	app_message = NULL;
 	/* Send RECOGNIZE request and wait for the response */
 	apr_thread_mutex_lock(asr_session->mutex);
 	if(mrcp_application_message_send(asr_session->mrcp_session,asr_session->mrcp_channel,mrcp_message) == TRUE) {
@@ -552,7 +615,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 	}
 	while(!asr_session->recog_complete);
 
-	/* Get results */
+// 	/* Get results */
 	return nlsml_result_get(asr_session->recog_complete);
 }
 

@@ -84,9 +84,10 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
  * @return the recognition result (input element of NLSML content)
  */
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
-									asr_session_t *session, 
-									const char *grammar_file, 
-									const char *input_file);
+									asr_session_t *asr_session, 
+									const char *grammar_uri, 
+									const char *input_file,
+									const char *send_define_grammar);
 
 /**
  * Initiate recognition based on specified grammar and input stream.

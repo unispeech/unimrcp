@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include <apr_getopt.h>
 #include <apr_file_info.h>
 #include <apr_thread_proc.h>
@@ -38,9 +39,14 @@ typedef struct {
 	const char        *recogs_repetition;
 	const char        *profile;
 
+	const char        *send_define_grammar;
+	int                id;
+
 	apr_thread_t      *thread;
 	apr_pool_t        *pool;
 } asr_params_t;
+
+int session_index = 0;	/** Global controler of asr sessions sequence for debug */
 
 /** Thread function to run ASR scenario in */
 static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
@@ -48,11 +54,16 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 	asr_params_t *params = data;
 	asr_session_t *session = asr_session_create(params->engine,params->profile);
 	const char *result = NULL;
+	time_t start, end;
+	double elapsed_time;
 	if(session) {
 		int i;
 		for(i = 1; i <= atoi(params->recogs_repetition); i++) {
-			result = asr_session_file_recognize(session,params->grammar_uri,params->input_file);
-			printf("\n\n*** Profile: %s: Recognition %d finished.", params->profile, i);
+			start = time(NULL);
+			result = asr_session_file_recognize(session,params->grammar_uri,params->input_file,params->send_define_grammar);
+			end = time(NULL);
+			elapsed_time = (double)(end - start);
+			printf("\n\n*** (Session %d) Profile: %s. Recognition %d finished. Elapsed time %.2f seconds.", params->id, params->profile, i, elapsed_time);
 			if(result) {
 				printf("\n***** Result: %s\n\n", result);
 			}
@@ -70,7 +81,8 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 }
 
 /** Launch demo ASR session */
-static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_uri, const char *input_file, const char *profile, const char *recogs_repetition)
+static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_uri, const char *input_file,
+																		 const char *profile, const char *recogs_repetition, const char *send_define_grammar)
 {
 	apr_pool_t *pool;
 	asr_params_t *params;
@@ -80,6 +92,14 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_u
 	params = apr_palloc(pool,sizeof(asr_params_t));
 	params->pool = pool;
 	params->engine = engine;
+
+	if(send_define_grammar) {
+		params->send_define_grammar = apr_pstrdup(pool,send_define_grammar);
+	}
+	else {
+		apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Empty parameter: send_define_grammar (input help for usage)");
+		return FALSE;
+	}
 
 	if(grammar_uri) {
 		params->grammar_uri = apr_pstrdup(pool,grammar_uri);
@@ -109,6 +129,9 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_u
 	} else {
 		params->recogs_repetition = "1";
 	}
+	session_index++;
+	params->id = session_index;
+
 	printf("\nParameters: %s - %s - %s - %s\n", params->grammar_uri, params->input_file, params->recogs_repetition, params->profile);
 	/* Launch a thread to run demo ASR session in */
 	if(apr_thread_create(&params->thread,NULL,asr_session_run,params,pool) != APR_SUCCESS) {
@@ -127,11 +150,12 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 	name = apr_strtok(cmdline, " ", &last);
 
 	if(strcasecmp(name,"run") == 0) {
+		char *send_define_grammar = apr_strtok(NULL, " ", &last);
 		char *grammar = apr_strtok(NULL, " ", &last);
 		char *input = apr_strtok(NULL, " ", &last);
     char *recogs_repetition = apr_strtok(NULL, " ", &last);
 		char *profile = apr_strtok(NULL, " ", &last);
-		asr_session_launch(engine,grammar,input,profile,recogs_repetition);
+		asr_session_launch(engine,grammar,input,profile,recogs_repetition,send_define_grammar);
 	}
 	else if(strcasecmp(name,"loglevel") == 0) {
 		char *priority = apr_strtok(NULL, " ", &last);
@@ -144,17 +168,18 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 	}
 	else if(strcasecmp(name,"help") == 0) {
 		printf("\nUsage:"
-			"\n - run <grammar_uri> <audio_input_file> [recogs_repetition] [profile_name]\n\n"
-			"       1- grammar_uri: is the path of the slm or grammar to be used in the recognition\n"
-			"       2- audio_input_file: is the name of an audio file (if the audio is in the data dir)\n"
+			"\n - run <send_define_grammar> <grammar_uri> <audio_input_file> [recogs_repetition] [profile_name]\n\n"
+			"       1- send_define_grammar: 'y' to send DEFINE-GRAMMAR message or any other value to not send it\n"
+			"       2- grammar_uri: is the path of the slm or grammar to be used in the recognition\n"
+			"       3- audio_input_file: is the name of an audio file (if the audio is in the data dir)\n"
       "          or the full path of the audio (if it is not in the data dir)\n"
-      "       3- recogs_repetition: is the number of recognitions in the same session (default = 1)\n"
-			"       4- profile_name: is one of 'uni2', 'uni1'\n"
+      "       4- recogs_repetition: is the number of recognitions in the same session (default = 1)\n"
+			"       5- profile_name: is one of 'uni2', 'uni1'\n"
       "          (by default. You can add more in the file conf/client-profiles/unimrcp.xml)"
 			"\n   Examples: \n"
-			"         run builtin:lm pt-br-male-8KHz.raw\n"
-      "         run builtin:lm pt-br-male-8KHz.raw 10\n"
-			"         run builtin:lm pt-br-male-8KHz.raw 10 uni1\n"
+			"         run y builtin:lm pt-br-male-8KHz.raw\n"
+      "         run n builtin:lm pt-br-male-8KHz.raw 10\n"
+			"         run y builtin:lm pt-br-male-8KHz.raw 10 uni1\n"
       "\n - loglevel [level] (set loglevel, one of 0,1...7)\n"
       "\n - quit, exit\n");
 	}
