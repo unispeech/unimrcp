@@ -30,16 +30,16 @@
 #include "uni_version.h"
 
 /** Revision (number of commits since last release). */
-#define UNI_REVISION            41
+#define UNI_REVISION            0
 
 /** Revision string. */
-#define UNI_REVISION_STRING     "41"
+#define UNI_REVISION_STRING     "0"
 
 /** Revision date. */
-#define UNI_REVISION_DATE       "2016-01-20"
+#define UNI_REVISION_DATE       "2016-07-19"
 
 /** Revision stamp. */
-#define UNI_REVISION_STAMP      20160120L
+#define UNI_REVISION_STAMP      20160719L
 
 /** Check at compile time if the revision number is at least a certain level. */
 #define UNI_REVISION_AT_LEAST(rev)   ((rev) < UNI_REVISION)
