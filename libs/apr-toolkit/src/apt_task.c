@@ -260,7 +260,7 @@ APT_DECLARE(apt_task_msg_t*) apt_task_msg_get(apt_task_t *task)
 
 APT_DECLARE(apt_bool_t) apt_task_msg_signal(apt_task_t *task, apt_task_msg_t *msg)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] ["APT_PTR_FMT";%d;%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Signal Message to [%s] [" APT_PTR_FMT ";%d;%d]",
 		task->name, msg, msg->type, msg->sub_type);
 	if(task->vtable.signal_msg) {
 		if(task->vtable.signal_msg(task,msg) == TRUE) {
@@ -332,7 +332,7 @@ static apt_bool_t apt_core_task_msg_process(apt_task_t *task, apt_task_msg_t *ms
 APT_DECLARE(apt_bool_t) apt_task_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 {
 	apt_bool_t status = FALSE;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%s] ["APT_PTR_FMT";%d;%d]",
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Process Message [%s] [" APT_PTR_FMT ";%d;%d]",
 		task->name, msg, msg->type, msg->sub_type);
 	if(msg->type == TASK_MSG_CORE) {
 		status = apt_core_task_msg_process(task,msg);

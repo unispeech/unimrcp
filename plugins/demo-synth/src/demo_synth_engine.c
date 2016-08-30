@@ -271,7 +271,7 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	const mpf_codec_descriptor_t *descriptor = mrcp_engine_source_stream_codec_get(channel);
 
 	if(!descriptor) {
-		apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor "APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+		apt_log(SYNTH_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor " APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 		return FALSE;
 	}
@@ -284,12 +284,12 @@ static apt_bool_t demo_synth_channel_speak(mrcp_engine_channel_t *channel, mrcp_
 	if(file_path) {
 		synth_channel->audio_file = fopen(file_path,"rb");
 		if(synth_channel->audio_file) {
-			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,"Set [%s] as Speech Source "APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,"Set [%s] as Speech Source " APT_SIDRES_FMT,
 				file_path,
 				MRCP_MESSAGE_SIDRES(request));
 		}
 		else {
-			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,"No Speech Source [%s] Found "APT_SIDRES_FMT,
+			apt_log(SYNTH_LOG_MARK,APT_PRIO_INFO,"No Speech Source [%s] Found " APT_SIDRES_FMT,
 				file_path,
 				MRCP_MESSAGE_SIDRES(request));
 			/* calculate estimated time to complete */

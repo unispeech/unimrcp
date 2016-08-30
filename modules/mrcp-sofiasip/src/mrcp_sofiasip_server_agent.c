@@ -288,7 +288,7 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,FALSE) > 0) {
 		local_sdp_str = sdp_str;
-		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Local SDP "APT_NAMESID_FMT"\n%s", 
+		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Local SDP " APT_NAMESID_FMT "\n%s", 
 			session->name,
 			MRCP_SESSION_SID(session), 
 			local_sdp_str);
@@ -319,7 +319,7 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 		sofia_session->session = NULL;
 	}
 
-	apt_log(SIP_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session "APT_SID_FMT, MRCP_SESSION_SID(session));
+	apt_log(SIP_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session " APT_SID_FMT, MRCP_SESSION_SID(session));
 	mrcp_session_destroy(session);
 	return TRUE;
 }
@@ -351,7 +351,7 @@ static void mrcp_sofia_on_call_receive(mrcp_sofia_agent_t   *sofia_agent,
 	if(remote_sdp_str) {
 		sdp_parser_t *parser = NULL;
 		sdp_session_t *sdp = NULL;
-		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Remote SDP "APT_NAMESID_FMT"\n%s",
+		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Remote SDP " APT_NAMESID_FMT "\n%s",
 			sofia_session->session->name,
 			MRCP_SESSION_SID(sofia_session->session),
 			remote_sdp_str);

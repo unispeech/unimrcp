@@ -174,7 +174,7 @@ static void mrcp_unirtsp_session_destroy(mrcp_unirtsp_session_t *session)
 		session->home = NULL;
 	}
 	rtsp_server_session_object_set(session->rtsp_session,NULL);
-	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session "APT_SID_FMT,MRCP_SESSION_SID(session->mrcp_session));
+	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session " APT_SID_FMT,MRCP_SESSION_SID(session->mrcp_session));
 	mrcp_session_destroy(session->mrcp_session);
 }
 

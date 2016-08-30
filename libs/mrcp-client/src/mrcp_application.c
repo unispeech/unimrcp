@@ -114,7 +114,7 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_application_session_create_ex(
 	session->base.log_obj = obj;
 	session->profile = profile;
 	
-	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,session->base.log_obj,"Create MRCP Handle "APT_PTR_FMT" [%s]",
+	apt_obj_log(APT_LOG_MARK,APT_PRIO_NOTICE,session->base.log_obj,"Create MRCP Handle " APT_PTR_FMT " [%s]",
 		MRCP_SESSION_PTR(session),
 		profile_name);
 	return &session->base;

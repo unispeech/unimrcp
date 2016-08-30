@@ -270,7 +270,7 @@ static apt_bool_t demo_verifier_channel_verify(mrcp_engine_channel_t *channel, m
 	const mpf_codec_descriptor_t *descriptor = mrcp_engine_sink_stream_codec_get(channel);
 
 	if(!descriptor) {
-		apt_log(VERIF_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor "APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
+		apt_log(VERIF_LOG_MARK,APT_PRIO_WARNING,"Failed to Get Codec Descriptor " APT_SIDRES_FMT, MRCP_MESSAGE_SIDRES(request));
 		response->start_line.status_code = MRCP_STATUS_CODE_METHOD_FAILED;
 		return FALSE;
 	}
@@ -503,17 +503,17 @@ static apt_bool_t demo_verifier_stream_write(mpf_audio_stream_t *stream, const m
 		mpf_detector_event_e det_event = mpf_activity_detector_process(verifier_channel->detector,frame);
 		switch(det_event) {
 			case MPF_DETECTOR_EVENT_ACTIVITY:
-				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity "APT_SIDRES_FMT,
+				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Voice Activity " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request));
 				demo_verifier_start_of_input(verifier_channel);
 				break;
 			case MPF_DETECTOR_EVENT_INACTIVITY:
-				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity "APT_SIDRES_FMT,
+				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Voice Inactivity " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request));
 				demo_verifier_verification_complete(verifier_channel,VERIFIER_COMPLETION_CAUSE_SUCCESS);
 				break;
 			case MPF_DETECTOR_EVENT_NOINPUT:
-				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Noinput "APT_SIDRES_FMT,
+				apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Noinput " APT_SIDRES_FMT,
 					MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request));
 				if(verifier_channel->timers_started == TRUE) {
 					demo_verifier_verification_complete(verifier_channel,VERIFIER_COMPLETION_CAUSE_NO_INPUT_TIMEOUT);
@@ -526,12 +526,12 @@ static apt_bool_t demo_verifier_stream_write(mpf_audio_stream_t *stream, const m
 		if(verifier_channel->verifier_request) {
 			if((frame->type & MEDIA_FRAME_TYPE_EVENT) == MEDIA_FRAME_TYPE_EVENT) {
 				if(frame->marker == MPF_MARKER_START_OF_EVENT) {
-					apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Start of Event "APT_SIDRES_FMT" id:%d",
+					apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected Start of Event " APT_SIDRES_FMT " id:%d",
 						MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request),
 						frame->event_frame.event_id);
 				}
 				else if(frame->marker == MPF_MARKER_END_OF_EVENT) {
-					apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected End of Event "APT_SIDRES_FMT" id:%d duration:%d ts",
+					apt_log(VERIF_LOG_MARK,APT_PRIO_INFO,"Detected End of Event " APT_SIDRES_FMT " id:%d duration:%d ts",
 						MRCP_MESSAGE_SIDRES(verifier_channel->verifier_request),
 						frame->event_frame.event_id,
 						frame->event_frame.duration);

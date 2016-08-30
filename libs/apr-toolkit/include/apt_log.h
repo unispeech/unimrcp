@@ -74,11 +74,11 @@ extern apt_log_source_t def_log_source;
 /** Format to log string identifiers and resources */
 #define APT_SIDRES_FMT    "<%s@%s>"
 /** Format to log pointers and identifiers */
-#define APT_PTRSID_FMT    APT_PTR_FMT" "APT_SID_FMT
+#define APT_PTRSID_FMT    APT_PTR_FMT " " APT_SID_FMT
 /** Format to log names and identifiers */
-#define APT_NAMESID_FMT   "%s "APT_SID_FMT
+#define APT_NAMESID_FMT   "%s " APT_SID_FMT
 /** Format to log names, identifiers and resources */
-#define APT_NAMESIDRES_FMT "%s "APT_SIDRES_FMT
+#define APT_NAMESIDRES_FMT "%s " APT_SIDRES_FMT
 
 /** Priority of log messages ordered from highest priority to lowest (rfc3164) */
 typedef enum {

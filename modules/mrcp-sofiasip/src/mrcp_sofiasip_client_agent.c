@@ -345,7 +345,7 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 	if(sdp_string_generate_by_mrcp_descriptor(sdp_str,sizeof(sdp_str),descriptor,TRUE) > 0) {
 		local_sdp_str = sdp_str;
 		sofia_session->descriptor = descriptor;
-		apt_obj_log(SIP_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Local SDP "APT_NAMESID_FMT"\n%s", 
+		apt_obj_log(SIP_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Local SDP " APT_NAMESID_FMT "\n%s", 
 			session->name,
 			MRCP_SESSION_SID(session), 
 			local_sdp_str);
@@ -424,7 +424,7 @@ static void mrcp_sofia_on_session_ready(
 		sdp_parser_t *parser = NULL;
 		sdp_session_t *sdp = NULL;
 		const char *force_destination_ip = NULL;
-		apt_obj_log(SIP_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Remote SDP "APT_NAMESID_FMT"\n%s",
+		apt_obj_log(SIP_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Remote SDP " APT_NAMESID_FMT "\n%s",
 			session->name,
 			MRCP_SESSION_SID(session),
 			remote_sdp_str);
@@ -462,7 +462,7 @@ static void mrcp_sofia_on_session_redirect(
 
 	sip_to = sip_to_create(sofia_session->home, (const url_string_t *) sip_contact->m_url); 
 
-	apt_obj_log(SIP_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Redirect "APT_NAMESID_FMT" to "URL_PRINT_FORMAT,
+	apt_obj_log(SIP_LOG_MARK,APT_PRIO_INFO,session->log_obj,"Redirect " APT_NAMESID_FMT " to " URL_PRINT_FORMAT,
 		session->name,
 		MRCP_SESSION_SID(session),
 		URL_PRINT_ARGS(sip_to->a_url));
