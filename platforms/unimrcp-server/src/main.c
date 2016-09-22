@@ -26,6 +26,7 @@ typedef struct {
 	const char   *root_dir_path;
 	const char   *dir_layout_conf;
 	apt_bool_t    foreground;
+	apt_bool_t    cmd_line;
 	const char   *log_priority;
 	const char   *log_output;
 #ifdef WIN32
@@ -35,10 +36,9 @@ typedef struct {
 
 #ifdef WIN32
 apt_bool_t uni_service_run(const char *name, apt_dir_layout_t *dir_layout, apr_pool_t *pool);
-#else
-apt_bool_t uni_daemon_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 #endif
 
+apt_bool_t uni_daemon_run(apt_dir_layout_t *dir_layout, apt_bool_t detach, apr_pool_t *pool);
 apt_bool_t uni_cmdline_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool);
 
 
@@ -76,6 +76,8 @@ static void usage()
 		"   -d [--daemon]            : Run as a daemon.\n"
 		"\n"
 #endif
+		"   -w [--without-cmdline]   : Run without command-line.\n"
+		"\n"
 		"   -v [--version]           : Show the version.\n"
 		"\n"
 		"   -h [--help]              : Show the help.\n"
@@ -91,19 +93,20 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 
 	const apr_getopt_option_t opt_option[] = {
 		/* long-option, short-option, has-arg flag, description */
-		{ "root-dir",    'r', TRUE,  "path to root dir" },         /* -r arg or --root-dir arg */
-		{ "dir-layout",  'c', TRUE,  "path to dir layout conf" },  /* -c arg or --dir-layout arg */
-		{ "log-prio",    'l', TRUE,  "log priority" },             /* -l arg or --log-prio arg */
-		{ "log-output",  'o', TRUE,  "log output mode" },          /* -o arg or --log-output arg */
+		{ "root-dir",        'r', TRUE,  "path to root dir" },         /* -r arg or --root-dir arg */
+		{ "dir-layout",      'c', TRUE,  "path to dir layout conf" },  /* -c arg or --dir-layout arg */
+		{ "log-prio",        'l', TRUE,  "log priority" },             /* -l arg or --log-prio arg */
+		{ "log-output",      'o', TRUE,  "log output mode" },          /* -o arg or --log-output arg */
 #ifdef WIN32
-		{ "service",     's', FALSE, "run as service" },           /* -s or --service */
-		{ "name",        'n', TRUE,  "service name" },             /* -n or --name arg */
+		{ "service",         's', FALSE, "run as service" },           /* -s or --service */
+		{ "name",            'n', TRUE,  "service name" },             /* -n or --name arg */
 #else
-		{ "daemon",      'd', FALSE, "start as daemon" },          /* -d or --daemon */
+		{ "daemon",          'd', FALSE, "start as daemon" },          /* -d or --daemon */
 #endif
-		{ "version",     'v', FALSE, "show version" },             /* -v or --version */
-		{ "help",        'h', FALSE, "show help" },                /* -h or --help */
-		{ NULL, 0, 0, NULL },                                      /* end */
+		{ "without-cmdline", 'w', FALSE, "run without command-line" }, /* -w or --without-cmdline */
+		{ "version",         'v', FALSE, "show version" },             /* -v or --version */
+		{ "help",            'h', FALSE, "show help" },                /* -h or --help */
+		{ NULL, 0, 0, NULL },                                          /* end */
 	};
 
 	rv = apr_getopt_init(&opt, pool , argc, argv);
@@ -115,6 +118,7 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 	options->root_dir_path = NULL;
 	options->dir_layout_conf = NULL;
 	options->foreground = TRUE;
+	options->cmd_line = TRUE;
 	options->log_priority = NULL;
 	options->log_output = NULL;
 #ifdef WIN32
@@ -147,6 +151,9 @@ static apt_bool_t options_load(server_options_t *options, int argc, const char *
 				options->foreground = FALSE;
 				break;
 #endif
+			case 'w':
+				options->cmd_line = FALSE;
+				break;
 			case 'v':
 				printf("%s", UNI_FULL_VERSION_STRING);
 				return FALSE;
@@ -230,8 +237,14 @@ int main(int argc, const char * const *argv)
 	}
 
 	if(options.foreground == TRUE) {
-		/* run command line */
-		uni_cmdline_run(dir_layout,pool);
+		if(options.cmd_line == TRUE) {
+			/* run command line */
+			uni_cmdline_run(dir_layout,pool);
+		}
+		else {
+			/* run as daemon */
+			uni_daemon_run(dir_layout,FALSE,pool);
+		}
 	}
 #ifdef WIN32
 	else {
@@ -241,7 +254,7 @@ int main(int argc, const char * const *argv)
 #else
 	else {
 		/* run as daemon */
-		uni_daemon_run(dir_layout,pool);
+		uni_daemon_run(dir_layout,TRUE,pool);
 	}
 #endif
 
