@@ -90,7 +90,7 @@ static const apt_str_table_item_t completion_cause_string_table[] = {
 };
 
 
-static APR_INLINE apr_size_t apt_string_table_value_parse(const apt_str_table_item_t *string_table, size_t count, const apt_str_t *value)
+static APR_INLINE apr_size_t apt_string_table_value_parse(const apt_str_table_item_t *string_table, apr_size_t count, const apt_str_t *value)
 {
 	return apt_string_table_id_find(string_table,count,value);
 }
@@ -301,7 +301,7 @@ static void* mrcp_synth_header_allocate(mrcp_header_accessor_t *accessor, apr_po
 }
 
 /** Parse MRCP synthesizer header */
-static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_bool_t status = TRUE;
 	mrcp_synth_header_t *synth_header = accessor->data;
@@ -376,7 +376,7 @@ static apt_bool_t mrcp_synth_header_parse(mrcp_header_accessor_t *accessor, size
 }
 
 /** Generate MRCP synthesizer header */
-static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *accessor, size_t id, apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *accessor, apr_size_t id, apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_synth_header_t *synth_header = accessor->data;
 	switch(id) {
@@ -460,7 +460,7 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 }
 
 /** Duplicate MRCP synthesizer header */
-static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, size_t id, const apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_synth_header_duplicate(mrcp_header_accessor_t *accessor, const mrcp_header_accessor_t *src, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	mrcp_synth_header_t *synth_header = accessor->data;
 	const mrcp_synth_header_t *src_synth_header = src->data;

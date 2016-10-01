@@ -384,7 +384,7 @@ APT_DECLARE(apt_bool_t) apt_boolean_value_generate(apt_bool_t value, apt_str_t *
 }
 
 
-/** Parse size_t value */
+/** Parse apr_size_t value */
 APT_DECLARE(apr_size_t) apt_size_value_parse(const apt_str_t *str)
 {
 	return str->buf ? atol(str->buf) : 0;

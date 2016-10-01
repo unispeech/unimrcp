@@ -23,7 +23,7 @@
 static apt_bool_t is_unique(const apt_str_table_item_t table[], apr_size_t count, 
 							apr_size_t item_index, apr_size_t char_index, char value)
 {
-	size_t i;
+	apr_size_t i;
 	const char *buf;
 	for(i=0; i<count; i++) {
 		buf = table[i].value.buf;
@@ -37,8 +37,8 @@ static apt_bool_t is_unique(const apt_str_table_item_t table[], apr_size_t count
 
 static apt_bool_t string_table_key_generate(apt_str_table_item_t table[], apr_size_t count)
 {
-	size_t i,j;
-	size_t length;
+	apr_size_t i,j;
+	apr_size_t length;
 	for(i=0; i<count; i++) {
 		length = table[i].value.length;
 		table[i].key = length;
@@ -55,10 +55,10 @@ static apt_bool_t string_table_key_generate(apt_str_table_item_t table[], apr_si
 #define TEST_BUFFER_SIZE 2048
 static char parse_buffer[TEST_BUFFER_SIZE];
 
-static size_t string_table_read(apt_str_table_item_t table[], apr_size_t max_count, FILE *file, apr_pool_t *pool)
+static apr_size_t string_table_read(apt_str_table_item_t table[], apr_size_t max_count, FILE *file, apr_pool_t *pool)
 {
 	apt_str_table_item_t *item;
-	size_t count = 0;
+	apr_size_t count = 0;
 	apt_str_t line;
 	apt_text_stream_t text_stream;
 
@@ -83,7 +83,7 @@ static size_t string_table_read(apt_str_table_item_t table[], apr_size_t max_cou
 
 static apt_bool_t string_table_write(const apt_str_table_item_t table[], apr_size_t count, FILE *file)
 {
-	size_t i;
+	apr_size_t i;
 	const apt_str_table_item_t *item;
 	for(i=0; i<count; i++) {
 		item = &table[i];
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 {
 	apr_pool_t *pool = NULL;
 	apt_str_table_item_t table[100];
-	size_t count;
+	apr_size_t count;
 	FILE *file_in, *file_out;
 
 	/* one time apr global initialization */

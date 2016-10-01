@@ -75,7 +75,7 @@ struct mpf_jitter_buffer_t {
 
 mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_codec_descriptor_t *descriptor, mpf_codec_t *codec, apr_pool_t *pool)
 {
-	size_t i;
+	apr_size_t i;
 	mpf_frame_t *frame;
 	mpf_jitter_buffer_t *jb = apr_palloc(pool,sizeof(mpf_jitter_buffer_t));
 	if(!jb_config) {

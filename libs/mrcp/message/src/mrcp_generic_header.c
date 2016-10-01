@@ -122,7 +122,7 @@ static void* mrcp_generic_header_allocate(mrcp_header_accessor_t *accessor, apr_
 }
 
 /** Parse generic-header */
-static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, size_t id, const apt_str_t *value, apr_pool_t *pool)
+static apt_bool_t mrcp_generic_header_parse(mrcp_header_accessor_t *accessor, apr_size_t id, const apt_str_t *value, apr_pool_t *pool)
 {
 	apt_bool_t status = TRUE;
 	mrcp_generic_header_t *generic_header = accessor->data;
@@ -339,7 +339,7 @@ MRCP_DECLARE(apt_bool_t) active_request_id_list_append(mrcp_generic_header_t *ge
 /** Find request id in active request id list */
 MRCP_DECLARE(apt_bool_t) active_request_id_list_find(const mrcp_generic_header_t *generic_header, mrcp_request_id request_id)
 {
-	size_t i;
+	apr_size_t i;
 	const mrcp_request_id_list_t *request_id_list = &generic_header->active_request_id_list;
 	for(i=0; i<request_id_list->count; i++) {
 		if(request_id_list->ids[i] == request_id) {

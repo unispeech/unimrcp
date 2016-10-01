@@ -58,8 +58,8 @@ static apt_bool_t uni_service_register(const char *root_dir_path, apr_pool_t *po
 {
 	apr_status_t status;
 	char buf[4096];
-	static const size_t len = sizeof(buf);
-	size_t pos = 0;
+	static const apr_size_t len = sizeof(buf);
+	apr_size_t pos = 0;
 	char *root_dir;
 	SERVICE_DESCRIPTION desc;
 	SC_HANDLE sch_service;
