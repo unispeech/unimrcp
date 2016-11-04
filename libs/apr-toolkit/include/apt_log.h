@@ -160,6 +160,12 @@ APT_DECLARE(apt_logger_t*) apt_log_instance_get(void);
 APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger);
 
 /**
+ * Set the default log source.
+ * @param log_source the log source to set
+ */
+APT_DECLARE(void) apt_def_log_source_set(apt_log_source_t *log_source);
+
+/**
  * Find and assign log source by its name.
  * @param name the unique name associated to the log source
  * @param log_source the log source to be returned, if found

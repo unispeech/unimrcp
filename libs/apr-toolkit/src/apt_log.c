@@ -232,6 +232,12 @@ APT_DECLARE(apt_bool_t) apt_log_instance_set(apt_logger_t *logger)
 	return TRUE;
 }
 
+APT_DECLARE(void) apt_def_log_source_set(apt_log_source_t *log_source)
+{
+	if(log_source)
+		def_log_source = *log_source;
+}
+
 APT_DECLARE(apt_bool_t) apt_log_source_assign(const char *name, apt_log_source_t **log_source)
 {
 	apt_log_source_t *found_log_source;
