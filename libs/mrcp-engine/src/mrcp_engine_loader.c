@@ -116,6 +116,14 @@ static apt_bool_t plugin_logger_load(apr_dso_handle_t *plugin)
 		log_accessor = (mrcp_plugin_log_accessor_f)(intptr_t)func_handle;
 		log_accessor(logger);
 	}
+
+	if(apr_dso_sym(&func_handle,plugin,MRCP_PLUGIN_LOG_SOURCE_SYM_NAME) == APR_SUCCESS) {
+		if(func_handle) {
+			mrcp_plugin_log_source_accessor_f log_source_accessor;
+			log_source_accessor = (mrcp_plugin_log_source_accessor_f)(intptr_t)func_handle;
+			log_source_accessor(&def_log_source);
+		}
+	}
 	return TRUE;
 }
 
