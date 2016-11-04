@@ -10,10 +10,6 @@ if UNIMRCP_SERVER_LIB
 CONFFILES           += unimrcpserver.xml unimrcpserver.xsd
 endif
 
-if UMC
-CONFFILES           += umcscenarios.xml
-endif
-
 def-conf:
 	test -d $(DESTDIR)$(sysconfdir) || $(mkinstalldirs) $(DESTDIR)$(sysconfdir)
 	for conffile in $(CONFFILES) ; do \
@@ -24,6 +20,13 @@ if UNIMRCP_CLIENT_LIB
 	for conffile in `find $(top_srcdir)/conf/client-profiles/ -maxdepth 1 -name \*.xml -o -name \*.xsd` ; do \
 		filename=`echo $$conffile | sed -e 's|^.*/||'`; \
 		$(INSTALL) -m 644 $(top_srcdir)/conf/client-profiles/$$filename $(DESTDIR)$(sysconfdir)/client-profiles; \
+	done
+endif
+if UMC
+	test -d $(DESTDIR)$(sysconfdir)/umc-scenarios || $(mkinstalldirs) $(DESTDIR)$(sysconfdir)/umc-scenarios
+	for conffile in `find $(top_srcdir)/conf/umc-scenarios/ -maxdepth 1 -name \*.xml -o -name \*.xsd` ; do \
+		filename=`echo $$conffile | sed -e 's|^.*/||'`; \
+		$(INSTALL) -m 644 $(top_srcdir)/conf/umc-scenarios/$$filename $(DESTDIR)$(sysconfdir)/umc-scenarios; \
 	done
 endif
 

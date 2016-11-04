@@ -55,9 +55,9 @@ protected:
 	void DestroyTask();
 
 	UmcScenario* CreateScenario(const char* pType);
-	apr_xml_doc* LoadDocument();
 
 	bool LoadScenarios();
+	bool LoadScenario(const char* pFilePath);
 	void DestroyScenarios();
 
 	bool ProcessRunRequest(const char* pScenarioName, const char* pProfileName);
