@@ -632,7 +632,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 		}
 		/* create new MRCP channel instance */
 		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count,NULL);
-		if(!channel || !channel->resource) {
+		if(!channel || !channel->resource || !channel->engine_channel) {
 			return FALSE;
 		}
 		/* add to channel array */
@@ -641,7 +641,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 			channel->resource->name.buf,
 			count);
 		APR_ARRAY_PUSH(session->channels,mrcp_channel_t*) = channel;
-		if(channel->engine_channel && channel->engine_channel->termination) {
+		if(channel->engine_channel->termination) {
 			mpf_termination_t *termination = channel->engine_channel->termination;
 			/* send add termination request (add to media context) */
 			if(mpf_engine_termination_message_add(
