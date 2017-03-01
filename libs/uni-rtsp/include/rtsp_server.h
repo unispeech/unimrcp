@@ -51,6 +51,7 @@ struct rtsp_server_vtable_t {
  * @param listen_ip the listen IP address
  * @param listen_port the listen port
  * @param max_connection_count the number of max RTSP connections
+ * @param connection_timeout the inactivity timeout for an RTSP connection [sec]
  * @param obj the external object to send events to
  * @param handler the request handler
  * @param pool the pool to allocate memory from
@@ -60,6 +61,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 									const char *listen_ip,
 									apr_port_t listen_port,
 									apr_size_t max_connection_count,
+									apr_size_t connection_timeout,
 									void *obj,
 									const rtsp_server_vtable_t *handler,
 									apr_pool_t *pool);

@@ -437,6 +437,11 @@ static apt_bool_t unimrcp_server_rtsp_uas_load(unimrcp_server_loader_t *loader, 
 				config->force_destination = cdata_bool_get(elem);
 			}
 		}
+		else if(strcasecmp(elem->name,"inactivity-timeout") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->inactivity_timeout = atol(cdata_text_get(elem));
+			}
+		}
 		else if(strcasecmp(elem->name,"resource-map") == 0) {
 			const apr_xml_attr *name_attr;
 			const apr_xml_attr *value_attr;

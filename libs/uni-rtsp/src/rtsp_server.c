@@ -40,6 +40,8 @@ struct rtsp_server_t {
 	/** List (ring) of RTSP connections */
 	APR_RING_HEAD(rtsp_server_connection_head_t, rtsp_server_connection_t) connection_list;
 
+	apr_uint32_t                inactivity_timeout;
+
 	/* Listening socket descriptor */
 	apr_sockaddr_t             *sockaddr;
 	apr_socket_t               *listen_sock;
@@ -78,6 +80,9 @@ struct rtsp_server_connection_t {
 	char               tx_buffer[RTSP_STREAM_BUFFER_SIZE];
 	apt_text_stream_t  tx_stream;
 	rtsp_generator_t  *generator;
+
+	/** Inactivity timer  */
+	apt_timer_t       *inactivity_timer;
 };
 
 /** RTSP session */
@@ -126,6 +131,8 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_co
 static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server);
 static void rtsp_server_listening_socket_destroy(rtsp_server_t *server);
 
+static void rtsp_server_inactivity_timer_proc(apt_timer_t *timer, void *obj);
+
 /** Get string identifier */
 static const char* rtsp_server_id_get(const rtsp_server_t *server)
 {
@@ -139,6 +146,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 									const char *listen_ip,
 									apr_port_t listen_port,
 									apr_size_t max_connection_count,
+									apr_size_t connection_timeout,
 									void *obj,
 									const rtsp_server_vtable_t *handler,
 									apr_pool_t *pool)
@@ -152,15 +160,17 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 		return NULL;
 	}
 
-	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Server [%s] %s:%hu [%"APR_SIZE_T_FMT"]",
+	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Create RTSP Server [%s] %s:%hu [%"APR_SIZE_T_FMT"] connection timeout [%"APR_SIZE_T_FMT" sec]",
 			id,
 			listen_ip,
 			listen_port,
-			max_connection_count);
+			max_connection_count,
+			connection_timeout);
 	server = apr_palloc(pool,sizeof(rtsp_server_t));
 	server->pool = pool;
 	server->obj = obj;
 	server->vtable = handler;
+	server->inactivity_timeout = (apr_uint32_t)connection_timeout * 1000;
 
 	server->listen_sock = NULL;
 	server->sockaddr = NULL;
@@ -634,6 +644,12 @@ static apt_bool_t rtsp_server_message_handler(rtsp_server_connection_t *rtsp_con
 	if(status == APT_MESSAGE_STATUS_COMPLETE) {
 		/* message is completely parsed */
 		apt_str_t *destination;
+
+		/* (re)set inactivity timer on every message received */
+		if(rtsp_connection->inactivity_timer) {
+			apt_timer_set(rtsp_connection->inactivity_timer,rtsp_connection->server->inactivity_timeout);
+		}
+
 		destination = &message->header.transport.destination;
 		if(!destination->buf && rtsp_connection->client_ip) {
 			apt_string_assign(destination,rtsp_connection->client_ip,rtsp_connection->pool);
@@ -694,7 +710,7 @@ static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server)
 	server->listen_sock_pfd.desc.s = server->listen_sock;
 	server->listen_sock_pfd.client_data = server->listen_sock;
 	if(apt_poller_task_descriptor_add(server->task, &server->listen_sock_pfd) != TRUE) {
-		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Add Listening Socket to Pollset");
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Add RTSP Listening Socket to Pollset");
 		apr_socket_close(server->listen_sock);
 		server->listen_sock = NULL;
 		return FALSE;
@@ -764,14 +780,27 @@ static apt_bool_t rtsp_server_connection_accept(rtsp_server_t *server)
 		return FALSE;
 	}
 
-	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Accepted TCP Connection %s",rtsp_connection->id);
+	apt_log(RTSP_LOG_MARK,APT_PRIO_NOTICE,"Accepted RTSP Connection %s",rtsp_connection->id);
 	rtsp_connection->session_table = apr_hash_make(rtsp_connection->pool);
 	apt_text_stream_init(&rtsp_connection->rx_stream,rtsp_connection->rx_buffer,sizeof(rtsp_connection->rx_buffer)-1);
 	apt_text_stream_init(&rtsp_connection->tx_stream,rtsp_connection->tx_buffer,sizeof(rtsp_connection->tx_buffer)-1);
 	rtsp_connection->parser = rtsp_parser_create(rtsp_connection->pool);
 	rtsp_connection->generator = rtsp_generator_create(rtsp_connection->pool);
 	rtsp_connection->server = server;
+
+	rtsp_connection->inactivity_timer = NULL;
+	if(server->inactivity_timeout) {
+		rtsp_connection->inactivity_timer = apt_poller_task_timer_create(
+												server->task,
+												rtsp_server_inactivity_timer_proc,
+												rtsp_connection,
+												rtsp_connection->pool);
+	}
+
 	APR_RING_INSERT_TAIL(&server->connection_list,rtsp_connection,rtsp_server_connection_t,link);
+	if(rtsp_connection->inactivity_timer) {
+		apt_timer_set(rtsp_connection->inactivity_timer,server->inactivity_timeout);
+	}
 	return TRUE;
 }
 
@@ -786,6 +815,10 @@ static apt_bool_t rtsp_server_connection_close(rtsp_server_t *server, rtsp_serve
 	apt_poller_task_descriptor_remove(server->task,&rtsp_connection->sock_pfd);
 	apr_socket_close(rtsp_connection->sock);
 	rtsp_connection->sock = NULL;
+
+	if(rtsp_connection->inactivity_timer) {
+		apt_timer_kill(rtsp_connection->inactivity_timer);
+	}
 
 	APR_RING_REMOVE(rtsp_connection,link);
 
@@ -811,6 +844,17 @@ static apt_bool_t rtsp_server_connection_close(rtsp_server_t *server, rtsp_serve
 	return TRUE;
 }
 
+/* Timer callback */
+static void rtsp_server_inactivity_timer_proc(apt_timer_t *timer, void *obj)
+{
+	rtsp_server_connection_t *rtsp_connection = obj;
+	if(!rtsp_connection) return;
+
+	if(rtsp_connection->inactivity_timer == timer) {
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"RTSP Connection Timed Out %s",rtsp_connection->id);
+		rtsp_server_connection_close(rtsp_connection->server,rtsp_connection);
+	}
+}
 
 /* Receive RTSP message through RTSP connection */
 static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_t *descriptor)
@@ -825,10 +869,9 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 	apt_message_status_e msg_status;
 
 	if(descriptor->desc.s == server->listen_sock) {
-		apt_log(RTSP_LOG_MARK,APT_PRIO_DEBUG,"Accept Connection");
 		return rtsp_server_connection_accept(server);
 	}
-	
+
 	if(!rtsp_connection || !rtsp_connection->sock) {
 		return FALSE;
 	}

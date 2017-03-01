@@ -87,6 +87,7 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_unirtsp_server_agent_create(const char *id,
 							config->local_ip,
 							config->local_port,
 							config->max_connection_count,
+							config->inactivity_timeout,
 							agent,
 							&session_request_vtable,
 							pool);
@@ -110,6 +111,7 @@ MRCP_DECLARE(rtsp_server_config_t*) mrcp_unirtsp_server_config_alloc(apr_pool_t 
 	config->resource_location = NULL;
 	config->resource_map = apr_table_make(pool,2);
 	config->max_connection_count = 100;
+	config->inactivity_timeout = 600; /* sec */
 	config->force_destination = FALSE;
 	return config;
 }

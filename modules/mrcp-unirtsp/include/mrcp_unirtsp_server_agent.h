@@ -48,6 +48,9 @@ struct rtsp_server_config_t {
 	/** Number of max RTSP connections */
 	apr_size_t   max_connection_count;
 
+	/** Inactivity timeout for an RTSP connection [sec] */
+	apr_size_t   inactivity_timeout;
+
 	/** Force destination IP address. Should be used only in case 
 	SDP contains incorrect connection address (local IP address behind NAT) */
 	apt_bool_t   force_destination;
