@@ -34,6 +34,7 @@ mrcp_connection_t* mrcp_connection_create(void)
 	connection->id = NULL;
 	connection->verbose = TRUE;
 	connection->access_count = 0;
+	connection->use_count = 0;
 	APR_RING_ELEM_INIT(connection,link);
 	connection->channel_table = apr_hash_make(pool);
 	connection->parser = NULL;
@@ -61,6 +62,7 @@ apt_bool_t mrcp_connection_channel_add(mrcp_connection_t *connection, mrcp_contr
 	apr_hash_set(connection->channel_table,channel->identifier.buf,channel->identifier.length,channel);
 	channel->connection = connection;
 	connection->access_count++;
+	connection->use_count++;
 	return TRUE;
 }
 

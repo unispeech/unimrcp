@@ -62,6 +62,8 @@ struct mrcp_connection_t {
 
 	/** Reference count */
 	apr_size_t        access_count;
+	/** Usage count */
+	apr_size_t        use_count;
 	/** Opaque agent */
 	void             *agent;
 

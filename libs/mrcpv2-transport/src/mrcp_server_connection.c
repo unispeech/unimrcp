@@ -36,6 +36,7 @@ struct mrcp_connection_agent_t {
 	apr_hash_t                           *pending_channel_table;
 
 	apt_bool_t                            force_new_connection;
+	apr_size_t                            max_shared_use_count;
 	apr_size_t                            tx_buffer_size;
 	apr_size_t                            rx_buffer_size;
 
@@ -97,6 +98,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->sockaddr = NULL;
 	agent->listen_sock = NULL;
 	agent->force_new_connection = force_new_connection;
+	agent->max_shared_use_count = 100;
 	agent->rx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 	agent->tx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 
@@ -208,6 +210,14 @@ MRCP_DECLARE(void) mrcp_server_connection_tx_size_set(
 		size = MRCP_STREAM_BUFFER_SIZE;
 	}
 	agent->tx_buffer_size = size;
+}
+
+/** Set max shared use count for an MRCPv2 connection */
+MRCP_DECLARE(void) mrcp_server_connection_max_shared_use_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t max_shared_use_count)
+{
+	agent->max_shared_use_count = max_shared_use_count;
 }
 
 /** Get task */
@@ -469,7 +479,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	connection->rx_buffer_size = agent->rx_buffer_size;
 	connection->rx_buffer = apr_palloc(connection->pool,connection->rx_buffer_size+1);
 	apt_text_stream_init(&connection->rx_stream,connection->rx_buffer,connection->rx_buffer_size);
-	
+
 	if(apt_log_masking_get() != APT_LOG_MASKING_NONE) {
 		connection->verbose = FALSE;
 		mrcp_parser_verbose_set(connection->parser,TRUE);
@@ -508,8 +518,17 @@ static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, 
 			mrcp_connection_t *connection = NULL;
 			/* try to find any existing connection */
 			connection = mrcp_connection_find(agent,&offer->ip);
-			if(!connection) {
-				/* no existing conection found, force the new one */
+			if(connection) {
+				if(agent->max_shared_use_count && connection->use_count >= agent->max_shared_use_count) {
+					/* do not allow the same connection to be used infinitely, force a new one */
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Max Use Count Reached for Connection %s [%d]",
+						connection->id,
+						connection->use_count);
+					answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
+				}
+			}
+			else {
+				/* no existing conection found, force a new one */
 				answer->connection_type = MRCP_CONNECTION_TYPE_NEW;
 			}
 		}

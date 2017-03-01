@@ -101,6 +101,15 @@ MRCP_DECLARE(void) mrcp_server_connection_tx_size_set(
 								apr_size_t size);
 
 /**
+ * Set max shared use count for an MRCPv2 connection.
+ * @param agent the agent to set the parameter for
+ * @param max_shared_use_count the number of max shared use count of an MRCPv2 connection
+ */
+MRCP_DECLARE(void) mrcp_server_connection_max_shared_use_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t max_shared_use_count);
+
+/**
  * Get task.
  * @param agent the agent to get task from
  */
