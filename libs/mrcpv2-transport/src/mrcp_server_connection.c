@@ -39,6 +39,7 @@ struct mrcp_connection_agent_t {
 	apr_size_t                            max_shared_use_count;
 	apr_size_t                            tx_buffer_size;
 	apr_size_t                            rx_buffer_size;
+	apr_uint32_t                          inactivity_timeout;
 
 	/* Listening socket */
 	apr_sockaddr_t                       *sockaddr;
@@ -72,6 +73,7 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 static apt_bool_t mrcp_server_agent_listening_socket_create(mrcp_connection_agent_t *agent);
 static void mrcp_server_agent_listening_socket_destroy(mrcp_connection_agent_t *agent);
 
+static void mrcp_server_inactivity_timer_proc(apt_timer_t *timer, void *obj);
 
 /** Create connection agent */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
@@ -101,6 +103,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->max_shared_use_count = 100;
 	agent->rx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 	agent->tx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
+	agent->inactivity_timeout = 600000; /* 10 min */
 
 	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,pool);
 	if(!agent->sockaddr) {
@@ -218,6 +221,14 @@ MRCP_DECLARE(void) mrcp_server_connection_max_shared_use_set(
 								apr_size_t max_shared_use_count)
 {
 	agent->max_shared_use_count = max_shared_use_count;
+}
+
+/** Set inactivity timeout for an MRCPv2 connection */
+MRCP_DECLARE(void) mrcp_server_connection_timeout_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t timeout)
+{
+	agent->inactivity_timeout = (apr_uint32_t)timeout * 1000;
 }
 
 /** Get task */
@@ -371,6 +382,7 @@ static void mrcp_server_agent_listening_socket_destroy(mrcp_connection_agent_t *
 	}
 }
 
+/** Associate control channel with MRCPv2 connection */
 static mrcp_control_channel_t* mrcp_connection_channel_associate(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, const mrcp_message_t *message)
 {
 	apt_str_t identifier;
@@ -413,8 +425,20 @@ static mrcp_connection_t* mrcp_connection_find(mrcp_connection_agent_t *agent, c
 	return NULL;
 }
 
+static apt_bool_t mrcp_connection_add(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
+{
+	APR_RING_INSERT_TAIL(&agent->connection_list,connection,mrcp_connection_t,link);
+	if(connection->inactivity_timer) {
+		apt_timer_set(connection->inactivity_timer,agent->inactivity_timeout);
+	}
+	return TRUE;
+}
+
 static apt_bool_t mrcp_connection_remove(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
+	if(connection->inactivity_timer) {
+		apt_timer_kill(connection->inactivity_timer);
+	}
 	APR_RING_REMOVE(connection,link);
 	return TRUE;
 }
@@ -448,7 +472,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 		remote_ip,connection->r_sockaddr->port);
 
 	if(apr_hash_count(agent->pending_channel_table) == 0) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Reject Unexpected TCP/MRCPv2 Connection %s",connection->id);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Reject Unexpected TCP/MRCPv2 Connection %s",connection->id);
 		apr_socket_close(connection->sock);
 		mrcp_connection_destroy(connection);
 		return FALSE;
@@ -468,7 +492,6 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Accepted TCP/MRCPv2 Connection %s",connection->id);
 	connection->agent = agent;
-	APR_RING_INSERT_TAIL(&agent->connection_list,connection,mrcp_connection_t,link);
 
 	connection->parser = mrcp_parser_create(agent->resource_factory,connection->pool);
 	connection->generator = mrcp_generator_create(agent->resource_factory,connection->pool);
@@ -485,21 +508,44 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 		mrcp_parser_verbose_set(connection->parser,TRUE);
 		mrcp_generator_verbose_set(connection->generator,TRUE);
 	}
+
+	if(agent->inactivity_timeout) {
+		connection->inactivity_timer = apt_poller_task_timer_create(
+										agent->task,
+										mrcp_server_inactivity_timer_proc,
+										connection,
+										connection->pool);
+	}
+
+	mrcp_connection_add(agent,connection);
 	return TRUE;
 }
 
 static apt_bool_t mrcp_server_agent_connection_close(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"TCP/MRCPv2 Peer Disconnected %s",connection->id);
-	apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
-	apr_socket_close(connection->sock);
-	connection->sock = NULL;
+	if(connection->sock) {
+		apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
+		apr_socket_close(connection->sock);
+		connection->sock = NULL;
+	}
+	mrcp_connection_remove(agent,connection);
 	if(!connection->access_count) {
-		mrcp_connection_remove(agent,connection);
 		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy TCP/MRCPv2 Connection %s",connection->id);
 		mrcp_connection_destroy(connection);
 	}
 	return TRUE;
+}
+
+/* Timer callback */
+static void mrcp_server_inactivity_timer_proc(apt_timer_t *timer, void *obj)
+{
+	mrcp_connection_t *connection = obj;
+	if(!connection) return;
+
+	if(connection->inactivity_timer == timer) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"TCP/MRCPv2 Connection Timed Out %s",connection->id);
+		mrcp_server_agent_connection_close(connection->agent, connection);
+	}
 }
 
 static apt_bool_t mrcp_server_agent_channel_add(mrcp_connection_agent_t *agent, mrcp_control_channel_t *channel, mrcp_control_descriptor_t *offer)
@@ -563,9 +609,8 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 				apr_hash_count(connection->channel_table));
 		if(!connection->access_count) {
 			if(!connection->sock) {
-				mrcp_connection_remove(agent,connection);
 				/* set connection to be destroyed on channel destroy */
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark Connection for Removal %s",connection->id);
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark TCP/MRCPv2 Connection for Destruction %s",connection->id);
 				channel->connection = connection;
 				channel->removed = TRUE;
 			}
@@ -627,6 +672,11 @@ static apt_bool_t mrcp_server_message_handler(mrcp_connection_t *connection, mrc
 		/* message is completely parsed */
 		mrcp_control_channel_t *channel = mrcp_connection_channel_associate(agent,connection,message);
 		if(channel) {
+			/* (re)set inactivity timer on every message received */
+			if(connection->inactivity_timer) {
+				apt_timer_set(connection->inactivity_timer,agent->inactivity_timeout);
+			}
+
 			mrcp_connection_message_receive(agent->vtable,channel,message);
 		}
 		else {
@@ -665,7 +715,7 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 	if(descriptor->desc.s == agent->listen_sock) {
 		return mrcp_server_agent_connection_accept(agent);
 	}
-	
+
 	if(!connection || !connection->sock) {
 		return FALSE;
 	}
@@ -678,6 +728,7 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
+		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"TCP/MRCPv2 Peer Disconnected %s",connection->id);
 		return mrcp_server_agent_connection_close(agent,connection);
 	}
 

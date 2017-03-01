@@ -76,15 +76,18 @@ struct mrcp_connection_t {
 	apr_size_t        rx_buffer_size;
 	/** Rx stream */
 	apt_text_stream_t rx_stream;
-	/** MRCP parser to parser MRCP messages out of rx stream */
+	/** MRCP parser */
 	mrcp_parser_t    *parser;
 
 	/** Tx buffer */
 	char             *tx_buffer;
 	/** Tx buffer size */
 	apr_size_t        tx_buffer_size;
-	/** MRCP generator to generate MRCP messages into tx stream */
+	/** MRCP generator */
 	mrcp_generator_t *generator;
+
+	/** Inactivity timer  */
+	apt_timer_t      *inactivity_timer;
 };
 
 /** Create MRCP connection. */
