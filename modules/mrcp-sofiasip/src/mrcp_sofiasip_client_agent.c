@@ -20,7 +20,6 @@ typedef struct mrcp_sofia_agent_t mrcp_sofia_agent_t;
 typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #define NUA_HMAGIC_T mrcp_sofia_session_t
 
-#include <sofia-sip/su.h>
 #include <sofia-sip/nua.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_header.h>
@@ -33,6 +32,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 
 #include "mrcp_sofiasip_client_agent.h"
 #include "mrcp_sofiasip_logger.h"
+#include "mrcp_sofiasip_task.h"
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_sdp.h"
@@ -40,13 +40,12 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 
 struct mrcp_sofia_agent_t {
 	mrcp_sig_agent_t           *sig_agent;
-
 	mrcp_sofia_client_config_t *config;
 	char                       *sip_contact_str;
 	char                       *sip_from_str;
 	char                       *sip_bind_str;
 
-	su_root_t                  *root;
+	mrcp_sofia_task_t          *task;
 	nua_t                      *nua;
 };
 
@@ -63,11 +62,6 @@ struct mrcp_sofia_session_t {
 	apr_thread_mutex_t        *mutex;
 };
 
-/* Task Interface */
-static void mrcp_sofia_task_initialize(apt_task_t *task);
-static apt_bool_t mrcp_sofia_task_run(apt_task_t *task);
-static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task);
-
 /* MRCP Signaling Interface */
 static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
 static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session);
@@ -82,47 +76,43 @@ static const mrcp_session_request_vtable_t session_request_vtable = {
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool);
 static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings);
+static nua_t* mrcp_sofia_nua_create(void *obj, su_root_t *root);
 
-static void mrcp_sofia_event_callback( nua_event_t           nua_event,
-									   int                   status,
-									   char const           *phrase,
-									   nua_t                *nua,
-									   mrcp_sofia_agent_t   *sofia_agent,
-									   nua_handle_t         *nh,
-									   mrcp_sofia_session_t *sofia_session,
-									   sip_t const          *sip,
-									   tagi_t                tags[]);
+static void mrcp_sofia_event_callback(
+					nua_event_t           nua_event,
+					int                   status,
+					char const           *phrase,
+					nua_t                *nua,
+					mrcp_sofia_agent_t   *sofia_agent,
+					nua_handle_t         *nh,
+					mrcp_sofia_session_t *sofia_session,
+					sip_t const          *sip,
+					tagi_t                tags[]);
 
 /** Create Sofia-SIP Signaling Agent */
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_client_agent_create(const char *id, mrcp_sofia_client_config_t *config, apr_pool_t *pool)
 {
-	apt_task_t *task;
-	apt_task_vtable_t *vtable;
+	apt_task_t *base;
 	mrcp_sofia_agent_t *sofia_agent;
+
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
 	sofia_agent->sig_agent = mrcp_signaling_agent_create(id,sofia_agent,pool);
 	sofia_agent->sig_agent->create_client_session = mrcp_sofia_session_create;
-	sofia_agent->root = NULL;
-	sofia_agent->nua = NULL;
 
 	if(mrcp_sofia_config_validate(sofia_agent,config,pool) == FALSE) {
 		return NULL;
 	}
 
-	task = apt_task_create(sofia_agent,NULL,pool);
-	if(!task) {
+	apt_log(SIP_LOG_MARK,APT_PRIO_NOTICE,"Create SofiaSIP Agent [%s] ["SOFIA_SIP_VERSION"] %s",
+			id,sofia_agent->sip_bind_str);
+	sofia_agent->nua = NULL;
+	sofia_agent->task = mrcp_sofia_task_create(mrcp_sofia_nua_create,sofia_agent,NULL,pool);
+	if(!sofia_agent->task) {
 		return NULL;
 	}
-	apt_task_name_set(task,id);
-	vtable = apt_task_vtable_get(task);
-	if(vtable) {
-		vtable->on_pre_run = mrcp_sofia_task_initialize;
-		vtable->run = mrcp_sofia_task_run;
-		vtable->terminate = mrcp_sofia_task_terminate;
-	}
-	sofia_agent->sig_agent->task = task;
-	apt_log(SIP_LOG_MARK,APT_PRIO_NOTICE,"Create SofiaSIP Agent [%s] ["SOFIA_SIP_VERSION"] %s",
-				id,sofia_agent->sip_bind_str);
+	base = mrcp_sofia_task_base_get(sofia_agent->task);
+	apt_task_name_set(base,id);
+	sofia_agent->sig_agent->task = base;
 	return sofia_agent->sig_agent;
 }
 
@@ -153,11 +143,11 @@ MRCP_DECLARE(mrcp_sofia_client_config_t*) mrcp_sofiasip_client_config_alloc(apr_
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool)
 {
-	if(!config->local_ip) {
+	sofia_agent->config = config;
+	if(!config || !config->local_ip) {
 		return FALSE;
 	}
 
-	sofia_agent->config = config;
 	if(config->ext_ip) {
 		/* Use external IP address in Contact and From headers, if behind NAT */
 		sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu", config->ext_ip, config->local_port);
@@ -182,21 +172,18 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	return TRUE;
 }
 
-static void mrcp_sofia_task_initialize(apt_task_t *task)
+static nua_t* mrcp_sofia_nua_create(void *obj, su_root_t *root)
 {
-	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
+	nua_t *nua;
+	mrcp_sofia_agent_t *sofia_agent = obj;
 	mrcp_sofia_client_config_t *sofia_config = sofia_agent->config;
 
-	/* Initialize Sofia-SIP library and create event loop */
-	su_init();
-	sofia_agent->root = su_root_create(NULL);
-
-	/* Create a user agent instance. The stack will call the 'event_callback()' 
-	 * callback when events such as succesful registration to network, 
-	 * an incoming call, etc, occur. 
+	/* Create a user agent instance. The stack will call the 'event_callback()'
+	 * callback when events such as succesful registration to network,
+	 * an incoming call, etc, occur.
 	 */
-	sofia_agent->nua = nua_create(
-		sofia_agent->root,         /* Event loop */
+	nua = nua_create(
+		root,                      /* Event loop */
 		mrcp_sofia_event_callback, /* Callback for processing events */
 		sofia_agent,               /* Additional data to pass to callback */
 		NUTAG_URL(sofia_agent->sip_bind_str), /* Address to bind to */
@@ -211,42 +198,8 @@ static void mrcp_sofia_task_initialize(apt_task_t *task)
 		TAG_IF(sofia_config->tport_log == TRUE,TPTAG_LOG(1)), /* Print out SIP messages to the console */
 		TAG_IF(sofia_config->tport_dump_file,TPTAG_DUMP(sofia_config->tport_dump_file)), /* Dump SIP messages to the file */
 		TAG_END());                /* Last tag should always finish the sequence */
-	if(!sofia_agent->nua) {
-		apt_log(SIP_LOG_MARK,APT_PRIO_WARNING,"Failed to Create NUA [%s] %s",
-					apt_task_name_get(task),
-					sofia_agent->sip_bind_str);
-	}
-}
-
-static apt_bool_t mrcp_sofia_task_run(apt_task_t *task)
-{
-	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
-
-	if(sofia_agent->nua) {
-		/* Run event loop */
-		su_root_run(sofia_agent->root);
-		
-		/* Destroy allocated resources */
-		nua_destroy(sofia_agent->nua);
-		sofia_agent->nua = NULL;
-	}
-	su_root_destroy(sofia_agent->root);
-	sofia_agent->root = NULL;
-	su_deinit();
-
-	apt_task_terminate_request_process(task);
-	return TRUE;
-}
-
-static apt_bool_t mrcp_sofia_task_terminate(apt_task_t *task)
-{
-	mrcp_sofia_agent_t *sofia_agent = apt_task_object_get(task);
-	if(sofia_agent->nua) {
-		apt_log(SIP_LOG_MARK,APT_PRIO_DEBUG,"Send Shutdown Signal to NUA [%s]",
-				apt_task_name_get(task));
-		nua_shutdown(sofia_agent->nua);
-	}
-	return TRUE;
+	sofia_agent->nua = nua;
+	return nua;
 }
 
 static APR_INLINE mrcp_sofia_agent_t* mrcp_sofia_agent_get(mrcp_session_t *session)
@@ -589,7 +542,7 @@ static void mrcp_sofia_on_resource_discover(
 }
 
 /** This callback will be called by SIP stack to process incoming events */
-static void mrcp_sofia_event_callback( 
+static void mrcp_sofia_event_callback(
 						nua_event_t           nua_event,
 						int                   status,
 						char const           *phrase,
@@ -622,10 +575,10 @@ static void mrcp_sofia_event_callback(
 			/* if status < 200, shutdown still in progress */
 			if(status >= 200) {
 				/* break main loop of sofia thread */
-				su_root_break(sofia_agent->root);
+				mrcp_sofia_task_break(sofia_agent->task);
 			}
 			break;
-		default: 
+		default:
 			break;
 	}
 }

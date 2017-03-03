@@ -4,6 +4,7 @@ project (mrcpsofiasip)
 # Set header files
 set (MRCP_SOFIASIP_HEADERS
 	include/mrcp_sdp.h
+	include/mrcp_sofiasip_task.h
 	include/mrcp_sofiasip_logger.h
 	include/mrcp_sofiasip_server_agent.h
 	include/mrcp_sofiasip_client_agent.h
@@ -13,6 +14,7 @@ source_group ("include" FILES ${MRCP_SOFIASIP_HEADERS})
 # Set source files
 set (MRCP_SOFIASIP_SOURCES
 	src/mrcp_sdp.c
+	src/mrcp_sofiasip_task.c
 	src/mrcp_sofiasip_server_agent.c
 	src/mrcp_sofiasip_client_agent.c
 	src/mrcp_sofiasip_logger.c
