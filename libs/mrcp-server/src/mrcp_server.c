@@ -70,6 +70,8 @@ struct mrcp_server_t {
 	apt_dir_layout_t        *dir_layout;
 	/** Time server started at */
 	apr_time_t               start_time;
+	/** Shutting down or not */
+	apt_bool_t               shutdown_requested;
 	/** Memory pool */
 	apr_pool_t              *pool;
 };
@@ -168,8 +170,12 @@ static apt_bool_t mrcp_server_start_request_process(apt_task_t *task);
 static apt_bool_t mrcp_server_terminate_request_process(apt_task_t *task);
 static void mrcp_server_on_start_complete(apt_task_t *task);
 static void mrcp_server_on_terminate_complete(apt_task_t *task);
+static void mrcp_server_on_offline_complete(apt_task_t *task);
+static void mrcp_server_on_online_complete(apt_task_t *task);
 
 static mrcp_session_t* mrcp_server_sig_agent_session_create(mrcp_sig_agent_t *signaling_agent);
+static apt_bool_t mrcp_server_do_terminate(mrcp_server_t *server);
+static void mrcp_server_sessions_release(mrcp_server_t *server);
 
 
 /** Create MRCP server instance */
@@ -202,6 +208,7 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 	server->session_table = NULL;
 	server->connection_msg_pool = NULL;
 	server->engine_msg_pool = NULL;
+	server->shutdown_requested = FALSE;
 
 	msg_pool = apt_task_msg_pool_create_dynamic(0,pool);
 
@@ -219,6 +226,8 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout)
 		vtable->process_terminate = mrcp_server_terminate_request_process;
 		vtable->on_start_complete = mrcp_server_on_start_complete;
 		vtable->on_terminate_complete = mrcp_server_on_terminate_complete;
+		vtable->on_offline_complete = mrcp_server_on_offline_complete;
+		vtable->on_online_complete = mrcp_server_on_online_complete;
 	}
 
 	server->engine_factory = mrcp_engine_factory_create(server->pool);
@@ -259,7 +268,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 	apt_task_t *task;
 	apr_time_t uptime;
 	if(!server || !server->task) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server Instance");
 		return FALSE;
 	}
 	task = apt_consumer_task_base_get(server->task);
@@ -278,7 +287,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_destroy(mrcp_server_t *server)
 {
 	apt_task_t *task;
 	if(!server || !server->task) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server");
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server Instance");
 		return FALSE;
 	}
 
@@ -596,19 +605,32 @@ MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(const mrcp_server_t *serve
 	return server->pool;
 }
 
-void mrcp_server_session_add(mrcp_server_session_t *session)
+void mrcp_server_session_add(mrcp_server_t *server, mrcp_server_session_t *session)
 {
-	if(session->base.id.buf) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Session " APT_SID_FMT,MRCP_SESSION_SID(&session->base));
-		apr_hash_set(session->server->session_table,session->base.id.buf,session->base.id.length,session);
-	}
+	if(!session->base.id.buf) 
+		return;
+
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Add Session " APT_SID_FMT,MRCP_SESSION_SID(&session->base));
+	apr_hash_set(server->session_table,session->base.id.buf,session->base.id.length,session);
 }
 
-void mrcp_server_session_remove(mrcp_server_session_t *session)
+void mrcp_server_session_remove(mrcp_server_t *server, mrcp_server_session_t *session)
 {
-	if(session->base.id.buf) {
-		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Remove Session " APT_SID_FMT,MRCP_SESSION_SID(&session->base));
-		apr_hash_set(session->server->session_table,session->base.id.buf,session->base.id.length,NULL);
+	if(!session->base.id.buf) 
+		return;
+
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Remove Session " APT_SID_FMT,MRCP_SESSION_SID(&session->base));
+	apr_hash_set(server->session_table,session->base.id.buf,session->base.id.length,NULL);
+}
+
+void mrcp_server_session_idle_test(mrcp_server_t *server)
+{
+	if(server->shutdown_requested == TRUE) {
+		unsigned int count = apr_hash_count(server->session_table);
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Shutdown Pending: remaining sessions [%d]", count);
+		if(!count) {
+			mrcp_server_do_terminate(server);
+		}
 	}
 }
 
@@ -639,11 +661,9 @@ static apt_bool_t mrcp_server_start_request_process(apt_task_t *task)
 	return apt_task_start_request_process(task);
 }
 
-static apt_bool_t mrcp_server_terminate_request_process(apt_task_t *task)
+static apt_bool_t mrcp_server_do_terminate(mrcp_server_t *server)
 {
-	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
-	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
-
+	apt_task_t *task = apt_consumer_task_base_get(server->task);
 	mrcp_engine_t *engine;
 	apr_hash_index_t *it;
 	void *val;
@@ -658,7 +678,35 @@ static apt_bool_t mrcp_server_terminate_request_process(apt_task_t *task)
 		}
 	}
 
+	server->shutdown_requested = FALSE;
 	return apt_task_terminate_request_process(task);
+}
+
+static void mrcp_server_sessions_release(mrcp_server_t *server)
+{
+	mrcp_server_session_t *session;
+	apr_hash_index_t *it;
+	void *val;
+	it = apr_hash_first(NULL,server->session_table);
+	for(; it; it = apr_hash_next(it)) {
+		apr_hash_this(it,NULL,NULL,&val);
+		session = val;
+		if(!session) continue;
+
+		if(session->state != SESSION_STATE_DEACTIVATING && session->state != SESSION_STATE_TERMINATING) {
+			mrcp_session_terminate_event(&session->base);
+		}
+	}
+}
+
+static apt_bool_t mrcp_server_terminate_request_process(apt_task_t *task)
+{
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+
+	server->shutdown_requested = TRUE;
+
+	return apt_task_offline(task);
 }
 
 static void mrcp_server_on_start_complete(apt_task_t *task)
@@ -669,6 +717,30 @@ static void mrcp_server_on_start_complete(apt_task_t *task)
 static void mrcp_server_on_terminate_complete(apt_task_t *task)
 {
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Terminated");
+}
+
+static void mrcp_server_on_offline_complete(apt_task_t *task)
+{
+	apt_consumer_task_t *consumer_task = apt_task_object_get(task);
+	mrcp_server_t *server = apt_consumer_task_object_get(consumer_task);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Taken Offline");
+	
+	if(server->shutdown_requested == TRUE) {
+		unsigned int count = apr_hash_count(server->session_table);
+		if(count) {
+			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Shutdown Pending: release open sessions [%d]", count);
+			mrcp_server_sessions_release(server);
+		}
+		else {
+			mrcp_server_do_terminate(server);
+		}
+	}
+}
+
+static void mrcp_server_on_online_complete(apt_task_t *task)
+{
+	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,SERVER_TASK_NAME" Brought Online");
 }
 
 static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)

@@ -77,8 +77,9 @@ struct mrcp_termination_slot_t {
 
 extern const mrcp_engine_channel_event_vtable_t engine_channel_vtable;
 
-void mrcp_server_session_add(mrcp_server_session_t *session);
-void mrcp_server_session_remove(mrcp_server_session_t *session);
+void mrcp_server_session_add(mrcp_server_t *server, mrcp_server_session_t *session);
+void mrcp_server_session_remove(mrcp_server_t *server, mrcp_server_session_t *session);
+void mrcp_server_session_idle_test(mrcp_server_t *server);
 
 static apt_bool_t mrcp_server_signaling_message_dispatch(mrcp_server_session_t *session, mrcp_signaling_message_t *signaling_message);
 
@@ -360,7 +361,7 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 		if(!session->base.id.length) {
 			apt_unique_id_generate(&session->base.id,MRCP_SESSION_ID_HEX_STRING_LENGTH,session->base.pool);
 		}
-		mrcp_server_session_add(session);
+		mrcp_server_session_add(session->server,session);
 
 		session->context = mpf_engine_context_create(
 			session->profile->media_engine,
@@ -494,8 +495,6 @@ static apt_bool_t mrcp_server_session_terminate_process(mrcp_server_session_t *s
 	if(session->context) {
 		mpf_engine_message_send(session->profile->media_engine,&session->mpf_task_msg);
 	}
-
-	mrcp_server_session_remove(session);
 
 	if(!session->subrequest_count) {
 		mrcp_server_session_terminate_send(session);
@@ -943,6 +942,7 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session
 
 static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *session)
 {
+	mrcp_server_t *server = session->server;
 	int i;
 	mrcp_channel_t *channel;
 	for(i=0; i<session->channels->nelts; i++) {
@@ -958,8 +958,13 @@ static apt_bool_t mrcp_server_session_terminate_send(mrcp_server_session_t *sess
 			channel->engine_channel = NULL;
 		}
 	}
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Session Terminated " APT_NAMESID_FMT,MRCP_SESSION_NAMESID(session));
+
+	mrcp_server_session_remove(session->server,session);
+
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Session Terminated "APT_NAMESID_FMT,MRCP_SESSION_NAMESID(session));
 	mrcp_session_terminate_response(&session->base);
+
+	mrcp_server_session_idle_test(server);
 	return TRUE;
 }
 
