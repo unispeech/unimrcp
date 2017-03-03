@@ -406,7 +406,7 @@ static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_s
 static apt_bool_t rtsp_server_session_do_release(rtsp_server_t *server, rtsp_server_session_t *session)
 {
 	/* Initiate regular session termination now */
-	apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Release RTSP Session "APT_SID_FMT,session->id.buf);
+	apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Release RTSP Session " APT_SID_FMT,session->id.buf);
 	return rtsp_server_session_terminate_request(server,session);
 }
 
@@ -426,7 +426,7 @@ static apt_bool_t rtsp_server_session_terminate_request(rtsp_server_t *server, r
 {
 	if(session->terminating == TRUE) {
 		/* error case, session is being terminated */
-		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Session Termination Already Initiated "APT_SID_FMT,session->id.buf);
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Session Termination Already Initiated " APT_SID_FMT,session->id.buf);
 		return FALSE;
 	}
 
@@ -460,34 +460,14 @@ static apt_bool_t rtsp_server_session_message_handle(rtsp_server_t *server, rtsp
 /* Process incoming SETUP/DESCRIBE request */
 static rtsp_server_session_t* rtsp_server_session_setup_process(rtsp_server_t *server, rtsp_server_connection_t *rtsp_connection, rtsp_message_t *message)
 {
-	rtsp_server_session_t *session = NULL;
-	if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP) {
-		/* create new session */
-		session = rtsp_server_session_create(server);
-		if(!session) {
-			return NULL;
-		}
-		session->connection = rtsp_connection;
-		apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session " APT_SID_FMT,session->id.buf);
-		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
+	/* create new session */
+	rtsp_server_session_t *session = rtsp_server_session_create(server);
+	if(!session) {
+		return NULL;
 	}
-	else if(message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
-		/* create new session as a communication object */
-		session = rtsp_server_session_create(server);
-		if(!session) {
-			return NULL;
-		}
-		session->connection = rtsp_connection;
-		apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session " APT_SID_FMT,session->id.buf);
-		apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
-	}
-	else {
-		/* error case */
-		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Missing RTSP Session-ID");
-		rtsp_server_error_respond(server,rtsp_connection,message,
-								RTSP_STATUS_CODE_BAD_REQUEST,
-								RTSP_REASON_PHRASE_BAD_REQUEST);
-	}
+	session->connection = rtsp_connection;
+	apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Add RTSP Session " APT_SID_FMT,session->id.buf);
+	apr_hash_set(rtsp_connection->session_table,session->id.buf,session->id.length,session);
 	return session;
 }
 
@@ -502,7 +482,18 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 
 	if(rtsp_header_property_check(&message->header,RTSP_HEADER_FIELD_SESSION_ID) != TRUE) {
 		/* no session-id specified */
-		session = rtsp_server_session_setup_process(server,rtsp_connection,message);
+		if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP || 
+			message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
+			session = rtsp_server_session_setup_process(server,rtsp_connection,message);
+		}
+		else {
+			/* error case */
+			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Missing RTSP Session-ID");
+			return rtsp_server_error_respond(server,rtsp_connection,message,
+									RTSP_STATUS_CODE_BAD_REQUEST,
+									RTSP_REASON_PHRASE_BAD_REQUEST);
+		}
+
 		if(session) {
 			session->active_request = message;
 			if(rtsp_server_session_message_handle(server,session,message) != TRUE) {
