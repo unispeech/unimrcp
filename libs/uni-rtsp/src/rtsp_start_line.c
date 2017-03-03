@@ -47,9 +47,10 @@ static const apt_str_table_item_t rtsp_reason_string_table[] = {
 	{{"Not Acceptable",        14},4},
 	{{"Proxy Auth Required",   19},0},
 	{{"Request Timeout",       15},0},
-	{{"Session Not Found",     17},0},
+	{{"Session Not Found",     17},2},
 	{{"Internal Server Error", 21},0},
-	{{"Not Implemented",       15},4}
+	{{"Not Implemented",       15},5},
+	{{"Service Unavailable",   19},2}
 };
 
 /** Parse RTSP URI */
