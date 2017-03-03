@@ -262,6 +262,32 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server)
 	return TRUE;
 }
 
+/** Take server offline */
+MRCP_DECLARE(apt_bool_t) mrcp_server_offline(mrcp_server_t *server)
+{
+	apt_task_t *task;
+	if(!server || !server->task) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server Instance");
+		return FALSE;
+	}
+	task = apt_consumer_task_base_get(server->task);
+
+	return apt_task_offline(task);
+}
+
+/** Bring server online */
+MRCP_DECLARE(apt_bool_t) mrcp_server_online(mrcp_server_t *server)
+{
+	apt_task_t *task;
+	if(!server || !server->task) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Invalid Server Instance");
+		return FALSE;
+	}
+	task = apt_consumer_task_base_get(server->task);
+
+	return apt_task_online(task);
+}
+
 /** Shutdown message processing loop */
 MRCP_DECLARE(apt_bool_t) mrcp_server_shutdown(mrcp_server_t *server)
 {

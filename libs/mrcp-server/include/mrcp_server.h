@@ -43,6 +43,18 @@ MRCP_DECLARE(mrcp_server_t*) mrcp_server_create(apt_dir_layout_t *dir_layout);
 MRCP_DECLARE(apt_bool_t) mrcp_server_start(mrcp_server_t *server);
 
 /**
+ * Take server offline.
+ * @param server the MRCP server to take offline
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_offline(mrcp_server_t *server);
+
+/**
+ * Bring server online.
+ * @param server the MRCP server to bring online
+ */
+MRCP_DECLARE(apt_bool_t) mrcp_server_online(mrcp_server_t *server);
+
+/**
  * Shutdown message processing loop.
  * @param server the MRCP server to shutdown
  */
