@@ -41,6 +41,7 @@ struct rtsp_server_t {
 	APR_RING_HEAD(rtsp_server_connection_head_t, rtsp_server_connection_t) connection_list;
 
 	apr_uint32_t                inactivity_timeout;
+	apt_bool_t                  online;
 
 	/* Listening socket descriptor */
 	apr_sockaddr_t             *sockaddr;
@@ -125,6 +126,8 @@ struct task_msg_data_t {
 };
 
 static apt_bool_t rtsp_server_on_destroy(apt_task_t *task);
+static void rtsp_server_on_offline(apt_task_t *task);
+static void rtsp_server_on_online(apt_task_t *task);
 static apt_bool_t rtsp_server_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_t *descriptor);
 static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_connection_t *connection, rtsp_message_t *message);
@@ -172,7 +175,9 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	server->pool = pool;
 	server->obj = obj;
 	server->vtable = handler;
+
 	server->inactivity_timeout = (apr_uint32_t)connection_timeout * 1000;
+	server->online = TRUE;
 
 	server->listen_sock = NULL;
 	server->sockaddr = NULL;
@@ -201,6 +206,8 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 	vtable = apt_poller_task_vtable_get(server->task);
 	if(vtable) {
 		vtable->destroy = rtsp_server_on_destroy;
+		vtable->on_offline_complete = rtsp_server_on_offline;
+		vtable->on_online_complete = rtsp_server_on_online;
 		vtable->process_msg = rtsp_server_task_msg_process;
 	}
 
@@ -484,6 +491,13 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 		/* no session-id specified */
 		if(message->start_line.common.request_line.method_id == RTSP_METHOD_SETUP || 
 			message->start_line.common.request_line.method_id == RTSP_METHOD_DESCRIBE) {
+
+			if(server->online == FALSE) {
+				apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Cannot Establish RTSP Session in Offline Mode");
+				return rtsp_server_error_respond(server,rtsp_connection,message,
+										RTSP_STATUS_CODE_SERVICE_UNAVAILABLE,
+										RTSP_REASON_PHRASE_SERVICE_UNAVAILABLE);
+			}
 			session = rtsp_server_session_setup_process(server,rtsp_connection,message);
 		}
 		else {
@@ -921,6 +935,22 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 	/* scroll remaining stream */
 	apt_text_stream_scroll(stream);
 	return TRUE;
+}
+
+static void rtsp_server_on_offline(apt_task_t *task)
+{
+	apt_poller_task_t *poller_task = apt_task_object_get(task);
+	rtsp_server_t *server = apt_poller_task_object_get(poller_task);
+
+	server->online = FALSE;
+}
+
+static void rtsp_server_on_online(apt_task_t *task)
+{
+	apt_poller_task_t *poller_task = apt_task_object_get(task);
+	rtsp_server_t *server = apt_poller_task_object_get(poller_task);
+
+	server->online = TRUE;
 }
 
 /* Process task message */
