@@ -70,6 +70,12 @@ static const mrcp_session_response_vtable_t session_response_vtable = {
 	NULL /* mrcp_sofia_on_session_discover */
 };
 
+static apt_bool_t mrcp_sofia_on_session_terminate_event(mrcp_session_t *session);
+
+static const mrcp_session_event_vtable_t session_event_vtable = {
+	mrcp_sofia_on_session_terminate_event
+};
+
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_server_config_t *config, apr_pool_t *pool);
 
 static void mrcp_sofia_event_callback( nua_event_t           nua_event,
@@ -234,7 +240,7 @@ static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia
 		return NULL;
 	}
 	session->response_vtable = &session_response_vtable;
-	session->event_vtable = NULL;
+	session->event_vtable = &session_event_vtable;
 
 	sofia_session = apr_palloc(session->pool,sizeof(mrcp_sofia_session_t));
 	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
@@ -321,6 +327,19 @@ static apt_bool_t mrcp_sofia_on_session_terminate(mrcp_session_t *session)
 
 	apt_log(SIP_LOG_MARK,APT_PRIO_NOTICE,"Destroy Session " APT_SID_FMT, MRCP_SESSION_SID(session));
 	mrcp_session_destroy(session);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_sofia_on_session_terminate_event(mrcp_session_t *session)
+{
+	mrcp_sofia_session_t *sofia_session = session->obj;
+	if(sofia_session) {
+		if(sofia_session->nh) {
+			apt_log(SIP_LOG_MARK,APT_PRIO_NOTICE,"Initiate Session Termination "APT_SID_FMT, MRCP_SESSION_SID(session));
+			nua_bye(sofia_session->nh, TAG_END());
+		}
+	}
+
 	return TRUE;
 }
 
