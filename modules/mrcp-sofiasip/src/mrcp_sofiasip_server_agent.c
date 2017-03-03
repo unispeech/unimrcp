@@ -44,6 +44,7 @@ struct mrcp_sofia_agent_t {
 	char                       *sip_bind_str;
 
 	mrcp_sofia_task_t          *task;
+	apt_bool_t                  online;
 };
 
 struct mrcp_sofia_session_t {
@@ -52,6 +53,9 @@ struct mrcp_sofia_session_t {
 	nua_handle_t   *nh;
 };
 
+/* Task Interface */
+static void mrcp_sofia_task_on_offline(apt_task_t *base);
+static void mrcp_sofia_task_on_online(apt_task_t *base);
 
 /* MRCP Signaling Interface */
 static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_session_descriptor_t *descriptor);
@@ -88,6 +92,7 @@ static void mrcp_sofia_event_callback(
 MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(const char *id, mrcp_sofia_server_config_t *config, apr_pool_t *pool)
 {
 	apt_task_t *base;
+	apt_task_vtable_t *vtable;
 	mrcp_sofia_agent_t *sofia_agent;
 	
 	sofia_agent = apr_palloc(pool,sizeof(mrcp_sofia_agent_t));
@@ -104,8 +109,14 @@ MRCP_DECLARE(mrcp_sig_agent_t*) mrcp_sofiasip_server_agent_create(const char *id
 	if(!sofia_agent->task) {
 		return NULL;
 	}
+	sofia_agent->online = TRUE;
 	base = mrcp_sofia_task_base_get(sofia_agent->task);
 	apt_task_name_set(base,id);
+	vtable = apt_task_vtable_get(base);
+	if(vtable) {
+		vtable->on_offline_complete = mrcp_sofia_task_on_offline;
+		vtable->on_online_complete = mrcp_sofia_task_on_online;
+	}
 	sofia_agent->sig_agent->task = base;
 	return sofia_agent->sig_agent;
 }
@@ -153,6 +164,22 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 											config->local_port);
 	}
 	return TRUE;
+}
+
+static void mrcp_sofia_task_on_offline(apt_task_t *base)
+{
+	mrcp_sofia_task_t *task = apt_task_object_get(base);
+	mrcp_sofia_agent_t *agent = mrcp_sofia_task_object_get(task);
+
+	agent->online = FALSE;
+}
+
+static void mrcp_sofia_task_on_online(apt_task_t *base)
+{
+	mrcp_sofia_task_t *task = apt_task_object_get(base);
+	mrcp_sofia_agent_t *agent = mrcp_sofia_task_object_get(task);
+
+	agent->online = TRUE;
 }
 
 static nua_t* mrcp_sofia_nua_create(void *obj, su_root_t *root)
@@ -305,6 +332,12 @@ static void mrcp_sofia_on_call_receive(
 	apt_bool_t status = FALSE;
 	const char *remote_sdp_str = NULL;
 	mrcp_session_descriptor_t *descriptor;
+
+	if(sofia_agent->online == FALSE) {
+		apt_log(SIP_LOG_MARK,APT_PRIO_WARNING,"Cannot Establish SIP Session in Offline Mode");
+		nua_respond(nh, SIP_503_SERVICE_UNAVAILABLE, TAG_END());
+		return;
+	}
 
 	if(!sofia_session) {
 		sofia_session = mrcp_sofia_session_create(sofia_agent,nh);
