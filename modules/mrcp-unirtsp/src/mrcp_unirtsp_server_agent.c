@@ -56,6 +56,12 @@ static const mrcp_session_response_vtable_t session_response_vtable = {
 	NULL /* mrcp_unirtsp_on_session_discover */
 };
 
+static apt_bool_t mrcp_unirtsp_on_session_terminate_event(mrcp_session_t *session);
+
+static const mrcp_session_event_vtable_t session_event_vtable = {
+	mrcp_unirtsp_on_session_terminate_event
+};
+
 static apt_bool_t mrcp_unirtsp_session_create(rtsp_server_t *server, rtsp_server_session_t *session);
 static apt_bool_t mrcp_unirtsp_session_terminate(rtsp_server_t *server, rtsp_server_session_t *session);
 static apt_bool_t mrcp_unirtsp_message_handle(rtsp_server_t *server, rtsp_server_session_t *session, rtsp_message_t *message);
@@ -147,7 +153,7 @@ static apt_bool_t mrcp_unirtsp_session_create(rtsp_server_t *rtsp_server, rtsp_s
 		mrcp_session->id = *session_id;
 	}
 	mrcp_session->response_vtable = &session_response_vtable;
-	mrcp_session->event_vtable = NULL;
+	mrcp_session->event_vtable = &session_event_vtable;
 
 	session = apr_palloc(mrcp_session->pool,sizeof(mrcp_unirtsp_session_t));
 	session->mrcp_session = mrcp_session;
@@ -376,5 +382,14 @@ static apt_bool_t mrcp_unirtsp_on_session_control(mrcp_session_t *mrcp_session, 
 	rtsp_header_property_add(&rtsp_message->header,RTSP_HEADER_FIELD_CONTENT_LENGTH,rtsp_message->pool);
 
 	rtsp_server_session_respond(agent->rtsp_server,session->rtsp_session,rtsp_message);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_unirtsp_on_session_terminate_event(mrcp_session_t *mrcp_session)
+{
+	mrcp_unirtsp_session_t *session = mrcp_session->obj;
+	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
+
+	rtsp_server_session_release(agent->rtsp_server,session->rtsp_session);
 	return TRUE;
 }
