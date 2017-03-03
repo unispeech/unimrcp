@@ -111,7 +111,8 @@ struct rtsp_server_session_t {
 
 typedef enum {
 	TASK_MSG_SEND_MESSAGE,
-	TASK_MSG_TERMINATE_SESSION
+	TASK_MSG_TERMINATE_SESSION,
+	TASK_MSG_RELEASE_SESSION
 } task_msg_data_type_e;
 
 typedef struct task_msg_data_t task_msg_data_t;
@@ -127,6 +128,7 @@ static apt_bool_t rtsp_server_on_destroy(apt_task_t *task);
 static apt_bool_t rtsp_server_task_msg_process(apt_task_t *task, apt_task_msg_t *msg);
 static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_t *descriptor);
 static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_connection_t *connection, rtsp_message_t *message);
+static apt_bool_t rtsp_server_session_terminate_request(rtsp_server_t *server, rtsp_server_session_t *session);
 
 static apt_bool_t rtsp_server_listening_socket_create(rtsp_server_t *server);
 static void rtsp_server_listening_socket_destroy(rtsp_server_t *server);
@@ -320,6 +322,12 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_session_terminate(rtsp_server_t *server, rt
 	return rtsp_server_control_message_signal(TASK_MSG_TERMINATE_SESSION,server,session,NULL);
 }
 
+/** Signal release event/request */
+RTSP_DECLARE(apt_bool_t) rtsp_server_session_release(rtsp_server_t *server, rtsp_server_session_t *session)
+{
+	return rtsp_server_control_message_signal(TASK_MSG_RELEASE_SESSION,server,session,NULL);
+}
+
 /* Create RTSP session */
 static rtsp_server_session_t* rtsp_server_session_create(rtsp_server_t *server)
 {
@@ -394,6 +402,14 @@ static apt_bool_t rtsp_server_session_do_terminate(rtsp_server_t *server, rtsp_s
 	return TRUE;
 }
 
+/* Release RTSP session (internal event/request) */
+static apt_bool_t rtsp_server_session_do_release(rtsp_server_t *server, rtsp_server_session_t *session)
+{
+	/* Initiate regular session termination now */
+	apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Release RTSP Session "APT_SID_FMT,session->id.buf);
+	return rtsp_server_session_terminate_request(server,session);
+}
+
 static apt_bool_t rtsp_server_error_respond(rtsp_server_t *server, rtsp_server_connection_t *rtsp_connection, rtsp_message_t *request, 
 											rtsp_status_code_e status_code, rtsp_reason_phrase_e reason)
 {
@@ -408,6 +424,12 @@ static apt_bool_t rtsp_server_error_respond(rtsp_server_t *server, rtsp_server_c
 
 static apt_bool_t rtsp_server_session_terminate_request(rtsp_server_t *server, rtsp_server_session_t *session)
 {
+	if(session->terminating == TRUE) {
+		/* error case, session is being terminated */
+		apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Session Termination Already Initiated "APT_SID_FMT,session->id.buf);
+		return FALSE;
+	}
+
 	session->terminating = TRUE;
 	return server->vtable->terminate_session(server,session);
 }
@@ -833,7 +855,7 @@ static apt_bool_t rtsp_server_connection_close(rtsp_server_t *server, rtsp_serve
 		for(; it; it = apr_hash_next(it)) {
 			apr_hash_this(it,NULL,NULL,&val);
 			session = val;
-			if(session && session->terminating == FALSE) {
+			if(session) {
 				rtsp_server_session_terminate_request(server,session);
 			}
 		}
@@ -923,6 +945,9 @@ static apt_bool_t rtsp_server_task_msg_process(apt_task_t *task, apt_task_msg_t 
 			break;
 		case TASK_MSG_TERMINATE_SESSION:
 			rtsp_server_session_do_terminate(server,data->session);
+			break;
+		case TASK_MSG_RELEASE_SESSION:
+			rtsp_server_session_do_release(server,data->session);
 			break;
 	}
 

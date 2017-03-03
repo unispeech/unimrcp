@@ -112,6 +112,13 @@ RTSP_DECLARE(apt_bool_t) rtsp_server_session_respond(rtsp_server_t *server, rtsp
 RTSP_DECLARE(apt_bool_t) rtsp_server_session_terminate(rtsp_server_t *server, rtsp_server_session_t *session);
 
 /**
+ * Release RTSP session (internal release event/request).
+ * @param server the server to use
+ * @param session the session to release
+ */
+RTSP_DECLARE(apt_bool_t) rtsp_server_session_release(rtsp_server_t *server, rtsp_server_session_t *session);
+
+/**
  * Get object associated with the session.
  * @param session the session to get object from
  */
