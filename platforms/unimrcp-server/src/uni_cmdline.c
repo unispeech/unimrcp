@@ -19,7 +19,7 @@
 #include "unimrcp_server.h"
 #include "apt_log.h"
 
-static apt_bool_t cmdline_process(char *cmdline)
+static apt_bool_t cmdline_process(mrcp_server_t *server, char *cmdline)
 {
 	apt_bool_t running = TRUE;
 	char *name;
@@ -35,9 +35,17 @@ static apt_bool_t cmdline_process(char *cmdline)
 	else if(strcasecmp(name,"exit") == 0 || strcmp(name,"quit") == 0) {
 		running = FALSE;
 	}
+	else if(strcasecmp(name,"offline") == 0) {
+		mrcp_server_offline(server);
+	}
+	else if(strcasecmp(name,"online") == 0) {
+		mrcp_server_online(server);
+	}
 	else if(strcasecmp(name,"help") == 0) {
 		printf("usage:\n");
 		printf("- loglevel [level] (set loglevel, one of 0,1...7)\n");
+		printf("- offline (take server offline)\n");
+		printf("- online (bring server online)\n");
 		printf("- quit, exit\n");
 	}
 	else {
@@ -70,7 +78,7 @@ apt_bool_t uni_cmdline_run(apt_dir_layout_t *dir_layout, apr_pool_t *pool)
 			}
 		}
 		if(*cmdline) {
-			running = cmdline_process(cmdline);
+			running = cmdline_process(server, cmdline);
 		}
 	}
 	while(running != 0);
