@@ -64,7 +64,10 @@ dnl Check for C compiler vendor.
 AX_COMPILER_VENDOR
 
 dnl Search for pkg-config.
-AC_PATH_PROG(PKG_CONFIG, pkg-config)
+AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+if test "x$PKG_CONFIG" = "xno"; then
+    AC_MSG_ERROR([pkg-config is missing])
+fi
 
 dnl Get version information.
 get_version="$srcdir/build/get-version.sh"
