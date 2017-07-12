@@ -119,6 +119,15 @@ MRCP_DECLARE(void) mrcp_server_connection_timeout_set(
 								apr_size_t timeout);
 
 /**
+ * Set termination timeout for an MRCPv2 connection.
+ * @param agent the agent to set the parameter for
+ * @param timeout the termination timeout to set in seconds
+ */
+MRCP_DECLARE(void) mrcp_server_connection_term_timeout_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t timeout);
+
+/**
  * Get task.
  * @param agent the agent to get task from
  */

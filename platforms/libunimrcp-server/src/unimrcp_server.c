@@ -479,6 +479,7 @@ static apt_bool_t unimrcp_server_mrcpv2_uas_load(unimrcp_server_loader_t *loader
 	apr_size_t max_shared_use_count = 100;
 	apt_bool_t force_new_connection = FALSE;
 	apr_size_t inactivity_timeout = 600; /* sec */
+	apr_size_t termination_timeout = 3; /* sec */
 	apr_size_t rx_buffer_size = 0;
 	apr_size_t tx_buffer_size = 0;
 
@@ -513,6 +514,11 @@ static apt_bool_t unimrcp_server_mrcpv2_uas_load(unimrcp_server_loader_t *loader
 				inactivity_timeout = atol(cdata_text_get(elem));
 			}
 		}
+		else if(strcasecmp(elem->name,"termination-timeout") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				termination_timeout = atol(cdata_text_get(elem));
+			}
+		}
 		else if(strcasecmp(elem->name,"rx-buffer-size") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
 				rx_buffer_size = atol(cdata_text_get(elem));
@@ -543,6 +549,7 @@ static apt_bool_t unimrcp_server_mrcpv2_uas_load(unimrcp_server_loader_t *loader
 		}
 		mrcp_server_connection_max_shared_use_set(agent,max_shared_use_count);
 		mrcp_server_connection_timeout_set(agent,inactivity_timeout);
+		mrcp_server_connection_term_timeout_set(agent,termination_timeout);
 	}
 	return mrcp_server_connection_agent_register(loader->server,agent);
 }

@@ -317,7 +317,13 @@ apt_bool_t mrcp_server_on_channel_message(mrcp_channel_t *channel, mrcp_message_
 
 apt_bool_t mrcp_server_on_disconnect(mrcp_channel_t *channel)
 {
-	/* to be processed */
+	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
+	if(!session)
+		return FALSE;
+
+	if(session->state != SESSION_STATE_DEACTIVATING && session->state != SESSION_STATE_TERMINATING) {
+		mrcp_session_terminate_event(&session->base);
+	}
 	return TRUE;
 }
 

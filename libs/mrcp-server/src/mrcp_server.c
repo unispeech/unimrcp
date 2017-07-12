@@ -804,7 +804,7 @@ static apt_bool_t mrcp_server_msg_process(apt_task_t *task, apt_task_msg_t *msg)
 				}
 				case CONNECTION_AGENT_TASK_MSG_DISCONNECT:
 				{
-					mrcp_server_on_channel_message(connection_message->channel, connection_message->message);
+					mrcp_server_on_disconnect(connection_message->channel);
 					break;
 				}
 				default:

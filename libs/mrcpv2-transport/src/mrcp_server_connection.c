@@ -40,6 +40,7 @@ struct mrcp_connection_agent_t {
 	apr_size_t                            tx_buffer_size;
 	apr_size_t                            rx_buffer_size;
 	apr_uint32_t                          inactivity_timeout;
+	apr_uint32_t                          termination_timeout;
 
 	/* Listening socket */
 	apr_sockaddr_t                       *sockaddr;
@@ -74,6 +75,7 @@ static apt_bool_t mrcp_server_agent_listening_socket_create(mrcp_connection_agen
 static void mrcp_server_agent_listening_socket_destroy(mrcp_connection_agent_t *agent);
 
 static void mrcp_server_inactivity_timer_proc(apt_timer_t *timer, void *obj);
+static void mrcp_server_termination_timer_proc(apt_timer_t *timer, void *obj);
 
 /** Create connection agent */
 MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
@@ -104,6 +106,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->rx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 	agent->tx_buffer_size = MRCP_STREAM_BUFFER_SIZE;
 	agent->inactivity_timeout = 600000; /* 10 min */
+	agent->termination_timeout = 3000; /* 3 sec */
 
 	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,pool);
 	if(!agent->sockaddr) {
@@ -230,6 +233,15 @@ MRCP_DECLARE(void) mrcp_server_connection_timeout_set(
 {
 	agent->inactivity_timeout = (apr_uint32_t)timeout * 1000;
 }
+
+/** Set termination timeout for an MRCPv2 connection */
+MRCP_DECLARE(void) mrcp_server_connection_term_timeout_set(
+								mrcp_connection_agent_t *agent,
+								apr_size_t timeout)
+{
+	agent->termination_timeout = (apr_uint32_t)timeout * 1000;
+}
+
 
 /** Get task */
 MRCP_DECLARE(apt_task_t*) mrcp_server_connection_agent_task_get(const mrcp_connection_agent_t *agent)
@@ -521,7 +533,7 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 	return TRUE;
 }
 
-static apt_bool_t mrcp_server_agent_connection_close(mrcp_connection_agent_t *agent, mrcp_connection_t *connection)
+static apt_bool_t mrcp_server_agent_connection_close(mrcp_connection_agent_t *agent, mrcp_connection_t *connection, apt_bool_t timedout)
 {
 	if(connection->sock) {
 		apt_poller_task_descriptor_remove(agent->task,&connection->sock_pfd);
@@ -529,7 +541,25 @@ static apt_bool_t mrcp_server_agent_connection_close(mrcp_connection_agent_t *ag
 		connection->sock = NULL;
 	}
 	mrcp_connection_remove(agent,connection);
-	if(!connection->access_count) {
+	if(connection->access_count) {
+		if(timedout == TRUE) {
+			mrcp_connection_disconnect_raise(connection,agent->vtable);
+		}
+		else {
+			if(agent->termination_timeout) {
+				connection->termination_timer = apt_poller_task_timer_create(
+												agent->task,
+												mrcp_server_termination_timer_proc,
+												connection,
+												connection->pool);
+				if(connection->termination_timer) {
+					apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Set Termination Timer %s timeout [%d]",connection->id,agent->termination_timeout);
+					apt_timer_set(connection->termination_timer,agent->termination_timeout);
+				}
+			}
+		}
+	}
+	else {
 		apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Destroy TCP/MRCPv2 Connection %s",connection->id);
 		mrcp_connection_destroy(connection);
 	}
@@ -544,7 +574,20 @@ static void mrcp_server_inactivity_timer_proc(apt_timer_t *timer, void *obj)
 
 	if(connection->inactivity_timer == timer) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"TCP/MRCPv2 Connection Timed Out %s",connection->id);
-		mrcp_server_agent_connection_close(connection->agent, connection);
+		mrcp_server_agent_connection_close(connection->agent, connection, TRUE);
+	}
+}
+
+/* Timer callback */
+static void mrcp_server_termination_timer_proc(apt_timer_t *timer, void *obj)
+{
+	mrcp_connection_t *connection = obj;
+	if(!connection) return;
+
+	if(connection->termination_timer == timer) {
+		mrcp_connection_agent_t *agent = connection->agent;
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Termination Timeout Elapsed %s",connection->id);
+		mrcp_connection_disconnect_raise(connection,agent->vtable);
 	}
 }
 
@@ -613,6 +656,10 @@ static apt_bool_t mrcp_server_agent_channel_remove(mrcp_connection_agent_t *agen
 				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Mark TCP/MRCPv2 Connection for Destruction %s",connection->id);
 				channel->connection = connection;
 				channel->removed = TRUE;
+
+				if(connection->termination_timer) {
+					apt_timer_kill(connection->termination_timer);
+				}
 			}
 		}
 	}
@@ -729,7 +776,7 @@ static apt_bool_t mrcp_server_poller_signal_process(void *obj, const apr_pollfd_
 	status = apr_socket_recv(connection->sock,stream->pos,&length);
 	if(status == APR_EOF || length == 0) {
 		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"TCP/MRCPv2 Peer Disconnected %s",connection->id);
-		return mrcp_server_agent_connection_close(agent,connection);
+		return mrcp_server_agent_connection_close(agent,connection,FALSE);
 	}
 
 	/* calculate actual length of the stream */

@@ -44,6 +44,7 @@ mrcp_connection_t* mrcp_connection_create(void)
 	connection->tx_buffer = NULL;
 	connection->tx_buffer_size = 0;
 	connection->inactivity_timer = NULL;
+	connection->termination_timer = NULL;
 
 	return connection;
 }

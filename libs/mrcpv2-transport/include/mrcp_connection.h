@@ -88,6 +88,8 @@ struct mrcp_connection_t {
 
 	/** Inactivity timer  */
 	apt_timer_t      *inactivity_timer;
+	/** Termination timer  */
+	apt_timer_t      *termination_timer;
 };
 
 /** Create MRCP connection. */
