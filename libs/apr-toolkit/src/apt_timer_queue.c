@@ -28,6 +28,8 @@ struct apt_timer_queue_t {
 
 	/** Elapsed time */
 	apr_uint32_t  elapsed_time;
+	/** Whether elapsed_time is reset or not */
+	apt_bool_t    reset;
 };
 
 /** Timer */
@@ -56,6 +58,7 @@ APT_DECLARE(apt_timer_queue_t*) apt_timer_queue_create(apr_pool_t *pool)
 	apt_timer_queue_t *timer_queue = apr_palloc(pool,sizeof(apt_timer_queue_t));
 	APR_RING_INIT(&timer_queue->head, apt_timer_t, link);
 	timer_queue->elapsed_time = 0;
+	timer_queue->reset = FALSE;
 	return timer_queue;
 }
 
@@ -72,6 +75,11 @@ APT_DECLARE(void) apt_timer_queue_advance(apt_timer_queue_t *timer_queue, apr_ui
 
 	if(APR_RING_EMPTY(&timer_queue->head, apt_timer_t, link)) {
 		/* just return, nothing to do */
+		return;
+	}
+
+	if(timer_queue->reset == TRUE) {
+		/* elapsed_time has just been reset, do not advance */
 		return;
 	}
 
@@ -113,9 +121,15 @@ APT_DECLARE(apt_bool_t) apt_timer_queue_is_empty(const apt_timer_queue_t *timer_
 }
 
 /** Get current timeout */
-APT_DECLARE(apt_bool_t) apt_timer_queue_timeout_get(const apt_timer_queue_t *timer_queue, apr_uint32_t *timeout)
+APT_DECLARE(apt_bool_t) apt_timer_queue_timeout_get(apt_timer_queue_t *timer_queue, apr_uint32_t *timeout)
 {
 	apt_timer_t *timer;
+
+	/* clear reset flag, if set */
+	if(timer_queue->reset == TRUE) {
+		timer_queue->reset = FALSE;
+	}
+
 	/* is queue empty */
 	if(APR_RING_EMPTY(&timer_queue->head, apt_timer_t, link)) {
 		return FALSE;
@@ -209,6 +223,8 @@ static apt_bool_t apt_timer_remove(apt_timer_queue_t *timer_queue, apt_timer_t *
 	if(APR_RING_EMPTY(&timer_queue->head, apt_timer_t, link)) {
 		/* reset elapsed time if no timers set */
 		timer_queue->elapsed_time = 0;
+		/* set reset flag */
+		timer_queue->reset = TRUE;
 	}
 	return TRUE;
 }
