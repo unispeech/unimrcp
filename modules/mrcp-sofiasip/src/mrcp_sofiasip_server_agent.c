@@ -137,6 +137,8 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->sip_t2 = 0;
 	config->sip_t4 = 0;
 	config->sip_t1x64 = 0;
+	config->session_expires = 0;
+	config->min_session_expires = 0;
 
 	config->tport_log = FALSE;
 	config->tport_dump_file = NULL;
@@ -284,6 +286,8 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				SOATAG_AUDIO_AUX("telephone-event"),
 				NUTAG_AUTOANSWER(0),
+				NUTAG_SESSION_TIMER(sofia_agent->config->session_expires),
+				NUTAG_MIN_SE(sofia_agent->config->min_session_expires),
 				TAG_END());
 
 	return TRUE;

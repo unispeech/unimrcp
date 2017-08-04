@@ -364,6 +364,16 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 				config->sip_t1x64 = atol(cdata_text_get(elem));
 			}
 		}
+		else if(strcasecmp(elem->name,"sip-session-expires") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->session_expires = atol(cdata_text_get(elem));
+			}
+		}
+		else if(strcasecmp(elem->name,"sip-min-session-expires") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->min_session_expires = atol(cdata_text_get(elem));
+			}
+		}
 		else if(strcasecmp(elem->name,"sip-message-output") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
 				config->tport_log = cdata_bool_get(elem);
