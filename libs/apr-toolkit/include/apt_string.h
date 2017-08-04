@@ -139,6 +139,23 @@ static APR_INLINE apt_bool_t apt_string_compare(const apt_str_t *str1, const apt
 }
 
 /**
+ * Compare two strings (case insensitive).-
+ * @param str1 the string to compare
+ * @param str2 the string to compare
+ * @return TRUE if equal (including empty strings), FALSE otherwise
+ */
+static APR_INLINE apt_bool_t apt_strings_compare(const apt_str_t *str1, const apt_str_t *str2)
+{
+	if(str1->length != str2->length) {
+		return FALSE;
+	}
+ 	if(!str1->length) {
+		return TRUE;
+	}
+	return (strncasecmp(str1->buf,str2->buf,str1->length) == 0) ? TRUE : FALSE;
+}
+
+/**
  * Represent string as iovec. 
  * @param str the string to represent
  * @param vec the iovec to set
