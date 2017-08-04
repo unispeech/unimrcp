@@ -275,3 +275,45 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 
 	return TRUE;
 }
+
+MPF_DECLARE(apt_bool_t) mpf_codec_lists_compare(const mpf_codec_list_t *codec_list1, const mpf_codec_list_t *codec_list2)
+{
+	apt_bool_t exit = FALSE;
+	mpf_codec_descriptor_t *descriptor1 = NULL;
+	mpf_codec_descriptor_t *descriptor2 = NULL;
+	int i=0;
+	int j=0;
+
+	do {
+		while(i<codec_list1->descriptor_arr->nelts) {
+			descriptor1 = &APR_ARRAY_IDX(codec_list1->descriptor_arr,i,mpf_codec_descriptor_t);
+			if(descriptor1->enabled == TRUE)
+				break;
+			i++;
+		}
+		while(j<codec_list2->descriptor_arr->nelts) {
+			descriptor2 = &APR_ARRAY_IDX(codec_list2->descriptor_arr,j,mpf_codec_descriptor_t);
+			if(descriptor2->enabled == TRUE)
+				break;
+			j++;
+		}
+
+		if(i<codec_list1->descriptor_arr->nelts && j<codec_list2->descriptor_arr->nelts) {
+			if(mpf_codec_descriptors_match(descriptor1, descriptor2) == FALSE)
+				return FALSE;
+
+			i++;
+			j++;
+		}
+		else {
+			exit = TRUE;
+		}
+	}
+	while(!exit);
+
+	if(i!=codec_list1->descriptor_arr->nelts || j!=codec_list2->descriptor_arr->nelts) {
+		return FALSE;
+	}
+
+	return TRUE;
+}

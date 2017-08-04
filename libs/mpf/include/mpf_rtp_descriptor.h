@@ -239,6 +239,42 @@ static APR_INLINE mpf_rtp_media_descriptor_t* mpf_rtp_media_descriptor_copy(cons
 	return media;
 }
 
+/** Compare RTP media descriptors (return TRUE, if identical) */
+static APR_INLINE apt_bool_t mpf_rtp_media_descriptors_compare(const mpf_rtp_media_descriptor_t *media1, const mpf_rtp_media_descriptor_t *media2)
+{
+	if(!media1 || !media2)
+		return FALSE;
+
+	if(media1->state != media2->state)
+		return FALSE;
+
+	if(apt_strings_compare(&media1->ip, &media2->ip) == FALSE)
+		return FALSE;
+
+	if(apt_strings_compare(&media1->ext_ip, &media2->ext_ip) == FALSE)
+		return FALSE;
+
+	if(media1->port != media2->port)
+		return FALSE;
+
+	if(media1->direction != media2->direction)
+		return FALSE;
+
+	if(media1->ptime != media2->ptime)
+		return FALSE;
+
+	if(mpf_codec_lists_compare(&media1->codec_list, &media2->codec_list) == FALSE)
+		return FALSE;
+
+	if(media1->mid != media2->mid)
+		return FALSE;
+
+	if(media1->id != media2->id)
+		return FALSE;
+
+	return TRUE;
+}
+
 APT_END_EXTERN_C
 
 #endif /* MPF_RTP_DESCRIPTOR_H */

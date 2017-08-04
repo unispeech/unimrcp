@@ -271,6 +271,8 @@ MPF_DECLARE(apt_bool_t) mpf_codec_list_match(mpf_codec_list_t *codec_list, const
 /** Intersect two codec lists */
 MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1, mpf_codec_list_t *codec_list2);
 
+/** Compare two codec lists */
+MPF_DECLARE(apt_bool_t) mpf_codec_lists_compare(const mpf_codec_list_t *codec_list1, const mpf_codec_list_t *codec_list2);
 
 /** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
 MPF_DECLARE(int) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate);
