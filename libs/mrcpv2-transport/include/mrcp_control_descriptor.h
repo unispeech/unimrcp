@@ -109,6 +109,9 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_answer_create(const mrcp_c
 /** Copy MRCP control offer */
 MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_copy(const mrcp_control_descriptor_t *offer, apr_pool_t *pool);
 
+/** Compare MRCP control descriptors */
+MRCP_DECLARE(apt_bool_t) mrcp_control_descriptors_compare(const mrcp_control_descriptor_t *descriptor1, const mrcp_control_descriptor_t *descriptor2);
+
 /** Add cmid to cmid_arr */
 MRCP_DECLARE(void) mrcp_cmid_add(apr_array_header_t *cmid_arr, apr_size_t cmid);
 

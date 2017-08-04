@@ -140,6 +140,50 @@ MRCP_DECLARE(mrcp_control_descriptor_t*) mrcp_control_offer_copy(const mrcp_cont
 	return descriptor;
 }
 
+MRCP_DECLARE(apt_bool_t) mrcp_control_descriptors_compare(const mrcp_control_descriptor_t *descriptor1, const mrcp_control_descriptor_t *descriptor2)
+{
+	int i;
+	if(!descriptor1 || !descriptor2)
+		return FALSE;
+
+	if(apt_strings_compare(&descriptor1->ip, &descriptor2->ip) == FALSE)
+		return FALSE;
+
+	if(descriptor1->port != descriptor2->port)
+		return FALSE;
+
+	if(descriptor1->proto != descriptor2->proto)
+		return FALSE;
+
+	if(descriptor1->setup_type != descriptor2->setup_type)
+		return FALSE;
+
+#if 0 // do not compare connection type and sesssion id
+	if(descriptor1->connection_type != descriptor2->connection_type)
+		return FALSE;
+
+	if(apt_strings_compare(&descriptor1->session_id, &descriptor2->session_id) == FALSE)
+		return FALSE;
+#endif
+
+	if(apt_strings_compare(&descriptor1->resource_name, &descriptor2->resource_name) == FALSE)
+		return FALSE;
+
+	if(descriptor1->cmid_arr->nelts != descriptor2->cmid_arr->nelts)
+		return FALSE;
+
+	for(i=0; i<descriptor1->cmid_arr->nelts; i++) {
+		if(APR_ARRAY_IDX(descriptor1->cmid_arr,i,apr_size_t) != APR_ARRAY_IDX(descriptor2->cmid_arr,i,apr_size_t)) {
+			return FALSE;
+		}
+	}
+
+	if(descriptor1->id != descriptor2->id)
+		return FALSE;
+
+	return TRUE;
+}
+
 /** Add cmid to cmid_arr */
 MRCP_DECLARE(void) mrcp_cmid_add(apr_array_header_t *cmid_arr, apr_size_t cmid)
 {
