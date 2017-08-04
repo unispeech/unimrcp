@@ -97,6 +97,7 @@ static mrcp_channel_t* mrcp_server_channel_find(mrcp_server_session_t *session, 
 static apt_bool_t state_machine_on_message_dispatch(mrcp_state_machine_t *state_machine, mrcp_message_t *message);
 static apt_bool_t state_machine_on_deactivate(mrcp_state_machine_t *state_machine);
 
+static apt_bool_t mrcp_session_offers_compare(const mrcp_session_descriptor_t *offer1, const mrcp_session_descriptor_t *offer2);
 
 mrcp_server_session_t* mrcp_server_session_create()
 {
@@ -108,6 +109,8 @@ mrcp_server_session_t* mrcp_server_session_create()
 	session->request_queue = apt_list_create(session->base.pool);
 	session->offer = NULL;
 	session->answer = NULL;
+	session->last_offer = NULL;
+	session->last_answer = NULL;
 	session->mpf_task_msg = NULL;
 	session->subrequest_count = 0;
 	session->state = SESSION_STATE_NONE;
@@ -382,6 +385,16 @@ static apt_bool_t mrcp_server_session_offer_process(mrcp_server_session_t *sessi
 
 	/* store received offer */
 	session->offer = descriptor;
+
+	/* compare this and previous offers, if any */
+	if(session->last_offer && mrcp_session_offers_compare(session->offer, session->last_offer) == TRUE) {
+		/* use previous answer if offers are identical */
+		session->answer = session->last_answer;
+		/* send answer to client */
+		mrcp_server_session_answer_send(session);
+		return TRUE;
+	}
+
 	session->answer = mrcp_session_answer_create(descriptor,session->base.pool);
 
 	mrcp_server_session_state_set(session,SESSION_STATE_GENERATING_ANSWER);
@@ -936,6 +949,8 @@ static apt_bool_t mrcp_server_session_answer_send(mrcp_server_session_t *session
 		descriptor->video_media_arr->nelts,
 		mrcp_session_status_phrase_get(descriptor->status));
 	status = mrcp_session_answer(&session->base,descriptor);
+	session->last_offer = session->offer;
+	session->last_answer = session->answer;
 	session->offer = NULL;
 	session->answer = NULL;
 
@@ -1169,5 +1184,62 @@ static apt_bool_t state_machine_on_deactivate(mrcp_state_machine_t *state_machin
 	mrcp_channel_t *channel = state_machine->obj;
 	mrcp_server_session_t *session = (mrcp_server_session_t*)channel->session;
 	mrcp_server_session_subrequest_remove(session);
+	return TRUE;
+}
+
+static apt_bool_t mrcp_session_offers_compare(const mrcp_session_descriptor_t *offer1, const mrcp_session_descriptor_t *offer2)
+{
+	int i;
+	mpf_rtp_media_descriptor_t *media1;
+	mpf_rtp_media_descriptor_t *media2;
+	mrcp_control_descriptor_t* control_media1;
+	mrcp_control_descriptor_t* control_media2;
+
+	if(apt_strings_compare(&offer1->origin, &offer2->origin) == FALSE)
+		return FALSE;
+
+	if(apt_strings_compare(&offer1->ip, &offer2->ip) == FALSE)
+		return FALSE;
+
+	if(apt_strings_compare(&offer1->ext_ip, &offer2->ext_ip) == FALSE)
+		return FALSE;
+
+	if(apt_strings_compare(&offer1->resource_name, &offer2->resource_name) == FALSE)
+		return FALSE;
+
+	if(offer1->resource_state != offer2->resource_state)
+		return FALSE;
+
+	if(offer1->control_media_arr->nelts != offer2->control_media_arr->nelts)
+		return FALSE;
+
+	for(i=0; i<offer1->control_media_arr->nelts; i++) {
+		control_media1 = APR_ARRAY_IDX(offer1->control_media_arr,i,mrcp_control_descriptor_t*);
+		control_media2 = APR_ARRAY_IDX(offer2->control_media_arr,i,mrcp_control_descriptor_t*);
+
+		if(mrcp_control_descriptors_compare(control_media1, control_media2) == FALSE)
+			return FALSE;
+	}
+
+	if(offer1->audio_media_arr->nelts != offer2->audio_media_arr->nelts)
+		return FALSE;
+
+	for(i=0; i<offer1->audio_media_arr->nelts; i++) {
+		media1 = APR_ARRAY_IDX(offer1->audio_media_arr,i,mpf_rtp_media_descriptor_t*);
+		media2 = APR_ARRAY_IDX(offer2->audio_media_arr,i,mpf_rtp_media_descriptor_t*);
+		if(mpf_rtp_media_descriptors_compare(media1, media2) == FALSE)
+			return FALSE;
+	}
+
+	if(offer1->video_media_arr->nelts != offer2->video_media_arr->nelts)
+		return FALSE;
+
+	for(i=0; i<offer1->video_media_arr->nelts; i++) {
+		media1 = APR_ARRAY_IDX(offer1->video_media_arr,i,mpf_rtp_media_descriptor_t*);
+		media2 = APR_ARRAY_IDX(offer2->video_media_arr,i,mpf_rtp_media_descriptor_t*);
+		if(mpf_rtp_media_descriptors_compare(media1, media2) == FALSE)
+			return FALSE;
+	}
+
 	return TRUE;
 }

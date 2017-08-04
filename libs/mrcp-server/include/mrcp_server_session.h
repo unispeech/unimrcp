@@ -98,6 +98,11 @@ struct mrcp_server_session_t {
 	/** In-progres answer */
 	mrcp_session_descriptor_t  *answer;
 
+	/** Last offer received */
+	mrcp_session_descriptor_t  *last_offer;
+	/** Last answer sent */
+	mrcp_session_descriptor_t  *last_answer;
+
 	/** MPF task message, which construction is in progress */
 	mpf_task_msg_t             *mpf_task_msg;
 
