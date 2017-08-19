@@ -353,7 +353,8 @@ bool UmcFramework::ProcessRunRequest(const char* pScenarioName, const char* pPro
 		return false;
 
 	printf("[%s]\n",pSession->GetId());
-	pSession->SetMrcpProfile(pProfileName);
+	if(pProfileName && *pProfileName != '\0')
+		pSession->SetMrcpProfile(pProfileName);
 	pSession->SetMrcpApplication(m_pMrcpApplication);
 	pSession->SetMethodProvider(this);
 	if(!pSession->Run())
@@ -456,7 +457,10 @@ void UmcFramework::RunSession(const char* pScenarioName, const char* pProfileNam
 	pTaskMsg->sub_type = UMC_TASK_RUN_SESSION_MSG;
 	UmcTaskMsg* pUmcMsg = (UmcTaskMsg*) pTaskMsg->data;
 	strncpy(pUmcMsg->m_ScenarioName,pScenarioName,sizeof(pUmcMsg->m_ScenarioName)-1);
-	strncpy(pUmcMsg->m_ProfileName,pProfileName,sizeof(pUmcMsg->m_ProfileName)-1);
+	if(pProfileName)
+		strncpy(pUmcMsg->m_ProfileName,pProfileName,sizeof(pUmcMsg->m_ProfileName)-1);
+	else
+		*pUmcMsg->m_ProfileName = '\0';
 	pUmcMsg->m_pAppMessage = NULL;
 	apt_task_msg_signal(pTask,pTaskMsg);
 }

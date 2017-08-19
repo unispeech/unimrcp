@@ -138,10 +138,6 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 		if(pScenarioName) 
 		{
 			const char* pProfileName = apr_strtok(NULL, " ", &last);
-			if(!pProfileName) 
-			{
-				pProfileName = "uni2";
-			}
 			m_pFramework->RunSession(pScenarioName,pProfileName);
 		}
 	}
