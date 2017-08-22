@@ -1,3 +1,79 @@
+Changes for UniMRCP-1.5.0
+
+  APR-toolkit library
+
+  * Added a helper function to set default log source.
+  * Added a reset flag not to advance timer queue if elapsed time has been reset. Fixed timer skew issue.
+
+  MPF library
+
+  * Added a helper function to compare media descriptors.
+
+  MRCP server library
+
+  * Properly set the length of "Active-Request-Id-List" header field generated in STOP response messages.
+    Fixed issue #190. Thanks Mert.
+  * Revised the way log source is implemented in plugins by means of MRCP_LOGGER_IMPLEMENT() and
+    MRCP_LOG_SOURCE_IMPLEMENT() macros.
+  * Do not further process an MRCPv1 session offer (RTSP SETUP request), if engine_channel could not be
+    created. Fixed issue #193.
+  * Implemented graceful server shutdown.
+  * Added functions mrcp_server_offline() and mrcp_server_online() to the server interface.
+  * Implemented handling of a TCP/MRCPv2 peer disconnect event. Fixed issue #162.
+  * Improved processing of SIP re-INVITEs. If a new offered session descriptor is identical to previous
+    one, then do not re-build media streams.
+
+  MRCPv2 transport library
+
+  * Do not allow a TCP/MRCPv2 connection to be re-used more than the number of times specified by the
+    configuration parameter max-shared-use-count.
+  * Do not allow a TCP/MRCPv2 connection to remain in the connected state infinitely.
+  * Added a helper function to compare control media descriptors.
+
+  RTSP library
+
+  * Do not allow an RTSP connection to remain in the connected state infinitely.
+  * Implemented server-initiated session termination.
+  * Fixed processing of an error case, when the RTSP session-id is missing in non-SETUP/DESCRIBE requests.
+  * Implemented online/offline task interface methods by responding to incoming requests with
+    503 Service Unavailable in offline mode.
+
+  Sofia-SIP module (MRCPv2 agent)
+
+  * Implemented server-initiated session termination.
+  * Added mrcp_sofia_task as a common base for client and server agents by implementing apt_task interface
+    via su_root.
+  * Implemented online/offline task interface methods by responding to incoming requests with 503 Service
+    Unavailable in offline mode.
+  * Added support for SIP Session Timer (https://tools.ietf.org/html/rfc4028).
+  
+  RTSP module (MRCPv1 agent)
+
+  * Implemented server-initiated session termination.
+  
+  UniMRCP server application
+
+  * Added a new option -w or --without-cmdline, which allows to run unimrcpserver without command line.
+    Fixed systemd issue.
+  * Added offline and online commands to the unimrcpserver command-line interface.
+  * Added new parameters <sip-session-expires> and <sip-min-session-expires> to default configuration
+    of <sip-uas>.
+  * Added a new parameter <inactivity-timeout> to default configuration of <rtsp-uas>.
+  * Added new parameters <max-shared-use-count>, <inactivity-timeout> and <termination-timeout> to
+    default configuration of <mrcpv2-uas>.
+
+  UMC sample application
+
+  * Split umcscenarios.xml configuration file into individual parts located in umc-scenarios subfolder.
+  * Fixed profile selection logic.
+  
+  Miscellaneous
+
+  * Added spaces between string literals in log statements to address compilation warnings.
+  * Use apr_size_t instead of size_t consistently.
+  * If pkg-config is missing, return an error on ./configure.
+
+
 Changes for UniMRCP-1.4.0
 
   APR-toolkit library
@@ -26,7 +102,7 @@ Changes for UniMRCP-1.4.0
   * Added a new helper macro for the plugins providing support for the use a custom log source.
 
   MRCPv2 transport library
-  
+
   * Added a new function mrcp_control_offer_copy(), which is used by the proxy application to copy
     an offer received from the client in order to amend and send it over to the server.
 
@@ -39,7 +115,7 @@ Changes for UniMRCP-1.4.0
   * Implemented a custom log source by using a new SIP_LOG_MARK instead of the default APT_LOG_MARK.
   * Fixed a memory leak in processing of SIP OPTIONS requests by destroying the corrresponding
     nua_handle after sending a response.
-  
+
   RTSP module (MRCPv1 agent)
 
   * Store the RTSP response code irregardless of presence of a message body.
@@ -47,11 +123,11 @@ Changes for UniMRCP-1.4.0
   * Fixed processing of malformed responses not having the RTSP Content-Type set.
 
   Demo plugins
-  
+
   * Using the new macro MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(), which allows to apply flexible log
     filtering rules to log records produced by plugins.
   * Fixed a possible NULL dereference, reported by Coverity scan.
-  
+
   UMC sample application
 
   * Store and use the length of content loaded from a file not only for DEFINE-GRAMMAR requests, 
@@ -61,7 +137,7 @@ Changes for UniMRCP-1.4.0
     to session tearing down routine.
   * Made non-functional changes to use a unified C++ coding style.
   * Took out an unused member variable m_pTimer.
-  
+
   Miscellaneous
 
   * Added .gitignore file.
@@ -187,7 +263,7 @@ Changes for UniMRCP-1.3.0
 Changes for UniMRCP-1.2.0
 
   APR-toolkit library
-  
+
   * Implemented a new interface for the NLSML parser in accordance with the NSLML schema defined in http://tools.ietf.org/html/rfc6787#section-16.1.
   * Took out the legacy NLSML interface.
   * Fixed a gcc warning for strict-aliasing rules.
@@ -203,7 +279,7 @@ Changes for UniMRCP-1.2.0
   * Unified pointer logging in APT style. Thanks Vali.
   * Define APT_PTR_FMT as 0x%I64x for 64-bit Windows.
   * Removed unused function apt_text_boolean_value_insert/apt_boolean_value_insert (inconsistent declaration/definition). Thanks Vali.
-  
+
   MPF library
 
   * The function mpf_codec_lists_intersect() now returns FALSE if there is no match for the primary codec descriptor.
@@ -217,14 +293,14 @@ Changes for UniMRCP-1.2.0
   * Check the number of ports per engine to be even to ensure there is a room for a pair of RTP/RTCP ports.
   * Added debugging capabilities to mpf_frame_buffer.
   * Copy name string when adding to codec capabilities. Thanks Vali.
-  
+
   MRCP common library
-  
+
   * Use apr_snprintf() instead of sprintf() in mrcp_request_id_generate().
   * Get rid of local fixed-size char buffers and additional string copies. Instead, allocate buffers from memory pool and generate strings straight into the buffers.
 
   MRCP client library
-  
+
   * Completed the implementation of the new API function to retrieve a SIP/RTSP response code received from the server (Issue-90).
   * Fixed a potential crash of the client stack which could happen when the server unexpectedly closes the MRCPv2 connection while the client stack is processing an application request.
   * Allow a pool/factory of signaling agents to be defined with the MRCPv1 and/or MRCPv2 profiles.
@@ -255,20 +331,20 @@ Changes for UniMRCP-1.2.0
   RTSP module (MRCPv1 agent)
 
   * Do not generate media format list for a disabled audio stream.
-  
+
   Demo plugins
-  
+
   * Respond with failure if codec descriptor is unavailable (associated media stream is disabled).
-  
+
   UMC sample application
-  
+
   * Terminate execution of sample application if media descriptor is unavailable (media stream is disabled).
   * Use the new NLSML parser interface in sample apps.
   * Set the header field Save-Waveform to TRUE in the sample umc recog application.
   * Fixed an invalid read of 8 bytes in umc application: sizeof(mpf_codec_capabilities_t) was meant to be allocated.
-  
+
   ASR Client application (and library)
-  
+
   * Get rid of 1Kb grammar file limit in libasrclient. Load the content into an allocated buffer instead. 
 
   Miscellaneous
@@ -355,13 +431,13 @@ Changes for UniMRCP-1.1.0
   * Added a new function to the client API to retrieve a SIP/RTSP response code received from the server (Issue-90). The support is incomplete.
 
   MRCP server library
-  
+
   * Fixed an interoperability issue with AVP. The mid attribute is not required when the SDP contains only one m-line.
   * Fixed the build of C++ MRCP plugins for platforms other than Win32. Thanks Vali.
   * Added the ability to take and use parameters set by the plugin in a response to the GET-PARAMS request. Thanks Vali.
-  
+
   Sofia-SIP module
-  
+
   * Took out unused tags (variables) to compile with Sofia-SIP 1.12.11.
   * Added support for Sofia-SIP's TPTAG_LOG() and TPTAG_DUMP() tags which can be enabled from the client and server configuration to print out and/or dump SIP messages.
 
@@ -378,7 +454,7 @@ Changes for UniMRCP-1.1.0
   * Enhanced the UniMRCP Windows service manager. Thanks Vali.
   * Corrected FileType in Windows resources from DLL to APP. Thanks Vali.
   * Added a Windows resource file for the unimrcpservice application.
-    
+
   UMC sample application
 
   * Set the default profile name in umcscenarios.xml to "uni2".
