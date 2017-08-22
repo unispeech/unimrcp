@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2015 Arsen Chaloyan
+ * Copyright 2008-2017 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@
 #define UNI_REVISION_STRING     "0"
 
 /** Revision date. */
-#define UNI_REVISION_DATE       "2016-07-19"
+#define UNI_REVISION_DATE       "2017-08-22"
 
 /** Revision stamp. */
-#define UNI_REVISION_STAMP      20160719L
+#define UNI_REVISION_STAMP      20170822L
 
 /** Check at compile time if the revision number is at least a certain level. */
 #define UNI_REVISION_AT_LEAST(rev)   ((rev) < UNI_REVISION)
