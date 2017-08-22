@@ -137,8 +137,8 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->sip_t2 = 0;
 	config->sip_t4 = 0;
 	config->sip_t1x64 = 0;
-	config->session_expires = 0;
-	config->min_session_expires = 0;
+	config->session_expires = 600; /* sec */
+	config->min_session_expires = 120; /* sec */
 
 	config->tport_log = FALSE;
 	config->tport_dump_file = NULL;
