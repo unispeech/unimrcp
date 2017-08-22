@@ -43,6 +43,8 @@
       <!-- <sip-t1x64>32000</sip-t1x64> -->
       <!-- <sip-session-expires>3600</sip-session-expires> -->
       <!-- <sip-min-session-expires>120</sip-min-session-expires> -->
+      <sip-session-expires>600</sip-session-expires>
+      <sip-min-session-expires>120</sip-min-session-expires>
       <!-- <sip-message-output>true</sip-message-output> -->
       <!-- <sip-message-dump>sofia-sip-uas.log</sip-message-dump> -->
     </sip-uas>
@@ -61,6 +63,7 @@
         <param name="speechrecog" value="speechrecognizer"/>
       </resource-map>
       <max-connection-count>100</max-connection-count>
+      <inactivity-timeout>600</inactivity-timeout>
       <sdp-origin>UniMRCPServer</sdp-origin>
     </rtsp-uas>
 
@@ -72,9 +75,12 @@
       <!-- <mrcp-ip>10.10.0.1</mrcp-ip> -->
       <mrcp-port>1544</mrcp-port>
       <max-connection-count>100</max-connection-count>
+      <max-shared-use-count>100</max-shared-use-count>
       <force-new-connection>false</force-new-connection>
       <rx-buffer-size>1024</rx-buffer-size>
       <tx-buffer-size>1024</tx-buffer-size>
+      <inactivity-timeout>600</inactivity-timeout>
+      <termination-timeout>3</termination-timeout>
     </mrcpv2-uas>
 
     <!-- Media processing engine -->
