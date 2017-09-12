@@ -418,11 +418,19 @@ static apt_bool_t synth_event_speak_complete(mrcp_synth_state_machine_t *state_m
 		return FALSE;
 	}
 
-	if(state_machine->active_request && state_machine->active_request->start_line.method_id == SYNTHESIZER_STOP) {
-		apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Ignore SPEAK-COMPLETE Event " APT_SIDRES_FMT " [%" MRCP_REQUEST_ID_FMT "]: waiting for STOP response",
-			MRCP_MESSAGE_SIDRES(message),
-			message->start_line.request_id);
-		return FALSE;
+	if(state_machine->active_request) {
+		if(state_machine->active_request->start_line.method_id == SYNTHESIZER_STOP) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Ignore SPEAK-COMPLETE Event " APT_SIDRES_FMT " [%" MRCP_REQUEST_ID_FMT "]: waiting for STOP response",
+				MRCP_MESSAGE_SIDRES(message),
+				message->start_line.request_id);
+			return FALSE;
+		}
+		if(state_machine->active_request->start_line.method_id == SYNTHESIZER_BARGE_IN_OCCURRED) {
+			apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Ignore SPEAK-COMPLETE Event " APT_SIDRES_FMT " [%" MRCP_REQUEST_ID_FMT "]: waiting for BARGE-IN-OCCURRED response",
+				MRCP_MESSAGE_SIDRES(message),
+				message->start_line.request_id);
+			return FALSE;
+		}
 	}
 
 	if(mrcp_resource_header_property_check(message,SYNTHESIZER_HEADER_COMPLETION_CAUSE) != TRUE) {
