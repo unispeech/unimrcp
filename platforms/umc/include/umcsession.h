@@ -30,6 +30,9 @@ class UmcSession;
 class UmcSessionEventHandler
 {
 public:
+/* ============================ CREATORS =================================== */
+	virtual ~UmcSessionEventHandler() {}
+
 /* ============================ HANDLERS =================================== */
 	virtual bool OnSessionTerminate(mrcp_sig_status_code_e status) = 0;
 	virtual bool OnSessionUpdate(mrcp_sig_status_code_e status) = 0;
@@ -43,6 +46,9 @@ public:
 class UmcSessionMethodProvider
 {
 public:
+/* ============================ CREATORS =================================== */
+	virtual ~UmcSessionMethodProvider() {}
+
 /* ============================ MANIPULATORS =============================== */
 	virtual void ExitSession(UmcSession* pUmcSession) = 0;
 };
