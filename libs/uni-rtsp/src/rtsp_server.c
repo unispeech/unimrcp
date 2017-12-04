@@ -500,6 +500,15 @@ static apt_bool_t rtsp_server_session_request_process(rtsp_server_t *server, rts
 			}
 			session = rtsp_server_session_setup_process(server,rtsp_connection,message);
 		}
+		else if(message->start_line.common.request_line.method_id == RTSP_METHOD_OPTIONS) {
+			/* respond with OK to OPTIONS request */
+			rtsp_message_t *response = rtsp_response_create(message,RTSP_STATUS_CODE_OK,RTSP_REASON_PHRASE_OK,message->pool);
+			if(rtsp_server_message_send(server,rtsp_connection,response) == FALSE) {
+				apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Failed to Send RTSP Response");
+				return FALSE;
+			}
+			return TRUE;
+		}
 		else {
 			/* error case */
 			apt_log(RTSP_LOG_MARK,APT_PRIO_WARNING,"Missing RTSP Session-ID");
