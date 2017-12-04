@@ -33,7 +33,8 @@ static const apt_str_table_item_t rtsp_method_string_table[] = {
 	{{"SETUP",    5},0},
 	{{"ANNOUNCE", 8},0},
 	{{"TEARDOWN", 8},0},
-	{{"DESCRIBE", 8},0}
+	{{"DESCRIBE", 8},0},
+	{{"OPTIONS",  7},0}
 };
 
 /** String table of RTSP reason phrases (rtsp_reason_phrase_e) */
