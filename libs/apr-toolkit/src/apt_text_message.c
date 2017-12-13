@@ -62,26 +62,28 @@ APT_DECLARE(apt_header_field_t*) apt_header_field_parse(apt_text_stream_t *strea
 		return NULL;
 	}
 
-	/* check folding lines (value spanning multiple lines) */
-	while(stream->pos < stream->end) {
-		if(apt_text_is_wsp(*stream->pos) == FALSE) {
-			break;
-		}
+	if (apt_string_is_empty(&pair.name) == FALSE) {
+		/* check folding lines (value spanning multiple lines) */
+		while (stream->pos < stream->end) {
+			if (apt_text_is_wsp(*stream->pos) == FALSE) {
+				break;
+			}
 
-		stream->pos++;
+			stream->pos++;
 
-		/* skip further white spaces (if any) */
-		apt_text_white_spaces_skip(stream);
+			/* skip further white spaces (if any) */
+			apt_text_white_spaces_skip(stream);
 
-		if(!folded_lines) {
-			folded_lines = apr_array_make(pool,1,sizeof(apt_str_t));
+			if (!folded_lines) {
+				folded_lines = apr_array_make(pool, 1, sizeof(apt_str_t));
+			}
+			if (apt_text_line_read(stream, &temp_line) == TRUE) {
+				line = apr_array_push(folded_lines);
+				*line = temp_line;
+				folding_length += line->length;
+			}
 		}
-		if(apt_text_line_read(stream,&temp_line) == TRUE) {
-			line = apr_array_push(folded_lines);
-			*line = temp_line;
-			folding_length += line->length;
-		}
-	};
+	}
 
 	header_field = apt_header_field_alloc(pool);
 	/* copy parsed name of the header field */
