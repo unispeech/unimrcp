@@ -30,7 +30,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, const mrcp_control_descriptor_t *control_media, apt_bool_t offer);
 
 static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
-static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
+static void mrcp_control_medias_generate(mrcp_session_descriptor_t* descriptor, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 
 /** Generate SDP string by MRCP descriptor */
 MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, apt_bool_t offer)
@@ -117,9 +117,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 			}
 			case sdp_media_application:
 			{
-				mrcp_control_descriptor_t *control_media = mrcp_control_descriptor_create(pool);
-				control_media->id = mrcp_session_control_media_add(descriptor,control_media);
-				mrcp_control_media_generate(control_media,sdp_media,&descriptor->ip,pool);
+				mrcp_control_medias_generate(descriptor,sdp_media,&descriptor->ip,pool);
 				break;
 			}
 			default:
@@ -356,9 +354,6 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 				apt_string_set(&value,attrib->a_value);
 				control_media->connection_type = mrcp_connection_type_find(&value);
 				break;
-			case MRCP_ATTRIB_RESOURCE:
-				apt_string_assign(&control_media->resource_name,attrib->a_value,pool);
-				break;
 			case MRCP_ATTRIB_CHANNEL:
 				apt_string_set(&value,attrib->a_value);
 				apt_id_resource_parse(&value,'@',&control_media->session_id,&control_media->resource_name,pool);
@@ -379,6 +374,35 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 	}
 	control_media->port = (apr_port_t)sdp_media->m_port;
 	return TRUE;
+}
+
+/** Generate and add MRCP control medias by SDP media */
+static void mrcp_control_medias_generate(mrcp_session_descriptor_t* descriptor, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool)
+{
+	apr_size_t descriptor_count = 0;
+	apt_str_t name;
+	sdp_attribute_t *attrib = NULL;
+
+	// generate a descriptor for each resource
+	for(attrib = sdp_media->m_attributes; attrib; attrib=attrib->a_next) {
+		apt_string_set(&name,attrib->a_name);
+		if(mrcp_attrib_id_find(&name) == MRCP_ATTRIB_RESOURCE) {
+			mrcp_control_descriptor_t *control_media = mrcp_control_descriptor_create(pool);
+			apt_string_assign(&control_media->resource_name,attrib->a_value,pool);
+			if(mrcp_control_media_generate(control_media,sdp_media,&descriptor->ip,pool)) {
+				control_media->id = mrcp_session_control_media_add(descriptor,control_media);
+				descriptor_count++;
+			}
+		}
+	}
+
+	// if no resources specified, try and generate a descriptor without resource, e.g. for command replies
+	if(descriptor_count == 0) {
+		mrcp_control_descriptor_t *control_media = mrcp_control_descriptor_create(pool);
+		if(mrcp_control_media_generate(control_media,sdp_media,&descriptor->ip,pool) == TRUE) {
+			control_media->id = mrcp_session_control_media_add(descriptor,control_media);
+		}
+	}
 }
 
 /** Generate SDP resource discovery string */
