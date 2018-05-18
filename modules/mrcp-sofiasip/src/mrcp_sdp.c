@@ -380,7 +380,6 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 static void mrcp_control_medias_generate(mrcp_session_descriptor_t* descriptor, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool)
 {
 	apr_size_t descriptor_count = 0;
-	mrcp_attrib_e id;
 	apt_str_t name;
 	sdp_attribute_t *attrib = NULL;
 

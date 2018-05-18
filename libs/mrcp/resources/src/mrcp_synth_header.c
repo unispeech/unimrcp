@@ -387,7 +387,7 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 			apt_boolean_value_generate(synth_header->kill_on_barge_in,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_SPEAKER_PROFILE:
-			*value = synth_header->speaker_profile,value;
+			*value = synth_header->speaker_profile;
 			break;
 		case SYNTHESIZER_HEADER_COMPLETION_CAUSE:
 			apt_completion_cause_generate(
@@ -415,7 +415,7 @@ static apt_bool_t mrcp_synth_header_generate(const mrcp_header_accessor_t *acces
 			apt_size_value_generate(synth_header->voice_param.variant,value,pool);
 			break;
 		case SYNTHESIZER_HEADER_VOICE_NAME:
-			*value = synth_header->voice_param.name,value;
+			*value = synth_header->voice_param.name;
 			break;
 		case SYNTHESIZER_HEADER_PROSODY_VOLUME:
 			mrcp_prosody_volume_generate(&synth_header->prosody_param.volume,value,pool);
