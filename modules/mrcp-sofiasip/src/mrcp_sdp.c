@@ -31,6 +31,7 @@ static apr_size_t sdp_control_media_generate(char *buffer, apr_size_t size, cons
 
 static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *mrcp_media, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
+static apt_bool_t mrcp_control_medias_generate(mrcp_session_descriptor_t* descriptor, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool);
 
 /** Generate SDP string by MRCP descriptor */
 MRCP_DECLARE(apr_size_t) sdp_string_generate_by_mrcp_descriptor(char *buffer, apr_size_t size, const mrcp_session_descriptor_t *descriptor, apt_bool_t offer)
@@ -120,6 +121,48 @@ MRCP_DECLARE(apt_bool_t) mrcp_descriptor_generate_by_sdp_session(mrcp_session_de
 				mrcp_control_descriptor_t *control_media = mrcp_control_descriptor_create(pool);
 				control_media->id = mrcp_session_control_media_add(descriptor,control_media);
 				mrcp_control_media_generate(control_media,sdp_media,&descriptor->ip,pool);
+				break;
+			}
+			default:
+				apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Not Supported SDP Media [%s]", sdp_media->m_type_name);
+				break;
+		}
+	}
+	return TRUE;
+}
+
+MRCP_DECLARE(apt_bool_t) mrcp_resource_discovery_generate_by_sdp_session(mrcp_session_descriptor_t* descriptor, const sdp_session_t *sdp, apr_pool_t *pool)
+{
+	sdp_media_t *sdp_media;
+
+	if(!sdp) {
+		apt_log(SIP_LOG_MARK,APT_PRIO_WARNING,"Invalid SDP Message");
+		return FALSE;
+	}
+
+	if(sdp->sdp_connection) {
+		apt_string_assign(&descriptor->ip,sdp->sdp_connection->c_address,pool);
+	}
+
+	for(sdp_media=sdp->sdp_media; sdp_media; sdp_media=sdp_media->m_next) {
+		switch(sdp_media->m_type) {
+			case sdp_media_audio:
+			{
+				mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
+				media->id = mrcp_session_audio_media_add(descriptor,media);
+				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
+				break;
+			}
+			case sdp_media_video:
+			{
+				mpf_rtp_media_descriptor_t *media = mpf_rtp_media_descriptor_alloc(pool);
+				media->id = mrcp_session_video_media_add(descriptor,media);
+				mpf_rtp_media_generate(media,sdp_media,&descriptor->ip,pool);
+				break;
+			}
+			case sdp_media_application:
+			{
+				mrcp_control_medias_generate(descriptor, sdp_media, &descriptor->ip, pool);
 				break;
 			}
 			default:
@@ -378,6 +421,36 @@ static apt_bool_t mrcp_control_media_generate(mrcp_control_descriptor_t *control
 		control_media->ip = *ip;
 	}
 	control_media->port = (apr_port_t)sdp_media->m_port;
+	return TRUE;
+}
+
+/** Generate and add MRCP control medias by SDP media */
+static apt_bool_t mrcp_control_medias_generate(mrcp_session_descriptor_t* descriptor, const sdp_media_t *sdp_media, const apt_str_t *ip, apr_pool_t *pool)
+{
+	apr_size_t descriptor_count = 0;
+	apt_str_t name;
+	sdp_attribute_t *attrib = NULL;
+	mrcp_proto_type_e proto;
+
+	apt_string_set(&name,sdp_media->m_proto_name);
+	proto = mrcp_proto_find(&name);
+	if(proto != MRCP_PROTO_TCP) {
+		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Not supported SDP Proto [%s], expected [%s]",
+			sdp_media->m_proto_name,mrcp_proto_get(MRCP_PROTO_TCP)->buf);
+		return FALSE;
+	}
+
+	// generate a descriptor for each resource
+	for (attrib = sdp_media->m_attributes; attrib; attrib = attrib->a_next) {
+		apt_string_set(&name, attrib->a_name);
+		if (mrcp_attrib_id_find(&name) == MRCP_ATTRIB_RESOURCE) {
+			mrcp_control_descriptor_t *control_media = mrcp_control_descriptor_create(pool);
+			apt_string_assign(&control_media->resource_name, attrib->a_value, pool);
+			control_media->id = mrcp_session_control_media_add(descriptor, control_media);
+			descriptor_count++;
+		}
+	}
+
 	return TRUE;
 }
 

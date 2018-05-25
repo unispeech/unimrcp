@@ -533,7 +533,7 @@ static void mrcp_sofia_on_resource_discover(
 
 			parser = sdp_parse(sofia_session->home,remote_sdp_str,(int)strlen(remote_sdp_str),0);
 			sdp = sdp_session(parser);
-			mrcp_descriptor_generate_by_sdp_session(descriptor,sdp,NULL,session->pool);
+			mrcp_resource_discovery_generate_by_sdp_session(descriptor,sdp,session->pool);
 			sdp_parser_free(parser);
 		}
 
