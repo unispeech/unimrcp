@@ -105,6 +105,8 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 	char *name;
 	char *last;
 	name = apr_strtok(cmdline, " ", &last);
+	if(!name)
+		return running;
 
 	if(strcasecmp(name,"run") == 0) {
 		char *grammar = apr_strtok(NULL, " ", &last);

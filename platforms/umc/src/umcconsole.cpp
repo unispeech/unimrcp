@@ -131,6 +131,8 @@ bool UmcConsole::ProcessCmdLine(char* pCmdLine)
 	char *name;
 	char *last;
 	name = apr_strtok(pCmdLine, " ", &last);
+	if(!name)
+		return running;
 
 	if(strcasecmp(name,"run") == 0)
 	{

@@ -25,6 +25,8 @@ static apt_bool_t cmdline_process(mrcp_server_t *server, char *cmdline)
 	char *name;
 	char *last;
 	name = apr_strtok(cmdline, " ", &last);
+	if(!name)
+		return running;
 
 	if(strcasecmp(name,"loglevel") == 0) {
 		char *priority = apr_strtok(NULL, " ", &last);

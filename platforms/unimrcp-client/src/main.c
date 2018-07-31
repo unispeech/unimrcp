@@ -35,6 +35,8 @@ static apt_bool_t demo_framework_cmdline_process(demo_framework_t *framework, ch
 	char *name;
 	char *last;
 	name = apr_strtok(cmdline, " ", &last);
+	if(!name)
+		return running;
 
 	if(strcasecmp(name,"run") == 0) {
 		char *app_name = apr_strtok(NULL, " ", &last);
