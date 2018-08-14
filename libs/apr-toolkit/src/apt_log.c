@@ -678,6 +678,7 @@ static apt_bool_t apt_log_file_dump(apt_log_file_data_t *file_data, const char *
 		log_file_path = apt_log_file_path_make(file_data);
 		file_data->file = fopen(log_file_path,"wb");
 		if(!file_data->file) {
+			apr_thread_mutex_unlock(file_data->mutex);
 			return FALSE;
 		}
 
