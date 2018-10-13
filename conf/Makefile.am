@@ -1,6 +1,6 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-CONFFILES            = logger.xml dirlayout.xml
+CONFFILES            = logfile.xml logger.xml dirlayout.xml
 
 if UNIMRCP_CLIENT_LIB
 CONFFILES           += unimrcpclient.xml unimrcpclient.xsd
