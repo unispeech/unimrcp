@@ -180,6 +180,7 @@ APT_DECLARE(apt_bool_t) apt_log_source_assign(const char *name, apt_log_source_t
  * @param max_file_count the max number of files used in log rotation
  * @param append whether to append or to truncate (start over) the log file
  * @param pool the memory pool to use
+ * @deprecated @see apt_log_file_open_ex()
  */
 APT_DECLARE(apt_bool_t) apt_log_file_open(
 							const char *dir_path,
@@ -188,6 +189,15 @@ APT_DECLARE(apt_bool_t) apt_log_file_open(
 							apr_size_t max_file_count,
 							apt_bool_t append,
 							apr_pool_t *pool);
+
+/**
+ * Open the log file (extended version).
+ * @param dir_path the path to the log directory
+ * @param prefix the prefix used to compose the log file name
+ * @param config_file the path to configuration file to load settings from
+ * @param pool the memory pool to use
+ */
+APT_DECLARE(apt_bool_t) apt_log_file_open_ex(const char *dir_path, const char *prefix, const char *config_file, apr_pool_t *pool);
 
 /**
  * Close the log file.
