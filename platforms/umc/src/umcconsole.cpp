@@ -104,7 +104,8 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 	{
 		/* open the log file */
 		const char *logDirPath = apt_dir_layout_path_get(pDirLayout,APT_LAYOUT_LOG_DIR);
-		apt_log_file_open(logDirPath,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
+		const char *logfileConfPath = apt_confdir_filepath_get(pDirLayout,"logfile.xml",pool);
+		apt_log_file_open_ex(logDirPath,"unimrcpclient",logfileConfPath,pool);
 	}
 
 	/* create demo framework */

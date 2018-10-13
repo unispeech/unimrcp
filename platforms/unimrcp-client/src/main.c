@@ -253,7 +253,8 @@ int main(int argc, const char * const *argv)
 	if(apt_log_output_mode_check(APT_LOG_OUTPUT_FILE) == TRUE) {
 		/* open the log file */
 		const char *log_dir_path = apt_dir_layout_path_get(dir_layout,APT_LAYOUT_LOG_DIR);
-		apt_log_file_open(log_dir_path,"unimrcpclient",MAX_LOG_FILE_SIZE,MAX_LOG_FILE_COUNT,FALSE,pool);
+		const char *logfile_conf_path = apt_confdir_filepath_get(dir_layout,"logfile.xml",pool);
+		apt_log_file_open_ex(log_dir_path,"unimrcpclient",logfile_conf_path,pool);
 	}
 
 	/* create demo framework */
