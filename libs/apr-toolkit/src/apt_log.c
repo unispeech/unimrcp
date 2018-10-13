@@ -382,6 +382,7 @@ APT_DECLARE(apt_bool_t) apt_log_file_open_ex(const char *dir_path, const char *p
 
 static apt_bool_t apt_log_file_open_internal(const char *dir_path, const char *prefix, const apt_log_file_settings_t *settings, apr_pool_t *pool)
 {
+	char log_file_link_name[256];
 	apt_log_file_data_t *file_data;
 	if (!apt_logger || !dir_path || !prefix || !settings) {
 		return FALSE;
@@ -422,7 +423,6 @@ static apt_bool_t apt_log_file_open_internal(const char *dir_path, const char *p
 	}
 
 	/* compose current link name */
-	char log_file_link_name[256];
 	apr_snprintf(log_file_link_name, sizeof(log_file_link_name), "%s_current.log", file_data->prefix);
 	/* compose path to current link using permanent pool */
 	file_data->current_link = apt_log_file_path_make(file_data, log_file_link_name, pool);
@@ -724,9 +724,10 @@ static apt_bool_t apt_do_log(apt_log_source_t *log_source, const char *file, int
 
 static apt_bool_t apt_log_file_create(apt_log_file_data_t *file_data)
 {
+	const char *log_file_path;
+	apr_time_exp_t result;
 	/* compose log file name based on current date and time */
 	file_data->ctime = apr_time_now();
-	apr_time_exp_t result;
 	apr_time_exp_lt(&result, file_data->ctime);
 
 	/* compose log file name */
@@ -737,7 +738,7 @@ static apt_bool_t apt_log_file_create(apt_log_file_data_t *file_data)
 		result.tm_usec);
 
 	/* compose log file path */
-	const char *log_file_path = apt_log_file_path_make(file_data, file_data->name, file_data->pool);
+	log_file_path = apt_log_file_path_make(file_data, file_data->name, file_data->pool);
 
 	/* open new log file */
 	file_data->file = fopen(log_file_path, "wb");
@@ -819,10 +820,12 @@ static void apt_log_file_count_check(apt_log_file_data_t *file_data)
 
 static void apt_log_file_age_check(apt_log_file_data_t *file_data)
 {
+	apr_time_t ref_time;
+	const char *path;
 	if (!file_data->settings.max_age)
 		return;
 
-	apr_time_t ref_time = apr_time_now() - apr_time_from_sec(file_data->settings.max_age);
+	ref_time = apr_time_now() - apr_time_from_sec(file_data->settings.max_age);
 
 	while (file_data->file_entry_count) {
 		apt_log_file_entry_t *file_entry = APR_RING_FIRST(&file_data->file_entry_list);
@@ -830,7 +833,7 @@ static void apt_log_file_age_check(apt_log_file_data_t *file_data)
 			break;
 		}
 
-		const char *path = apt_log_file_path_make(file_data, file_entry->name, file_data->pool);
+		path = apt_log_file_path_make(file_data, file_entry->name, file_data->pool);
 		apr_file_remove(path, file_data->pool);
 
 		apt_log_file_entry_remove(file_data, file_entry);
@@ -871,15 +874,15 @@ static void apt_log_files_populate(apt_log_file_data_t *file_data)
 	apr_finfo_t file_info;
 	const char *pattern;
 	apr_uint32_t mask = APR_FINFO_TYPE | APR_FINFO_NAME;
+	apr_time_t cur_time = 0;
+	apr_time_t expiration_interval = 0;
 
 	if (apr_dir_open(&dir, file_data->dir_path, file_data->pool) != APR_SUCCESS)
 		return;
 
 	pattern = apt_log_file_pattern_make(file_data);
 
-	apr_time_t cur_time = 0;
-	apr_time_t expiration_interval = 0;
-	if (file_data->settings.max_age)	{
+	if (file_data->settings.max_age) {
 		mask |= APR_FINFO_CTIME;
 		cur_time = apr_time_now();
 		expiration_interval = apr_time_from_sec(file_data->settings.max_age);
