@@ -112,6 +112,7 @@ ASR_CLIENT_DECLARE(asr_engine_t*) asr_engine_create(
 	asr_engine_t *engine;
 	mrcp_client_t *mrcp_client;
 	mrcp_application_t *mrcp_app;
+	const char *log_prefix = "unimrcpclient";
 
 	/* create APR pool */
 	pool = apt_pool_create();
@@ -124,11 +125,17 @@ ASR_CLIENT_DECLARE(asr_engine_t*) asr_engine_create(
 	/* create singleton logger */
 	apt_log_instance_create(log_output,log_priority,pool);
 
-	if((log_output & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE) {
+	if(apt_log_output_mode_check(APT_LOG_OUTPUT_FILE) == TRUE) {
 		/* open the log file */
 		const char *log_dir_path = apt_dir_layout_path_get(dir_layout,APT_LAYOUT_LOG_DIR);
 		const char *logfile_conf_path = apt_confdir_filepath_get(dir_layout,"logfile.xml",pool);
-		apt_log_file_open_ex(log_dir_path,"unimrcpclient",logfile_conf_path,pool);
+		apt_log_file_open_ex(log_dir_path,log_prefix,logfile_conf_path,pool);
+	}
+
+	if(apt_log_output_mode_check(APT_LOG_OUTPUT_SYSLOG) == TRUE) {
+		/* open the syslog */
+		const char *logfile_conf_path = apt_confdir_filepath_get(dir_layout,"syslog.xml",pool);
+		apt_syslog_open(log_prefix,logfile_conf_path,pool);
 	}
 
 	engine = apr_palloc(pool,sizeof(asr_engine_t));

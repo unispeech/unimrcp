@@ -39,6 +39,7 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 	apr_pool_t* pool = NULL;
 	apt_dir_layout_t* pDirLayout = NULL;
 	const char *logConfPath;
+	const char *logPrefix = "unimrcpclient";
 
 	/* APR global initialization */
 	if(apr_initialize() != APR_SUCCESS) 
@@ -105,7 +106,14 @@ bool UmcConsole::Run(int argc, const char * const *argv)
 		/* open the log file */
 		const char *logDirPath = apt_dir_layout_path_get(pDirLayout,APT_LAYOUT_LOG_DIR);
 		const char *logfileConfPath = apt_confdir_filepath_get(pDirLayout,"logfile.xml",pool);
-		apt_log_file_open_ex(logDirPath,"unimrcpclient",logfileConfPath,pool);
+		apt_log_file_open_ex(logDirPath,logPrefix,logfileConfPath,pool);
+	}
+
+	if(apt_log_output_mode_check(APT_LOG_OUTPUT_SYSLOG) == TRUE)
+	{
+		/* open the syslog */
+		const char *logfileConfPath = apt_confdir_filepath_get(pDirLayout,"syslog.xml",pool);
+		apt_syslog_open(logPrefix,logfileConfPath,pool);
 	}
 
 	/* create demo framework */
