@@ -110,7 +110,8 @@ typedef enum {
 typedef enum {
 	APT_LOG_OUTPUT_NONE     = 0x00, /**< disable logging */
 	APT_LOG_OUTPUT_CONSOLE  = 0x01, /**< enable console output */
-	APT_LOG_OUTPUT_FILE     = 0x02  /**< enable log file output */
+	APT_LOG_OUTPUT_FILE     = 0x02, /**< enable log file output */
+	APT_LOG_OUTPUT_SYSLOG   = 0x04  /**< enable syslog output */
 } apt_log_output_e;
 
 /** Masking mode of private data */
@@ -203,6 +204,19 @@ APT_DECLARE(apt_bool_t) apt_log_file_open_ex(const char *dir_path, const char *p
  * Close the log file.
  */
 APT_DECLARE(apt_bool_t) apt_log_file_close(void);
+
+/**
+ * Open the syslog.
+ * @param prefix the prefix used to compose the log file name
+ * @param config_file the path to configuration file to load settings from
+ * @param pool the memory pool to use
+ */
+APT_DECLARE(apt_bool_t) apt_syslog_open(const char *prefix, const char *config_file, apr_pool_t *pool);
+
+/**
+ * Close the syslog.
+ */
+APT_DECLARE(apt_bool_t) apt_syslog_close(void);
 
 /**
  * Set the logging output mode.

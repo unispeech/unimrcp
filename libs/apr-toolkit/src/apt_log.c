@@ -18,6 +18,7 @@
 #pragma warning(disable: 4127)
 #else
 #include <sys/unistd.h>
+#include <syslog.h>
 #endif
 #include <stdlib.h>
 #include <apr_ring.h>
@@ -48,11 +49,17 @@ static const char priority_snames[APT_PRIO_COUNT][MAX_PRIORITY_NAME_LENGTH+1] =
 typedef struct apt_log_file_data_t apt_log_file_data_t;
 typedef struct apt_log_file_settings_t apt_log_file_settings_t;
 typedef struct apt_log_file_entry_t apt_log_file_entry_t;
+typedef struct apt_syslog_settings_t apt_syslog_settings_t;
 
 struct apt_log_file_entry_t {
 	APR_RING_ENTRY(apt_log_file_entry_t) link;
 	char                     *name;
 	apr_time_t                ctime;
+};
+
+struct apt_syslog_settings_t {
+	int                       option;
+	int                       facility;
 };
 
 struct apt_log_file_settings_t {
@@ -91,6 +98,7 @@ struct apt_logger_t {
 	apr_hash_t               *log_sources;
 	apt_log_ext_handler_f     ext_handler;
 	apt_log_file_data_t      *file_data;
+	apt_bool_t                syslog;
 };
 
 static apt_logger_t *apt_logger = NULL;
@@ -124,6 +132,7 @@ static apt_logger_t* apt_log_instance_alloc(apr_pool_t *pool)
 	logger->header = APT_LOG_HEADER_DEFAULT;
 	logger->ext_handler = NULL;
 	logger->file_data = NULL;
+	logger->syslog = FALSE;
 
 	/* Create hash for custom log sources */
 	logger->log_sources = apr_hash_make(pool);
@@ -287,6 +296,11 @@ APT_DECLARE(apt_bool_t) apt_log_instance_destroy()
 	if(apt_logger->file_data) {
 		apt_log_file_close();
 	}
+
+	if (apt_logger->syslog == TRUE) {
+		apt_syslog_close();
+	}
+
 	apt_logger = NULL;
 	return TRUE;
 }
@@ -461,6 +475,151 @@ APT_DECLARE(apt_bool_t) apt_log_file_close()
 	return TRUE;
 }
 
+#ifndef WIN32
+static int apt_syslog_option_translate(const char *str, apr_pool_t *pool)
+{
+	int option = 0;
+	char *name;
+	char *last;
+	char *value = apr_pstrdup(pool, str);
+	name = apr_strtok(value, ",", &last);
+	while (name) {
+		if (strcasecmp(str, "LOG_CONS") == 0)
+			option |= LOG_CONS;
+		else if (strcasecmp(str, "LOG_NDELAY") == 0)
+			option |= LOG_NDELAY;
+		else if (strcasecmp(str, "LOG_NOWAIT") == 0)
+			option |= LOG_NOWAIT;
+		else if (strcasecmp(str, "LOG_ODELAY") == 0)
+			option |= LOG_ODELAY;
+		else if (strcasecmp(str, "LOG_PERROR") == 0)
+			option |= LOG_PERROR;
+		else if (strcasecmp(str, "LOG_PID") == 0)
+			option |= LOG_PID;
+
+		name = apr_strtok(NULL, ",", &last);
+	}
+
+	return option;
+}
+
+static int apt_syslog_facility_translate(const char *str)
+{
+	if (strcasecmp(str, "LOG_AUTH") == 0)
+		return LOG_AUTH;
+	else if (strcasecmp(str, "LOG_AUTHPRIV") == 0)
+		return LOG_AUTHPRIV;
+	else if (strcasecmp(str, "LOG_CRON") == 0)
+		return LOG_CRON;
+	else if (strcasecmp(str, "LOG_DAEMON") == 0)
+		return LOG_DAEMON;
+	else if (strcasecmp(str, "LOG_FTP") == 0)
+		return LOG_FTP;
+	else if (strcasecmp(str, "LOG_KERN") == 0)
+		return LOG_KERN;
+	else if (strcasecmp(str, "LOG_LOCAL0") == 0)
+		return LOG_LOCAL0;
+	else if (strcasecmp(str, "LOG_LOCAL1") == 0)
+		return LOG_LOCAL1;
+	else if (strcasecmp(str, "LOG_LOCAL2") == 0)
+		return LOG_LOCAL2;
+	else if (strcasecmp(str, "LOG_LOCAL3") == 0)
+		return LOG_LOCAL3;
+	else if (strcasecmp(str, "LOG_LOCAL4") == 0)
+		return LOG_LOCAL4;
+	else if (strcasecmp(str, "LOG_LOCAL5") == 0)
+		return LOG_LOCAL5;
+	else if (strcasecmp(str, "LOG_LOCAL6") == 0)
+		return LOG_LOCAL6;
+	else if (strcasecmp(str, "LOG_LOCAL7") == 0)
+		return LOG_LOCAL7;
+	else if (strcasecmp(str, "LOG_MAIL") == 0)
+		return LOG_MAIL;
+	else if (strcasecmp(str, "LOG_NEWS") == 0)
+		return LOG_NEWS;
+	else if (strcasecmp(str, "LOG_SYSLOG") == 0)
+		return LOG_SYSLOG;
+	else if (strcasecmp(str, "LOG_USER") == 0)
+		return LOG_USER;
+	else if (strcasecmp(str, "LOG_UUCP") == 0)
+		return LOG_UUCP;
+
+	return LOG_USER;
+}
+
+static apt_bool_t apt_syslog_settings_load(apt_syslog_settings_t *settings, const apr_xml_elem *elem, apr_pool_t *pool)
+{
+	const apr_xml_attr *attr;
+
+	for (attr = elem->attr; attr; attr = attr->next) {
+		if (strcasecmp(attr->name, "option") == 0) {
+			settings->option = apt_syslog_option_translate(attr->value, pool);
+		}
+		else if (strcasecmp(attr->name, "facility") == 0) {
+			settings->facility = apt_syslog_facility_translate(attr->value);
+		}
+	}
+
+	return TRUE;
+}
+#endif
+
+APT_DECLARE(apt_bool_t) apt_syslog_open(const char *prefix, const char *config_file, apr_pool_t *pool)
+{
+	if (!apt_logger || !prefix) {
+		return FALSE;
+	}
+
+	if (apt_logger->syslog == TRUE) {
+		return FALSE;
+	}
+
+#ifndef WIN32
+	apt_syslog_settings_t settings;
+	settings.option = LOG_PID;
+	settings.facility = LOG_USER;
+
+	/* Parse XML document */
+	if (config_file) {
+		apr_xml_doc *doc = apt_log_doc_parse(config_file, pool);
+		if (doc) {
+			const apr_xml_elem *elem;
+			const apr_xml_elem *root = doc->root;
+
+			/* Match document name */
+			if (root && strcasecmp(root->name, "aptsyslog") == 0) {
+				/* Navigate through document */
+				for (elem = root->first_child; elem; elem = elem->next) {
+					if (strcasecmp(elem->name, "settings") == 0) {
+						apt_syslog_settings_load(&settings, elem, pool);
+					}
+					else {
+						/* Unknown element */
+					}
+				}
+			}
+		}
+	}
+
+	openlog(prefix, settings.option, settings.facility);
+#endif
+	apt_logger->syslog = TRUE;
+	return TRUE;
+}
+
+APT_DECLARE(apt_bool_t) apt_syslog_close()
+{
+	if (!apt_logger || apt_logger->syslog == FALSE) {
+		return FALSE;
+	}
+
+#ifndef WIN32
+	closelog();
+#endif
+	apt_logger->syslog = FALSE;
+	return TRUE;
+}
+
 APT_DECLARE(apt_bool_t) apt_log_output_mode_set(apt_log_output_e mode)
 {
 	if(!apt_logger) {
@@ -487,9 +646,11 @@ APT_DECLARE(int) apt_log_output_mode_translate(char *str)
 	while(name) {
 		if(strcasecmp(name, "CONSOLE") == 0)
 			mode |=  APT_LOG_OUTPUT_CONSOLE;
-		else if(strcasecmp(name, "FILE") == 0)
-			mode |=  APT_LOG_OUTPUT_FILE;
-		
+		else if (strcasecmp(name, "FILE") == 0)
+			mode |= APT_LOG_OUTPUT_FILE;
+		else if (strcasecmp(name, "SYSLOG") == 0)
+			mode |= APT_LOG_OUTPUT_SYSLOG;
+
 		name = apr_strtok(NULL, ",", &last);
 	}
 	return mode;
@@ -681,6 +842,7 @@ static apt_bool_t apt_do_log(apt_log_source_t *log_source, const char *file, int
 	char log_entry[MAX_LOG_ENTRY_SIZE];
 	apr_size_t max_size = MAX_LOG_ENTRY_SIZE - 2;
 	apr_size_t offset = 0;
+	apr_size_t data_offset;
 	apr_time_exp_t result;
 	apr_time_t now = apr_time_now();
 	apr_time_exp_lt(&result,now);
@@ -709,6 +871,7 @@ static apt_bool_t apt_do_log(apt_log_source_t *log_source, const char *file, int
 		offset += MAX_PRIORITY_NAME_LENGTH;
 	}
 
+	data_offset = offset;
 	offset += apr_vsnprintf(log_entry+offset,max_size-offset,format,arg_ptr);
 	log_entry[offset++] = '\n';
 	log_entry[offset] = '\0';
@@ -719,6 +882,12 @@ static apt_bool_t apt_do_log(apt_log_source_t *log_source, const char *file, int
 	if((apt_logger->mode & APT_LOG_OUTPUT_FILE) == APT_LOG_OUTPUT_FILE && apt_logger->file_data) {
 		apt_log_file_dump(apt_logger->file_data,log_entry,offset);
 	}
+
+#ifndef WIN32
+	if ((apt_logger->mode & APT_LOG_OUTPUT_SYSLOG) == APT_LOG_OUTPUT_SYSLOG) {
+		syslog(priority, log_entry + data_offset);
+	}
+#endif
 	return TRUE;
 }
 

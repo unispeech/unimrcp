@@ -4,6 +4,7 @@
   <!--  Set the log output mode
     CONSOLE       console output
     FILE          log file output
+    SYSLOG        syslog output
     CONSOLE,FILE  both console and the log file output
   -->
   <output>CONSOLE</output>
