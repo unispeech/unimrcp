@@ -42,14 +42,18 @@ public:
 	const char* GetDigits() const;
 
 /* ============================ INQUIRIES ================================== */
-
+	bool IsDefineGrammarEnabled() const;
+	bool IsRecognizeEnabled() const;
 protected:
 /* ============================ MANIPULATORS =============================== */
 	virtual bool LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool);
 
+	bool LoadDefineGrammar(const apr_xml_elem* pElem, apr_pool_t* pool);
 	bool LoadRecognize(const apr_xml_elem* pElem, apr_pool_t* pool);
 
 /* ============================ DATA ======================================= */
+	bool        m_DefineGrammar;
+	bool        m_Recognize;
 	const char* m_ContentType;
 	const char* m_Grammar;
 	const char* m_Digits;
@@ -69,6 +73,16 @@ inline const char* DtmfScenario::GetGrammar() const
 inline const char* DtmfScenario::GetDigits() const
 {
 	return m_Digits;
+}
+
+inline bool DtmfScenario::IsDefineGrammarEnabled() const
+{
+	return m_DefineGrammar;
+}
+
+inline bool DtmfScenario::IsRecognizeEnabled() const
+{
+	return m_Recognize;
 }
 
 

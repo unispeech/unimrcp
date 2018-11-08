@@ -20,6 +20,8 @@
 #include "apt_log.h"
 
 DtmfScenario::DtmfScenario() :
+	m_DefineGrammar(false),
+	m_Recognize(false),
 	m_ContentType(NULL),
 	m_Grammar(NULL),
 	m_Digits(NULL)
@@ -39,7 +41,12 @@ bool DtmfScenario::LoadElement(const apr_xml_elem* pElem, apr_pool_t* pool)
 	if(UmcScenario::LoadElement(pElem,pool))
 		return true;
 	
-	if(strcasecmp(pElem->name,"recognize") == 0)
+	if(strcasecmp(pElem->name,"define-grammar") == 0)
+	{
+		LoadDefineGrammar(pElem,pool);
+		return true;
+	}
+	else if(strcasecmp(pElem->name,"recognize") == 0)
 	{
 		LoadRecognize(pElem,pool);
 		return true;
@@ -53,7 +60,11 @@ bool DtmfScenario::LoadRecognize(const apr_xml_elem* pElem, apr_pool_t* pool)
 	const apr_xml_attr* pAttr;
 	for(pAttr = pElem->attr; pAttr; pAttr = pAttr->next) 
 	{
-		if(strcasecmp(pAttr->name,"content-type") == 0)
+		if(strcasecmp(pAttr->name,"enable") == 0)
+		{
+			m_Recognize = atoi(pAttr->value) > 0;
+		}
+		else if(strcasecmp(pAttr->name,"content-type") == 0)
 		{
 			m_ContentType = pAttr->value;
 		}
@@ -70,6 +81,26 @@ bool DtmfScenario::LoadRecognize(const apr_xml_elem* pElem, apr_pool_t* pool)
 	return true;
 }
 
+bool DtmfScenario::LoadDefineGrammar(const apr_xml_elem* pElem, apr_pool_t* pool)
+{
+	const apr_xml_attr* pAttr;
+	for(pAttr = pElem->attr; pAttr; pAttr = pAttr->next) 
+	{
+		if(strcasecmp(pAttr->name,"enable") == 0)
+		{
+			m_DefineGrammar = atoi(pAttr->value) > 0;
+		}
+		else if(strcasecmp(pAttr->name,"content-type") == 0)
+		{
+			m_ContentType = pAttr->value;
+		}
+		else if (strcasecmp(pAttr->name, "grammar") == 0)
+		{
+			m_Grammar = pAttr->value;
+		}
+	}
+	return true;
+}
 
 UmcSession* DtmfScenario::CreateSession()
 {

@@ -25,7 +25,7 @@
 #include "umcsession.h"
 
 class DtmfScenario;
-struct RecogChannel;
+struct DtmfRecogChannel;
 
 class DtmfSession : public UmcSession
 {
@@ -37,10 +37,13 @@ public:
 protected:
 /* ============================ MANIPULATORS =============================== */
 	virtual bool Start();
+	virtual bool Stop();
 
-	RecogChannel* CreateRecogChannel();
+	DtmfRecogChannel* CreateRecogChannel();
 	bool StartRecognition(mrcp_channel_t* pMrcpChannel);
+	bool OnDefineGrammar(mrcp_channel_t* pMrcpChannel);
 
+	mrcp_message_t* CreateDefineGrammarRequest(mrcp_channel_t* pMrcpChannel);
 	mrcp_message_t* CreateRecognizeRequest(mrcp_channel_t* pMrcpChannel);
 
 	static bool ParseNLSMLResult(mrcp_message_t* pMrcpMessage);
@@ -55,7 +58,8 @@ protected:
 
 private:
 /* ============================ DATA ======================================= */
-	RecogChannel*         m_pRecogChannel;
+	DtmfRecogChannel* m_pRecogChannel;
+	const char*       m_ContentId;
 };
 
 
