@@ -1,3 +1,56 @@
+Changes for UniMRCP-1.6.0
+
+  APR-toolkit library
+
+  * Reworked log file rotation routine.
+  * Added support for syslog on Linux.
+
+  MPF library
+
+  * Use APT_LOG_MARK for log statement(s) of mpf_activity_detector to address linker errors using VS.
+
+  MRCP common library
+
+  * Fixed parsing of MRCP messages containing leading whitespace(s) in the message body.
+
+  MRCP server library
+
+  * Fixed a race condition issue in the synthesizer state machine caused by concurrent
+    SPEAK-COMPLETE event and BARGE-IN-OCCURRED request. (Issue #203)
+  * Added a new accessor function mrcp_server_engine_get().
+  * Association of MRCP resources and engines/plugins can now be specified dynamically per
+    MRCPv2 session.
+
+  RTSP library
+
+  * Respond to incoming RTSP OPTIONS requests with success. This method is used to check the
+    availability of the server.
+
+  Sofia-SIP module (MRCPv2 agent)
+
+  * Fixed MRCPv2 resource discovery routine of the client stack to populate multiple resources
+    specified per single SDP media.	Thanks Tobias. (Issue #213)
+  * Added support for feature tags set in the SIP header field Accept-Contact received in an initial
+    SIP INVITE message.
+
+  UMC sample application
+
+  * Added virtual destructors to base classes UmcSessionEventHandler and UmcSessionMethodProvider.
+  * Set Confidence-Threshold to 0.5 for sample recog session.
+  * Made DTMF recog scenario/session on par with speech recog.
+  * Made speech language configurable for synth scenario.
+
+  Miscellaneous
+
+  * Added mrcp_sofiasip_task.h and mrcp_sofiasip_task.c files to VS2005 project file as well.
+  * Fixed maintainer-mode warnings with GCC 7.3.1. Thanks Tobias. (Issue #213)
+  * First check the name of a command-line input not to be NULL before further parsing the command.
+    The change applies to all the applications. (Issue #223)
+  * Added a new default configuration file logfile.xml.
+  * Set AR_FLAGS to [cr] in configure.ac in order to suppress link-time warnings caused by newer
+    version of libtool 2.4.6.
+
+
 Changes for UniMRCP-1.5.0
 
   APR-toolkit library
