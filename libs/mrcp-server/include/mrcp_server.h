@@ -190,6 +190,13 @@ MRCP_DECLARE(mrcp_engine_t*) mrcp_server_engine_load(
 MRCP_DECLARE(apr_pool_t*) mrcp_server_memory_pool_get(const mrcp_server_t *server);
 
 /**
+* Get MRCP engine by name.
+* @param server the MRCP server to get media engine from
+* @param name the name of the media engine to lookup
+*/
+MRCP_DECLARE(mrcp_engine_t*) mrcp_server_engine_get(const mrcp_server_t *server, const char *name);
+
+/**
  * Get media engine by name.
  * @param server the MRCP server to get media engine from
  * @param name the name of the media engine to lookup

@@ -356,6 +356,12 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_engine_register(mrcp_server_t *server, mrcp
 	return mrcp_engine_factory_engine_register(server->engine_factory,engine);
 }
 
+/** Get MRCP engine by name */
+MRCP_DECLARE(mrcp_engine_t*) mrcp_server_engine_get(const mrcp_server_t *server, const char *name)
+{
+	return mrcp_engine_factory_engine_get(server->engine_factory, name);
+}
+
 /** Register codec manager */
 MRCP_DECLARE(apt_bool_t) mrcp_server_codec_manager_register(mrcp_server_t *server, mpf_codec_manager_t *codec_manager)
 {
