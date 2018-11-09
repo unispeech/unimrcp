@@ -37,6 +37,7 @@ public:
 	virtual UmcSession* CreateSession();
 
 /* ============================ ACCESSORS ================================== */
+	const char* GetSpeechLanguage() const;
 	const char* GetContentType() const;
 	const char* GetContent() const;
 	apr_size_t GetContentLength() const;
@@ -52,12 +53,18 @@ protected:
 
 /* ============================ DATA ======================================= */
 	bool        m_Speak;
+	const char* m_SpeechLanguage;
 	const char* m_ContentType;
 	const char* m_Content;
 	apr_size_t  m_ContentLength;
 };
 
 /* ============================ INLINE METHODS ============================= */
+inline const char* SynthScenario::GetSpeechLanguage() const
+{
+	return m_SpeechLanguage;
+}
+
 inline const char* SynthScenario::GetContentType() const
 {
 	return m_ContentType;

@@ -25,6 +25,7 @@
 
 SynthScenario::SynthScenario() :
 	m_Speak(true),
+	m_SpeechLanguage(NULL),
 	m_ContentType("application/synthesis+ssml"),
 	m_Content(NULL),
 	m_ContentLength(0)
@@ -61,6 +62,10 @@ bool SynthScenario::LoadSpeak(const apr_xml_elem* pElem, apr_pool_t* pool)
 		if(strcasecmp(pAttr->name,"enable") == 0)
 		{
 			m_Speak = atoi(pAttr->value) > 0;
+		}
+		else if (strcasecmp(pAttr->name, "speech-language") == 0)
+		{
+			m_SpeechLanguage = pAttr->value;
 		}
 		else if(strcasecmp(pAttr->name,"content-type") == 0)
 		{

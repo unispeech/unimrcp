@@ -269,9 +269,17 @@ mrcp_message_t* SynthSession::CreateSpeakRequest(mrcp_channel_t* pMrcpChannel)
 	pSynthHeader = (mrcp_synth_header_t*) mrcp_resource_header_prepare(pMrcpMessage);
 	if(pSynthHeader) 
 	{
+#if 0
 		/* set synthesizer header fields */
 		pSynthHeader->voice_param.age = 28;
 		mrcp_resource_header_property_add(pMrcpMessage,SYNTHESIZER_HEADER_VOICE_AGE);
+#endif
+		const char* pSpeechLanguage = pScenario->GetSpeechLanguage();
+		if (pSpeechLanguage)
+		{
+			apt_string_assign(&pSynthHeader->speech_language, pSpeechLanguage, pMrcpMessage->pool);
+			mrcp_resource_header_property_add(pMrcpMessage, SYNTHESIZER_HEADER_SPEECH_LANGUAGE);
+		}
 	}
 
 	return pMrcpMessage;
