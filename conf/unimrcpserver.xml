@@ -172,8 +172,8 @@
       -->
       <!--
       <resource-engine-map>
-        <param name="speechsynth" value="Flite-1"/>
-        <param name="speechrecog" value="PocketSphinx-1"/>
+        <param name="speechsynth" value="SS-1"/>
+        <param name="speechrecog" value="SR-1"/>
       </resource-engine-map>
       -->
     </mrcpv2-profile>
