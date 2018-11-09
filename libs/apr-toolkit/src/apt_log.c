@@ -884,8 +884,8 @@ static apt_bool_t apt_do_log(apt_log_source_t *log_source, const char *file, int
 	}
 
 #ifndef WIN32
-	if ((apt_logger->mode & APT_LOG_OUTPUT_SYSLOG) == APT_LOG_OUTPUT_SYSLOG) {
-		syslog(priority, log_entry + data_offset);
+	if((apt_logger->mode & APT_LOG_OUTPUT_SYSLOG) == APT_LOG_OUTPUT_SYSLOG) {
+		syslog(priority,"%s",log_entry + data_offset);
 	}
 #endif
 	return TRUE;
