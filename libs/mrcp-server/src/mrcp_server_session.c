@@ -123,22 +123,40 @@ static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t 
 	return session->profile->mrcp_version;
 }
 
-static mrcp_engine_channel_t* mrcp_server_engine_channel_create(
-								mrcp_server_session_t *session,
-								mrcp_channel_t *channel, 
-								const apt_str_t *resource_name)
+static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_channel_t *channel, const apt_str_t *resource_name)
 {
-	mrcp_engine_t *engine = apr_hash_get(
-									session->profile->engine_table,
-									resource_name->buf,
-									resource_name->length);
+	mrcp_engine_t *engine = NULL;
+	if(session->base.resource_engine_map) {
+		const char *engine_name = apr_table_get(session->base.resource_engine_map,resource_name->buf);
+		if(engine_name) {
+			engine = mrcp_server_engine_get(session->server,engine_name);
+			if (!engine) {
+				apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "No Such MRCP Engine by Name [%s] for Resource [%s] " APT_NAMESID_FMT,
+					engine_name,
+					resource_name->buf,
+					MRCP_SESSION_NAMESID(session));
+			}
+		}
+	}
+
 	if(!engine) {
-		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find MRCP Engine " APT_NAMESID_FMT" [%s]",
-			MRCP_SESSION_NAMESID(session),
-			resource_name->buf);
+		engine = apr_hash_get(
+					session->profile->engine_table,
+					resource_name->buf,
+					resource_name->length);
+	}
+
+	if(!engine) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find MRCP Engine for Resource [%s] " APT_NAMESID_FMT,
+				resource_name->buf,
+				MRCP_SESSION_NAMESID(session));
 		return NULL;
 	}
 
+	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "Found MRCP Engine [%s] for Resource [%s] " APT_NAMESID_FMT,
+			engine->id,
+			resource_name->buf,
+			MRCP_SESSION_NAMESID(session));
 	channel->state_machine = engine->create_state_machine(
 						channel,
 						mrcp_session_version_get(session),
