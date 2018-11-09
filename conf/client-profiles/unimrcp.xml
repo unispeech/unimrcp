@@ -13,6 +13,7 @@
       <!-- <server-ip>10.10.0.1</server-ip> -->
       <server-port>8060</server-port>
       <!-- <force-destination>true</force-destination> -->
+	  <!-- <feature-tags>speechrecog.engine="SR-1";speechsynth.engine="SS-1"</feature-tags> -->
     </sip-settings>
     
     <!-- RTSP MRCPv1 settings -->
