@@ -56,6 +56,9 @@ m4_undefine([AC_PROG_F77])
 m4_defun([AC_PROG_F77],[])
 AC_PROG_LIBTOOL
 
+dnl Suppress warning: ar: 'u' modifier ignored since 'D' is the default
+AC_SUBST(AR_FLAGS, [cr])
+
 dnl Do not use autoconf generated compiler DEFS.
 rm confdefs.h
 touch confdefs.h
