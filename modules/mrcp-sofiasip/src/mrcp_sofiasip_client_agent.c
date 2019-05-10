@@ -327,8 +327,13 @@ static apt_bool_t mrcp_sofia_session_terminate_request(mrcp_session_t *session)
 	sofia_session->terminate_requested = FALSE;
 	apr_thread_mutex_lock(sofia_session->mutex);
 	if(sofia_session->nh) {
-		sofia_session->terminate_requested = TRUE;
-		nua_bye(sofia_session->nh,TAG_END());
+		if (sofia_session->nua_state != nua_callstate_init) {
+			sofia_session->terminate_requested = TRUE;
+			nua_bye(sofia_session->nh, TAG_END());
+		}
+		else {
+			mrcp_sofia_session_unref(sofia_session);
+		}
 	}
 	apr_thread_mutex_unlock(sofia_session->mutex);
 
