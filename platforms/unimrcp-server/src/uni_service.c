@@ -21,6 +21,9 @@
 
 #define WIN_SERVICE_NAME "unimrcp"
 
+#define SERVICE_CONTROL_USER_OFFLINE 128
+#define SERVICE_CONTROL_USER_ONLINE 129
+
 static SERVICE_STATUS_HANDLE win_service_status_handle = NULL;
 static SERVICE_STATUS win_service_status;
 
@@ -42,10 +45,11 @@ static void winerror(apt_log_source_t *log_source, const char *file, int line, c
 }
 
 /** SCM state change handler */
-static void WINAPI win_service_handler(DWORD control)
+static DWORD WINAPI win_service_handler(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
 {
-	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Service Handler 0x%02lx",control);
-	switch (control)
+	DWORD returnVal = NO_ERROR;
+	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Service Handler 0x%02lx", dwControl);
+	switch (dwControl)
 	{
 		case SERVICE_CONTROL_INTERROGATE:
 			break;
@@ -64,11 +68,23 @@ static void WINAPI win_service_handler(DWORD control)
 			win_service_status.dwCheckPoint = 0; 
 			win_service_status.dwWaitHint = 0; 
 			break;
+		case SERVICE_CONTROL_USER_OFFLINE:
+			apt_log(APT_LOG_MARK, APT_PRIO_INFO, "Service Handler - Offline request - 0x%02lx", dwControl);
+			mrcp_server_offline(server);
+			break;
+		case SERVICE_CONTROL_USER_ONLINE:
+			apt_log(APT_LOG_MARK, APT_PRIO_INFO, "Service Handler - Online request - 0x%02lx", dwControl);
+			mrcp_server_online(server);
+			break;
+		default:
+			returnVal = ERROR_CALL_NOT_IMPLEMENTED;
 	}
 
 	if(!SetServiceStatus(win_service_status_handle, &win_service_status)) {
 		winerror(APT_LOG_MARK, "Failed to Set Service Status");
 	}
+
+	return returnVal;
 }
 
 static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
@@ -81,7 +97,7 @@ static void WINAPI win_service_main(DWORD argc, LPTSTR *argv)
 	win_service_status.dwCheckPoint = 0;
 	win_service_status.dwWaitHint = 0;
 
-	win_service_status_handle = RegisterServiceCtrlHandler(svcname, win_service_handler);
+	win_service_status_handle = RegisterServiceCtrlHandlerEx(svcname, win_service_handler, NULL);
 	if(win_service_status_handle == (SERVICE_STATUS_HANDLE)0) {
 		winerror(APT_LOG_MARK, "Failed to Register Service Control Handler");
 		return;
