@@ -485,6 +485,12 @@ static void mrcp_sofia_on_resource_discover(
 		sofia_agent->config->ext_ip : sofia_agent->config->local_ip;
 	nua_t *nua = mrcp_sofia_task_nua_get(sofia_agent->task);
 
+	if (sofia_agent->online == FALSE) {
+		apt_log(SIP_LOG_MARK, APT_PRIO_WARNING, "Cannot do Resource Discovery in Offline Mode");
+		nua_respond(nh, SIP_503_SERVICE_UNAVAILABLE, TAG_END());
+		return;
+	}
+
 	if(sdp_resource_discovery_string_generate(ip,sofia_agent->config->origin,sdp_str,sizeof(sdp_str)) > 0) {
 		local_sdp_str = sdp_str;
 		apt_log(SIP_LOG_MARK,APT_PRIO_INFO,"Resource Discovery SDP\n[%s]\n", 
