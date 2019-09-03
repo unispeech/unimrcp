@@ -22,7 +22,20 @@
  * @brief Basic ASR engine on top of UniMRCP client library
  */ 
 
+/* APT includes */
 #include "apt_log.h"
+/* APR includes */
+#include <apr_thread_cond.h>
+/* Common includes */
+#include "unimrcp_client.h"
+#include "mrcp_application.h"
+/* Recognizer includes */
+#include "mrcp_recog_header.h"
+#include "mrcp_recog_resource.h"
+/* MPF includes */
+#include <mpf_frame_buffer.h>
+
+#include "asr_engine_common.h"
 
 /** Lib export/import defines (win32) */
 #ifdef WIN32
@@ -46,6 +59,53 @@ typedef struct asr_engine_t asr_engine_t;
 
 /** Opaque ASR session */
 typedef struct asr_session_t asr_session_t;
+
+typedef enum {
+	INPUT_MODE_NONE,
+	INPUT_MODE_FILE,
+	INPUT_MODE_STREAM
+} input_mode_e;
+
+#define MAX_URIS 10
+
+/** ASR engine on top of UniMRCP client stack */
+struct asr_engine_t {
+	/** MRCP client stack */
+	mrcp_client_t      *mrcp_client;
+	/** MRCP client stack */
+	mrcp_application_t *mrcp_app;
+	/** Memory pool */
+	apr_pool_t         *pool;
+};
+
+/** ASR session on top of UniMRCP session/channel */
+struct asr_session_t {
+	/** Back pointer to engine */
+	asr_engine_t             *engine;
+	/** MRCP session */
+	mrcp_session_t           *mrcp_session;
+	/** MRCP channel */
+	mrcp_channel_t           *mrcp_channel;
+	/** RECOGNITION-COMPLETE message  */
+	mrcp_message_t           *recog_complete;
+
+	/** Input mode (either file or stream) */
+	input_mode_e              input_mode;
+	/** File to read media frames from */
+	FILE                     *audio_in;
+	/* Buffer of media frames */
+	mpf_frame_buffer_t       *media_buffer;
+	/** Streaming is in-progress */
+	apt_bool_t                streaming;
+
+	/** Conditional wait object */
+	apr_thread_cond_t        *wait_object;
+	/** Mutex of the wait object */
+	apr_thread_mutex_t       *mutex;
+
+	/** Message sent from client stack */
+	const mrcp_app_message_t *app_message;
+};
 
 
 /**
@@ -84,7 +144,10 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									asr_session_t *session, 
 									const char *grammar_file, 
-									const char *input_file);
+									const char *input_file,
+									const char* set_params_file,
+									apt_bool_t sendSetParams,
+									apt_bool_t sendGetParams);
 
 /**
  * Initiate recognition based on specified grammar and input stream.
@@ -112,12 +175,19 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_stream_write(
 									char *data,
 									int size);
 
+ASR_CLIENT_DECLARE(apt_bool_t) asr_session_set_param(
+									asr_session_t *session,
+									const char* set_params_file,
+									const char* param_name,
+									const char* param_value);
+
+ASR_CLIENT_DECLARE(ParameterSet*) asr_session_get_all_params(asr_session_t *session);
+
 /**
  * Destroy ASR session.
  * @param session the session to destroy
  */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_destroy(asr_session_t *session);
-
 
 /**
  * Set log priority.
@@ -125,6 +195,23 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_destroy(asr_session_t *session);
  */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_log_priority_set(apt_log_priority_e log_priority);
 
+ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
+									asr_session_t *session,
+									const char *grammar_uri,
+									int uriCount);
+
+ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
+									asr_session_t *session,
+									const char *grammar_file,
+									const char *input_file,
+									int uriCount,
+									float weights[],
+									const char *set_params_file,
+									apt_bool_t sendSetParams);
+
+ASR_CLIENT_DECLARE(mrcp_recognizer_event_id) asr_session_file_recognize_receive(asr_session_t *session);
+
+ASR_CLIENT_DECLARE(const char*) nlsml_result_get(mrcp_message_t *message);
 
 APT_END_EXTERN_C
 
