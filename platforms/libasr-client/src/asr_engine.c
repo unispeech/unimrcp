@@ -355,6 +355,7 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 		/* get/allocate generic header */
 		generic_header = mrcp_generic_header_prepare(mrcp_message);
 		if(generic_header) {
+			char *content_id;
 			/* set generic header fields */
 			if(foundScheme) {
 				apt_string_assign(&generic_header->content_type,content_type,mrcp_message->pool);
@@ -368,7 +369,7 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 			}
 
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
-			char *content_id = apr_psprintf(mrcp_message->pool,"demo-grammar-%d",i);
+			content_id = apr_psprintf(mrcp_message->pool,"demo-grammar-%d",i);
 			apt_string_assign(&generic_header->content_id,content_id,mrcp_message->pool);
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
 		}
@@ -379,10 +380,11 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 /** Create RECOGNIZE request */
 static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, int uriCount, float weights[])
 {
+	mrcp_message_t *mrcp_message;
 	if (weights == NULL) return NULL;
 
 	/* create MRCP message */
-	mrcp_message_t *mrcp_message = mrcp_application_message_create(
+	mrcp_message = mrcp_application_message_create(
 										asr_session->mrcp_session,
 										asr_session->mrcp_channel,
 										RECOGNIZER_RECOGNIZE);
@@ -697,6 +699,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
 {
 	const mrcp_app_message_t *app_message = NULL;
 	mrcp_message_t *mrcp_message;
+	mrcp_status_code_e status_code;
 
 	mrcp_channel_t *client_channel = (mrcp_channel_t*) asr_session->mrcp_channel;
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Begin asr_session_define_grammar. session: %s. grammar_uri: %s. uriCount: %d",client_channel->session->id.buf,grammar_uri,uriCount);
@@ -720,7 +723,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
 		return FALSE;
 	}
 
-	mrcp_status_code_e status_code = app_message->control_message->start_line.status_code;
+	status_code = app_message->control_message->start_line.status_code;
 	return (MRCP_STATUS_CODE_SUCCESS == status_code || MRCP_STATUS_CODE_SUCCESS_WITH_IGNORE == status_code);
 }
 
@@ -905,6 +908,8 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 			val = apr_strtok(newValue,";",&last);
 			if (val != NULL) {
 				do {
+					apt_str_t aprVspName;
+					apt_str_t aprVspValue;
 					char *vspName;
 					char *vspValue;
 					char *vspLast;
@@ -912,8 +917,6 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 					vspName = apr_strtok(val,"=",&vspLast);
 					vspValue = apr_strtok(NULL,"=",&vspLast);
 
-					apt_str_t aprVspName;
-					apt_str_t aprVspValue;
 					apt_string_set(&aprVspName,vspName);
 					apt_string_set(&aprVspValue,vspValue);
 					apt_pair_array_append(generic_header->vendor_specific_params,&aprVspName,&aprVspValue,mrcp_message->pool);
@@ -936,6 +939,7 @@ static apt_bool_t set_param_from_file(
 	apr_pool_t * pool = asr_session->mrcp_session->pool;
 	apr_status_t rv;
 	apr_file_t *fp;
+	char *str;
 
 	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
 	char *param_file_path = apt_datadir_filepath_get(dir_layout,set_params_file,pool);
@@ -945,7 +949,7 @@ static apt_bool_t set_param_from_file(
 			return FALSE;
 		}
 
-		char *str = apr_palloc(pool,LINE_BUFFER);
+		str = apr_palloc(pool,LINE_BUFFER);
 		do {
 			char *val;
 			char *last;
@@ -1213,6 +1217,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_set_param(
 {
 	const mrcp_app_message_t *app_message = NULL;
 	mrcp_message_t *mrcp_message = set_param_message_create(asr_session,set_params_file,param_name,param_value);
+	mrcp_status_code_e status_code;
 
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create SET-PARAMS Request");
@@ -1232,7 +1237,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_set_param(
 		return FALSE;
 	}
 
-	mrcp_status_code_e status_code = app_message->control_message->start_line.status_code;
+	status_code = app_message->control_message->start_line.status_code;
 	return (MRCP_STATUS_CODE_SUCCESS == status_code || MRCP_STATUS_CODE_SUCCESS_WITH_IGNORE == status_code);
 }
 

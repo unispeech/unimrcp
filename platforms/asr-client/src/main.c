@@ -49,6 +49,7 @@ typedef struct {
 /** Thread function to run ASR scenario in */
 static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 {
+	const char *result;
 	asr_params_t *params = data;
 	asr_session_t *session = asr_session_create(params->engine,params->profile);
 	if(session) {
@@ -65,7 +66,7 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 		}
 
 		// Do recognition
-		const char *result = asr_session_file_recognize(session,params->grammar_file,params->input_file, params->params_file,params->sendSetParams,params->sendGetParams);
+		result = asr_session_file_recognize(session,params->grammar_file,params->input_file,params->params_file,params->sendSetParams,params->sendGetParams);
 		if(result) {
 			printf("Recog Result [%s]",result);
 		}
