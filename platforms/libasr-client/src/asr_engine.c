@@ -733,14 +733,13 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 	float confidence_threshold, sensitivity_level, speed_vs_accuracy;
 	int speech_complete_timeout, speech_incomplete_timeout, dtmf_interdigit_timeout, dtmf_term_timeout;
 	int hotword_max_duration, hotword_min_duration;
-	char *stopptr;
 
 	if(apr_strnatcasecmp(pname,"Confidence-Threshold") == 0) {
 		if(0 == strlen(pvalue)) {
 			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD);
 		}
 		else {
-			confidence_threshold = strtof(pvalue,&stopptr);
+			confidence_threshold = (float) atof(pvalue);
 			recog_header->confidence_threshold = confidence_threshold;
 			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_CONFIDENCE_THRESHOLD);
 		}
@@ -750,7 +749,7 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_SENSITIVITY_LEVEL);
 		}
 		else {
-			sensitivity_level = strtof(pvalue,&stopptr);
+			sensitivity_level = (float) atof(pvalue);
 			recog_header->sensitivity_level = sensitivity_level;
 			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_SENSITIVITY_LEVEL);
 		}
@@ -760,7 +759,7 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_SPEED_VS_ACCURACY);
 		}
 		else {
-			speed_vs_accuracy = strtof(pvalue,&stopptr);
+			speed_vs_accuracy = (float) atof(pvalue);
 			recog_header->speed_vs_accuracy = speed_vs_accuracy;
 			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_SPEED_VS_ACCURACY);
 		}
