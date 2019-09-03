@@ -142,10 +142,10 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
  * @return the recognition result (input element of NLSML content)
  */
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
-									asr_session_t *session, 
-									const char *grammar_file, 
+									asr_session_t *session,
+									const char *grammar_file,
 									const char *input_file,
-									const char* set_params_file,
+									const char *set_params_file,
 									apt_bool_t sendSetParams,
 									apt_bool_t sendGetParams);
 
@@ -161,7 +161,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
  *         asr_session_stream_write() function calls.
  */
 ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
-									asr_session_t *session, 
+									asr_session_t *session,
 									const char *grammar_file);
 
 /**
@@ -177,9 +177,9 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_stream_write(
 
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_set_param(
 									asr_session_t *session,
-									const char* set_params_file,
-									const char* param_name,
-									const char* param_value);
+									const char *set_params_file,
+									const char *param_name,
+									const char *param_value);
 
 ASR_CLIENT_DECLARE(ParameterSet*) asr_session_get_all_params(asr_session_t *session);
 

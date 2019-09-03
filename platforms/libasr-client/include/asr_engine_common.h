@@ -61,4 +61,3 @@ typedef struct {
 } RecognitionResult;
 
 #endif /* ASR_ENGINE_COMMON_H */
-

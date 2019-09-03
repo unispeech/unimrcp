@@ -624,10 +624,10 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 
 /** Initiate recognition based on specified grammar and input file */
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
-									asr_session_t *asr_session, 
-									const char *grammar_file, 
+									asr_session_t *asr_session,
+									const char *grammar_file,
 									const char *input_file,
-									const char* set_params_file,
+									const char *set_params_file,
 									apt_bool_t sendSetParams,
 									apt_bool_t sendGetParams)
 {
@@ -727,7 +727,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
 	return (MRCP_STATUS_CODE_SUCCESS == status_code || MRCP_STATUS_CODE_SUCCESS_WITH_IGNORE == status_code);
 }
 
-static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_header_t *recog_header, const char* pname, const char* pvalue)
+static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_header_t *recog_header, const char *pname, const char *pvalue)
 {
 	int no_input_timeout, n_best_list_length, recognition_timeout;
 	float confidence_threshold, sensitivity_level, speed_vs_accuracy;
@@ -755,7 +755,7 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 		}
 	}
 	if(apr_strnatcasecmp(pname,"Speed-Vs-Accuracy") == 0) {
-		if(0 == strlen(pvalue))	{
+		if(0 == strlen(pvalue)) {
 			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_SPEED_VS_ACCURACY);
 		}
 		else {
@@ -775,7 +775,7 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 		}
 	}
 	if(apr_strnatcasecmp(pname,"No-Input-Timeout") == 0) {
-		if(0 == strlen(pvalue))	{
+		if(0 == strlen(pvalue)) {
 			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
 		}
 		else {
@@ -927,7 +927,6 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 	}
 	return NULL;
 }
-
 
 static apt_bool_t set_param_from_file(
 								asr_session_t *asr_session,
@@ -1170,7 +1169,6 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_log_priority_set(apt_log_priority_e lo
 }
 
 
-
 /** Handle MRCP headers (Parameters) **/
 
 /** Create SET-PARAM request */
@@ -1210,9 +1208,9 @@ static mrcp_message_t* get_param_message_create(asr_session_t *asr_session)
 
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_set_param(
 							asr_session_t *asr_session,
-							const char* set_params_file,
-							const char* param_name,
-							const char* param_value)
+							const char *set_params_file,
+							const char *param_name,
+							const char *param_value)
 {
 	const mrcp_app_message_t *app_message = NULL;
 	mrcp_message_t *mrcp_message = set_param_message_create(asr_session,set_params_file,param_name,param_value);
@@ -1301,4 +1299,3 @@ ASR_CLIENT_DECLARE(ParameterSet*) asr_session_get_all_params(asr_session_t *asr_
 
 	return p;
 }
-
