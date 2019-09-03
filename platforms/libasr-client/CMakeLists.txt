@@ -4,6 +4,7 @@ project (asrclient)
 # Set header files
 set (ASR_CLIENT_HEADERS
 	include/asr_engine.h
+	include/asr_engine_common.h
 )
 source_group ("include" FILES ${ASR_CLIENT_HEADERS})
 

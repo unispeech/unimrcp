@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\asr_engine.h" />
+    <ClInclude Include="include\asr_engine_common.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\asr_engine.c" />

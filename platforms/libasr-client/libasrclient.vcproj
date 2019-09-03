@@ -292,6 +292,10 @@
 				RelativePath=".\include\asr_engine.h"
 				>
 			</File>
+			<File
+				RelativePath=".\include\asr_engine_common.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="src"
