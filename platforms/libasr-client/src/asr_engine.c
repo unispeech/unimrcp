@@ -774,6 +774,20 @@ static void *set_individual_param(mrcp_message_t *mrcp_message, mrcp_recog_heade
 			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_N_BEST_LIST_LENGTH);
 		}
 	}
+	if(apr_strnatcasecmp(pname,"New-Audio-Channel") == 0) {
+		if(0 == strlen(pvalue)) {
+			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_NEW_AUDIO_CHANNEL);
+		}
+		else {
+			if(apr_strnatcasecmp(pvalue,"true") == 0) {
+				recog_header->new_audio_channel = TRUE;
+			}
+			else {
+				recog_header->new_audio_channel = FALSE;
+			}
+			mrcp_resource_header_property_add(mrcp_message,RECOGNIZER_HEADER_NEW_AUDIO_CHANNEL);
+		}
+	}
 	if(apr_strnatcasecmp(pname,"No-Input-Timeout") == 0) {
 		if(0 == strlen(pvalue)) {
 			mrcp_resource_header_name_property_add(mrcp_message,RECOGNIZER_HEADER_NO_INPUT_TIMEOUT);
@@ -956,16 +970,18 @@ static apt_bool_t set_param_from_file(
 			if(str != NULL) {
 				val = apr_strtok(str,":",&last);
 				if (val != NULL) {
-					const char *pname = NULL, *pvalue = NULL;
+					const char *pname = NULL;
+					const char *pvalue = NULL;
+
 					apr_collapse_spaces(val,val);
 					pname = val;
-					while (val && pvalue == NULL) {
-						val = apr_strtok(NULL,":",&last);
+
+					val = apr_strtok(NULL,":",&last);
+					if(val != NULL) {
 						apr_collapse_spaces(val,val);
 						pvalue = val;
+						set_individual_param(mrcp_message,recog_header,pname,pvalue);
 					}
-
-					set_individual_param(mrcp_message,recog_header,pname,pvalue);
 				}
 			}
 		} while(rv != APR_EOF);
