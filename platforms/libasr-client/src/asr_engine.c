@@ -30,7 +30,7 @@
 #include "asr_engine.h"
 
 #define LINE_BUFFER 1024
-#define WAVE_HEADER_LEN 44
+#define RIFF_CHUNK_LEN 12
 
 const char *STANDARD_GRAMMAR_URI_SCHEMES = "http:,https:,file:,builtin:";
 // udpate note - proprietary grammar URI schemes may be added as comma separated list
@@ -211,8 +211,7 @@ static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const char *in
 	const apt_dir_layout_t *dir_layout = mrcp_application_dir_layout_get(asr_session->engine->mrcp_app);
 	apr_pool_t *pool = mrcp_application_session_pool_get(asr_session->mrcp_session);
 	char *input_file_path = apt_datadir_filepath_get(dir_layout,input_file,pool);
-	/** udpate note - if this is a RIFF file, read passed the wav file header **/
-	char header_buf[WAVE_HEADER_LEN+1] = "";
+
 	if(!input_file_path) {
 		return FALSE;
 	}
@@ -225,12 +224,27 @@ static apt_bool_t asr_input_file_open(asr_session_t *asr_session, const char *in
 	asr_session->audio_in = fopen(input_file_path,"rb");
 
 	if(asr_session->audio_in != NULL) {
-		if((fread(header_buf,1,WAVE_HEADER_LEN,asr_session->audio_in) != WAVE_HEADER_LEN) ||
-			(strncmp(header_buf,"RIFF",4) != 0)) {
+		char buf[RIFF_CHUNK_LEN+1] = "";
+		if(fread(buf,1,RIFF_CHUNK_LEN,asr_session->audio_in) == RIFF_CHUNK_LEN &&
+			strncmp(buf,"RIFF",4) == 0 &&
+			strncmp(buf+8,"WAVE",4) == 0) {
+
+			// advance to data chunk
+			while(strncmp(buf,"data",4) != 0) {
+				if(fread(buf,1,4,asr_session->audio_in) != 4) {
+					apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No data in [%s]",input_file_path);
+					return FALSE;
+				}
+			}
+			if(fread(buf,1,4,asr_session->audio_in) != 4) {
+				apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot seek in [%s]",input_file_path);
+				return FALSE;
+			}
+		}
+		else {
 			rewind(asr_session->audio_in); // rewind if no wave header
 		}
 	}
-	// udpate note - end skip RIFF header
 
 	if(!asr_session->audio_in) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Cannot Open [%s]",input_file_path);
