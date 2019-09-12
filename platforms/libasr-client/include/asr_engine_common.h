@@ -28,36 +28,36 @@
  */
 
 typedef struct {
-	float	confidence_threshold;
-	float	sensitivity_level;
-	float	speed_vs_accuracy;
-	long	n_best_list_length;
-	long	no_input_timeout;
-	long	recognition_timeout;
+	float   confidence_threshold;
+	float   sensitivity_level;
+	float   speed_vs_accuracy;
+	long    n_best_list_length;
+	long    no_input_timeout;
+	long    recognition_timeout;
 	char   *recognizer_context_block;
-	long	speech_complete_timeout;
-	long	speech_incomplete_timeout;
-	long	dtmf_interdigit_timeout;
-	long	dtmf_term_timeout;
-	char	dtmf_term_char;
-	int	save_waveform;
+	long    speech_complete_timeout;
+	long    speech_incomplete_timeout;
+	long    dtmf_interdigit_timeout;
+	long    dtmf_term_timeout;
+	char    dtmf_term_char;
+	int     save_waveform;
 	char   *speech_language;
 	char   *media_type;
 	char   *recognition_mode;
-	long	hotword_max_duration;
-	long	hotword_min_duration;
-	long	dtmf_buffer_time;
-	int	early_no_match;
+	long    hotword_max_duration;
+	long    hotword_min_duration;
+	long    dtmf_buffer_time;
+	int     early_no_match;
 } ParameterSet;
 
 typedef struct {
-	mrcp_recognizer_event_id	event_id;
-	int				completion_cause_code;
-	const char		       *completion_cause_name;
-	apt_bool_t			is_recognizing;
-	apt_bool_t			completion_success;
-	const char		       *result;
-	const char		       *body;
+	mrcp_recognizer_event_id   event_id;
+	int                        completion_cause_code;
+	const char                *completion_cause_name;
+	apt_bool_t                 is_recognizing;
+	apt_bool_t                 completion_success;
+	const char                *result;
+	const char                *body;
 } RecognitionResult;
 
 #endif /* ASR_ENGINE_COMMON_H */
