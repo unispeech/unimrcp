@@ -125,8 +125,6 @@ ASR_CLIENT_DECLARE(asr_engine_t*) asr_engine_create(
  */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_destroy(asr_engine_t *engine);
 
-
-
 /**
  * Create ASR session.
  * @param engine the engine session belongs to
@@ -139,6 +137,8 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
  * @param session the session to run recognition in the scope of
  * @param grammar_file the name of the grammar file to use (path is relative to data dir)
  * @param input_file the name of the audio input file to use (path is relative to data dir)
+ * @param set_params_file the name of the parameters file to use (path is relative to data dir)
+ * @param send_set_params whether or not to use a separate SET-PARAMS request
  * @return the recognition result (input element of NLSML content)
  */
 ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
@@ -152,12 +152,9 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
  * Initiate recognition based on specified grammar and input stream.
  * @param session the session to run recognition in the scope of
  * @param grammar_file the name of the grammar file to use (path is relative to data dir)
- * @param callback the callback to be called to get input media frames
- * @param obj the object to pass to the callback
  * @return the recognition result (input element of NLSML content)
  *
- * @remark Audio data should be streamed through 
- *         asr_session_stream_write() function calls.
+ * @remark Audio data should be streamed through asr_session_stream_write() function calls
  */
 ASR_CLIENT_DECLARE(const char*) asr_session_stream_recognize(
 									asr_session_t *session,
@@ -174,12 +171,25 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_stream_write(
 									char *data,
 									int size);
 
+/**
+ * Send SET-PARAM request.
+ * @param session the session to send SET-PARAM in the scope of
+ * @param set_params_file the name of the parameters file to use (path is relative to data dir)
+ * @param param_name the name of the individual parameter to set
+ * @param param_value the value of the individual parameter to set
+ *
+ * @remark Either param_name/param_value or set_param_file is supposed to be specified
+ */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_set_param(
 									asr_session_t *session,
 									const char *set_params_file,
 									const char *param_name,
 									const char *param_value);
 
+/**
+ * Send GET-PARAM request.
+ * @param session the session to send GET-PARAM in the scope of
+ */
 ASR_CLIENT_DECLARE(ParameterSet*) asr_session_get_all_params(asr_session_t *session);
 
 /**
@@ -194,11 +204,27 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_destroy(asr_session_t *session);
  */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_log_priority_set(apt_log_priority_e log_priority);
 
+/**
+ * Send DEFINE-GRAMMAR request.
+ * @param session the session to send DEFINE-GRAMMAR in the scope of
+ * @param grammar_uri the grammar URI to use
+ * @param grammar_id the identifier of the grammar to use in Content-Id
+ */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
 									asr_session_t *session,
 									const char *grammar_uri,
 									int grammar_id);
 
+/**
+ * Send RECOGNIZE request.
+ * @param session the session to send DEFINE-GRAMMAR in the scope of
+ * @param grammar_file the name of the grammar file to use (path is relative to data dir)
+ * @param input_file the name of the audio input file to use (path is relative to data dir)
+ * @param uri_count the number of grammar URIs to use
+ * @param weights the array of grammar weights to use
+ * @param set_params_file the name of the parameters file to use (path is relative to data dir)
+ * @param send_set_params whether or not to use a separate SET-PARAMS request
+ */
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 									asr_session_t *session,
 									const char *grammar_file,
@@ -208,8 +234,16 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 									const char *set_params_file,
 									apt_bool_t send_set_params);
 
+/**
+ * Receive MRCP event.
+ * @param session the session to receive an event in the scope of
+ */
 ASR_CLIENT_DECLARE(mrcp_recognizer_event_id) asr_session_file_recognize_receive(asr_session_t *session);
 
+/**
+ * Get NLSML instance.
+ * @param message the message to retreive NSLML results from
+ */
 ASR_CLIENT_DECLARE(const char*) nlsml_result_get(mrcp_message_t *message);
 
 APT_END_EXTERN_C
