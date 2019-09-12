@@ -66,7 +66,7 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 		}
 
 		// Do recognition
-		result = asr_session_file_recognize(session,params->grammar_file,params->input_file,params->params_file,params->send_set_params,params->send_get_params);
+		result = asr_session_file_recognize(session,params->grammar_file,params->input_file,params->params_file,params->send_set_params);
 		if(result) {
 			printf("Recog Result [%s]",result);
 		}
