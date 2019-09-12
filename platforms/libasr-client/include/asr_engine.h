@@ -197,13 +197,13 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_engine_log_priority_set(apt_log_priority_e lo
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
 									asr_session_t *session,
 									const char *grammar_uri,
-									int uriCount);
+									int grammar_id);
 
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 									asr_session_t *session,
 									const char *grammar_file,
 									const char *input_file,
-									int uriCount,
+									int uri_count,
 									float weights[],
 									const char *set_params_file,
 									apt_bool_t send_set_params);

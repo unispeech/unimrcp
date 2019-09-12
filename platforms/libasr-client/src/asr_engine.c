@@ -281,7 +281,7 @@ static apt_bool_t asr_stream_read(mpf_audio_stream_t *stream, mpf_frame_t *frame
 }
 
 /** Create DEFINE-GRAMMAR request */
-static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_file_name, int i)
+static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session, const char *grammar_file_name, int grammar_id)
 {
 	/* create MRCP message */
 	mrcp_message_t *mrcp_message = mrcp_application_message_create(
@@ -383,7 +383,7 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 			}
 
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
-			content_id = apr_psprintf(mrcp_message->pool,"demo-grammar-%d",i);
+			content_id = apr_psprintf(mrcp_message->pool,"demo-grammar-%d",grammar_id);
 			apt_string_assign(&generic_header->content_id,content_id,mrcp_message->pool);
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_ID);
 		}
@@ -392,7 +392,7 @@ static mrcp_message_t* define_grammar_message_create(asr_session_t *asr_session,
 }
 
 /** Create RECOGNIZE request */
-static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, int uriCount, float weights[])
+static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, int uri_count, float weights[])
 {
 	mrcp_message_t *mrcp_message;
 	if (weights == NULL) return NULL;
@@ -412,7 +412,7 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, int 
 
 			/* set generic header fields */
 			apt_bool_t useWeights = FALSE;
-			for(i = 0; i < uriCount; i++) {
+			for(i = 0; i < uri_count; i++) {
 				if(weights[i] != 1.0) {
 					useWeights = TRUE;
 					break;
@@ -427,7 +427,7 @@ static mrcp_message_t* recognize_message_create(asr_session_t *asr_session, int 
 			}
 			mrcp_generic_header_property_add(mrcp_message,GENERIC_HEADER_CONTENT_TYPE);
 
-			for(i = 0; i < uriCount; i++) {
+			for(i = 0; i < uri_count; i++) {
 				/* set message body */
 				if(useWeights) {
 					content_id = apr_psprintf(mrcp_message->pool,"<session:demo-grammar-%d>;weight=\"%.2f\"\n",i,weights[i]);
@@ -644,7 +644,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									const char *set_params_file,
 									apt_bool_t send_set_params)
 {
-	int uriCount = 0;
+	int uri_count = 0;
 	float weights[MAX_URIS];
 	int i = 0;
 	char *temp_grammar_uri_list = apr_pstrdup(asr_session->mrcp_session->pool,grammar_file);
@@ -663,33 +663,33 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 			grammar_uri = apr_strtok(grammar_uri_with_params,"<>",&lastGrammar);
 			weight = apr_strtok(lastGrammar,"\"",&lastWeight);
 			if(weight == NULL) {
-				weights[uriCount] = 1.0f;
+				weights[uri_count] = 1.0f;
 			}
 			else {
 				lastWeight[strlen(lastWeight)-1] = '\0';
-				weights[uriCount] = (float) atof(lastWeight);
+				weights[uri_count] = (float) atof(lastWeight);
 			}
 		}
 		else {
 			grammar_uri = grammar_uri_with_params;
 		}
 
-		if(asr_session_define_grammar(asr_session,grammar_uri,uriCount)) {
-			uriCount++;
+		if(asr_session_define_grammar(asr_session,grammar_uri,uri_count)) {
+			uri_count++;
 		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"Define grammar failed for %s.",grammar_uri);
-			uriCount++;
+			uri_count++;
 		}
 
-		if (uriCount == MAX_URIS) {
+		if (uri_count == MAX_URIS) {
 			apt_log(APT_LOG_MARK,APT_PRIO_ERROR,"URI list has too many URIs.");
 			return NULL;
 		}
 	} while((grammar_uri_with_params = apr_strtok(NULL,",",&last)) != 0);
 
 
-	asr_session_file_recognize_send(asr_session,grammar_file,input_file,uriCount,weights,set_params_file,send_set_params);
+	asr_session_file_recognize_send(asr_session,grammar_file,input_file,uri_count,weights,set_params_file,send_set_params);
 	do {
 		mrcp_recognizer_event_id event_id = asr_session_file_recognize_receive(asr_session);
 
@@ -708,16 +708,16 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 ASR_CLIENT_DECLARE(apt_bool_t) asr_session_define_grammar(
 								asr_session_t *asr_session,
 								const char *grammar_uri,
-								int uriCount)
+								int grammar_id)
 {
 	const mrcp_app_message_t *app_message = NULL;
 	mrcp_message_t *mrcp_message;
 	mrcp_status_code_e status_code;
 
 	mrcp_channel_t *client_channel = (mrcp_channel_t*) asr_session->mrcp_channel;
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Begin asr_session_define_grammar. session: %s. grammar_uri: %s. uriCount: %d",client_channel->session->id.buf,grammar_uri,uriCount);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Begin asr_session_define_grammar. session: %s. grammar_uri: %s. grammar_id: %d",client_channel->session->id.buf,grammar_uri,grammar_id);
 
-	mrcp_message = define_grammar_message_create(asr_session,grammar_uri,uriCount);
+	mrcp_message = define_grammar_message_create(asr_session,grammar_uri,grammar_id);
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create DEFINE-GRAMMAR Request");
 		return FALSE;
@@ -1009,7 +1009,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 								asr_session_t *asr_session,
 								const char *grammar_file,
 								const char *input_file,
-								int uriCount,
+								int uri_count,
 								float weights[],
 								const char *set_params_file,
 								apt_bool_t send_set_params)
@@ -1023,7 +1023,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 	/* Reset prev recog result (if any) */
 	asr_session->recog_complete = NULL;
 
-	mrcp_message = recognize_message_create(asr_session,uriCount,weights);
+	mrcp_message = recognize_message_create(asr_session,uri_count,weights);
 	if(!mrcp_message) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Create RECOGNIZE Request");
 		return FALSE;
