@@ -146,8 +146,8 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									const char *grammar_file,
 									const char *input_file,
 									const char *set_params_file,
-									apt_bool_t sendSetParams,
-									apt_bool_t sendGetParams);
+									apt_bool_t send_set_params,
+									apt_bool_t send_get_params);
 
 /**
  * Initiate recognition based on specified grammar and input stream.
@@ -207,7 +207,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 									int uriCount,
 									float weights[],
 									const char *set_params_file,
-									apt_bool_t sendSetParams);
+									apt_bool_t send_set_params);
 
 ASR_CLIENT_DECLARE(mrcp_recognizer_event_id) asr_session_file_recognize_receive(asr_session_t *session);
 

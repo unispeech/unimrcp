@@ -642,8 +642,8 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 									const char *grammar_file,
 									const char *input_file,
 									const char *set_params_file,
-									apt_bool_t sendSetParams,
-									apt_bool_t sendGetParams)
+									apt_bool_t send_set_params,
+									apt_bool_t send_get_params)
 {
 	int uriCount = 0;
 	float weights[MAX_URIS];
@@ -690,7 +690,7 @@ ASR_CLIENT_DECLARE(const char*) asr_session_file_recognize(
 	} while((grammar_uri_with_params = apr_strtok(NULL,",",&last)) != 0);
 
 
-	asr_session_file_recognize_send(asr_session,grammar_file,input_file,uriCount,weights,set_params_file,sendSetParams);
+	asr_session_file_recognize_send(asr_session,grammar_file,input_file,uriCount,weights,set_params_file,send_set_params);
 	do {
 		mrcp_recognizer_event_id event_id = asr_session_file_recognize_receive(asr_session);
 
@@ -1013,7 +1013,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 								int uriCount,
 								float weights[],
 								const char *set_params_file,
-								apt_bool_t sendSetParams)
+								apt_bool_t send_set_params)
 {
 	const mrcp_app_message_t *app_message = NULL;
 	mrcp_message_t *mrcp_message;
@@ -1030,7 +1030,7 @@ ASR_CLIENT_DECLARE(apt_bool_t) asr_session_file_recognize_send(
 		return FALSE;
 	}
 	// TODO - add in headers if Set-Params is not used.
-	if(!sendSetParams && set_params_file != NULL) {
+	if(!send_set_params && set_params_file != NULL) {
 		mrcp_recog_header_t *recog_header = mrcp_resource_header_prepare(mrcp_message);
 		set_param_from_file(asr_session,set_params_file,mrcp_message,recog_header);
 	}

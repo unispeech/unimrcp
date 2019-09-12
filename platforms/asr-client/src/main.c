@@ -39,8 +39,8 @@ typedef struct {
 	const char        *input_file;
 	const char        *profile;
 	const char        *params_file;
-	apt_bool_t         sendSetParams;
-	apt_bool_t         sendGetParams;
+	apt_bool_t         send_set_params;
+	apt_bool_t         send_get_params;
 
 	apr_thread_t      *thread;
 	apr_pool_t        *pool;
@@ -55,23 +55,23 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 	if(session) {
 		ParameterSet* initial_params = NULL;
 		ParameterSet* final_params = NULL;
-		if(params->sendGetParams) {
+		if(params->send_get_params) {
 			// Get all default parameters from session
 			initial_params = asr_session_get_all_params(session);
 		}
 
-		if(params->sendSetParams) {
+		if(params->send_set_params) {
 			// Set parameters from param file
 			asr_session_set_param(session,params->params_file,NULL,NULL);
 		}
 
 		// Do recognition
-		result = asr_session_file_recognize(session,params->grammar_file,params->input_file,params->params_file,params->sendSetParams,params->sendGetParams);
+		result = asr_session_file_recognize(session,params->grammar_file,params->input_file,params->params_file,params->send_set_params,params->send_get_params);
 		if(result) {
 			printf("Recog Result [%s]",result);
 		}
 
-		if(params->sendGetParams) {
+		if(params->send_get_params) {
 			// Get all session parameters after recognition
 			final_params = asr_session_get_all_params(session);
 
@@ -89,7 +89,7 @@ static void* APR_THREAD_FUNC asr_session_run(apr_thread_t *thread, void *data)
 }
 
 /** Launch demo ASR session */
-static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_file, const char *input_file, const char *profile, const char* params_file, apt_bool_t sendSetParams, apt_bool_t sendGetParams)
+static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_file, const char *input_file, const char *profile, const char* params_file, apt_bool_t send_set_params, apt_bool_t send_get_params)
 {
 	apr_pool_t *pool;
 	asr_params_t *params;
@@ -128,8 +128,8 @@ static apt_bool_t asr_session_launch(asr_engine_t *engine, const char *grammar_f
 		params->params_file = NULL;
 	}
 
-	params->sendSetParams = sendSetParams;
-	params->sendGetParams = sendGetParams;
+	params->send_set_params = send_set_params;
+	params->send_get_params = send_get_params;
 
 	/* Launch a thread to run demo ASR session in */
 	if(apr_thread_create(&params->thread,NULL,asr_session_run,params,pool) != APR_SUCCESS) {
@@ -150,24 +150,24 @@ static apt_bool_t cmdline_process(asr_engine_t *engine, char *cmdline)
 		return running;
 
 	if(strcasecmp(name,"run") == 0) {
-		apt_bool_t sendSetParams = FALSE;
-		apt_bool_t sendGetParams = FALSE;
+		apt_bool_t send_set_params = FALSE;
+		apt_bool_t send_get_params = FALSE;
 
 		char *grammar = apr_strtok(NULL, " ", &last);
 		char *input = apr_strtok(NULL, " ", &last);
 		char *profile = apr_strtok(NULL, " ", &last);
 		char *params_file = apr_strtok(NULL, " ", &last);
-		char *send_set_params = apr_strtok(NULL, " ", &last);
-		char *send_get_params = apr_strtok(NULL, " ", &last);
+		char *str_send_set_params = apr_strtok(NULL, " ", &last);
+		char *str_send_get_params = apr_strtok(NULL, " ", &last);
 
-		if(send_set_params != NULL && strcasecmp(send_set_params,"SET") == 0) {
-			sendSetParams = TRUE;
+		if(str_send_set_params != NULL && strcasecmp(str_send_set_params,"SET") == 0) {
+			send_set_params = TRUE;
 		}
-		if(send_get_params != NULL && strcasecmp(send_get_params, "GET") == 0) {
-			sendGetParams = TRUE;
+		if(str_send_get_params != NULL && strcasecmp(str_send_get_params, "GET") == 0) {
+			send_get_params = TRUE;
 		}
 
-		asr_session_launch(engine,grammar,input,profile,params_file,sendSetParams,sendGetParams);
+		asr_session_launch(engine,grammar,input,profile,params_file,send_set_params,send_get_params);
 	}
 	else if(strcasecmp(name,"loglevel") == 0) {
 		char *priority = apr_strtok(NULL, " ", &last);
