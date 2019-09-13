@@ -49,6 +49,11 @@ struct mrcp_sofia_server_config_t {
 	/** Force destination IP address. Should be used only in case 
 	SDP contains incorrect connection address (local IP address behind NAT) */
 	apt_bool_t force_destination;
+	/** Disable the Sofia SIP SDP Offer/Answer Engine Module (soa). Should
+	only be used if dynamic payload type negotiation is needed AND you know
+	that your clients will only use the 'Basic Call' SDP Offer/Answer
+	scenario. */
+	apt_bool_t disable_soa;
 	/** SIP T1 timer */
 	apr_size_t sip_t1;
 	/** SIP T2 timer */

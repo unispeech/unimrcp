@@ -44,6 +44,13 @@
       <sip-port>8060</sip-port>
       <sip-transport>udp,tcp</sip-transport>
       <!-- <force-destination>true</force-destination> -->
+      <!--
+        This parameter can be used to disable the Sofia SIP SDP Offer/Answer Engine Module (soa).
+        This should only be done when dynamic payload type negotiation is needed with MRCPv2 AND
+        the clients only use the 'Basic Call' SDP Offer/Answer scenario. More complex scenarions
+        will most probably not work with soa disabled.
+      -->
+      <!-- <disable-soa>true</disable-soa> -->
       <ua-name>UniMRCP SofiaSIP</ua-name>
       <sdp-origin>UniMRCPServer</sdp-origin>
       <!-- <sip-t1>500</sip-t1> -->
