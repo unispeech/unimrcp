@@ -133,6 +133,7 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->origin = NULL;
 	config->transport = NULL;
 	config->force_destination = FALSE;
+	config->disable_soa = FALSE;
 	config->sip_t1 = 0;
 	config->sip_t2 = 0;
 	config->sip_t4 = 0;
@@ -281,11 +282,14 @@ static apt_bool_t mrcp_sofia_on_session_answer(mrcp_session_t *session, mrcp_ses
 			local_sdp_str);
 	}
 
-	nua_respond(sofia_session->nh, SIP_200_OK, 
+	nua_respond(sofia_session->nh, SIP_200_OK,
 				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
-				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
+				TAG_IF(sofia_agent->config->disable_soa && local_sdp_str,SIPTAG_CONTENT_TYPE_STR("application/sdp")),
+				TAG_IF(sofia_agent->config->disable_soa && local_sdp_str,SIPTAG_PAYLOAD_STR(local_sdp_str)),
+				TAG_IF(!sofia_agent->config->disable_soa && local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				SOATAG_AUDIO_AUX("telephone-event"),
 				NUTAG_AUTOANSWER(0),
+				TAG_IF(sofia_agent->config->disable_soa,NUTAG_MEDIA_ENABLE(0)),
 				NUTAG_SESSION_TIMER(sofia_agent->config->session_expires),
 				NUTAG_MIN_SE(sofia_agent->config->min_session_expires),
 				TAG_END());
@@ -500,8 +504,11 @@ static void mrcp_sofia_on_resource_discover(
 	nua_respond(nh, SIP_200_OK, 
 				NUTAG_WITH_CURRENT(nua),
 				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
-				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
+				TAG_IF(sofia_agent->config->disable_soa && local_sdp_str,SIPTAG_CONTENT_TYPE_STR("application/sdp")),
+				TAG_IF(sofia_agent->config->disable_soa && local_sdp_str,SIPTAG_PAYLOAD_STR(local_sdp_str)),
+				TAG_IF(!sofia_agent->config->disable_soa && local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				SOATAG_AUDIO_AUX("telephone-event"),
+				TAG_IF(sofia_agent->config->disable_soa,NUTAG_MEDIA_ENABLE(0)),
 				TAG_END());
 
 	nua_handle_destroy(nh);

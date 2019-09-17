@@ -393,6 +393,11 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 					config->tport_dump_file = cdata_copy(elem,loader->pool);
 			}
 		}
+		else if(strcasecmp(elem->name,"disable-soa") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->disable_soa = cdata_bool_get(elem);
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}

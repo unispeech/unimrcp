@@ -57,6 +57,7 @@
                     <xsd:element name="sip-port" type="xsd:short" />
                     <xsd:element name="sip-transport" type="xsd:string" />
                     <xsd:element name="force-destination" type="xsd:boolean" default="false" minOccurs="0" />
+                    <xsd:element name="disable-soa" type="xsd:boolean" default="false" minOccurs="0" />
                     <xsd:element name="ua-name" type="xsd:string" minOccurs="0" />
                     <xsd:element name="sdp-origin" type="xsd:string" minOccurs="0" />
                     <xsd:element name="sip-t1" type="xsd:long" minOccurs="0" />
@@ -275,3 +276,4 @@
     </xsd:complexType>
   </xsd:element>
 </xsd:schema>
+
