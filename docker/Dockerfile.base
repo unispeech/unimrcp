@@ -1,0 +1,9 @@
+FROM skyman.azurecr.io/scratch/onprem/unimrcp:prereqs
+
+# Clone and build UniMrcp repo
+RUN git clone --depth 1 https://github.com/mradmila/unimrcp.git -b master && \
+    cd unimrcp && \
+    ./bootstrap && \
+    ./configure && \
+    make && \
+    make install

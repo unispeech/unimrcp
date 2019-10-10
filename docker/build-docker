@@ -1,0 +1,12 @@
+#!/bin/bash -ex
+
+for target in {prereqs,base,server,asrclient}
+do
+    if [[ "${target}" == "base" ]]; then
+        args="--no-cache"
+    else
+        args=""
+    fi	
+    docker build . ${args} -f Dockerfile.${target} -t skyman.azurecr.io/scratch/onprem/unimrcp:${target}
+    docker push skyman.azurecr.io/scratch/onprem/unimrcp:${target}
+done
