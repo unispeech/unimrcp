@@ -327,6 +327,26 @@
 /plugins/mrcp-recorder/Makefile.in
 /plugins/mrcp-recorder/Makefile
 
+# /plugins/ms-recog/
+/plugins/ms-recog/Debug
+/plugins/ms-recog/Release
+/plugins/ms-recog/x64
+/plugins/ms-recog/*.user
+/plugins/ms-recog/.libs
+/plugins/ms-recog/.deps
+/plugins/ms-recog/Makefile.in
+/plugins/ms-recog/Makefile
+
+# /plugins/ms-synth/
+/plugins/ms-synth/Debug
+/plugins/ms-synth/Release
+/plugins/ms-synth/x64
+/plugins/ms-synth/*.user
+/plugins/ms-synth/.libs
+/plugins/ms-synth/.deps
+/plugins/ms-synth/Makefile.in
+/plugins/ms-synth/Makefile
+
 # /tests/
 /tests/Makefile.in
 /tests/Makefile

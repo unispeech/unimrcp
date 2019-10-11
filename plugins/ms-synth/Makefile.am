@@ -1,4 +1,5 @@
 AM_CPPFLAGS                = $(UNIMRCP_PLUGIN_INCLUDES)
+SPEECHSDK_ROOT             = /usr/local/speechsdk
 
 plugin_LTLIBRARIES         = mssynth.la
 
