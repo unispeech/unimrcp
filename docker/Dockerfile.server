@@ -2,5 +2,7 @@ FROM skyman.azurecr.io/scratch/onprem/unimrcp:base
 
 EXPOSE 1544 1554 8060/tcp 8060/udp
 
-ENTRYPOINT [ "/usr/local/unimrcp/bin/unimrcpserver", "--without-cmdline" ]
+WORKDIR /usr/local/unimrcp/bin
+
+ENTRYPOINT [ "./unimrcpserver", "--without-cmdline" ]
 CMD [ "--root-dir", "/usr/local/unimrcp", "--log-output", "1", "--log-prio", "6" ]
