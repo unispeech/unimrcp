@@ -17,3 +17,11 @@ endif
 if RECORDER_PLUGIN
 SUBDIRS               += mrcp-recorder
 endif
+
+if MSRECOG_PLUGIN
+SUBDIRS               += ms-recog
+endif
+
+if MSSYNTH_PLUGIN
+SUBDIRS               += ms-synth
+endif

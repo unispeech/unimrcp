@@ -7,7 +7,7 @@ CONFFILES           += unimrcpclient.xml unimrcpclient.xsd
 endif
 
 if UNIMRCP_SERVER_LIB
-CONFFILES           += unimrcpserver.xml unimrcpserver.xsd
+CONFFILES           += unimrcpserver.xml unimrcpserver.xsd config.json
 endif
 
 def-conf:

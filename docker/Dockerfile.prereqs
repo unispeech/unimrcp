@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 
 # Install prerequisites for UniMrcp
 RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends libtool m4 autotools-dev automake build-essential git ca-certificates pkg-config curl sudo
+    apt-get install -y --no-install-recommends libtool m4 autotools-dev automake build-essential git ca-certificates pkg-config curl sudo libpoco-dev rapidjson-dev
 
 # Install dependencies for UniMrcp
 RUN curl -sL http://www.unimrcp.org/project/component-view/unimrcp-deps-1-6-0-tar-gz/download | tar xzvf - && \
@@ -17,3 +17,5 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 RUN apt-get install -y --no-install-recommends libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libssl1.0.0 libasound2 && \
     mkdir -p /usr/local/speechsdk && \
     curl -sL https://aka.ms/csspeech/linuxbinary | tar --strip 1 -C /usr/local/speechsdk -xzvf -
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/speechsdk/lib/x64

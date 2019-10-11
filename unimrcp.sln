@@ -166,6 +166,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "conf", "conf", "{9155EBB8-E
 		conf\unimrcpclient.xsd = conf\unimrcpclient.xsd
 		conf\unimrcpserver.xml = conf\unimrcpserver.xml
 		conf\unimrcpserver.xsd = conf\unimrcpserver.xsd
+		conf\config.json = conf\config.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "client-profiles", "client-profiles", "{F2D6C1AF-0C05-4695-84AF-15A2F92F9899}"

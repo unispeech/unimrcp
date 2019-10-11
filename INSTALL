@@ -56,7 +56,7 @@ As a result, the project will be installed in the directory "/usr/local/unimrcp"
 layout:
 
 	bin       binaries (unimrcpserver, unimrcpclient, ...)
-	conf      configuration files (unimrcpserver.xml, unimrcpclient.xml, ...)
+	conf      configuration files (unimrcpserver.xml, unimrcpclient.xml, config.json, ...)
 	data      data files
 	include   header files
 	lib       shared (convenience) libraries
@@ -151,7 +151,7 @@ as the default configuration and data files. As a result, the output directory l
 like the following:
 
 	bin      binaries (unimrcpserver, unimrcpclient, ...) and all the required dlls
-	conf     configuration files (unimrcpserver.xml, unimrcpclient.xml, ...)
+	conf     configuration files (unimrcpserver.xml, unimrcpclient.xml, config.json, ...)
 	data     data files
 	lib      libraries
 	log      log files

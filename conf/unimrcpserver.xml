@@ -44,7 +44,7 @@
       <sip-port>8060</sip-port>
       <sip-transport>udp,tcp</sip-transport>
       <!-- <force-destination>true</force-destination> -->
-      <!--
+            <!--
         This parameter can be used to disable the Sofia SIP SDP Offer/Answer Engine Module (soa).
         This should only be done when dynamic payload type negotiation is needed with MRCPv2 AND
         the clients only use the 'Basic Call' SDP Offer/Answer scenario. More complex scenarions
@@ -118,8 +118,10 @@
 
     <!-- Factory of plugins (MRCP engines) -->
     <plugin-factory>
-      <engine id="Demo-Synth-1" name="demosynth" enable="true"/>
-      <engine id="Demo-Recog-1" name="demorecog" enable="true"/>
+      <engine id="Demo-Synth-1" name="demosynth" enable="false"/>
+      <engine id="MS-Synth-1" name="mssynth" enable="true"/>
+      <engine id="Demo-Recog-1" name="demorecog" enable="false"/>
+      <engine id="MS-Recog-1" name="msrecog" enable="true"/>
       <engine id="Demo-Verifier-1" name="demoverifier" enable="true"/>
       <engine id="Recorder-1" name="mrcprecorder" enable="true"/>
 
@@ -146,7 +148,7 @@
         <time-skew-detection>1</time-skew-detection>
       </jitter-buffer>
       <ptime>20</ptime>
-      <codecs own-preference="false">PCMU PCMA L16/96/8000 telephone-event/101/8000</codecs>
+      <codecs own-preference="false">PCMU/97/16000 PCMA/98/16000 L16/99/16000 PCMU PCMA L16/96/8000 telephone-event/101/8000</codecs>
       <!-- <codecs own-preference="false">PCMU PCMA L16/96/8000 PCMU/97/16000 PCMA/98/16000 L16/99/16000</codecs> -->
       <!-- Enable/disable RTCP support -->
       <rtcp enable="false">
