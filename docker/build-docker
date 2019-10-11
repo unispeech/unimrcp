@@ -8,5 +8,8 @@ do
         args=""
     fi	
     docker build . ${args} -f Dockerfile.${target} -t skyman.azurecr.io/scratch/onprem/unimrcp:${target}
-    docker push skyman.azurecr.io/scratch/onprem/unimrcp:${target}
+    if [[ "$1" == "push" ]]; then
+        docker push skyman.azurecr.io/scratch/onprem/unimrcp:${target}
+    fi
 done
+
