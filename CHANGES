@@ -6,7 +6,7 @@ Changes for UniMRCP: develop
 
   MPF library
 
-  *
+  * Feature: When tracing is set to a new mode of "3", send tracing logs directly to apt_log() using macro expansion. [#254](https://github.com/unispeech/unimrcp/pull/254)
 
   MRCP common library
 
