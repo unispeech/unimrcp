@@ -1,3 +1,38 @@
+Changes for UniMRCP: develop
+
+  APR-toolkit library
+
+  *
+
+  MPF library
+
+  *
+
+  MRCP common library
+
+  *
+
+  MRCP server library
+
+  *
+
+  RTSP library
+
+  *
+
+  Sofia-SIP module (MRCPv2 agent)
+
+  *
+
+  UMC sample application
+
+  *
+
+  Miscellaneous
+
+  *
+
+
 Changes for UniMRCP-1.6.0
 
   APR-toolkit library
