@@ -21,6 +21,9 @@
 #define JB_TRACE printf
 #elif ENABLE_JB_TRACE == 2
 #define JB_TRACE mpf_debug_output_trace
+#elif ENABLE_JB_TRACE == 3
+#define JB_TRACE(msg, args...) \
+  apt_log(MPF_LOG_MARK, APT_PRIO_INFO, msg, ##args);
 #else
 #define JB_TRACE mpf_null_trace
 #endif
