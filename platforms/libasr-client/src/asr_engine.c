@@ -570,9 +570,11 @@ ASR_CLIENT_DECLARE(asr_session_t*) asr_session_create(asr_engine_t *engine, cons
 	/* create source stream capabilities */
 	capabilities = mpf_source_stream_capabilities_create(pool);
 	/* add codec capabilities (Linear PCM) */
+	// Microsoft Cognitive Speech Recognition service only supports 16k 16bit now, hence we will use MPF_SAMPLE_RATE_16000
+    // see https://docs.microsoft.com/en-us/cpp/cognitive-services/speech/audio-audiostreamformat#getwaveformatpcm
 	mpf_codec_capabilities_add(
 			&capabilities->codecs,
-			MPF_SAMPLE_RATE_8000,
+			MPF_SAMPLE_RATE_16000,
 			"LPCM");
 
 	termination = mrcp_application_audio_termination_create(
