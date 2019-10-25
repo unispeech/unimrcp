@@ -76,6 +76,19 @@ static const mpf_audio_stream_vtable_t audio_stream_vtable = {
     ms_recog_stream_destroy, nullptr, nullptr, nullptr, ms_recog_stream_open, ms_recog_stream_close, ms_recog_stream_write, nullptr
 };
 
+/** Declare this macro to set plugin version */
+MRCP_PLUGIN_VERSION_DECLARE
+
+/**
+ * Declare this macro to use log routine of the server, plugin is loaded from.
+ * Enable/add the corresponding entry in logger.xml to set a cutsom log source
+ * priority. <source name="RECOG-PLUGIN" priority="DEBUG" masking="NONE"/>
+ */
+MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(RECOG_PLUGIN, "RECOG-PLUGIN")
+
+/** Use custom log source mark */
+#define RECOG_LOG_MARK APT_LOG_MARK_DECLARE(RECOG_PLUGIN)
+
 /** Declaration of ms recognizer engine */
 struct ms_recog_engine_t
 {
@@ -98,6 +111,8 @@ struct RecogResource
 
     RecogResource()
     {
+        // https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/speech-container-howto#speech-to-text-2
+        
         if(ConfigManager::GetBoolValue(Common::SPEECH_SECTION, Common::SR_USE_LOCAL_CONTAINER))
         {
             static auto localKey =
@@ -106,6 +121,8 @@ struct RecogResource
             ConfigManager::GetStrValue(Common::SPEECH_SECTION, Common::SR_LOCAL_ENDPOINT);
 
             config = SpeechConfig::FromEndpoint(endpoint, localKey);
+
+            apt_log(RECOG_LOG_MARK, APT_PRIO_INFO, "Microsoft Recognition engine configured to use local speech container endpoint");
         }
         else
         {
@@ -116,6 +133,8 @@ struct RecogResource
             ConfigManager::GetStrValue(Common::SPEECH_SECTION, Common::SPEECH_SDK_REGION);
 
             config = SpeechConfig::FromSubscription(subscriptionKey, region);
+
+            apt_log(RECOG_LOG_MARK, APT_PRIO_INFO, "Microsoft Recognition engine configured to use azure-cloud speech subscription");
         }
         
         recognized = false;
@@ -163,20 +182,6 @@ static apt_bool_t ms_recog_msg_signal(ms_recog_msg_type_e type,
                                       mrcp_engine_channel_t* channel,
                                       mrcp_message_t* request);
 static apt_bool_t ms_recog_msg_process(apt_task_t* task, apt_task_msg_t* msg);
-
-/** Declare this macro to set plugin version */
-MRCP_PLUGIN_VERSION_DECLARE
-
-/**
- * Declare this macro to use log routine of the server, plugin is loaded from.
- * Enable/add the corresponding entry in logger.xml to set a cutsom log source
- * priority. <source name="RECOG-PLUGIN" priority="DEBUG" masking="NONE"/>
- */
-MRCP_PLUGIN_LOG_SOURCE_IMPLEMENT(RECOG_PLUGIN, "RECOG-PLUGIN")
-
-/** Use custom log source mark */
-#define RECOG_LOG_MARK APT_LOG_MARK_DECLARE(RECOG_PLUGIN)
-
 
 /** Create ms recognizer engine */
 MRCP_PLUGIN_DECLARE(mrcp_engine_t*) mrcp_plugin_create(apr_pool_t* pool)
