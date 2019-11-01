@@ -4,8 +4,8 @@
     "speech_sdk_key": "YourSubscriptionKey",
     "max_synthesizer":  20,
     "sr_use_local_container": false,
-    "sr_local_endpoint": "Speech Container endpoint e.g. ws://Host_IP_Address:Port_Number/speech/recognition/dictation/cognitiveservices/Version_Number",
-    "sr_local_key": "YourSubscriptionKey",
+    "sr_local_endpoint": "ws://YourSpeechContainerEndPoint/speech/recognition/dictation/cognitiveservices/v1",
+    "sr_local_key": "00000000000000000000000000000000",
     "tts_use_local_container": false,
     "tts_local_endpoint": "",
     "tts_local_key": ""
