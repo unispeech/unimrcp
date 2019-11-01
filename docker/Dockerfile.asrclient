@@ -2,5 +2,7 @@ FROM skyman.azurecr.io/scratch/onprem/unimrcp:base
 
 WORKDIR /usr/local/unimrcp/bin
 
+COPY ./whatstheweatherlike.wav ./batman20s.wav /usr/local/unimrcp/data/
+
 ENTRYPOINT [ "./asrclient" ]
 CMD [ "--root-dir", "/usr/local/unimrcp", "--log-output", "1", "--log-prio", "6" ]
