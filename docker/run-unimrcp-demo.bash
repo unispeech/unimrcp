@@ -57,9 +57,6 @@ if [[ "${SPEECH_SELECT}" == "cloud" ]]; then
     sed -i "s/sr_use_local_container\"\:\strue/sr_use_local_container\": false/g" ${SOURCE_DIR}/config.json.rej
 fi
 
-# Cleanup previous instances of the containers
-docker kill ${SPEECH_CONTAINER_NAME} unimrcpserver asrclient || echo "No containers running, that's OK"
-
 # Make sure mandatory arguments are passed properly
 if [[ "${SPEECH_APIKEY}" == "invalid" ]]; then
     echo "Must supply speech api key!"
@@ -74,10 +71,14 @@ fi
 # Run docker images
 DOCKER_LINK=""
 if [[ "${SPEECH_SELECT}" != "cloud" ]]; then
+    docker kill ${SPEECH_CONTAINER_NAME} || echo "No speech container running, that is OK"
     docker pull ${SPEECH_DCR}
     docker run --rm -d --name ${SPEECH_CONTAINER_NAME} -e DECODER_MAX_COUNT=${SPEECH_MAX_DECODERS} -p ${SPEECH_CONTAINER_PORT}:5000 "${SPEECH_DCR}" eula=accept billing=${SPEECH_BILLING} apikey=${SPEECH_APIKEY}
     DOCKER_LINK="--link ${SPEECH_CONTAINER_NAME}:${SPEECH_CONTAINER_NAME}"
 fi
+
+# Cleanup previous instances of the containers
+docker kill unimrcpserver asrclient || echo "No UniMRCP containers running, that is OK"
 
 docker pull ${UNIMRCP_SERVER_DCR}
 docker pull ${UNIMRCP_CLIENT_DCR}
