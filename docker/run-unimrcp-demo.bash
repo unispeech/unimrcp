@@ -4,7 +4,7 @@ SPEECH_CONTAINER_NAME="${SPEECH_CONTAINER_NAME:-localsr}"
 SPEECH_CONTAINER_PORT="${SPEECH_CONTAINER_PORT:-5000}"
 SPEECH_CR="${SPEECH_CR:-containerpreview.azurecr.io}"
 SPEECH_REPO="${SPEECH_REPO:-microsoft/cognitive-services-speech-to-text}"
-SPEECH_TAG="${SPEECH_TAG:-2.0.0-amd64-en-us-preview}"
+SPEECH_TAG="${SPEECH_TAG:-2.1.1-amd64-en-us-preview}"
 SPEECH_REGION="${SPEECH_REGION:-invalid}"
 SPEECH_APIKEY="${SPEECH_APIKEY:-invalid}"
 SPEECH_MAX_DECODERS="${SPEECH_MAX_DECODERS:-20}"
@@ -53,10 +53,6 @@ UNIMRCP_SERVER_DCR="${UNIMRCP_CR}/${UNIMRCP_REPO}:${UNIMRCP_SERVER_TAG}"
 UNIMRCP_CLIENT_DCR="${UNIMRCP_CR}/${UNIMRCP_REPO}:${UNIMRCP_CLIENT_TAG}"
 sed -e "s/YourSpeechContainerEndPoint/$SPEECH_ENDPOINT/g" -e "s/YourSubscriptionKey/$SPEECH_APIKEY/g" -e "s/YourServiceRegion/$SPEECH_REGION/g"  ${SOURCE_DIR}/config.json > ${SOURCE_DIR}/config.json.rej
 
-if [[ "${SPEECH_SELECT}" == "cloud" ]]; then
-    sed -i "s/sr_use_local_container\"\:\strue/sr_use_local_container\": false/g" ${SOURCE_DIR}/config.json.rej
-fi
-
 # Make sure mandatory arguments are passed properly
 if [[ "${SPEECH_APIKEY}" == "invalid" ]]; then
     echo "Must supply speech api key!"
@@ -68,9 +64,12 @@ if [[ "${SPEECH_REGION}" == "invalid" ]]; then
     exit 1
 fi
 
-# Run docker images
 DOCKER_LINK=""
-if [[ "${SPEECH_SELECT}" != "cloud" ]]; then
+
+# Prepare the SR target, either in the cloud or in another container
+if [[ "${SPEECH_SELECT}" == "cloud" ]]; then
+    sed -i "s/sr_use_local_container\"\:\strue/sr_use_local_container\": false/g" ${SOURCE_DIR}/config.json.rej
+else
     docker kill ${SPEECH_CONTAINER_NAME} || echo "No speech container running, that is OK"
     docker pull ${SPEECH_DCR}
     docker run --rm -d --name ${SPEECH_CONTAINER_NAME} -e DECODER_MAX_COUNT=${SPEECH_MAX_DECODERS} -p ${SPEECH_CONTAINER_PORT}:5000 "${SPEECH_DCR}" eula=accept billing=${SPEECH_BILLING} apikey=${SPEECH_APIKEY}
