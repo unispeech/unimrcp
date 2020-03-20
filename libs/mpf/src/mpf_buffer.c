@@ -59,6 +59,9 @@ void mpf_buffer_destroy(mpf_buffer_t *buffer)
 apt_bool_t mpf_buffer_restart(mpf_buffer_t *buffer)
 {
 	apr_thread_mutex_lock(buffer->guard);
+	buffer->cur_chunk = NULL;
+	buffer->remaining_chunk_size = 0;
+	buffer->size = 0;
 	APR_RING_INIT(&buffer->head, mpf_chunk_t, link);
 	apr_thread_mutex_unlock(buffer->guard);
 	return TRUE;
