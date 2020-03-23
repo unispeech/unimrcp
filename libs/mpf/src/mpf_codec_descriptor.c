@@ -33,7 +33,6 @@ static const mpf_codec_attribs_t lpcm_attribs = {
 /** Find matched attribs in codec capabilities by descriptor specified */
 static mpf_codec_attribs_t* mpf_codec_capabilities_attribs_find(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *descriptor);
 
-
 /** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
 MPF_DECLARE(int) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate)
 {
@@ -172,6 +171,7 @@ static mpf_codec_attribs_t* mpf_codec_capabilities_attribs_find(const mpf_codec_
 /** Match codec list with specified capabilities */
 MPF_DECLARE(apt_bool_t) mpf_codec_list_match(mpf_codec_list_t *codec_list, const mpf_codec_capabilities_t *capabilities)
 {
+
 	int i;
 	mpf_codec_descriptor_t *descriptor;
 	apt_bool_t status = FALSE;
@@ -206,6 +206,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 	codec_list1->event_descriptor = NULL;
 	codec_list2->primary_descriptor = NULL;
 	codec_list2->event_descriptor = NULL;
+
 	/* find only one match for primary and named event descriptors,
 	set the matched descriptors as preffered, disable the others */
 	for(i=0; i<codec_list1->descriptor_arr->nelts; i++) {
@@ -316,4 +317,31 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_compare(const mpf_codec_list_t *codec_li
 	}
 
 	return TRUE;
+}
+
+MPF_DECLARE(apr_size_t) mpf_codec_list_to_string(char *buffer, apr_size_t size, mpf_codec_list_t *codec_list)
+{
+	apr_size_t offset = 0;
+	buffer[0] = '\0';
+	int i = 0;
+	mpf_codec_descriptor_t *currDescriptor = NULL;
+
+	for(i=0; i<codec_list->descriptor_arr->nelts; i++) {
+		if (i != 0)
+		{
+			offset += snprintf(buffer+offset,size-offset, ", ");
+		}
+
+		currDescriptor = &APR_ARRAY_IDX(codec_list->descriptor_arr,i,mpf_codec_descriptor_t);
+
+		offset += snprintf(buffer+offset,size-offset,
+			"%s/%d/%d %s",
+			currDescriptor->name.buf,
+			currDescriptor->payload_type,
+			currDescriptor->sampling_rate,			
+			currDescriptor->enabled ? "enabled" : "disabled"
+		);
+	}
+
+	return offset;
 }

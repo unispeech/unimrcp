@@ -277,6 +277,8 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_compare(const mpf_codec_list_t *codec_li
 /** Get sampling rate mask (mpf_sample_rate_e) by integer value  */
 MPF_DECLARE(int) mpf_sample_rate_mask_get(apr_uint16_t sampling_rate);
 
+/** Serialize and write mpf codec list to a string buffer */
+MPF_DECLARE(apr_size_t) mpf_codec_list_to_string(char *buffer, apr_size_t size, mpf_codec_list_t *codec_list);
 
 APT_END_EXTERN_C
 

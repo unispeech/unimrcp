@@ -377,6 +377,29 @@ static apt_bool_t mpf_rtp_stream_media_negotiate(mpf_rtp_stream_t *rtp_stream)
 			codec_list2 = &local_media->codec_list;
 			codec_list1 = &remote_media->codec_list;
 		}
+		apt_log(MPF_LOG_MARK, APT_PRIO_INFO, "RTP Stream settings: Codecs own preference: %d",
+			rtp_stream->settings->own_preferrence);
+
+		const char *codec_list1_str = NULL;
+		char codec_list1_str_buf[2048];
+		const char *codec_list2_str = NULL;
+		char codec_list2_str_buf[2048];
+
+		// Log both codec lists
+		if (mpf_codec_list_to_string(codec_list1_str_buf, sizeof(codec_list1_str_buf), codec_list1) > 0)
+		{
+			codec_list1_str = codec_list1_str_buf;
+			apt_log(MPF_LOG_MARK, APT_PRIO_INFO, "%s MPF codec list: %s",
+				rtp_stream->settings->own_preferrence ? "Local" : "Remote",
+				codec_list1_str);
+		}
+		if (mpf_codec_list_to_string(codec_list2_str_buf, sizeof(codec_list2_str_buf), codec_list2) > 0)
+		{
+			codec_list2_str = codec_list2_str_buf;
+			apt_log(MPF_LOG_MARK, APT_PRIO_INFO, "%s MPF codec list: %s",
+				rtp_stream->settings->own_preferrence ? "Remote" : "Local",
+				codec_list2_str);
+		}
 
 		if(mpf_codec_lists_intersect(codec_list1,codec_list2) == FALSE) {
 			/* reject RTP/RTCP session */

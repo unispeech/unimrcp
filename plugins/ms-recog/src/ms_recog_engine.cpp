@@ -273,8 +273,11 @@ ms_recog_engine_channel_create(mrcp_engine_t* engine, apr_pool_t* pool)
     apt_log(RECOG_LOG_MARK, APT_PRIO_INFO, "recognition engine: channel is created");
 
     capabilities = mpf_sink_stream_capabilities_create(pool);
-    mpf_codec_capabilities_add(&capabilities->codecs, MPF_SAMPLE_RATE_16000, "LPCM");
-    // Microsoft Cognitive Speech Recognition service only supports 16k 16bit now
+    mpf_codec_capabilities_add(
+        &capabilities->codecs, 
+        MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000,
+        "LPCM");
+    // Microsoft Cognitive Speech Recognition service only supports 16k 16bit mono pcm.
     // see https://docs.microsoft.com/en-us/cpp/cognitive-services/speech/audio-audiostreamformat#getwaveformatpcm
 
     /* create media termination */
