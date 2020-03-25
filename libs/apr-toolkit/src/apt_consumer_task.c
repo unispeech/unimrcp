@@ -155,6 +155,12 @@ static apt_bool_t apt_consumer_task_run(apt_task_t *task)
 			if(time_now > time_last) {
 				apt_timer_queue_advance(consumer_task->timer_queue,(apr_uint32_t)((time_now - time_last)/1000));
 			}
+			else {
+				/* If NTP has drifted the clock backwards, advance the queue based on the set timeout but not actual time difference */
+				if(rv == APR_TIMEUP) {
+					apt_timer_queue_advance(consumer_task->timer_queue,queue_timeout);
+				}
+			}
 		}
 #endif
 	}
