@@ -600,6 +600,10 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing RTP factory",profile->id);
 		return FALSE;
 	}
+	if (!profile->rtp_settings) {
+		apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "Failed to Register Profile [%s]: missing RTP settings", profile->id);
+		return FALSE;
+	}
 
 	apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Register Profile [%s]",profile->id);
 	apr_hash_set(server->profile_table,profile->id,APR_HASH_KEY_STRING,profile);
