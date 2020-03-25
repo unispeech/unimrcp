@@ -153,6 +153,14 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 		return NULL;
 	}
 
+	if(engine->is_open == FALSE) {
+		apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "MRCP Engine [%s] not Ready for Resource [%s] " APT_NAMESID_FMT,
+			engine->id,
+			resource_name->buf,
+			MRCP_SESSION_NAMESID(session));
+		return NULL;
+	}
+
 	apt_log(APT_LOG_MARK, APT_PRIO_INFO, "Found MRCP Engine [%s] for Resource [%s] " APT_NAMESID_FMT,
 			engine->id,
 			resource_name->buf,
