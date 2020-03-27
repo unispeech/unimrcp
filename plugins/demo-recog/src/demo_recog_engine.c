@@ -244,6 +244,16 @@ static apt_bool_t demo_recog_channel_destroy(mrcp_engine_channel_t *channel)
 /** Open engine channel (asynchronous response MUST be sent)*/
 static apt_bool_t demo_recog_channel_open(mrcp_engine_channel_t *channel)
 {
+	if(channel->attribs) {
+		/* process attributes */
+		const apr_array_header_t *header = apr_table_elts(channel->attribs);
+		apr_table_entry_t *entry = (apr_table_entry_t *)header->elts;
+		int i;
+		for(i=0; i<header->nelts; i++) {
+			apt_log(RECOG_LOG_MARK,APT_PRIO_INFO,"Attrib name [%s] value [%s]",entry[i].key,entry[i].val);
+		}
+	}
+
 	return demo_recog_msg_signal(DEMO_RECOG_MSG_OPEN_CHANNEL,channel,NULL);
 }
 
