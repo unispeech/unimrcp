@@ -163,12 +163,12 @@ MRCP_DECLARE(mrcp_server_profile_t*) mrcp_server_profile_create(
  * Register MRCP profile.
  * @param server the MRCP server to set profile for
  * @param profile the profile to set
- * @param plugin_map the map of engines (plugins)
+ * @param resource_engine_map the map of resource ids and engine settings (resource id -> mrcp_engine_settings_t*)
  */
 MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 									mrcp_server_t *server, 
 									mrcp_server_profile_t *profile,
-									apr_table_t *plugin_map);
+									apr_hash_t *resource_engine_map);
 
 /**
  * Load MRCP engine as a plugin.

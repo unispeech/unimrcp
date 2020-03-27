@@ -175,12 +175,16 @@
       <rtp-settings>RTP-Settings-1</rtp-settings>
 
       <!--
-        Profile-based association of engines to resources. For example:
+        Profile-based association of resources and engines with optional attributes.
+        For example:
       -->
       <!--
       <resource-engine-map>
-        <param name="speechsynth" value="SS-1"/>
-        <param name="speechrecog" value="SR-1"/>
+        <resource id="speechsynth" engine="Demo-Synth-1"/>
+        <resource id="speechrecog" engine="Demo-Recog-1">
+          <attrib name="n1" value="v1"/>
+          <attrib name="n2" value="v2"/>
+        </resource>
       </resource-engine-map>
       -->
     </mrcpv2-profile>

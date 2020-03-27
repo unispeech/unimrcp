@@ -61,7 +61,7 @@ void mrcp_engine_on_close(mrcp_engine_t *engine)
 }
 
 /** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool)
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine, apr_table_t *attribs, mrcp_version_e mrcp_version, apr_pool_t *pool)
 {
 	mrcp_engine_channel_t *channel;
 	if(engine->is_open != TRUE) {
@@ -75,6 +75,7 @@ mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine,
 	channel = engine->method_vtable->create_channel(engine,pool);
 	if(channel) {
 		channel->mrcp_version = mrcp_version;
+		channel->attribs = attribs;
 		engine->cur_channel_count++;
 	}
 	return channel;
@@ -97,4 +98,15 @@ mrcp_engine_config_t* mrcp_engine_config_alloc(apr_pool_t *pool)
 	config->max_channel_count = 0;
 	config->params = NULL;
 	return config;
+}
+
+/** Allocate engine profile settings */
+mrcp_engine_settings_t* mrcp_engine_settings_alloc(apr_pool_t *pool)
+{
+	mrcp_engine_settings_t *settings = apr_palloc(pool,sizeof(mrcp_engine_settings_t));
+	settings->resource_id = NULL;
+	settings->engine_id = NULL;
+	settings->attribs = NULL;
+	settings->engine = NULL;
+	return settings;
 }

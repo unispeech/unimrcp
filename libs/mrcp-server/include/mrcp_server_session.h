@@ -118,7 +118,7 @@ struct mrcp_server_profile_t {
 	const char                *id;
 	/** MRCP version */
 	mrcp_version_e             mrcp_version;
-	/** Table of engines (mrcp_engine_t*) */
+	/** Table of engines (mrcp_engine_settings_t*) */
 	apr_hash_t                *engine_table;
 	/** MRCP resource factory */
 	mrcp_resource_factory_t   *resource_factory;

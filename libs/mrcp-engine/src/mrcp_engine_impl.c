@@ -73,6 +73,7 @@ mrcp_engine_channel_t* mrcp_engine_channel_create(
 	channel->engine = engine;
 	channel->is_open = FALSE;
 	channel->pool = pool;
+	channel->attribs = NULL;
 	apt_string_reset(&channel->id);
 	return channel;
 }

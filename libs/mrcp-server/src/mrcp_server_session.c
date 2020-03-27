@@ -126,6 +126,7 @@ static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t 
 static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_channel_t *channel, const apt_str_t *resource_name)
 {
 	mrcp_engine_t *engine = NULL;
+	apr_table_t *attribs = NULL;
 	if(session->base.resource_engine_map) {
 		const char *engine_name = apr_table_get(session->base.resource_engine_map,resource_name->buf);
 		if(engine_name) {
@@ -140,10 +141,14 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 	}
 
 	if(!engine) {
-		engine = apr_hash_get(
-					session->profile->engine_table,
-					resource_name->buf,
-					resource_name->length);
+		mrcp_engine_settings_t *settings = apr_hash_get(
+												session->profile->engine_table,
+												resource_name->buf,
+												resource_name->length);
+		if(settings) {
+			engine = settings->engine;
+			attribs = settings->attribs;
+		}
 	}
 
 	if(!engine) {
@@ -174,7 +179,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 		channel->state_machine->on_deactivate = state_machine_on_deactivate;
 	}
 
-	return mrcp_engine_channel_virtual_create(engine,mrcp_session_version_get(session),session->base.pool);
+	return mrcp_engine_channel_virtual_create(engine,attribs,mrcp_session_version_get(session),session->base.pool);
 }
 
 static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_array_header_t *cmid_arr)

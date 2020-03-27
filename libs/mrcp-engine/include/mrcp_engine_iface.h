@@ -43,7 +43,7 @@ void mrcp_engine_on_close(mrcp_engine_t *engine);
 
 
 /** Create engine channel */
-mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine, mrcp_version_e mrcp_version, apr_pool_t *pool);
+mrcp_engine_channel_t* mrcp_engine_channel_virtual_create(mrcp_engine_t *engine, apr_table_t *attribs, mrcp_version_e mrcp_version, apr_pool_t *pool);
 
 /** Destroy engine channel */
 apt_bool_t mrcp_engine_channel_virtual_destroy(mrcp_engine_channel_t *channel);
@@ -77,6 +77,8 @@ static APR_INLINE apt_bool_t mrcp_engine_channel_request_process(mrcp_engine_cha
 /** Allocate engine config */
 mrcp_engine_config_t* mrcp_engine_config_alloc(apr_pool_t *pool);
 
+/** Allocate engine profile settings */
+mrcp_engine_settings_t* mrcp_engine_settings_alloc(apr_pool_t *pool);
 
 APT_END_EXTERN_C
 

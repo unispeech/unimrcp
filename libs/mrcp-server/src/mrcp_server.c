@@ -524,40 +524,44 @@ MRCP_DECLARE(mrcp_server_profile_t*) mrcp_server_profile_create(
 	return profile;
 }
 
-static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_server_profile_t *profile, apr_table_t *plugin_map)
+static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_server_profile_t *profile, apr_hash_t *resource_engine_map)
 {
 	int i;
 	mrcp_resource_t *resource;
-	const char *plugin_name = NULL;
-	mrcp_engine_t *engine;
+	mrcp_engine_settings_t *settings;
 
 	profile->engine_table = apr_hash_make(server->pool);
 	for(i=0; i<MRCP_RESOURCE_TYPE_COUNT; i++) {
 		resource = mrcp_resource_get(server->resource_factory,i);
 		if(!resource) continue;
 		
-		engine = NULL;
-		/* first, try to find engine by name specified in plugin map (if available) */
-		if(plugin_map) {
-			plugin_name = apr_table_get(plugin_map,resource->name.buf);
-			if(plugin_name) {
-				engine = mrcp_engine_factory_engine_get(server->engine_factory,plugin_name);
+		settings = NULL;
+		/* first, try to find engine settings by name specified in profile-based resource/engine map (if available) */
+		if(resource_engine_map) {
+			settings = apr_hash_get(resource_engine_map,resource->name.buf,resource->name.length);
+			if(settings) {
+				settings->engine = mrcp_engine_factory_engine_get(server->engine_factory,settings->engine_id);
 			}
 		}
 
-		/* next, if no engine found or specified, try to find the first available one */
-		if(!engine) {
-			engine = mrcp_engine_factory_engine_find(server->engine_factory,i);
+		/* next, if no engine settings found or specified, create one */
+		if(!settings) {
+			settings = mrcp_engine_settings_alloc(server->pool);
 		}
-		
-		if(engine) {
-			if(engine->id) {
-				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Assign MRCP Engine [%s] [%s]",resource->name.buf,engine->id);
+
+		/* next, if no engine found or specified, try to find the first available one */
+		if(!settings->engine) {
+			settings->engine = mrcp_engine_factory_engine_find(server->engine_factory,i);
+		}
+
+		if(settings->engine) {
+			if(settings->engine->id) {
+				apt_log(APT_LOG_MARK,APT_PRIO_INFO,"Associate Resource [%s] to Engine [%s] in Profile [%s]",resource->name.buf,settings->engine->id, profile->id);
 			}
-			apr_hash_set(profile->engine_table,resource->name.buf,resource->name.length,engine);
+			apr_hash_set(profile->engine_table,resource->name.buf,resource->name.length,settings);
 		}
 		else {
-			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"No MRCP Engine Available [%s]",resource->name.buf);
+			apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"No Engine Associated to Resource [%s]",resource->name.buf);
 		}
 	}
 
@@ -568,7 +572,7 @@ static apt_bool_t mrcp_server_engine_table_make(mrcp_server_t *server, mrcp_serv
 MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 							mrcp_server_t *server,
 							mrcp_server_profile_t *profile,
-							apr_table_t *plugin_map)
+							apr_hash_t *resource_engine_map)
 {
 	if(!profile || !profile->id) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile: no name");
@@ -581,7 +585,7 @@ MRCP_DECLARE(apt_bool_t) mrcp_server_profile_register(
 		}
 		profile->resource_factory = server->resource_factory;
 	}
-	mrcp_server_engine_table_make(server,profile,plugin_map);
+	mrcp_server_engine_table_make(server,profile,resource_engine_map);
 	
 	if(!profile->signaling_agent) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Register Profile [%s]: missing signaling agent",profile->id);

@@ -874,23 +874,80 @@ static apt_bool_t unimrcp_server_rtp_settings_load(unimrcp_server_loader_t *load
 	return mrcp_server_rtp_settings_register(loader->server,rtp_settings,id);
 }
 
-/** Load map of resources and engines */
-static apr_table_t* resource_engine_map_load(const apr_xml_elem *root, apr_pool_t *pool)
+/** Load engine attribs */
+static apr_table_t* resource_engine_attribs_load(const apr_xml_elem *root, apr_pool_t *pool)
 {
 	const apr_xml_attr *attr_name;
 	const apr_xml_attr *attr_value;
 	const apr_xml_elem *elem;
-	apr_table_t *plugin_map = apr_table_make(pool,2);
-	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Plugin Map");
+	apr_table_t *attribs = apr_table_make(pool,1);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Resource Engine Attribs");
 	for(elem = root->first_child; elem; elem = elem->next) {
-		if(strcasecmp(elem->name,"param") == 0) {
+		if(strcasecmp(elem->name,"attrib") == 0) {
 			if(name_value_attribs_get(elem,&attr_name,&attr_value) == TRUE) {
-				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Param %s:%s",attr_name->value,attr_value->value);
-				apr_table_set(plugin_map,attr_name->value,attr_value->value);
+				apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Resource Engine Attrib <%s:%s>",attr_name->value,attr_value->value);
+				apr_table_set(attribs,attr_name->value,attr_value->value);
 			}
 		}
 	}
-	return plugin_map;
+	return attribs;
+}
+
+static mrcp_engine_settings_t* resource_engine_settings_load(const apr_xml_elem *elem, apr_pool_t *pool)
+{
+	mrcp_engine_settings_t *settings;
+	const apr_xml_attr *attr_resource = NULL;
+	const apr_xml_attr *attr_engine = NULL;
+	if(strcasecmp(elem->name,"param") == 0) {
+		/* this option remains for backward compatibility */
+		name_value_attribs_get(elem,&attr_resource,&attr_engine);
+	}
+	else if(strcasecmp(elem->name,"resource") == 0) {
+		const apr_xml_attr *attr;
+		for(attr = elem->attr; attr; attr = attr->next) {
+			if(strcasecmp(attr->name,"id") == 0) {
+				attr_resource = attr;
+			}
+			else if(strcasecmp(attr->name,"engine") == 0) {
+				attr_engine = attr;
+			}
+		}
+	}
+	else {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
+	}
+
+	if(!attr_resource) {
+		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Missing Resource Id");
+		return NULL;
+	}
+
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Resource Engine Settings <%s:%s>",attr_resource->value, attr_engine ? attr_engine->value : "");
+	settings = mrcp_engine_settings_alloc(pool);
+	settings->resource_id = attr_resource->value;
+	if(attr_engine) {
+		settings->engine_id = attr_engine->value;
+	}
+	if(elem->first_child) {
+		settings->attribs = resource_engine_attribs_load(elem,pool);
+	}
+	return settings;
+}
+
+/** Load map of resources and engines */
+static apr_hash_t* resource_engine_map_load(const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	mrcp_engine_settings_t *settings;
+	apr_hash_t *resource_engine_map = apr_hash_make(pool);
+	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading Resource Engine Map");
+	for(elem = root->first_child; elem; elem = elem->next) {
+		settings = resource_engine_settings_load(elem, pool);
+		if(settings) {
+			apr_hash_set(resource_engine_map,settings->resource_id,APR_HASH_KEY_STRING,settings);
+		}
+	}
+	return resource_engine_map;
 }
 
 /** Load MRCPv2 profile */
@@ -903,7 +960,7 @@ static apt_bool_t unimrcp_server_mrcpv2_profile_load(unimrcp_server_loader_t *lo
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
 	mpf_rtp_settings_t *rtp_settings = NULL;
-	apr_table_t *resource_engine_map = NULL;
+	apr_hash_t *resource_engine_map = NULL;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading MRCPv2 Profile <%s>",id);
 	for(elem = root->first_child; elem; elem = elem->next) {
@@ -959,7 +1016,7 @@ static apt_bool_t unimrcp_server_mrcpv1_profile_load(unimrcp_server_loader_t *lo
 	mpf_engine_t *media_engine = NULL;
 	mpf_termination_factory_t *rtp_factory = NULL;
 	mpf_rtp_settings_t *rtp_settings = NULL;
-	apr_table_t *resource_engine_map = NULL;
+	apr_hash_t *resource_engine_map = NULL;
 
 	apt_log(APT_LOG_MARK,APT_PRIO_DEBUG,"Loading MRCPv1 Profile <%s>",id);
 	for(elem = root->first_child; elem; elem = elem->next) {

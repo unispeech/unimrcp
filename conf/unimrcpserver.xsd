@@ -240,6 +240,7 @@
                     <xsd:element name="media-engine" type="xsd:string" />
                     <xsd:element name="rtp-factory" type="xsd:string" />
                     <xsd:element name="rtp-settings" type="xsd:string" />
+                    <xsd:element name="resource-engine-map" type="xsd:string" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />
                   <xsd:attribute name="enable" type="xsd:boolean" use="optional" />
@@ -255,6 +256,7 @@
                     <xsd:element name="media-engine" type="xsd:string" />
                     <xsd:element name="rtp-factory" type="xsd:string" />
                     <xsd:element name="rtp-settings" type="xsd:string" />
+                    <xsd:element name="resource-engine-map" type="xsd:string" />
                   </xsd:sequence>
                   <xsd:attribute name="id" type="xsd:string" use="required" />
                   <xsd:attribute name="enable" type="xsd:boolean" use="optional" />
