@@ -137,6 +137,9 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 	config->transport = NULL;
 	config->force_destination = FALSE;
 	config->disable_soa = FALSE;
+	config->extract_feature_tags = TRUE;
+	config->extract_call_id = FALSE;
+	config->extract_user_name = FALSE;
 	config->sip_t1 = 0;
 	config->sip_t2 = 0;
 	config->sip_t4 = 0;
@@ -424,6 +427,65 @@ static apt_bool_t mrcp_sofia_feature_tag_extract(const apt_str_t *feature_tag, a
 	return TRUE;
 }
 
+static void mrcp_sofia_feature_tags_extract(mrcp_sofia_session_t *sofia_session, sip_accept_contact_t *sip_accept_contact)
+{
+	msg_param_t const *param = sip_accept_contact->cp_params;
+	while(param && *param) {
+		apt_str_t resource_name;
+		apt_str_t field;
+		apt_str_t value;
+		apt_str_t feature_tag;
+
+		apt_string_set(&feature_tag, *param);
+		apt_log(SIP_LOG_MARK, APT_PRIO_INFO, "Extract Feature Tag [%s] " APT_NAMESID_FMT, 
+				feature_tag.buf,
+				sofia_session->session->name,
+				MRCP_SESSION_SID(sofia_session->session));
+
+		/* extract resource name, field and value from feature tag */
+		if(mrcp_sofia_feature_tag_extract(&feature_tag,&resource_name,&field,&value) == TRUE) {
+			if(strncasecmp(resource_name.buf,"generic",resource_name.length) == 0) {
+				/* set session generic attribute */
+				mrcp_session_generic_attrib_set(&sofia_session->attribs,&field,&value,sofia_session->session->pool);
+			}
+			else {
+				/* set session resource-specific attribute */
+				mrcp_session_resource_attrib_set(&sofia_session->attribs,&resource_name,&field,&value,sofia_session->session->pool);
+			}
+		}
+		else {
+			apt_log(SIP_LOG_MARK, APT_PRIO_WARNING, "Failed to Extract Feature Tag [%s] " APT_NAMESID_FMT, 
+					feature_tag.buf,
+					sofia_session->session->name,
+					MRCP_SESSION_SID(sofia_session->session));
+		}
+
+		param += 1;
+	}
+}
+
+static void mrcp_sofia_sip_call_id_extract(mrcp_sofia_session_t *sofia_session, sip_call_id_t *sip_call_id)
+{
+	apt_str_t field;
+	apt_str_t value;
+	apt_string_set(&field,"sip.header.call-id");
+	apt_string_set(&value,sip_call_id->i_id);
+	/* set session generic attribute */
+	mrcp_session_generic_attrib_set(&sofia_session->attribs,&field,&value,sofia_session->session->pool);
+}
+
+static void mrcp_sofia_sip_user_name_extract(mrcp_sofia_session_t *sofia_session, sip_request_t *sip_request)
+{
+	apt_str_t field;
+	apt_str_t value;
+	apt_string_set(&field,"sip.request.user-name");
+	if(sip_request->rq_url) {
+		apt_string_set(&value,sip_request->rq_url->url_user);
+	}
+	/* set session generic attribute */
+	mrcp_session_generic_attrib_set(&sofia_session->attribs,&field,&value,sofia_session->session->pool);
+}
+
 static void mrcp_sofia_on_invite(
 							mrcp_sofia_agent_t   *sofia_agent,
 							nua_handle_t         *nh,
@@ -431,46 +493,26 @@ static void mrcp_sofia_on_invite(
 							sip_t const          *sip,
 							tagi_t                tags[])
 {
-	if(!sofia_session && sip && sip->sip_accept_contact) {
-		msg_param_t const *param;
-		sofia_session = mrcp_sofia_session_create(sofia_agent,nh);
-		if(!sofia_session) {
-			nua_respond(nh, SIP_488_NOT_ACCEPTABLE, TAG_END());
-			return;
+	if(!sofia_session && sip) {
+		if((sofia_agent->config->extract_feature_tags == TRUE && sip->sip_accept_contact) ||
+			(sofia_agent->config->extract_call_id == TRUE && sip->sip_call_id) ||
+			(sofia_agent->config->extract_user_name == TRUE && sip->sip_request)) {
+			/* create sofia session */
+			sofia_session = mrcp_sofia_session_create(sofia_agent,nh);
+			if(!sofia_session) {
+				nua_respond(nh, SIP_488_NOT_ACCEPTABLE, TAG_END());
+				return;
+			}
 		}
 
-		param = sip->sip_accept_contact->cp_params;
-		while(param && *param) {
-			apt_str_t resource_name;
-			apt_str_t field;
-			apt_str_t value;
-			apt_str_t feature_tag;
-
-			apt_string_set(&feature_tag, *param);
-			apt_log(SIP_LOG_MARK, APT_PRIO_INFO, "Process Feature Tag [%s] " APT_NAMESID_FMT, 
-					feature_tag.buf,
-					sofia_session->session->name,
-					MRCP_SESSION_SID(sofia_session->session));
-
-			/* extract resource name, field and value from feature tag */
-			if(mrcp_sofia_feature_tag_extract(&feature_tag,&resource_name,&field,&value) == TRUE) {
-				if(strncasecmp(resource_name.buf,"generic",resource_name.length) == 0) {
-					/* set session generic attribute */
-					mrcp_session_generic_attrib_set(&sofia_session->attribs,&field,&value,sofia_session->session->pool);
-				}
-				else {
-					/* set session resource-specific attribute */
-					mrcp_session_resource_attrib_set(&sofia_session->attribs,&resource_name,&field,&value,sofia_session->session->pool);
-				}
-			}
-			else {
-				apt_log(SIP_LOG_MARK, APT_PRIO_WARNING, "Failed to Extract Feature Tag [%s] " APT_NAMESID_FMT, 
-						feature_tag.buf,
-						sofia_session->session->name,
-						MRCP_SESSION_SID(sofia_session->session));
-			}
-
-			param += 1;
+		if(sofia_agent->config->extract_feature_tags == TRUE && sip->sip_accept_contact) {
+			mrcp_sofia_feature_tags_extract(sofia_session,sip->sip_accept_contact);
+		}
+		if(sofia_agent->config->extract_call_id == TRUE && sip->sip_call_id) {
+			mrcp_sofia_sip_call_id_extract(sofia_session,sip->sip_call_id);
+		}
+		if(sofia_agent->config->extract_user_name == TRUE && sip->sip_request) {
+			mrcp_sofia_sip_user_name_extract(sofia_session,sip->sip_request);
 		}
 	}
 }

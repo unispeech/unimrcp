@@ -398,6 +398,21 @@ static apt_bool_t unimrcp_server_sip_uas_load(unimrcp_server_loader_t *loader, c
 				config->disable_soa = cdata_bool_get(elem);
 			}
 		}
+		else if(strcasecmp(elem->name,"extract-feature-tags") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->extract_feature_tags = cdata_bool_get(elem);
+			}
+		}
+		else if(strcasecmp(elem->name,"extract-call-id") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->extract_call_id = cdata_bool_get(elem);
+			}
+		}
+		else if(strcasecmp(elem->name,"extract-user-name") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				config->extract_user_name = cdata_bool_get(elem);
+			}
+		}
 		else {
 			apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Unknown Element <%s>",elem->name);
 		}

@@ -54,6 +54,12 @@ struct mrcp_sofia_server_config_t {
 	that your clients will only use the 'Basic Call' SDP Offer/Answer
 	scenario. */
 	apt_bool_t disable_soa;
+	/** Extract feature tags (Accept-Contact) */
+	apt_bool_t extract_feature_tags;
+	/** Extract call id */
+	apt_bool_t extract_call_id;
+	/** Extract user name */
+	apt_bool_t extract_user_name;
 	/** SIP T1 timer */
 	apr_size_t sip_t1;
 	/** SIP T2 timer */

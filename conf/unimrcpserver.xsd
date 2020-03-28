@@ -58,6 +58,9 @@
                     <xsd:element name="sip-transport" type="xsd:string" />
                     <xsd:element name="force-destination" type="xsd:boolean" default="false" minOccurs="0" />
                     <xsd:element name="disable-soa" type="xsd:boolean" default="false" minOccurs="0" />
+                    <xsd:element name="extract-feature-tags" type="xsd:boolean" default="true" minOccurs="0" />
+                    <xsd:element name="extract-call-id" type="xsd:boolean" default="false" minOccurs="0" />
+                    <xsd:element name="extract-user-name" type="xsd:boolean" default="false" minOccurs="0" />
                     <xsd:element name="ua-name" type="xsd:string" minOccurs="0" />
                     <xsd:element name="sdp-origin" type="xsd:string" minOccurs="0" />
                     <xsd:element name="sip-t1" type="xsd:long" minOccurs="0" />

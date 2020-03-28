@@ -61,6 +61,9 @@
       <sip-min-session-expires>120</sip-min-session-expires>
       <!-- <sip-message-output>true</sip-message-output> -->
       <!-- <sip-message-dump>sofia-sip-uas.log</sip-message-dump> -->
+      <!-- <extract-feature-tags>false</extract-feature-tags> -->
+      <!-- <extract-call-id>true</extract-call-id> -->
+      <!-- <extract-user-name>true</extract-user-name> -->
     </sip-uas>
 
     <!-- UniRTSP MRCPv1 signaling agent -->
