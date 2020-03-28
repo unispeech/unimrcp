@@ -117,7 +117,6 @@ MRCP_DECLARE(mrcp_session_t*) mrcp_session_create_ex(apr_pool_t *pool, apt_bool_
 	session->connection_agent = NULL;
 	session->media_engine = NULL;
 	session->rtp_factory = NULL;
-	session->resource_engine_map = NULL;
 	session->request_vtable = NULL;
 	session->response_vtable = NULL;
 	session->event_vtable = NULL;

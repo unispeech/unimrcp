@@ -35,6 +35,7 @@ typedef struct mrcp_sofia_session_t mrcp_sofia_session_t;
 #include "mrcp_session.h"
 #include "mrcp_session_descriptor.h"
 #include "mrcp_sdp.h"
+#include "apt_text_stream.h"
 #include "apt_log.h"
 
 struct mrcp_sofia_agent_t {
@@ -48,9 +49,11 @@ struct mrcp_sofia_agent_t {
 };
 
 struct mrcp_sofia_session_t {
-	mrcp_session_t *session;
-	su_home_t      *home;
-	nua_handle_t   *nh;
+	mrcp_session_t             *session;
+	su_home_t                  *home;
+	nua_handle_t               *nh;
+
+	mrcp_session_attribs_t      attribs;
 };
 
 /* Task Interface */
@@ -231,6 +234,8 @@ static mrcp_sofia_session_t* mrcp_sofia_session_create(mrcp_sofia_agent_t *sofia
 	
 	nua_handle_bind(nh, sofia_session);
 	sofia_session->nh = nh;
+
+	mrcp_session_attribs_init(&sofia_session->attribs);
 	return sofia_session;
 }
 
@@ -380,6 +385,8 @@ static void mrcp_sofia_on_call_receive(
 		return;
 	}
 
+	descriptor->attribs = sofia_session->attribs;
+
 	mrcp_session_offer(sofia_session->session,descriptor);
 }
 
@@ -393,6 +400,28 @@ static void mrcp_sofia_on_call_terminate(
 	if(sofia_session) {
 		mrcp_session_terminate_request(sofia_session->session);
 	}
+}
+
+static apt_bool_t mrcp_sofia_feature_tag_extract(const apt_str_t *feature_tag, apt_str_t *resource_name, apt_str_t *field, apt_str_t *value)
+{
+	apt_text_stream_t stream;
+	apt_text_stream_init(&stream,feature_tag->buf,feature_tag->length);
+	if(apt_text_field_read(&stream,'.',TRUE,resource_name) == FALSE) {
+		return FALSE;
+	}
+
+	if(apt_text_field_read(&stream,'=',TRUE,field) == FALSE) {
+		return FALSE;
+	}
+
+	if(apt_text_field_read(&stream,';',TRUE,value) == TRUE) {
+		/* check and remove double quotes, if present */
+		if(value->buf[0] == '"' && value->buf[value->length - 1] == '"') {
+			value->buf++;
+			value->length -= 2;
+		}
+	}
+	return TRUE;
 }
 
 static void mrcp_sofia_on_invite(
@@ -412,38 +441,35 @@ static void mrcp_sofia_on_invite(
 
 		param = sip->sip_accept_contact->cp_params;
 		while(param && *param) {
-		char *pos;
-			static const char suffix[] = ".engine";
-			const char *feature_tag = *param;
-			size_t length = strlen(feature_tag);
-			apt_log(SIP_LOG_MARK, APT_PRIO_DEBUG, "Process Feature Tag [%s] " APT_NAMESID_FMT, 
-					feature_tag,
+			apt_str_t resource_name;
+			apt_str_t field;
+			apt_str_t value;
+			apt_str_t feature_tag;
+
+			apt_string_set(&feature_tag, *param);
+			apt_log(SIP_LOG_MARK, APT_PRIO_INFO, "Process Feature Tag [%s] " APT_NAMESID_FMT, 
+					feature_tag.buf,
 					sofia_session->session->name,
 					MRCP_SESSION_SID(sofia_session->session));
-			pos = strstr(feature_tag,suffix);
-			if(pos) {
-				const char *engine_name;
-				const char *resource_name = apr_pstrndup(sofia_session->session->pool,feature_tag,pos - feature_tag);
-				pos += strlen(suffix);
-				if(*pos == '=') {
-					pos++;
-					if(*pos == '"' && feature_tag[length - 1] == '"') {
-						pos++;
-						length--;
-					}
-					engine_name = apr_pstrndup(sofia_session->session->pool,pos,length - (pos - feature_tag));
-					if(!sofia_session->session->resource_engine_map) {
-						sofia_session->session->resource_engine_map = apr_table_make(sofia_session->session->pool,2);
-					}
 
-					apt_log(SIP_LOG_MARK, APT_PRIO_INFO, "Associate Resource [%s] to Engine [%s] " APT_NAMESID_FMT,
-							resource_name,
-							engine_name,
-							sofia_session->session->name,
-							MRCP_SESSION_SID(sofia_session->session));
-					apr_table_set(sofia_session->session->resource_engine_map,resource_name,engine_name);
+			/* extract resource name, field and value from feature tag */
+			if(mrcp_sofia_feature_tag_extract(&feature_tag,&resource_name,&field,&value) == TRUE) {
+				if(strncasecmp(resource_name.buf,"generic",resource_name.length) == 0) {
+					/* set session generic attribute */
+					mrcp_session_generic_attrib_set(&sofia_session->attribs,&field,&value,sofia_session->session->pool);
+				}
+				else {
+					/* set session resource-specific attribute */
+					mrcp_session_resource_attrib_set(&sofia_session->attribs,&resource_name,&field,&value,sofia_session->session->pool);
 				}
 			}
+			else {
+				apt_log(SIP_LOG_MARK, APT_PRIO_WARNING, "Failed to Extract Feature Tag [%s] " APT_NAMESID_FMT, 
+						feature_tag.buf,
+						sofia_session->session->name,
+						MRCP_SESSION_SID(sofia_session->session));
+			}
+
 			param += 1;
 		}
 	}

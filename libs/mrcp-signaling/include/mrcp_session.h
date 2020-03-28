@@ -66,8 +66,6 @@ struct mrcp_session_t {
 	mpf_engine_t              *media_engine;
 	/** RTP termination factory */
 	mpf_termination_factory_t *rtp_factory;
-	/** Resource/engine map */
-	apr_table_t               *resource_engine_map;
 
 	/** Session identifier */
 	apt_str_t         id;

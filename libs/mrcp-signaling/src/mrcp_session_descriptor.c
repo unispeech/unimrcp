@@ -29,6 +29,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_descriptor_create(apr_pool
 	descriptor->control_media_arr = apr_array_make(pool,1,sizeof(void*));
 	descriptor->audio_media_arr = apr_array_make(pool,1,sizeof(mpf_rtp_media_descriptor_t*));
 	descriptor->video_media_arr = apr_array_make(pool,0,sizeof(mpf_rtp_media_descriptor_t*));
+	mrcp_session_attribs_init(&descriptor->attribs);
 	return descriptor;
 }
 
@@ -54,6 +55,7 @@ MRCP_DECLARE(mrcp_session_descriptor_t*) mrcp_session_answer_create(const mrcp_s
 	for(i=0; i<offer->video_media_arr->nelts; i++) {
 		APR_ARRAY_PUSH(answer->video_media_arr,mpf_rtp_media_descriptor_t*) = NULL;
 	}
+	mrcp_session_attribs_init(&answer->attribs);
 	return answer;
 }
 
@@ -72,4 +74,59 @@ MRCP_DECLARE(const char*) mrcp_session_status_phrase_get(mrcp_session_status_e s
 			return "Error";
 	}
 	return "Unknown";
+}
+
+MRCP_DECLARE(apt_bool_t) mrcp_session_generic_attrib_set(mrcp_session_attribs_t *attribs, const apt_str_t *field, const apt_str_t *value, apr_pool_t *pool)
+{
+	const char *s_value = NULL;
+	const char *s_field;
+
+	if(apt_string_is_empty(field) == TRUE) {
+		return FALSE;
+	}
+	
+	s_field = apr_pstrndup(pool,field->buf,field->length);
+
+	if(apt_string_is_empty(value) == FALSE) {
+		s_value = apr_pstrndup(pool,value->buf,value->length);
+	}
+
+	if(!attribs->generic_attribs) {
+		attribs->generic_attribs = apr_table_make(pool,1);
+	}
+
+	apr_table_set(attribs->generic_attribs,s_field,s_value);
+	return TRUE;
+}
+
+MRCP_DECLARE(apt_bool_t) mrcp_session_resource_attrib_set(mrcp_session_attribs_t *attribs, const apt_str_t *resource_name, const apt_str_t *field, const apt_str_t *value, apr_pool_t *pool)
+{
+	const char *s_value = NULL;
+	const char *s_field;
+	const char *s_resource_name;
+	apr_table_t *table;
+
+	if(apt_string_is_empty(resource_name) == TRUE || apt_string_is_empty(field) == TRUE) {
+		return FALSE;
+	}
+	
+	s_field = apr_pstrndup(pool,field->buf,field->length);
+	s_resource_name = apr_pstrndup(pool,resource_name->buf,resource_name->length);
+
+	if(apt_string_is_empty(value) == FALSE) {
+		s_value = apr_pstrndup(pool,value->buf,value->length);
+	}
+
+	if(!attribs->resource_attribs) {
+		attribs->resource_attribs = apr_hash_make(pool);
+	}
+
+	table = apr_hash_get(attribs->resource_attribs,s_resource_name,resource_name->length);
+	if(!table) {
+		table = apr_table_make(pool,1);
+		apr_hash_set(attribs->resource_attribs,s_resource_name,resource_name->length,table);
+	}
+
+	apr_table_set(table,s_field,s_value);
+	return TRUE;
 }

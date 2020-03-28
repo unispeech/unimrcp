@@ -38,6 +38,9 @@ typedef struct mrcp_sa_factory_t mrcp_sa_factory_t;
 /** Opaque MRCP session declaration */
 typedef struct mrcp_session_t mrcp_session_t;
 
+/** Opaque MRCP session attributes declaration */
+typedef struct mrcp_session_attribs_t mrcp_session_attribs_t;
+
 /** Opaque MRCP session descriptor declaration */
 typedef struct mrcp_session_descriptor_t mrcp_session_descriptor_t;
 

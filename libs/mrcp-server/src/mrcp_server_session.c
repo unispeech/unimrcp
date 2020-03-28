@@ -123,34 +123,64 @@ static APR_INLINE mrcp_version_e mrcp_session_version_get(mrcp_server_session_t 
 	return session->profile->mrcp_version;
 }
 
-static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_channel_t *channel, const apt_str_t *resource_name)
+static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_session_t *session, mrcp_channel_t *channel, const apt_str_t *resource_name, mrcp_session_attribs_t *session_attribs)
 {
 	mrcp_engine_t *engine = NULL;
 	apr_table_t *attribs = NULL;
-	if(session->base.resource_engine_map) {
-		const char *engine_name = apr_table_get(session->base.resource_engine_map,resource_name->buf);
-		if(engine_name) {
-			engine = mrcp_server_engine_get(session->server,engine_name);
-			if (!engine) {
-				apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "No Such MRCP Engine by Name [%s] for Resource [%s] " APT_NAMESID_FMT,
-					engine_name,
-					resource_name->buf,
-					MRCP_SESSION_NAMESID(session));
+
+	/* get engine settings per profile */
+	mrcp_engine_settings_t *settings = apr_hash_get(
+											session->profile->engine_table,
+											resource_name->buf,
+											resource_name->length);
+	if(settings && settings->attribs) {
+		/* copy/apply global configuration attributes */
+		attribs = apr_table_copy(session->base.pool,settings->attribs);
+	}
+
+	/* process session attributes, if specified */
+	if(session_attribs) {
+		if(session_attribs->generic_attribs) {
+			if(!attribs) {
+				attribs = apr_table_make(session->base.pool,1);
+			}
+			/* copy/apply session generic attributes */
+			attribs = apr_table_overlay(session->base.pool,attribs,session_attribs->generic_attribs);
+		}
+
+		if(session_attribs->resource_attribs) {
+			const char *engine_name;
+			apr_table_t *table = apr_hash_get(session_attribs->resource_attribs,resource_name->buf,resource_name->length);
+			if(table) {
+				if(!attribs) {
+					attribs = apr_table_make(session->base.pool,1);
+				}
+				/* copy/apply session resource-specific attributes */
+				attribs = apr_table_overlay(session->base.pool,attribs,table);
+			}
+
+			/* check whether an engine is specified in the session attributes */
+			engine_name = apr_table_get(table,"engine");
+			if(engine_name) {
+				engine = mrcp_server_engine_get(session->server,engine_name);
+				if(!engine) {
+					apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "No Such MRCP Engine by Name [%s] for Resource [%s] " APT_NAMESID_FMT,
+						engine_name,
+						resource_name->buf,
+						MRCP_SESSION_NAMESID(session));
+				}
 			}
 		}
 	}
 
+	/* if no engine is specified or found, then use the default one */
 	if(!engine) {
-		mrcp_engine_settings_t *settings = apr_hash_get(
-												session->profile->engine_table,
-												resource_name->buf,
-												resource_name->length);
 		if(settings) {
 			engine = settings->engine;
-			attribs = settings->attribs;
 		}
 	}
 
+	/* if no engine is available, then return with an error */
 	if(!engine) {
 		apt_log(APT_LOG_MARK,APT_PRIO_WARNING,"Failed to Find MRCP Engine for Resource [%s] " APT_NAMESID_FMT,
 				resource_name->buf,
@@ -158,6 +188,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 		return NULL;
 	}
 
+	/* check if engine is ready */
 	if(engine->is_open == FALSE) {
 		apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "MRCP Engine [%s] not Ready for Resource [%s] " APT_NAMESID_FMT,
 			engine->id,
@@ -182,7 +213,7 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 	return mrcp_engine_channel_virtual_create(engine,attribs,mrcp_session_version_get(session),session->base.pool);
 }
 
-static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_array_header_t *cmid_arr)
+static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session, const apt_str_t *resource_name, apr_size_t id, apr_array_header_t *cmid_arr, mrcp_session_attribs_t *session_attribs)
 {
 	mrcp_channel_t *channel;
 	apr_pool_t *pool = session->base.pool;
@@ -211,7 +242,7 @@ static mrcp_channel_t* mrcp_server_channel_create(mrcp_server_session_t *session
 									channel,
 									pool);
 			}
-			engine_channel = mrcp_server_engine_channel_create(session,channel,resource_name);
+			engine_channel = mrcp_server_engine_channel_create(session,channel,resource_name,session_attribs);
 			if(engine_channel) {
 				engine_channel->id = session->base.id;
 				engine_channel->event_obj = channel;
@@ -680,7 +711,7 @@ static apt_bool_t mrcp_server_resource_offer_process(mrcp_server_session_t *sess
 			return TRUE;
 		}
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count,NULL);
+		channel = mrcp_server_channel_create(session,&descriptor->resource_name,count,NULL,&descriptor->attribs);
 		if(!channel || !channel->resource || !channel->engine_channel) {
 			return FALSE;
 		}
@@ -757,7 +788,7 @@ static apt_bool_t mrcp_server_control_media_offer_process(mrcp_server_session_t 
 		if(!control_descriptor) continue;
 
 		/* create new MRCP channel instance */
-		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i,control_descriptor->cmid_arr);
+		channel = mrcp_server_channel_create(session,&control_descriptor->resource_name,i,control_descriptor->cmid_arr,&descriptor->attribs);
 		if(!channel || !channel->resource) continue;
 
 		control_descriptor->session_id = session->base.id;

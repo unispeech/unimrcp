@@ -24,6 +24,8 @@
 
 #include "mpf_rtp_descriptor.h"
 #include "mrcp_sig_types.h"
+#include <apr_tables.h>
+#include <apr_hash.h>
 
 APT_BEGIN_EXTERN_C
 
@@ -35,6 +37,14 @@ typedef enum {
 	MRCP_SESSION_STATUS_UNAVAILABLE_RESOURCE, /**< resource exists, but is temporary unavailable */
 	MRCP_SESSION_STATUS_ERROR                 /**< internal error occurred */
 } mrcp_session_status_e;
+
+/** MRCP session attributes */
+struct mrcp_session_attribs_t {
+	/** Session generic name/value attributes (name -> value) */
+	apr_table_t   *generic_attribs;
+	/** Session resource-specific name/value attributes (resource name -> table[name -> value]) */
+	apr_hash_t    *resource_attribs;
+};
 
 /** MRCP session descriptor */
 struct mrcp_session_descriptor_t {
@@ -59,6 +69,9 @@ struct mrcp_session_descriptor_t {
 	apr_array_header_t   *audio_media_arr;
 	/** Video media array (mpf_rtp_media_descriptor_t) */
 	apr_array_header_t   *video_media_arr;
+
+	/** Optional session attributes */
+	mrcp_session_attribs_t attribs;
 };
 
 /** Create session descriptor */
@@ -145,6 +158,15 @@ static APR_INLINE apt_bool_t mrcp_session_video_media_set(mrcp_session_descripto
 
 /** Get session status phrase  */
 MRCP_DECLARE(const char*) mrcp_session_status_phrase_get(mrcp_session_status_e status);
+
+static APR_INLINE void mrcp_session_attribs_init(mrcp_session_attribs_t *attribs)
+{
+	attribs->generic_attribs = NULL;
+	attribs->resource_attribs = NULL;
+}
+
+MRCP_DECLARE(apt_bool_t) mrcp_session_generic_attrib_set(mrcp_session_attribs_t *attribs, const apt_str_t *field, const apt_str_t *value, apr_pool_t *pool);
+MRCP_DECLARE(apt_bool_t) mrcp_session_resource_attrib_set(mrcp_session_attribs_t *attribs, const apt_str_t *resource_name, const apt_str_t *field, const apt_str_t *value, apr_pool_t *pool);
 
 APT_END_EXTERN_C
 
