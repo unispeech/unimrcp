@@ -1,36 +1,42 @@
-Changes for UniMRCP: develop
+Changes for UniMRCP-1.7.0
 
   APR-toolkit library
 
-  *
+  * If NTP has drifted the clock backwards, advance the queue based on the set timeout but not actual time difference. (Issue #257)
 
   MPF library
 
-  * Feature: When tracing is set to a new mode of "3", send tracing logs directly to apt_log() using macro expansion. [#254](https://github.com/unispeech/unimrcp/pull/254)
-
-  MRCP common library
-
-  *
+  * Feature: When tracing is set to a new mode of "3", send tracing logs directly to apt_log() using macro expansion. Thanks @sfgeorge. (Pull request #254)
+  * Reset all the left-over variables on mpf_buffer_restart().
 
   MRCP server library
 
-  *
+  * Added a check for RTP settings on server profile registration.
+  * While creating a new MRCP channel, make sure associated engine is open and ready to process requests.
+  * Reworked profile-based association of MRCP resources and engines to allow specifying optional attributes per profile.
+  * Added support for optional session attributes passed from signaling agents down to engines.
 
-  RTSP library
-
-  *
-
+  MRCPv2 transport library
+  
+  * While trying to find an existing client connection, do not observe instances with closed socket. (Issue #259)
+  * Limit concurrent/shared use of an MRCPv2 client connection by the configuration parameter max-shared-use-count similarly to the server connection.
+  
   Sofia-SIP module (MRCPv2 agent)
 
-  *
+  * Do not call nua_bye() and respond to session termination straightaway if nua_handle is used for resource discovery only.
+  * In offline mode, respond with SIP 503 Service Unavailable to SIP OPTIONS requests. Thanks @michaelplevy. (Issue #242)
+  * Allow disabling the Sofia SIP SDP Offer/Answer Engine Module. Thanks @schlagert. (Issue #248, Pull request #249)
+  * Added support for optional session attributes passed from signaling agents down to engines.
+  * Optionally extract SIP session call id and user name from SIP INVITE along with feature tags and pass them forward through session generic attributes.
 
-  UMC sample application
+  ASR Client application (and library)
 
-  *
+  * Add asrclient support for multiple, builtin and remote grammars. Thanks @michaelplevy and @schlagert. (Issue #246)
 
   Miscellaneous
 
-  *
+  * For Windows service, use RegisterServiceCtrlHandlerEx() instead of RegisterServiceCtrlHandler() in order to handle user-defined control cases for offline/online. Thanks @michaelplevy.
+  * Added new parameters to default configuration files.
 
 
 Changes for UniMRCP-1.6.0
