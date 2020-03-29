@@ -71,6 +71,7 @@
     <!-- MRCPv2 connection agent -->
     <mrcpv2-uac id="MRCPv2-Agent-1">
       <max-connection-count>100</max-connection-count>
+      <max-shared-use-count>100</max-shared-use-count>
       <offer-new-connection>false</offer-new-connection>
       <rx-buffer-size>1024</rx-buffer-size>
       <tx-buffer-size>1024</tx-buffer-size>

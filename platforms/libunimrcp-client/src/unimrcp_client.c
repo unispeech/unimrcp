@@ -506,6 +506,7 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 	const apr_xml_elem *elem;
 	mrcp_connection_agent_t *agent;
 	apr_size_t max_connection_count = 100;
+	apr_size_t max_shared_use_count = 100;
 	apt_bool_t offer_new_connection = FALSE;
 	const char *rx_buffer_size = NULL;
 	const char *tx_buffer_size = NULL;
@@ -522,6 +523,11 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 		else if(strcasecmp(elem->name,"offer-new-connection") == 0) {
 			if(is_cdata_valid(elem) == TRUE) {
 				offer_new_connection = cdata_bool_get(elem);
+			}
+		}
+		else if(strcasecmp(elem->name,"max-shared-use-count") == 0) {
+			if(is_cdata_valid(elem) == TRUE) {
+				max_shared_use_count = atol(cdata_text_get(elem));
 			}
 		}
 		else if(strcasecmp(elem->name,"rx-buffer-size") == 0) {
@@ -555,6 +561,7 @@ static apt_bool_t unimrcp_client_mrcpv2_uac_load(unimrcp_client_loader_t *loader
 		if(request_timeout) {
 			mrcp_client_connection_timeout_set(agent,atol(request_timeout));
 		}
+		mrcp_client_connection_max_shared_use_set(agent,max_shared_use_count);
 	}
 	return mrcp_client_connection_agent_register(loader->client,agent);
 }
