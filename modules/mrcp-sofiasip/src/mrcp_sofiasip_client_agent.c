@@ -264,7 +264,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_
 		apr_table_t *table;
 		const char *resource_name;
 		apr_hash_index_t *it;
-		void *key;
+		const void *key;
 		void *val;
 		it = apr_hash_first(session->pool,attribs->resource_attribs);
 		for(; it; it = apr_hash_next(it)) {
