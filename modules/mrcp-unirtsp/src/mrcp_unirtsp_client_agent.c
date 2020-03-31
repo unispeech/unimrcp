@@ -73,7 +73,7 @@ static const rtsp_client_vtable_t session_response_vtable = {
 	mrcp_unirtsp_on_session_event
 };
 
-static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings);
+static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings, const mrcp_session_attribs_t *attribs);
 static apt_bool_t rtsp_config_validate(mrcp_unirtsp_agent_t *agent, rtsp_client_config_t *config, apr_pool_t *pool);
 static apt_bool_t mrcp_unirtsp_on_resource_discover(mrcp_unirtsp_agent_t *agent, mrcp_unirtsp_session_t *session, rtsp_message_t *request, rtsp_message_t *response);
 
@@ -132,7 +132,7 @@ static APR_INLINE mrcp_unirtsp_agent_t* client_agent_get(apt_task_t *task)
 	return agent;
 }
 
-static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session, const mrcp_sig_settings_t *settings)
+static apt_bool_t mrcp_unirtsp_session_create(mrcp_session_t *mrcp_session, const mrcp_sig_settings_t *settings, const mrcp_session_attribs_t *attribs)
 {
 	mrcp_unirtsp_agent_t *agent = mrcp_session->signaling_agent->obj;
 	mrcp_unirtsp_session_t *session;

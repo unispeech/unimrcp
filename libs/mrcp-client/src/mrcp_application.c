@@ -175,6 +175,14 @@ MRCP_DECLARE(void) mrcp_application_session_name_set(mrcp_session_t *session, co
 	}
 }
 
+/** Set session attributes */
+MRCP_DECLARE(void) mrcp_application_session_attribs_set(mrcp_session_t *session, mrcp_session_attribs_t *attribs)
+{
+	mrcp_client_session_t *client_session = (mrcp_client_session_t*)session;
+	if(client_session) {
+		client_session->attribs = attribs;
+	}
+}
 
 /** Send session update request */
 MRCP_DECLARE(apt_bool_t) mrcp_application_session_update(mrcp_session_t *session)

@@ -1258,7 +1258,7 @@ static apt_bool_t mrcp_app_request_dispatch(mrcp_client_session_t *session, cons
 			return mrcp_app_failure_message_raise(session);
 		}
 
-		if(session->base.signaling_agent->create_client_session(&session->base,session->profile->signaling_settings) != TRUE) {
+		if(session->base.signaling_agent->create_client_session(&session->base,session->profile->signaling_settings,session->attribs) != TRUE) {
 			/* raise app response */
 			apt_obj_log(APT_LOG_MARK,APT_PRIO_WARNING,session->base.log_obj,"Failed to Create Session " APT_NAMESID_FMT " [%d]",
 				MRCP_SESSION_NAMESID(session),

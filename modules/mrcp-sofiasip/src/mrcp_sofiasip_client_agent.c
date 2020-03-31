@@ -75,7 +75,7 @@ static const mrcp_session_request_vtable_t session_request_vtable = {
 };
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_client_config_t *config, apr_pool_t *pool);
-static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings);
+static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings, const mrcp_session_attribs_t *attribs);
 static nua_t* mrcp_sofia_nua_create(void *obj, su_root_t *root);
 
 static void mrcp_sofia_event_callback(
@@ -207,9 +207,20 @@ static APR_INLINE mrcp_sofia_agent_t* mrcp_sofia_agent_get(mrcp_session_t *sessi
 	return session->signaling_agent->obj;
 }
 
-static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings)
+static const char* mrcp_sofia_feature_tag_append(const char *feature_tags, const char *resource_name, const char *key, const char *value, apr_pool_t *pool)
 {
-	const char *sip_to_str;
+	if(feature_tags) {
+		return apr_psprintf(pool,"%s;%s.%s=%s", feature_tags, resource_name, key, value);
+	}
+
+	return apr_psprintf(pool,"%s.%s=%s", resource_name, key, value);
+}
+
+static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_sig_settings_t *settings, const mrcp_session_attribs_t *attribs)
+{
+	const char *sip_to_str = NULL;
+	const char *user_name;
+	const char *feature_tags;
 	mrcp_sofia_agent_t *sofia_agent = mrcp_sofia_agent_get(session);
 	mrcp_sofia_session_t *sofia_session;
 	session->request_vtable = &session_request_vtable;
@@ -227,16 +238,61 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_
 	sofia_session->descriptor = NULL;
 	session->obj = sofia_session;
 
-	if(settings->user_name && *settings->user_name != '\0') {
-		sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%hu",
-										settings->user_name,
-										settings->server_ip,
-										settings->server_port);
+	user_name = settings->user_name;
+	feature_tags = settings->feature_tags;
+
+	if(attribs && attribs->generic_attribs) {
+		const apr_array_header_t *header = apr_table_elts(attribs->generic_attribs);
+		apr_table_entry_t *entry = (apr_table_entry_t *)header->elts;
+		int i;
+		for(i=0; i<header->nelts; i++) {
+			if(strcasecmp(entry[i].key,"sip.request.user-name") == 0) {
+				user_name = entry[i].val;
+			}
+			else if(strcasecmp(entry[i].key,"sip.request.uri") == 0) {
+				sip_to_str = entry[i].val;
+			}
+			else {
+				feature_tags = mrcp_sofia_feature_tag_append(feature_tags,"generic",entry[i].key,entry[i].val,session->pool);
+			}
+		}
 	}
-	else {
-		sip_to_str = apr_psprintf(session->pool,"sip:%s:%hu",
-										settings->server_ip,
-										settings->server_port);
+	if(attribs && attribs->resource_attribs) {
+		const apr_array_header_t *header;
+		apr_table_entry_t *entry;
+		int i;
+		apr_table_t *table;
+		const char *resource_name;
+		apr_hash_index_t *it;
+		void *key;
+		void *val;
+		it = apr_hash_first(session->pool,attribs->resource_attribs);
+		for(; it; it = apr_hash_next(it)) {
+			apr_hash_this(it,&key,NULL,&val);
+			resource_name = key;
+			table = val;
+			if(!table) continue;
+
+			header = apr_table_elts(table);
+			entry = (apr_table_entry_t *)header->elts;
+			for(i=0; i<header->nelts; i++) {
+				feature_tags = mrcp_sofia_feature_tag_append(feature_tags,resource_name,entry[i].key,entry[i].val,session->pool);
+			}
+		}
+	}
+
+	if(!sip_to_str) {
+		if(user_name && *user_name != '\0') {
+			sip_to_str = apr_psprintf(session->pool,"sip:%s@%s:%hu",
+											user_name,
+											settings->server_ip,
+											settings->server_port);
+		}
+		else {
+			sip_to_str = apr_psprintf(session->pool,"sip:%s:%hu",
+											settings->server_ip,
+											settings->server_port);
+		}
 	}
 
 	sofia_session->nh = nua_handle(
@@ -245,7 +301,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_
 				SIPTAG_TO_STR(sip_to_str),
 				SIPTAG_FROM_STR(sofia_agent->sip_from_str),
 				TAG_IF(sofia_agent->sip_contact_str,SIPTAG_CONTACT_STR(sofia_agent->sip_contact_str)),
-				TAG_IF(settings->feature_tags,SIPTAG_ACCEPT_CONTACT_STR(settings->feature_tags)),
+				TAG_IF(feature_tags,SIPTAG_ACCEPT_CONTACT_STR(feature_tags)),
 				TAG_END());
 	sofia_session->nua_state = nua_callstate_init;
 

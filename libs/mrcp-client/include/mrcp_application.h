@@ -223,6 +223,13 @@ MRCP_DECLARE(void) mrcp_application_session_object_set(mrcp_session_t *session, 
  */
 MRCP_DECLARE(void) mrcp_application_session_name_set(mrcp_session_t *session, const char *name);
 
+/**
+ * Set session attributes.
+ * @param session the session to set attributes for
+ * @param attribs the attributes to set
+ */
+MRCP_DECLARE(void) mrcp_application_session_attribs_set(mrcp_session_t *session, mrcp_session_attribs_t *attribs);
+
 /** 
  * Send session update request.
  * @param session the session to update

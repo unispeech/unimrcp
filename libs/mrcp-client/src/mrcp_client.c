@@ -687,6 +687,7 @@ mrcp_client_session_t* mrcp_client_session_create_ex(mrcp_client_t *client, apt_
 	session->disconnected = FALSE;
 	session->state = SESSION_STATE_NONE;
 	session->status = MRCP_SIG_STATUS_CODE_SUCCESS;
+	session->attribs = NULL;
 	return session;
 }
 

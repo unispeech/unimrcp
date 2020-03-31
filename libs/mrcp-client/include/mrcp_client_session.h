@@ -91,6 +91,9 @@ struct mrcp_client_session_t {
 	apr_size_t                  subrequest_count;
 	/** True, if server unexpectedly closed session/connection */
 	apt_bool_t                  disconnected;
+
+	/** Optional session attributes */
+	mrcp_session_attribs_t     *attribs;
 };
 
 /** MRCP channel */
