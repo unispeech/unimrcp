@@ -9,6 +9,11 @@ Changes for UniMRCP-1.7.0
   * Feature: When tracing is set to a new mode of "3", send tracing logs directly to apt_log() using macro expansion. Thanks @sfgeorge. (Pull request #254)
   * Reset all the left-over variables on mpf_buffer_restart().
 
+  MRCP client library
+
+  * Added a new function mrcp_application_session_attribs_set() to the client application interface. The new function allows to set optional
+    session attributes overriding or complimenting some of the profile settings such as SIP username or entire URI and feature tags.
+
   MRCP server library
 
   * Added a check for RTP settings on server profile registration.
