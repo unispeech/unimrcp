@@ -501,6 +501,10 @@ static apt_bool_t mrcp_server_agent_connection_accept(mrcp_connection_agent_t *a
 		mrcp_connection_destroy(connection);
 		return FALSE;
 	}
+	
+	/** Add TCP keepalive mechanism */
+	/** https://www.tldp.org/HOWTO/html_single/TCP-Keepalive-HOWTO/ */
+	apr_socket_opt_set(connection->sock, APR_SO_KEEPALIVE, 1);
 
 	apt_log(APT_LOG_MARK,APT_PRIO_NOTICE,"Accepted TCP/MRCPv2 Connection %s",connection->id);
 	connection->agent = agent;
