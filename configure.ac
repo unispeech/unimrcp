@@ -67,7 +67,7 @@ dnl Check for C compiler vendor.
 AX_COMPILER_VENDOR
 
 dnl Search for pkg-config.
-AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+PKG_PROG_PKG_CONFIG
 if test "x$PKG_CONFIG" = "xno"; then
     AC_MSG_ERROR([pkg-config is missing])
 fi
