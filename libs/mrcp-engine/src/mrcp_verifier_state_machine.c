@@ -270,13 +270,16 @@ static apt_bool_t verifier_response_clear_buffer(mrcp_verifier_state_machine_t *
 
 static apt_bool_t verifier_request_start_input_timers(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
 {
-	if(state_machine->state == VERIFIER_STATE_IDLE || state_machine->state == VERIFIER_STATE_VERIFYING) {
-		mrcp_message_t *response_message = mrcp_response_create(message,message->pool);
-		response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
-		return verifier_response_dispatch(state_machine,response_message);
+	mrcp_message_t *response_message;
+	if (state_machine->state == VERIFIER_STATE_VERIFYING) {
+		/* found in-progress request */
+		return verifier_request_dispatch(state_machine, message);
 	}
 
-	return verifier_request_dispatch(state_machine,message);
+	/* found no in-progress request */
+	response_message = mrcp_response_create(message, message->pool);
+	response_message->start_line.status_code = MRCP_STATUS_CODE_METHOD_NOT_VALID;
+	return verifier_response_dispatch(state_machine, response_message);
 }
 
 static apt_bool_t verifier_response_start_input_timers(mrcp_verifier_state_machine_t *state_machine, mrcp_message_t *message)
