@@ -235,8 +235,10 @@ static void apt_timers_reschedule(apt_timer_queue_t *timer_queue)
 	for(it = APR_RING_LAST(&timer_queue->head);
 			it != APR_RING_SENTINEL(&timer_queue->head, apt_timer_t, link);
 				it = APR_RING_PREV(it, link)) {
-
-		it->scheduled_time -= timer_queue->elapsed_time;
+		if (it->scheduled_time > timer_queue->elapsed_time)
+			it->scheduled_time -= timer_queue->elapsed_time;
+		else
+			it->scheduled_time = 0;
 	}
 	timer_queue->elapsed_time = 0;
 }
