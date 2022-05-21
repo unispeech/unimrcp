@@ -167,16 +167,16 @@ static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mr
 	if(config->transport) {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s%s%s:%hu;transport=%s",
 											ipv6 ? "[" : "",
-                                            config->local_ip,
-                                            ipv6 ? "]" : "",
+											config->local_ip,
+											ipv6 ? "]" : "",
 											config->local_port,
 											config->transport);
 	}
 	else {
 		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s%s%s:%hu",
 											ipv6 ? "[" : "",
-                                            config->local_ip,
-                                            ipv6 ? "]" : "",
+											config->local_ip,
+											ipv6 ? "]" : "",
 											config->local_port);
 	}
 	return TRUE;
