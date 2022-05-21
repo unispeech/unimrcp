@@ -155,21 +155,28 @@ MRCP_DECLARE(mrcp_sofia_server_config_t*) mrcp_sofiasip_server_config_alloc(apr_
 
 static apt_bool_t mrcp_sofia_config_validate(mrcp_sofia_agent_t *sofia_agent, mrcp_sofia_server_config_t *config, apr_pool_t *pool)
 {
+    int ipv6 = strchr(config->local_ip, ':') ? 1 : 0;
+
 	sofia_agent->config = config;
 	sofia_agent->sip_contact_str = NULL; /* Let Sofia-SIP implicitly set Contact header by default */
 	if(config->ext_ip) {
 		/* Use external IP address in Contact header, if behind NAT */
-		sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s:%hu",config->ext_ip,config->local_port);
+        int ext_ipv6 = strchr(config->ext_ip, ':') ? 1 : 0;
+		sofia_agent->sip_contact_str = apr_psprintf(pool,"sip:%s%s%s:%hu",ext_ipv6 ? "[" : "",config->ext_ip,ext_ipv6 ? "]" : "",config->local_port);
 	}
 	if(config->transport) {
-		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%hu;transport=%s",
-											config->local_ip,
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s%s%s:%hu;transport=%s",
+											ipv6 ? "[" : "",
+                                            config->local_ip,
+                                            ipv6 ? "]" : "",
 											config->local_port,
 											config->transport);
 	}
 	else {
-		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s:%hu",
-											config->local_ip,
+		sofia_agent->sip_bind_str = apr_psprintf(pool,"sip:%s%s%s:%hu",
+											ipv6 ? "[" : "",
+                                            config->local_ip,
+                                            ipv6 ? "]" : "",
 											config->local_port);
 	}
 	return TRUE;

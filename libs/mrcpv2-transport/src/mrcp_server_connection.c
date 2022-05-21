@@ -108,7 +108,7 @@ MRCP_DECLARE(mrcp_connection_agent_t*) mrcp_server_connection_agent_create(
 	agent->inactivity_timeout = 600000; /* 10 min */
 	agent->termination_timeout = 3000; /* 3 sec */
 
-	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,APR_INET,listen_port,0,pool);
+	apr_sockaddr_info_get(&agent->sockaddr,listen_ip,strchr(listen_ip, ':')?APR_INET6:APR_INET,listen_port,0,pool);
 	if(!agent->sockaddr) {
 		return NULL;
 	}
