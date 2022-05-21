@@ -283,12 +283,14 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 			apt_string_compare(&rtp_stream->remote_media->ip,&media->ip) == FALSE ||
 			rtp_stream->remote_media->port != media->port) {
 
+			int ipv6 = strchr(media->ip.buf, ':')?1:0;
+
 			/* update RTP port */
 			rtp_stream->rtp_r_sockaddr = NULL;
 			apr_sockaddr_info_get(
 				&rtp_stream->rtp_r_sockaddr,
 				media->ip.buf,
-				APR_INET,
+				ipv6?APR_INET6:APR_INET,
 				media->port,
 				0,
 				rtp_stream->pool);
@@ -301,7 +303,7 @@ static apt_bool_t mpf_rtp_stream_remote_media_update(mpf_rtp_stream_t *rtp_strea
 			apr_sockaddr_info_get(
 				&rtp_stream->rtcp_r_sockaddr,
 				media->ip.buf,
-				APR_INET,
+				ipv6?APR_INET6:APR_INET,
 				media->port+1,
 				0,
 				rtp_stream->pool);
@@ -1121,7 +1123,7 @@ static apt_bool_t mpf_socket_bind(apr_socket_t *socket, const char *ip, apr_port
 	apr_sockaddr_info_get(
 		l_sockaddr,
 		ip,
-		APR_INET,
+		strchr(ip,':')?APR_INET6:APR_INET,
 		port,
 		0,
 		pool);
