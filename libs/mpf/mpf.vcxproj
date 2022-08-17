@@ -114,12 +114,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="codecs\g711\g711.c" />
+    <ClCompile Include="codecs\g722\g722_decode.c" />
+    <ClCompile Include="codecs\g722\g722_encode.c" />
     <ClCompile Include="src\mpf_activity_detector.c" />
     <ClCompile Include="src\mpf_audio_file_stream.c" />
     <ClCompile Include="src\mpf_bridge.c" />
     <ClCompile Include="src\mpf_buffer.c" />
     <ClCompile Include="src\mpf_codec_descriptor.c" />
     <ClCompile Include="src\mpf_codec_g711.c" />
+    <ClCompile Include="src\mpf_codec_g722.c" />
     <ClCompile Include="src\mpf_codec_linear.c" />
     <ClCompile Include="src\mpf_codec_manager.c" />
     <ClCompile Include="src\mpf_context.c" />
@@ -146,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="codecs\g711\g711.h" />
+    <ClInclude Include="codecs\g722\g722.h" />
     <ClInclude Include="include\mpf.h" />
     <ClInclude Include="include\mpf_activity_detector.h" />
     <ClInclude Include="include\mpf_audio_file_descriptor.h" />

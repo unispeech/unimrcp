@@ -55,6 +55,7 @@ set (MPF_SOURCES
 	src/mpf_buffer.c
 	src/mpf_codec_descriptor.c
 	src/mpf_codec_g711.c
+	src/mpf_codec_g722.c
 	src/mpf_codec_linear.c
 	src/mpf_codec_manager.c
 	src/mpf_context.c
@@ -89,8 +90,17 @@ set (MPF_G711_SOURCES
 )
 source_group ("codecs\\g711" FILES ${MPF_G711_HEADERS} ${MPF_G711_SOURCES})
 
+set (MPF_G722_HEADERS
+	codecs/g722/g722.h
+)
+set (MPF_G722_SOURCES
+	codecs/g722/g722_encode.c
+	codecs/g722/g722_decode.c
+)
+source_group ("codecs\\g722" FILES ${MPF_G722_HEADERS} ${MPF_G722_SOURCES})
+
 # Library declaration
-add_library (${PROJECT_NAME} OBJECT ${MPF_SOURCES} ${MPF_G711_SOURCES} ${MPF_HEADERS} ${MPF_G711_HEADERS})
+add_library (${PROJECT_NAME} OBJECT ${MPF_SOURCES} ${MPF_G711_SOURCES} ${MPF_G722_SOURCES} ${MPF_HEADERS} ${MPF_G711_HEADERS} ${MPF_G722_HEADERS})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "libs")
 
 # Preprocessor definitions

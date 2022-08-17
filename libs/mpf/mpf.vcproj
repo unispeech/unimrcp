@@ -254,6 +254,22 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="g722"
+				>
+				<File
+					RelativePath=".\codecs\g722\g722_encode.c"
+					>
+				</File>
+				<File
+					RelativePath=".\codecs\g722\g722_decode.c"
+					>
+				</File>
+				<File
+					RelativePath=".\codecs\g722\g722.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="include"
@@ -451,6 +467,10 @@
 			</File>
 			<File
 				RelativePath=".\src\mpf_codec_g711.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\mpf_codec_g722.c"
 				>
 			</File>
 			<File

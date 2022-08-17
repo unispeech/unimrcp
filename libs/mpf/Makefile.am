@@ -8,6 +8,7 @@ AM_CPPFLAGS              = -I$(top_srcdir)/libs/mpf/codecs \
 noinst_LTLIBRARIES       = libmpf.la
 
 include_HEADERS          = codecs/g711/g711.h \
+                           codecs/g722/g722.h \
                            include/mpf.h \
                            include/mpf_activity_detector.h \
                            include/mpf_audio_file_descriptor.h \
@@ -51,12 +52,15 @@ include_HEADERS          = codecs/g711/g711.h \
                            include/mpf_resampler.h
 
 libmpf_la_SOURCES        = codecs/g711/g711.c \
+                           codecs/g722/g722_decode.c \
+                           codecs/g722/g722_encode.c \
                            src/mpf_activity_detector.c \
                            src/mpf_audio_file_stream.c \
                            src/mpf_bridge.c \
                            src/mpf_buffer.c \
                            src/mpf_codec_descriptor.c \
                            src/mpf_codec_g711.c \
+                           src/mpf_codec_g722.c \
                            src/mpf_codec_linear.c \
                            src/mpf_codec_manager.c \
                            src/mpf_context.c \

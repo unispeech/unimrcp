@@ -7,6 +7,9 @@
     <Filter Include="codecs\g711">
       <UniqueIdentifier>{148f1b8f-859b-4dd9-96b0-0474d7bb875b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="codecs\g722">
+      <UniqueIdentifier>{01bf8a8d-c6fb-4da4-ae09-72adc195c042}</UniqueIdentifier>
+    </Filter>
     <Filter Include="include">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
@@ -105,6 +108,15 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\mpf_engine_factory.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="codecs\g722\g722_decode.c">
+      <Filter>codecs\g722</Filter>
+    </ClCompile>
+    <ClCompile Include="codecs\g722\g722_encode.c">
+      <Filter>codecs\g722</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mpf_codec_g722.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -234,6 +246,9 @@
     </ClInclude>
     <ClInclude Include="include\mpf_engine_factory.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="codecs\g722\g722.h">
+      <Filter>codecs\g722</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
