@@ -125,11 +125,12 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 			if(codec->static_descriptor) {
 				descriptor->payload_type = codec->static_descriptor->payload_type;
 				descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
+				descriptor->rtp_sampling_rate = codec->static_descriptor->rtp_sampling_rate;
 				descriptor->channel_count = codec->static_descriptor->channel_count;
 			}
 			else {
 				descriptor->payload_type = RTP_PT_DYNAMIC;
-				descriptor->sampling_rate = 8000;
+				mpf_codec_sampling_rate_set(descriptor, 8000);
 				descriptor->channel_count = 1;
 			}
 		}
@@ -145,7 +146,6 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 			}
 		}
 
-
 		/* parse optional payload type */
 		str = apr_strtok(codec_desc_str, separator, &state);
 		if(str) {
@@ -154,7 +154,7 @@ static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec
 			/* parse optional sampling rate */
 			str = apr_strtok(codec_desc_str, separator, &state);
 			if(str) {
-				descriptor->sampling_rate = (apr_uint16_t)atol(str);
+				mpf_codec_sampling_rate_set(descriptor, (apr_uint16_t)atol(str));
 
 				/* parse optional channel count */
 				str = apr_strtok(codec_desc_str, separator, &state);

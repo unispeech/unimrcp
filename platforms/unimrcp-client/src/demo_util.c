@@ -163,7 +163,7 @@ mpf_rtp_termination_descriptor_t* demo_rtp_descriptor_create(apr_pool_t *pool)
 	if(codec_descriptor) {
 		codec_descriptor->payload_type = 96;
 		apt_string_set(&codec_descriptor->name,"PCMU");
-		codec_descriptor->sampling_rate = 16000;
+		mpf_codec_sampling_rate_set(codec_descriptor, 16000);
 		codec_descriptor->channel_count = 1;
 	}
 

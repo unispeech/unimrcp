@@ -24,7 +24,7 @@
 
 #include <apr_tables.h>
 #include "apt_string.h"
-#include "mpf.h"
+#include "mpf_rtp_pt.h"
 
 APT_BEGIN_EXTERN_C
 
@@ -65,8 +65,10 @@ struct mpf_codec_descriptor_t {
 	apr_byte_t   payload_type;
 	/** Codec name */
 	apt_str_t    name;
-	/** Sampling rate */
+	/** Actual sampling rate */
 	apr_uint16_t sampling_rate;
+	/** RTP sampling rate (used for G.722, legacy of RFC1890, https://www.rfc-editor.org/rfc/rfc3551.html#section-4.5.2) */
+	apr_uint16_t rtp_sampling_rate;
 	/** Channel count */
 	apr_byte_t   channel_count;
 	/** Codec dependent additional format */
@@ -111,13 +113,13 @@ struct mpf_codec_frame_t {
 	apr_size_t size;
 };
 
-
 /** Initialize codec descriptor */
 static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descriptor)
 {
 	descriptor->payload_type = 0;
 	apt_string_reset(&descriptor->name);
 	descriptor->sampling_rate = 0;
+	descriptor->rtp_sampling_rate = 0;
 	descriptor->channel_count = 0;
 	apt_string_reset(&descriptor->format);
 	descriptor->enabled = TRUE;
@@ -139,9 +141,9 @@ static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(const mpf_codec_desc
 }
 
 /** Calculate samples of the frame (ts) */
-static APR_INLINE apr_size_t mpf_codec_frame_samples_calculate(const mpf_codec_descriptor_t *descriptor)
+static APR_INLINE apr_size_t mpf_codec_frame_samples_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count)
 {
-	return (apr_size_t) descriptor->channel_count * CODEC_FRAME_TIME_BASE * descriptor->sampling_rate / 1000;
+	return (apr_size_t) channel_count * CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
 }
 
 /** Calculate linear frame size in bytes */
@@ -150,6 +152,22 @@ static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t 
 	return (apr_size_t) channel_count * BYTES_PER_SAMPLE * CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
 }
 
+/** Set sampling rate in codec descriptor */
+static APR_INLINE void mpf_codec_sampling_rate_set(mpf_codec_descriptor_t *descriptor, apr_uint16_t sampling_rate)
+{
+	descriptor->sampling_rate = sampling_rate;
+	descriptor->rtp_sampling_rate = sampling_rate;
+}
+
+/** Set sampling rate in codec descriptor based on SDP/RTP */
+static APR_INLINE void mpf_codec_rtp_sampling_rate_set(mpf_codec_descriptor_t *descriptor, apr_uint16_t sampling_rate)
+{
+	descriptor->rtp_sampling_rate = sampling_rate;
+	if(descriptor->payload_type == RTP_PT_G722)
+		descriptor->sampling_rate = 16000;
+	else
+		descriptor->sampling_rate = sampling_rate;
+}
 
 
 /** Reset list of codec descriptors */

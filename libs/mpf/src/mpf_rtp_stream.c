@@ -466,7 +466,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 		rtp_stream->base->tx_descriptor = codec_list->primary_descriptor;
 		if(rtp_stream->base->tx_descriptor) {
 			rtp_stream->transmitter.samples_per_frame = 
-				(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_descriptor);
+				(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_descriptor->rtp_sampling_rate, rtp_stream->base->tx_descriptor->channel_count);
 		}
 		if(codec_list->event_descriptor) {
 			rtp_stream->base->tx_event_descriptor = codec_list->event_descriptor;
@@ -749,7 +749,7 @@ static APR_INLINE rtp_ts_result_e rtp_rx_ts_update(rtp_receiver_t *receiver, mpf
 	}
 
 	/* arrival time diff in samples */
-	deviation = time_diff * descriptor->channel_count * descriptor->sampling_rate / 1000;
+	deviation = time_diff * descriptor->channel_count * descriptor->rtp_sampling_rate / 1000;
 	/* arrival timestamp diff */
 	deviation -= ts - receiver->history.ts_last;
 

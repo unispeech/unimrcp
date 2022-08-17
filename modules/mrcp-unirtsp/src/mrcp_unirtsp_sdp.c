@@ -58,7 +58,7 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 				offset += snprintf(buffer+offset,size-offset,"a=rtpmap:%d %s/%d\r\n",
 					codec_descriptor->payload_type,
 					codec_descriptor->name.buf,
-					codec_descriptor->sampling_rate);
+					codec_descriptor->rtp_sampling_rate);
 				if(codec_descriptor->format.buf) {
 					offset += snprintf(buffer+offset,size-offset,"a=fmtp:%d %s\r\n",
 						codec_descriptor->payload_type,
@@ -109,7 +109,7 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 		if(codec) {
 			codec->payload_type = (apr_byte_t)map->rm_pt;
 			apt_string_assign(&codec->name,map->rm_encoding,pool);
-			codec->sampling_rate = (apr_uint16_t)map->rm_rate;
+			mpf_codec_rtp_sampling_rate_set(codec, (apr_uint16_t)map->rm_rate);
 			codec->channel_count = 1;
 		}
 	}

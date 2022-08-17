@@ -30,7 +30,7 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_event_descriptor_create(apr_uint16_t sa
 	descriptor->payload_type = 101;
 	descriptor->name.buf = TEL_EVENT_NAME;
 	descriptor->name.length = TEL_EVENT_NAME_LENGTH;
-	descriptor->sampling_rate = sampling_rate;
+	mpf_codec_sampling_rate_set(descriptor, sampling_rate);
 	descriptor->channel_count = 1;
 	descriptor->format.buf = TEL_EVENT_FMTP;
 	descriptor->format.length = TEL_EVENT_FMTP_LENGTH;

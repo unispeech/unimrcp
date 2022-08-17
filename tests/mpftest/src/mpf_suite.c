@@ -504,7 +504,7 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_rx_remote_descriptor_create(const mp
 	if(codec_descriptor) {
 		codec_descriptor->payload_type = 0;
 		apt_string_set(&codec_descriptor->name,"PCMU");
-		codec_descriptor->sampling_rate = 8000;
+		mpf_codec_sampling_rate_set(codec_descriptor, 8000);
 		codec_descriptor->channel_count = 1;
 	}
 
@@ -553,7 +553,7 @@ static mpf_rtp_stream_descriptor_t* mpf_rtp_tx_remote_descriptor_create(const mp
 	if(codec_descriptor) {
 		codec_descriptor->payload_type = 0;
 		apt_string_set(&codec_descriptor->name,"PCMU");
-		codec_descriptor->sampling_rate = 8000;
+		mpf_codec_sampling_rate_set(codec_descriptor, 8000);
 		codec_descriptor->channel_count = 1;
 	}
 

@@ -101,7 +101,7 @@ mpf_jitter_buffer_t* mpf_jitter_buffer_create(mpf_jb_config_t *jb_config, mpf_co
 	jb->codec = codec;
 
 	/* calculate and allocate frame related data */
-	jb->frame_ts = (apr_uint32_t)mpf_codec_frame_samples_calculate(descriptor);
+	jb->frame_ts = (apr_uint32_t)mpf_codec_frame_samples_calculate(descriptor->rtp_sampling_rate, descriptor->channel_count);
 	jb->frame_size = mpf_codec_frame_size_calculate(descriptor,codec->attribs);
 	jb->frame_count = jb->config->max_playout_delay / CODEC_FRAME_TIME_BASE;
 	jb->raw_data = apr_palloc(pool,jb->frame_size*jb->frame_count);

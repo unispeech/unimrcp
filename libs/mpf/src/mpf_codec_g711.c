@@ -144,6 +144,7 @@ static const mpf_codec_descriptor_t g711u_descriptor = {
 	RTP_PT_PCMU,
 	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},
 	8000,
+	8000,
 	1,
 	{NULL, 0},
 	TRUE
@@ -152,6 +153,7 @@ static const mpf_codec_descriptor_t g711u_descriptor = {
 static const mpf_codec_descriptor_t g711a_descriptor = {
 	RTP_PT_PCMA,
 	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},
+	8000,
 	8000,
 	1,
 	{NULL,0},

@@ -16,7 +16,6 @@
 
 #include "mpf_codec_descriptor.h"
 #include "mpf_named_event.h"
-#include "mpf_rtp_pt.h"
 
 /* linear PCM (host horder) */
 #define LPCM_CODEC_NAME        "LPCM"
@@ -60,7 +59,7 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16
 	mpf_codec_descriptor_t *descriptor = mpf_codec_descriptor_create(pool);
 	descriptor->payload_type = RTP_PT_UNKNOWN;
 	descriptor->name = lpcm_attribs.name;
-	descriptor->sampling_rate = sampling_rate;
+	mpf_codec_sampling_rate_set(descriptor, sampling_rate);
 	descriptor->channel_count = channel_count;
 	return descriptor;
 }
@@ -127,6 +126,7 @@ MPF_DECLARE(apt_bool_t) mpf_codec_descriptor_match_by_attribs(mpf_codec_descript
 		if(static_descriptor && static_descriptor->payload_type == descriptor->payload_type) {
 			descriptor->name = static_descriptor->name;
 			descriptor->sampling_rate = static_descriptor->sampling_rate;
+			descriptor->rtp_sampling_rate = static_descriptor->rtp_sampling_rate;
 			descriptor->channel_count = static_descriptor->channel_count;
 			match = TRUE;
 		}
