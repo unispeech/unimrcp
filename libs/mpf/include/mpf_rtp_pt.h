@@ -30,6 +30,7 @@ APT_BEGIN_EXTERN_C
 typedef enum {
 	RTP_PT_PCMU        =  0, /**< PCMU           Audio 8kHz 1 */
 	RTP_PT_PCMA        =  8, /**< PCMA           Audio 8kHz 1 */
+	RTP_PT_G722        =  9, /**< G.722          Audio 16kHz 1 */
 
 	RTP_PT_CN          =  13, /**< Comfort Noise Audio 8kHz 1 */
 
