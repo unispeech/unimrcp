@@ -39,14 +39,25 @@ struct mpf_codec_t {
 	const mpf_codec_attribs_t    *attribs;
 	/** Optional static codec descriptor (pt < 96) */
 	const mpf_codec_descriptor_t *static_descriptor;
+	/** Encoder-specific object */
+	void                         *encoder_obj;
+	/** Decoder-specific object */
+	void                         *decoder_obj;
+	/** Memory pool */
+	apr_pool_t                   *pool;
 };
 
 /** Table of codec virtual methods */
 struct mpf_codec_vtable_t {
-	/** Virtual open method */
-	apt_bool_t (*open)(mpf_codec_t *codec);
-	/** Virtual close method */
-	apt_bool_t (*close)(mpf_codec_t *codec);
+	/** Virtual open encoder method */
+	apt_bool_t (*open_encoder)(mpf_codec_t *codec);
+	/** Virtual close encoder method */
+	apt_bool_t (*close_encoder)(mpf_codec_t *codec);
+
+	/** Virtual open decoder method */
+	apt_bool_t(*open_decoder)(mpf_codec_t *codec);
+	/** Virtual close decoder method */
+	apt_bool_t(*close_decoder)(mpf_codec_t *codec);
 
 	/** Virtual encode method */
 	apt_bool_t (*encode)(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out);
@@ -56,8 +67,8 @@ struct mpf_codec_vtable_t {
 	/** Virtual dissect method */
 	apt_bool_t (*dissect)(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame);
 
-	/** Virtual initialize method */
-	apt_bool_t (*initialize)(mpf_codec_t *codec, mpf_codec_frame_t *frame_out);
+	/** Virtual fill with silence method */
+	apt_bool_t (*fill)(mpf_codec_t *codec, mpf_codec_frame_t *frame_out);
 };
 
 /**
@@ -77,6 +88,9 @@ static APR_INLINE mpf_codec_t* mpf_codec_create(
 	codec->vtable = vtable;
 	codec->attribs = attribs;
 	codec->static_descriptor = descriptor;
+	codec->encoder_obj = NULL;
+	codec->decoder_obj = NULL;
+	codec->pool = pool;
 	return codec;
 }
 
@@ -91,25 +105,48 @@ static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_
 	codec->vtable = src_codec->vtable;
 	codec->attribs = src_codec->attribs;
 	codec->static_descriptor = src_codec->static_descriptor;
+	codec->encoder_obj = NULL;
+	codec->decoder_obj = NULL;
+	codec->pool = pool;
 	return codec;
 }
 
-/** Open codec */
-static APR_INLINE apt_bool_t mpf_codec_open(mpf_codec_t *codec)
+/** Open encoder */
+static APR_INLINE apt_bool_t mpf_codec_encoder_open(mpf_codec_t *codec)
 {
 	apt_bool_t rv = TRUE;
-	if(codec->vtable->open) {
-		rv = codec->vtable->open(codec);
+	if(codec->vtable->open_encoder) {
+		rv = codec->vtable->open_encoder(codec);
 	}
 	return rv;
 }
 
-/** Close codec */
-static APR_INLINE apt_bool_t mpf_codec_close(mpf_codec_t *codec)
+/** Close encoder */
+static APR_INLINE apt_bool_t mpf_codec_encoder_close(mpf_codec_t *codec)
 {
 	apt_bool_t rv = TRUE;
-	if(codec->vtable->close) {
-		rv = codec->vtable->close(codec);
+	if(codec->vtable->close_encoder) {
+		rv = codec->vtable->close_encoder(codec);
+	}
+	return rv;
+}
+
+/** Open decoder */
+static APR_INLINE apt_bool_t mpf_codec_decoder_open(mpf_codec_t *codec)
+{
+	apt_bool_t rv = TRUE;
+	if (codec->vtable->open_decoder) {
+		rv = codec->vtable->open_decoder(codec);
+	}
+	return rv;
+}
+
+/** Close decoder */
+static APR_INLINE apt_bool_t mpf_codec_decoder_close(mpf_codec_t *codec)
+{
+	apt_bool_t rv = TRUE;
+	if (codec->vtable->close_decoder) {
+		rv = codec->vtable->close_decoder(codec);
 	}
 	return rv;
 }
@@ -157,12 +194,12 @@ static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void **buffer
 	return rv;
 }
 
-/** Initialize (fill) codec frame with silence */
-static APR_INLINE apt_bool_t mpf_codec_initialize(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
+/** Fill codec frame with silence */
+static APR_INLINE apt_bool_t mpf_codec_fill(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
 {
 	apt_bool_t rv = TRUE;
-	if(codec->vtable->initialize) {
-		rv = codec->vtable->initialize(codec,frame_out);
+	if(codec->vtable->fill) {
+		rv = codec->vtable->fill(codec,frame_out);
 	}
 	else {
 		memset(frame_out->buffer,0,frame_out->size);

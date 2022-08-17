@@ -24,16 +24,6 @@
 #define G711a_CODEC_NAME        "PCMA"
 #define G711a_CODEC_NAME_LENGTH (sizeof(G711a_CODEC_NAME)-1)
 
-static apt_bool_t g711_open(mpf_codec_t *codec)
-{
-	return TRUE;
-}
-
-static apt_bool_t g711_close(mpf_codec_t *codec)
-{
-	return TRUE;
-}
-
 static apt_bool_t g711u_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	const apr_int16_t *decode_buf;
@@ -70,7 +60,7 @@ static apt_bool_t g711u_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 	return TRUE;
 }
 
-static apt_bool_t g711u_init(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
+static apt_bool_t g711u_fill(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
 {
 	apr_size_t i;
 	unsigned char *encode_buf = frame_out->buffer;
@@ -117,7 +107,7 @@ static apt_bool_t g711a_decode(mpf_codec_t *codec, const mpf_codec_frame_t *fram
 	return TRUE;
 }
 
-static apt_bool_t g711a_init(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
+static apt_bool_t g711a_fill(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
 {
 	apr_size_t i;
 	unsigned char *encode_buf = frame_out->buffer;
@@ -129,21 +119,25 @@ static apt_bool_t g711a_init(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
 }
 
 static const mpf_codec_vtable_t g711u_vtable = {
-	g711_open,
-	g711_close,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 	g711u_encode,
 	g711u_decode,
 	NULL,
-	g711u_init
+	g711u_fill
 };
 
 static const mpf_codec_vtable_t g711a_vtable = {
-	g711_open,
-	g711_close,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 	g711a_encode,
 	g711a_decode,
 	NULL,
-	g711a_init
+	g711a_fill
 };
 
 static const mpf_codec_descriptor_t g711u_descriptor = {

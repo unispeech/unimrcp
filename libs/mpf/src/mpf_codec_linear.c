@@ -23,17 +23,6 @@
 #define L16_CODEC_NAME        "L16"
 #define L16_CODEC_NAME_LENGTH (sizeof(L16_CODEC_NAME)-1)
 
-
-static apt_bool_t l16_open(mpf_codec_t *codec)
-{
-	return TRUE;
-}
-
-static apt_bool_t l16_close(mpf_codec_t *codec)
-{
-	return TRUE;
-}
-
 static apt_bool_t l16_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
 	apr_uint32_t i;
@@ -67,8 +56,10 @@ static apt_bool_t l16_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_
 }
 
 static const mpf_codec_vtable_t l16_vtable = {
-	l16_open,
-	l16_close,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 	l16_encode,
 	l16_decode,
 	NULL,

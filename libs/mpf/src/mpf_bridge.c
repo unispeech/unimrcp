@@ -63,7 +63,7 @@ static apt_bool_t mpf_null_bridge_process(mpf_object_t *object)
 
 	if((bridge->frame.type & MEDIA_FRAME_TYPE_AUDIO) == 0) {
 		/* generate silence frame */
-		mpf_codec_initialize(bridge->codec,&bridge->frame.codec_frame);
+		mpf_codec_fill(bridge->codec,&bridge->frame.codec_frame);
 	}
 
 	bridge->sink->vtable->write_frame(bridge->sink,&bridge->frame);
