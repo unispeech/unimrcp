@@ -338,6 +338,9 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 			apt_string_assign(&codec->name,map->rm_encoding,pool);
 			mpf_codec_rtp_sampling_rate_set(codec, (apr_uint16_t)map->rm_rate);
 			codec->channel_count = 1;
+			if (map->rm_fmtp) {
+				apt_string_assign(&codec->format,map->rm_fmtp,pool);
+			}
 		}
 	}
 
