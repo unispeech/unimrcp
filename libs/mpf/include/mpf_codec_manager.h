@@ -22,6 +22,7 @@
  * @brief MPF Codec Manager
  */ 
 
+#include <apr_xml.h>
 #include "mpf_types.h"
 #include "mpf_codec.h"
 
@@ -42,8 +43,11 @@ MPF_DECLARE(mpf_codec_t*) mpf_codec_manager_codec_get(const mpf_codec_manager_t 
 /** Get (allocate) list of available codecs */
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, apr_pool_t *pool);
 
-/** Load (allocate) list of codecs  */
+/** Load (allocate) list of codecs from a space-separated string */
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_load(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, const char *str, apr_pool_t *pool);
+
+/** Load (allocate) list of codecs using XML elements */
+MPF_DECLARE(apt_bool_t) mpf_codec_manager_codecs_load(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, const apr_xml_elem *root, apr_pool_t *pool);
 
 /** Find codec by name  */
 MPF_DECLARE(const mpf_codec_t*) mpf_codec_manager_codec_find(const mpf_codec_manager_t *codec_manager, const apt_str_t *codec_name);

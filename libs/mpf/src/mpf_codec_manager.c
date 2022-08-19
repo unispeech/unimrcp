@@ -103,68 +103,113 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_get(const mpf_codec_manager
 	return TRUE;
 }
 
+static apt_bool_t mpf_codec_manager_codec_add(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list,
+								const char *name_attr, const char *payload_type_attr,
+								const char *sampling_rate_attr, const char *channel_count_attr,
+								const char *format_attr, apr_pool_t *pool)
+{
+	mpf_codec_descriptor_t *descriptor;
+	const mpf_codec_t *codec;
+
+	if (!name_attr) {
+		return FALSE;
+	}
+
+	apt_str_t name;
+	apt_string_assign(&name, name_attr, pool);
+	/* find codec by name */
+	codec = mpf_codec_manager_codec_find(codec_manager, &name);
+	if (codec) {
+		descriptor = mpf_codec_list_add(codec_list);
+		descriptor->name = name;
+
+		/* set default attributes */
+		if (codec->static_descriptor) {
+			descriptor->payload_type = codec->static_descriptor->payload_type;
+			descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
+			descriptor->rtp_sampling_rate = codec->static_descriptor->rtp_sampling_rate;
+			descriptor->channel_count = codec->static_descriptor->channel_count;
+			descriptor->format = codec->static_descriptor->format;
+		}
+		else {
+			descriptor->payload_type = RTP_PT_DYNAMIC;
+			mpf_codec_sampling_rate_set(descriptor, 8000);
+			descriptor->channel_count = 1;
+		}
+	}
+	else {
+		mpf_codec_descriptor_t *event_descriptor = codec_manager->event_descriptor;
+		if (event_descriptor && apt_string_compare(&event_descriptor->name, &name) == TRUE) {
+			descriptor = mpf_codec_list_add(codec_list);
+			*descriptor = *event_descriptor;
+		}
+		else {
+			apt_log(MPF_LOG_MARK, APT_PRIO_WARNING, "No Such Codec [%s]", name_attr);
+			return FALSE;
+		}
+	}
+
+	if (payload_type_attr) {
+		descriptor->payload_type = (apr_byte_t)atol(payload_type_attr);
+	}
+
+	if (sampling_rate_attr) {
+		mpf_codec_sampling_rate_set(descriptor, (apr_uint16_t)atol(sampling_rate_attr));
+	}
+
+	if (channel_count_attr) {
+		descriptor->channel_count = (apr_byte_t)atol(channel_count_attr);
+	}
+
+	if (format_attr) {
+		apt_string_assign(&descriptor->format, format_attr, pool);
+	}
+
+	return TRUE;
+}
+
 static apt_bool_t mpf_codec_manager_codec_parse(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, char *codec_desc_str, apr_pool_t *pool)
 {
-	const mpf_codec_t *codec;
-	mpf_codec_descriptor_t *descriptor;
 	const char *separator = "/";
 	char *state;
+	const char *name_attr = NULL;
+	const char *payload_type_attr = NULL;
+	const char *sampling_rate_attr = NULL;
+	const char *channel_count_attr = NULL;
+	const char *format_attr = NULL;
+
 	/* parse codec name */
 	char *str = apr_strtok(codec_desc_str, separator, &state);
 	codec_desc_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
 	if(str) {
-		apt_str_t name;
-		apt_string_assign(&name,str,pool);
-		/* find codec by name */
-		codec = mpf_codec_manager_codec_find(codec_manager,&name);
-		if(codec) {
-			descriptor = mpf_codec_list_add(codec_list);
-			descriptor->name = name;
-
-			/* set default attributes */
-			if(codec->static_descriptor) {
-				descriptor->payload_type = codec->static_descriptor->payload_type;
-				descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
-				descriptor->rtp_sampling_rate = codec->static_descriptor->rtp_sampling_rate;
-				descriptor->channel_count = codec->static_descriptor->channel_count;
-			}
-			else {
-				descriptor->payload_type = RTP_PT_DYNAMIC;
-				mpf_codec_sampling_rate_set(descriptor, 8000);
-				descriptor->channel_count = 1;
-			}
-		}
-		else {
-			mpf_codec_descriptor_t *event_descriptor = codec_manager->event_descriptor;
-			if(event_descriptor && apt_string_compare(&event_descriptor->name,&name) == TRUE) {
-				descriptor = mpf_codec_list_add(codec_list);
-				*descriptor = *event_descriptor;
-			}
-			else {
-				apt_log(MPF_LOG_MARK,APT_PRIO_WARNING,"No Such Codec [%s]",str);
-				return FALSE;
-			}
-		}
+		name_attr = str;
 
 		/* parse optional payload type */
 		str = apr_strtok(codec_desc_str, separator, &state);
 		if(str) {
-			descriptor->payload_type = (apr_byte_t)atol(str);
+			payload_type_attr = str;
 
 			/* parse optional sampling rate */
 			str = apr_strtok(codec_desc_str, separator, &state);
 			if(str) {
-				mpf_codec_sampling_rate_set(descriptor, (apr_uint16_t)atol(str));
+				sampling_rate_attr = str;
 
 				/* parse optional channel count */
 				str = apr_strtok(codec_desc_str, separator, &state);
 				if(str) {
-					descriptor->channel_count = (apr_byte_t)atol(str);
+					channel_count_attr = str;
+
+					/* parse optional format */
+					str = apr_strtok(codec_desc_str, separator, &state);
+					if (str) {
+						format_attr = str;
+					}
 				}
 			}
 		}
 	}
-	return TRUE;
+
+	return mpf_codec_manager_codec_add(codec_manager, codec_list, name_attr, payload_type_attr, sampling_rate_attr, channel_count_attr, format_attr, pool);
 }
 
 MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_load(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, const char *str, apr_pool_t *pool)
@@ -180,6 +225,59 @@ MPF_DECLARE(apt_bool_t) mpf_codec_manager_codec_list_load(const mpf_codec_manage
 		codec_list_str = NULL; /* make sure we pass NULL on subsequent calls of apr_strtok() */
 	} 
 	while(codec_desc_str);
+	return TRUE;
+}
+
+static apt_bool_t mpf_codec_manager_codec_load(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, const apr_xml_elem *elem, apr_pool_t *pool)
+{
+	const char *name_attr = NULL;
+	const char *payload_type_attr = NULL;
+	const char *sampling_rate_attr = NULL;
+	const char *channel_count_attr = NULL;
+	const char *format_attr = NULL;
+	const char *enabled_attr = NULL;
+	const apr_xml_attr *attr;
+	for (attr = elem->attr; attr; attr = attr->next) {
+		if (strcasecmp(attr->name,"name") == 0) {
+			name_attr = attr->value;
+		}
+		else if (strcasecmp(attr->name,"payload-type") == 0) {
+			payload_type_attr = attr->value;
+		}
+		if (strcasecmp(attr->name,"sampling-rate") == 0) {
+			sampling_rate_attr = attr->value;
+		}
+		else if (strcasecmp(attr->name,"channel-count") == 0) {
+			channel_count_attr = attr->value;
+		}
+		else if (strcasecmp(attr->name,"format") == 0) {
+			format_attr = attr->value;
+		}
+		else if (strcasecmp(attr->name,"enable") == 0) {
+			enabled_attr = attr->value;
+		}
+	}
+
+	if (enabled_attr && strcasecmp(enabled_attr, "false") == 0) {
+		/* skip disabled codec */
+		return TRUE;
+	}
+
+	return mpf_codec_manager_codec_add(codec_manager, codec_list, name_attr, payload_type_attr, sampling_rate_attr, channel_count_attr, format_attr, pool);
+}
+
+MPF_DECLARE(apt_bool_t) mpf_codec_manager_codecs_load(const mpf_codec_manager_t *codec_manager, mpf_codec_list_t *codec_list, const apr_xml_elem *root, apr_pool_t *pool)
+{
+	const apr_xml_elem *elem;
+	apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "Loading Codecs");
+	for (elem = root->first_child; elem; elem = elem->next) {
+		if (strcasecmp(elem->name, "codec") == 0) {
+			mpf_codec_manager_codec_load(codec_manager, codec_list, elem, pool);
+		}
+		else {
+			apt_log(APT_LOG_MARK, APT_PRIO_WARNING, "Unknown Element <%s>", elem->name);
+		}
+	}
 	return TRUE;
 }
 

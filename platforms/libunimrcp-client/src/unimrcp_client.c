@@ -849,11 +849,20 @@ static apt_bool_t unimrcp_client_rtp_settings_load(unimrcp_client_loader_t *load
 		else if(strcasecmp(elem->name,"codecs") == 0) {
 			const mpf_codec_manager_t *codec_manager = mrcp_client_codec_manager_get(loader->client);
 			if(is_cdata_valid(elem) == TRUE && codec_manager) {
-				mpf_codec_manager_codec_list_load(
-					codec_manager,
-					&rtp_settings->codec_list,
-					cdata_text_get(elem),
-					loader->pool);
+				if (elem->first_child) {
+					mpf_codec_manager_codecs_load(
+						codec_manager,
+						&rtp_settings->codec_list,
+						elem,
+						loader->pool);
+				}
+				else {
+					mpf_codec_manager_codec_list_load(
+						codec_manager,
+						&rtp_settings->codec_list,
+						cdata_text_get(elem),
+						loader->pool);
+				}
 			}
 		}
 		else if(strcasecmp(elem->name,"rtcp") == 0) {

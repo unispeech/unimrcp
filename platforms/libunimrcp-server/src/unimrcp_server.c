@@ -865,12 +865,22 @@ static apt_bool_t unimrcp_server_rtp_settings_load(unimrcp_server_loader_t *load
 			const apr_xml_attr *attr;
 			const mpf_codec_manager_t *codec_manager = mrcp_server_codec_manager_get(loader->server);
 			if(is_cdata_valid(elem) == TRUE && codec_manager) {
-				mpf_codec_manager_codec_list_load(
-					codec_manager,
-					&rtp_settings->codec_list,
-					cdata_text_get(elem),
-					loader->pool);
+				if (elem->first_child) {
+					mpf_codec_manager_codecs_load(
+						codec_manager,
+						&rtp_settings->codec_list,
+						elem,
+						loader->pool);
+				}
+				else {
+					mpf_codec_manager_codec_list_load(
+						codec_manager,
+						&rtp_settings->codec_list,
+						cdata_text_get(elem),
+						loader->pool);
+				}
 			}
+
 			for(attr = elem->attr; attr; attr = attr->next) {
 				if(strcasecmp(attr->name,"own-preference") == 0) {
 					rtp_settings->own_preferrence = is_attr_enabled(attr);
