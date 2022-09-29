@@ -462,7 +462,7 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 	}
 
 	if((rtp_stream->base->direction & STREAM_DIRECTION_SEND) == STREAM_DIRECTION_SEND) {
-		mpf_codec_list_t *codec_list = &rtp_stream->remote_media->codec_list;
+		mpf_codec_list_t *codec_list = &rtp_stream->local_media->codec_list;
 		rtp_stream->base->tx_descriptor = codec_list->primary_descriptor;
 		if(codec_list->event_descriptor) {
 			rtp_stream->base->tx_event_descriptor = codec_list->event_descriptor;
