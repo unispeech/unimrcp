@@ -125,7 +125,8 @@ static const mpf_codec_vtable_t g722_vtable = {
 	mpf_g722_encode,
 	mpf_g722_decode,
 	NULL,
-	mpf_g722_fill
+	mpf_g722_fill,
+	NULL
 };
 
 static const mpf_codec_descriptor_t g722_descriptor = {
@@ -135,7 +136,8 @@ static const mpf_codec_descriptor_t g722_descriptor = {
 	8000,
 	1,
 	0,
-	{NULL, 0},
+	NULL,
+	NULL,
 	TRUE
 };
 

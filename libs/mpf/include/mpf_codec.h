@@ -69,6 +69,9 @@ struct mpf_codec_vtable_t {
 
 	/** Virtual fill with silence method */
 	apt_bool_t (*fill)(mpf_codec_t *codec, mpf_codec_frame_t *frame_out);
+
+	/** Virtual format matching method */
+	mpf_codec_format_match_f match_formats;
 };
 
 /**

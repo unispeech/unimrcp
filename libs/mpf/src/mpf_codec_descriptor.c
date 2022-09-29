@@ -104,6 +104,15 @@ MPF_DECLARE(apt_bool_t) mpf_codec_descriptors_match(const mpf_codec_descriptor_t
 			}
 		}
 	}
+
+	if (match == TRUE) {
+		if (descriptor1->match_formats) {
+			match = descriptor1->match_formats(descriptor1->format_params,descriptor2->format_params);
+		}
+		else if (descriptor2->match_formats) {
+			match = descriptor2->match_formats(descriptor2->format_params,descriptor1->format_params);
+		}
+	}
 	return match;
 }
 

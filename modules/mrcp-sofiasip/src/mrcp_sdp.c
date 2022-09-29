@@ -214,10 +214,30 @@ static apr_size_t sdp_rtp_media_generate(char *buffer, apr_size_t size, const mr
 					codec_descriptor->payload_type,
 					codec_descriptor->name.buf,
 					codec_descriptor->rtp_sampling_rate);
-				if(codec_descriptor->format.buf) {
-					offset += snprintf(buffer+offset,size-offset,"a=fmtp:%d %s\r\n",
-						codec_descriptor->payload_type,
-						codec_descriptor->format.buf);
+				if(codec_descriptor->format_params) {
+					int j;
+					apt_pair_t *pair;
+					offset += snprintf(buffer+offset,size-offset,"a=fmtp:%d ",
+						codec_descriptor->payload_type);
+					for (j = 0; j<codec_descriptor->format_params->nelts; j++) {
+						pair = (apt_pair_t*)codec_descriptor->format_params->elts + j;
+						if (j != 0) {
+							*(buffer+offset) = ';';
+							offset++;
+						}
+
+						if (pair->name.length) {
+							memcpy(buffer+offset,pair->name.buf,pair->name.length);
+							offset += pair->name.length;
+							if (pair->value.length) {
+								*(buffer + offset) = '=';
+								offset++;
+								memcpy(buffer+offset,pair->value.buf,pair->value.length);
+								offset += pair->value.length;
+							}
+						}
+					}
+					offset += snprintf(buffer+offset,size-offset,"\r\n");
 				}
 			}
 		}
@@ -339,7 +359,12 @@ static apt_bool_t mpf_rtp_media_generate(mpf_rtp_media_descriptor_t *rtp_media, 
 			mpf_codec_rtp_sampling_rate_set(codec, (apr_uint16_t)map->rm_rate);
 			codec->channel_count = 1;
 			if (map->rm_fmtp) {
-				apt_string_assign(&codec->format,map->rm_fmtp,pool);
+				apt_str_t value;
+				apt_string_assign(&value,map->rm_fmtp,pool);
+				if (!codec->format_params) {
+					codec->format_params = apt_pair_array_create(1, pool);
+				}
+				apt_pair_array_parse(codec->format_params, &value, pool);
 			}
 		}
 	}

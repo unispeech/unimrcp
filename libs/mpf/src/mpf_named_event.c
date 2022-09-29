@@ -32,8 +32,15 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_event_descriptor_create(apr_uint16_t sa
 	descriptor->name.length = TEL_EVENT_NAME_LENGTH;
 	mpf_codec_sampling_rate_set(descriptor, sampling_rate);
 	descriptor->channel_count = 1;
-	descriptor->format.buf = TEL_EVENT_FMTP;
-	descriptor->format.length = TEL_EVENT_FMTP_LENGTH;
+	descriptor->format_params = apt_pair_array_create(1,pool);
+	if (descriptor->format_params) {
+		apt_str_t name;
+		apt_str_t value;
+		name.buf = TEL_EVENT_FMTP;
+		name.length = TEL_EVENT_FMTP_LENGTH;
+		apt_string_reset(&value);
+		apt_pair_array_append(descriptor->format_params,&name,&value,pool);
+	}
 	return descriptor;
 }
 

@@ -24,6 +24,7 @@
 
 #include <apr_tables.h>
 #include "apt_string.h"
+#include "apt_pair.h"
 #include "mpf_rtp_pt.h"
 
 APT_BEGIN_EXTERN_C
@@ -57,7 +58,8 @@ typedef struct mpf_codec_list_t mpf_codec_list_t;
 typedef struct mpf_codec_capabilities_t mpf_codec_capabilities_t;
 /** Codec frame declaration */
 typedef struct mpf_codec_frame_t mpf_codec_frame_t;
-
+/** Codec format matching method */
+typedef apt_bool_t(*mpf_codec_format_match_f)(const apt_pair_arr_t *format_params1, const apt_pair_arr_t *format_params2);
 
 /** Codec descriptor */
 struct mpf_codec_descriptor_t {
@@ -73,7 +75,10 @@ struct mpf_codec_descriptor_t {
 	apr_byte_t   channel_count;
 	/** Frame duration in msec */
 	apr_uint16_t frame_duration;
-	apt_str_t    format;
+	/** Array of name/value format parameters */
+	apt_pair_arr_t *format_params;
+	/** Codec-specific format matching method */
+	mpf_codec_format_match_f match_formats;
 	/**  Enabled/disabled state */
 	apt_bool_t   enabled;
 };
@@ -125,7 +130,8 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 	descriptor->rtp_sampling_rate = 0;
 	descriptor->channel_count = 0;
 	descriptor->frame_duration = 0;
-	apt_string_reset(&descriptor->format);
+	descriptor->format_params = NULL;
+	descriptor->match_formats = NULL;
 	descriptor->enabled = TRUE;
 }
 

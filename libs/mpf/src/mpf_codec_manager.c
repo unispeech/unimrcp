@@ -18,6 +18,7 @@
 #include "mpf_codec_manager.h"
 #include "mpf_rtp_pt.h"
 #include "mpf_named_event.h"
+#include "apt_text_stream.h"
 #include "apt_log.h"
 
 
@@ -122,6 +123,7 @@ static apt_bool_t mpf_codec_manager_codec_add(const mpf_codec_manager_t *codec_m
 	if (codec) {
 		descriptor = mpf_codec_list_add(codec_list);
 		descriptor->name = name;
+		descriptor->match_formats = codec->vtable->match_formats;
 
 		/* set default attributes */
 		if (codec->static_descriptor) {
@@ -129,7 +131,9 @@ static apt_bool_t mpf_codec_manager_codec_add(const mpf_codec_manager_t *codec_m
 			descriptor->sampling_rate = codec->static_descriptor->sampling_rate;
 			descriptor->rtp_sampling_rate = codec->static_descriptor->rtp_sampling_rate;
 			descriptor->channel_count = codec->static_descriptor->channel_count;
-			descriptor->format = codec->static_descriptor->format;
+			if (codec->static_descriptor->format_params) {
+				descriptor->format_params = apt_pair_array_copy(codec->static_descriptor->format_params, pool);
+			}
 		}
 		else {
 			descriptor->payload_type = RTP_PT_DYNAMIC;
@@ -162,7 +166,12 @@ static apt_bool_t mpf_codec_manager_codec_add(const mpf_codec_manager_t *codec_m
 	}
 
 	if (format_attr) {
-		apt_string_assign(&descriptor->format, format_attr, pool);
+		apt_str_t value;
+		apt_string_assign(&value, format_attr, pool);
+		if (!descriptor->format_params) {
+			descriptor->format_params = apt_pair_array_create(1,pool);
+		}
+		apt_pair_array_parse(descriptor->format_params,&value,pool);
 	}
 
 	return TRUE;

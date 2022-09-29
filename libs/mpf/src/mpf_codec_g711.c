@@ -126,7 +126,8 @@ static const mpf_codec_vtable_t g711u_vtable = {
 	g711u_encode,
 	g711u_decode,
 	NULL,
-	g711u_fill
+	g711u_fill,
+	NULL
 };
 
 static const mpf_codec_vtable_t g711a_vtable = {
@@ -137,7 +138,8 @@ static const mpf_codec_vtable_t g711a_vtable = {
 	g711a_encode,
 	g711a_decode,
 	NULL,
-	g711a_fill
+	g711a_fill,
+	NULL
 };
 
 static const mpf_codec_descriptor_t g711u_descriptor = {
@@ -147,7 +149,8 @@ static const mpf_codec_descriptor_t g711u_descriptor = {
 	8000,
 	1,
 	0,
-	{NULL, 0},
+	NULL,
+	NULL,
 	TRUE
 };
 
@@ -158,7 +161,8 @@ static const mpf_codec_descriptor_t g711a_descriptor = {
 	8000,
 	1,
 	0,
-	{NULL,0},
+	NULL,
+	NULL,
 	TRUE
 };
 
