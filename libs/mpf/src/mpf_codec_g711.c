@@ -146,6 +146,7 @@ static const mpf_codec_descriptor_t g711u_descriptor = {
 	8000,
 	8000,
 	1,
+	0,
 	{NULL, 0},
 	TRUE
 };
@@ -156,22 +157,25 @@ static const mpf_codec_descriptor_t g711a_descriptor = {
 	8000,
 	8000,
 	1,
+	0,
 	{NULL,0},
 	TRUE
 };
 
 static const mpf_codec_attribs_t g711u_attribs = {
-	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},  /* codec name */
-	8,                                            /* bits per sample */
+	{G711u_CODEC_NAME, G711u_CODEC_NAME_LENGTH},   /* codec name */
+	8,                                             /* bits per sample */
 	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 |
-	MPF_SAMPLE_RATE_32000 | MPF_SAMPLE_RATE_48000 /* supported sampling rates */
+	MPF_SAMPLE_RATE_32000 | MPF_SAMPLE_RATE_48000, /* supported sampling rates */
+	10                                             /* base frame duration */
 };
 
 static const mpf_codec_attribs_t g711a_attribs = {
-	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},  /* codec name */
-	8,                                            /* bits per sample */
+	{G711a_CODEC_NAME, G711a_CODEC_NAME_LENGTH},   /* codec name */
+	8,                                             /* bits per sample */
 	MPF_SAMPLE_RATE_8000 | MPF_SAMPLE_RATE_16000 |
-	MPF_SAMPLE_RATE_32000 | MPF_SAMPLE_RATE_48000 /* supported sampling rates */
+	MPF_SAMPLE_RATE_32000 | MPF_SAMPLE_RATE_48000, /* supported sampling rates */
+	10                                             /* base frame duration */
 };
 
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool)

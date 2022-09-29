@@ -121,6 +121,7 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 {
 	apr_size_t i;
 	apr_size_t frame_size;
+	apr_uint16_t frame_duration = CODEC_FRAME_TIME_BASE;
 	mpf_codec_descriptor_t *descriptor;
 	mpf_audio_stream_t *sink;
 	mpf_multiplier_t *multiplier;
@@ -149,8 +150,14 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 			/* set decoder before bridge */
 			mpf_audio_stream_t *decoder = mpf_decoder_create(source,codec,pool);
 			source = decoder;
+
+			if (codec->attribs->frame_duration > frame_duration) {
+				frame_duration = codec->attribs->frame_duration;
+			}
 		}
 	}
+
+	source->rx_descriptor->frame_duration = frame_duration;
 	multiplier->source = source;
 	mpf_audio_stream_rx_open(source,NULL);
 	
@@ -171,6 +178,8 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 				sink = encoder;
 			}
 		}
+
+		sink->tx_descriptor->frame_duration = frame_duration;
 		sink_arr[i] = sink;
 		mpf_audio_stream_tx_open(sink,NULL);
 	}
@@ -178,7 +187,7 @@ MPF_DECLARE(mpf_object_t*) mpf_multiplier_create(
 	multiplier->sink_count = sink_count;
 	
 	descriptor = source->rx_descriptor;
-	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);
+	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count,frame_duration);
 	multiplier->frame.codec_frame.size = frame_size;
 	multiplier->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
 	return &multiplier->base;

@@ -475,7 +475,7 @@ static apt_bool_t recorder_stream_write(mpf_audio_stream_t *stream, const mpf_fr
 			fwrite(frame->codec_frame.buffer,1,frame->codec_frame.size,recorder_channel->audio_out);
 			
 			recorder_channel->cur_size += frame->codec_frame.size;
-			recorder_channel->cur_time += CODEC_FRAME_TIME_BASE;
+			recorder_channel->cur_time += stream->tx_descriptor->frame_duration;
 			if(recorder_channel->max_time && recorder_channel->cur_time >= recorder_channel->max_time) {
 				recorder_record_complete(recorder_channel,RECORDER_COMPLETION_CAUSE_SUCCESS_MAXTIME);
 			}

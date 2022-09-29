@@ -41,6 +41,8 @@ struct mpf_activity_detector_t {
 	mpf_detector_state_e state;
 	/* duration spent in current state  */
 	apr_size_t           duration;
+	/* frame duration  */
+	apr_size_t           frame_duration;
 };
 
 /** Create activity detector */
@@ -52,6 +54,7 @@ MPF_DECLARE(mpf_activity_detector_t*) mpf_activity_detector_create(apr_pool_t *p
 	detector->silence_timeout = 300; /* 0.3 s */
 	detector->noinput_timeout = 5000; /* 5 s */
 	detector->duration = 0;
+	detector->frame_duration = CODEC_FRAME_TIME_BASE;
 	detector->state = DETECTOR_STATE_INACTIVITY;
 	return detector;
 }
@@ -85,6 +88,11 @@ MPF_DECLARE(void) mpf_activity_detector_speech_timeout_set(mpf_activity_detector
 MPF_DECLARE(void) mpf_activity_detector_silence_timeout_set(mpf_activity_detector_t *detector, apr_size_t silence_timeout)
 {
 	detector->silence_timeout = silence_timeout;
+}
+
+MPF_DECLARE(void) mpf_activity_frame_duration_set(mpf_activity_detector_t *detector, apr_size_t frame_duration)
+{
+	detector->frame_duration = frame_duration;
 }
 
 
@@ -132,7 +140,7 @@ MPF_DECLARE(mpf_detector_event_e) mpf_activity_detector_process(mpf_activity_det
 			mpf_activity_detector_state_change(detector,DETECTOR_STATE_ACTIVITY_TRANSITION);
 		}
 		else {
-			detector->duration += CODEC_FRAME_TIME_BASE;
+			detector->duration += detector->frame_duration;
 			if(detector->duration >= detector->noinput_timeout) {
 				/* detected noinput */
 				det_event = MPF_DETECTOR_EVENT_NOINPUT;
@@ -141,7 +149,7 @@ MPF_DECLARE(mpf_detector_event_e) mpf_activity_detector_process(mpf_activity_det
 	}
 	else if(detector->state == DETECTOR_STATE_ACTIVITY_TRANSITION) {
 		if(level >= detector->level_threshold) {
-			detector->duration += CODEC_FRAME_TIME_BASE;
+			detector->duration += detector->frame_duration;
 			if(detector->duration >= detector->speech_timeout) {
 				/* finally detected activity */
 				det_event = MPF_DETECTOR_EVENT_ACTIVITY;
@@ -155,7 +163,7 @@ MPF_DECLARE(mpf_detector_event_e) mpf_activity_detector_process(mpf_activity_det
 	}
 	else if(detector->state == DETECTOR_STATE_ACTIVITY) {
 		if(level >= detector->level_threshold) {
-			detector->duration += CODEC_FRAME_TIME_BASE;
+			detector->duration += detector->frame_duration;
 		}
 		else {
 			/* start to detect inactivity */
@@ -168,7 +176,7 @@ MPF_DECLARE(mpf_detector_event_e) mpf_activity_detector_process(mpf_activity_det
 			mpf_activity_detector_state_change(detector,DETECTOR_STATE_ACTIVITY);
 		}
 		else {
-			detector->duration += CODEC_FRAME_TIME_BASE;
+			detector->duration += detector->frame_duration;
 			if(detector->duration >= detector->silence_timeout) {
 				/* detected inactivity */
 				det_event = MPF_DETECTOR_EVENT_INACTIVITY;

@@ -464,10 +464,6 @@ MPF_DECLARE(apt_bool_t) mpf_rtp_stream_modify(mpf_audio_stream_t *stream, mpf_rt
 	if((rtp_stream->base->direction & STREAM_DIRECTION_SEND) == STREAM_DIRECTION_SEND) {
 		mpf_codec_list_t *codec_list = &rtp_stream->remote_media->codec_list;
 		rtp_stream->base->tx_descriptor = codec_list->primary_descriptor;
-		if(rtp_stream->base->tx_descriptor) {
-			rtp_stream->transmitter.samples_per_frame = 
-				(apr_uint32_t)mpf_codec_frame_samples_calculate(rtp_stream->base->tx_descriptor->rtp_sampling_rate, rtp_stream->base->tx_descriptor->channel_count);
-		}
 		if(codec_list->event_descriptor) {
 			rtp_stream->base->tx_event_descriptor = codec_list->event_descriptor;
 		}
@@ -907,12 +903,20 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 			transmitter->ptime = 20;
 		}
 	}
-	transmitter->packet_frames = transmitter->ptime / CODEC_FRAME_TIME_BASE;
+	transmitter->frame_duration = codec->attribs->frame_duration;
+	transmitter->samples_per_frame =
+		(apr_uint32_t)mpf_codec_frame_samples_calculate(
+			stream->tx_descriptor->rtp_sampling_rate,
+			stream->tx_descriptor->channel_count,
+			transmitter->frame_duration);
+	transmitter->packet_frames = transmitter->ptime / transmitter->frame_duration;
 	transmitter->current_frames = 0;
 
 	frame_size = mpf_codec_frame_size_calculate(
-							stream->tx_descriptor,
-							codec->attribs);
+							stream->tx_descriptor->sampling_rate,
+							stream->tx_descriptor->channel_count,
+							transmitter->frame_duration,
+							codec->attribs->bits_per_sample);
 	transmitter->packet_data = apr_palloc(
 							rtp_stream->pool,
 							sizeof(rtp_header_t) + transmitter->packet_frames * frame_size);

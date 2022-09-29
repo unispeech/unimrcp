@@ -145,11 +145,11 @@ static apt_bool_t ReadStream(mpf_audio_stream_t* pStream, mpf_frame_t* pFrame)
 		else 
 		{
 			/* fill with silence in case no file available */
-			if(pRecogChannel->m_TimeToComplete >= CODEC_FRAME_TIME_BASE) 
+			if(pRecogChannel->m_TimeToComplete >= pStream->rx_descriptor->frame_duration)
 			{
 				pFrame->type |= MEDIA_FRAME_TYPE_AUDIO;
 				memset(pFrame->codec_frame.buffer,0,pFrame->codec_frame.size);
-				pRecogChannel->m_TimeToComplete -= CODEC_FRAME_TIME_BASE;
+				pRecogChannel->m_TimeToComplete -= pStream->rx_descriptor->frame_duration;
 			}
 			else 
 			{

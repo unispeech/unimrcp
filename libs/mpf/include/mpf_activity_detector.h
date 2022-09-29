@@ -57,6 +57,9 @@ MPF_DECLARE(void) mpf_activity_detector_speech_timeout_set(mpf_activity_detector
 /** Set timeout required to trigger silence (transition from active to inactive state) */
 MPF_DECLARE(void) mpf_activity_detector_silence_timeout_set(mpf_activity_detector_t *detector, apr_size_t silence_timeout);
 
+/** Set frame duration in ms */
+MPF_DECLARE(void) mpf_activity_frame_duration_set(mpf_activity_detector_t *detector, apr_size_t frame_duration);
+
 /** Process current frame, return detected event if any */
 MPF_DECLARE(mpf_detector_event_e) mpf_activity_detector_process(mpf_activity_detector_t *detector, const mpf_frame_t *frame);
 

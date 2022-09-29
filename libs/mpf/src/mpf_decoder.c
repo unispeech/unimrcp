@@ -114,13 +114,18 @@ MPF_DECLARE(mpf_audio_stream_t*) mpf_decoder_create(mpf_audio_stream_t *source, 
 	decoder->base->rx_descriptor = mpf_codec_lpcm_descriptor_create(
 		source->rx_descriptor->sampling_rate,
 		source->rx_descriptor->channel_count,
+		source->rx_descriptor->frame_duration,
 		pool);
 	decoder->base->rx_event_descriptor = source->rx_event_descriptor;
 
 	decoder->source = source;
 	decoder->codec = codec;
 
-	frame_size = mpf_codec_frame_size_calculate(source->rx_descriptor,codec->attribs);
+	frame_size = mpf_codec_frame_size_calculate(
+		source->rx_descriptor->sampling_rate,
+		source->rx_descriptor->channel_count,
+		source->rx_descriptor->frame_duration,
+		codec->attribs->bits_per_sample);
 	decoder->frame_in.codec_frame.size = frame_size;
 	decoder->frame_in.codec_frame.buffer = apr_palloc(pool,frame_size);
 	return decoder->base;

@@ -71,7 +71,8 @@ struct mpf_codec_descriptor_t {
 	apr_uint16_t rtp_sampling_rate;
 	/** Channel count */
 	apr_byte_t   channel_count;
-	/** Codec dependent additional format */
+	/** Frame duration in msec */
+	apr_uint16_t frame_duration;
 	apt_str_t    format;
 	/**  Enabled/disabled state */
 	apt_bool_t   enabled;
@@ -90,11 +91,13 @@ struct mpf_codec_list_t {
 /** Codec attributes */
 struct mpf_codec_attribs_t {
 	/** Codec name */
-	apt_str_t  name;
+	apt_str_t    name;
 	/** Bits per sample */
-	apr_byte_t bits_per_sample;
+	apr_byte_t   bits_per_sample;
 	/** Supported sampling rates (mpf_sample_rates_e) */
-	int        sample_rates;
+	int          sample_rates;
+	/** Base frame duration in msec */
+	apr_uint16_t frame_duration;
 };
 
 /** List of codec attributes (capabilities) */
@@ -121,6 +124,7 @@ static APR_INLINE void mpf_codec_descriptor_init(mpf_codec_descriptor_t *descrip
 	descriptor->sampling_rate = 0;
 	descriptor->rtp_sampling_rate = 0;
 	descriptor->channel_count = 0;
+	descriptor->frame_duration = 0;
 	apt_string_reset(&descriptor->format);
 	descriptor->enabled = TRUE;
 }
@@ -134,22 +138,21 @@ static APR_INLINE  mpf_codec_descriptor_t* mpf_codec_descriptor_create(apr_pool_
 }
 
 /** Calculate encoded frame size in bytes */
-static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(const mpf_codec_descriptor_t *descriptor, const mpf_codec_attribs_t *attribs)
+static APR_INLINE apr_size_t mpf_codec_frame_size_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_uint16_t frame_duration, apr_byte_t bits_per_sample)
 {
-	return (apr_size_t) descriptor->channel_count * attribs->bits_per_sample * CODEC_FRAME_TIME_BASE * 
-			descriptor->sampling_rate / 1000 / 8; /* 1000 - msec per sec, 8 - bits per byte */
+	return (apr_size_t) channel_count * bits_per_sample * frame_duration * sampling_rate / 8000; /* 1000 - msec per sec, 8 - bits per byte */
 }
 
 /** Calculate samples of the frame (ts) */
-static APR_INLINE apr_size_t mpf_codec_frame_samples_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count)
+static APR_INLINE apr_size_t mpf_codec_frame_samples_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_uint16_t frame_duration)
 {
-	return (apr_size_t) channel_count * CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
+	return (apr_size_t) channel_count * frame_duration * sampling_rate / 1000;
 }
 
 /** Calculate linear frame size in bytes */
-static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count)
+static APR_INLINE apr_size_t mpf_codec_linear_frame_size_calculate(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_uint16_t frame_duration)
 {
-	return (apr_size_t) channel_count * BYTES_PER_SAMPLE * CODEC_FRAME_TIME_BASE * sampling_rate / 1000;
+	return (apr_size_t) channel_count * BYTES_PER_SAMPLE * frame_duration * sampling_rate / 1000;
 }
 
 /** Set sampling rate in codec descriptor */
@@ -216,7 +219,7 @@ static APR_INLINE mpf_codec_descriptor_t* mpf_codec_list_descriptor_get(const mp
 }
 
 /** Create linear PCM descriptor */
-MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_pool_t *pool);
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_uint16_t frame_duration, apr_pool_t *pool);
 
 /** Create codec descriptor by capabilities */
 MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_descriptor_create_by_capabilities(const mpf_codec_capabilities_t *capabilities, const mpf_codec_descriptor_t *peer, apr_pool_t *pool);
@@ -263,6 +266,7 @@ static APR_INLINE apt_bool_t mpf_codec_capabilities_add(mpf_codec_capabilities_t
 	apt_string_assign(&attribs->name,codec_name,capabilities->attrib_arr->pool);
 	attribs->sample_rates = sample_rates;
 	attribs->bits_per_sample = 0;
+	attribs->frame_duration = CODEC_FRAME_TIME_BASE;
 	return TRUE;
 }
 

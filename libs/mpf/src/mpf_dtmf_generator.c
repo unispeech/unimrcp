@@ -105,6 +105,8 @@ struct mpf_dtmf_generator_t {
 	apr_uint32_t                     counter;
 	/** Frame duration in RTP units */
 	apr_uint32_t                     frame_duration;
+	/** Frame duration in ms */
+	apr_uint32_t                     frame_duration_ms;
 	/** RTP named event duration (0..0xFFFF) */
 	apr_uint32_t                     event_duration;
 	/** Set MPF_MARKER_NEW_SEGMENT in the next event frame */
@@ -129,6 +131,7 @@ MPF_DECLARE(struct mpf_dtmf_generator_t *) mpf_dtmf_generator_create_ex(
 								enum mpf_dtmf_generator_band_e band,
 								apr_uint32_t tone_ms,
 								apr_uint32_t silence_ms,
+								apr_uint32_t frame_duration_ms,
 								struct apr_pool_t *pool)
 {
 	struct mpf_dtmf_generator_t *gen;
@@ -150,10 +153,11 @@ MPF_DECLARE(struct mpf_dtmf_generator_t *) mpf_dtmf_generator_create_ex(
 		gen->sample_rate_audio = stream->rx_descriptor->sampling_rate;
 	gen->sample_rate_events = stream->rx_event_descriptor ?
 		stream->rx_event_descriptor->sampling_rate : gen->sample_rate_audio;
-	gen->frame_duration = gen->sample_rate_events / 1000 * CODEC_FRAME_TIME_BASE;
+	gen->frame_duration_ms = frame_duration_ms;
+	gen->frame_duration = gen->sample_rate_events / 1000 * frame_duration_ms;
 	gen->tone_duration = gen->sample_rate_events / 1000 * tone_ms;
 	gen->silence_duration = gen->sample_rate_events / 1000 * silence_ms;
-	gen->events_ptime = CODEC_FRAME_TIME_BASE;  /* Should be got from event_descriptor */
+	gen->events_ptime = frame_duration_ms;  /* Should be got from event_descriptor */
 	return gen;
 }
 
@@ -256,7 +260,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 			}
 		}
 		if (generator->band & MPF_DTMF_GENERATOR_OUTBAND) {
-			generator->since_last_event += CODEC_FRAME_TIME_BASE;
+			generator->since_last_event += generator->frame_duration_ms;
 			if (generator->since_last_event >= generator->events_ptime)
 				generator->since_last_event = 0;
 			else
@@ -302,7 +306,7 @@ MPF_DECLARE(apt_bool_t) mpf_dtmf_generator_put_frame(
 		return TRUE;
 	}
 	else if (generator->state == DTMF_GEN_STATE_ENDING) {
-		generator->since_last_event += CODEC_FRAME_TIME_BASE;
+		generator->since_last_event += generator->frame_duration_ms;
 		if (generator->since_last_event >= generator->events_ptime)
 			generator->since_last_event = 0;
 		else

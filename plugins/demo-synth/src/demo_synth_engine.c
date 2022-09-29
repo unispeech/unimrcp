@@ -480,10 +480,10 @@ static apt_bool_t demo_synth_stream_read(mpf_audio_stream_t *stream, mpf_frame_t
 		}
 		else {
 			/* fill with silence in case no file available */
-			if(synth_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
+			if(synth_channel->time_to_complete >= stream->rx_descriptor->frame_duration) {
 				memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
 				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
-				synth_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
+				synth_channel->time_to_complete -= stream->rx_descriptor->frame_duration;
 			}
 			else {
 				completed = TRUE;

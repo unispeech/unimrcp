@@ -62,6 +62,7 @@ MPF_DECLARE(struct mpf_dtmf_generator_t *) mpf_dtmf_generator_create_ex(
 								enum mpf_dtmf_generator_band_e band,
 								apr_uint32_t tone_ms,
 								apr_uint32_t silence_ms,
+								apr_uint32_t frame_duration_ms,
 								struct apr_pool_t *pool);
 
 /**
@@ -79,7 +80,7 @@ static APR_INLINE struct mpf_dtmf_generator_t *mpf_dtmf_generator_create(
 {
 	return mpf_dtmf_generator_create_ex(stream,
 		stream->rx_event_descriptor ? MPF_DTMF_GENERATOR_OUTBAND : MPF_DTMF_GENERATOR_INBAND,
-		70, 50, pool);
+		70, 50, CODEC_FRAME_TIME_BASE, pool);
 }
 
 /**

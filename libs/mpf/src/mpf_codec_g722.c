@@ -76,29 +76,33 @@ static apt_bool_t mpf_g722_decoder_close(mpf_codec_t *codec)
 
 static apt_bool_t mpf_g722_encode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
+	unsigned char *encode_buf;
 	mpf_g722_encoder_t *encoder = codec->encoder_obj;
 	if (!encoder)
 		return FALSE;
 
-	unsigned char *encode_buf = frame_out->buffer;
+	encode_buf = frame_out->buffer;
 	frame_out->size = g722_encode(&encoder->state, encode_buf, frame_in->buffer, frame_in->size / sizeof(apr_int16_t));
 	return TRUE;
 }
 
 static apt_bool_t mpf_g722_decode(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out)
 {
+	apr_int16_t *decode_buf;
+	int size;
 	mpf_g722_decoder_t *decoder = codec->decoder_obj;
 	if (!decoder)
 		return FALSE;
 
-	apr_int16_t *decode_buf = frame_out->buffer;
-	int size = g722_decode(&decoder->state, decode_buf, frame_in->buffer, frame_in->size);
+	decode_buf = frame_out->buffer;
+	size = g722_decode(&decoder->state, decode_buf, frame_in->buffer, frame_in->size);
 	frame_out->size = size * sizeof(apr_int16_t);
 	return TRUE;
 }
 
 static apt_bool_t mpf_g722_fill(mpf_codec_t *codec, mpf_codec_frame_t *frame_out)
 {
+	unsigned char *encode_buf;
 	mpf_g722_encoder_t *encoder = codec->encoder_obj;
 	if (!encoder)
 		return FALSE;
@@ -108,7 +112,7 @@ static apt_bool_t mpf_g722_fill(mpf_codec_t *codec, mpf_codec_frame_t *frame_out
 		encoder->silence_buf = (apr_int16_t*)apr_pcalloc(codec->pool, sizeof(apr_int16_t) * encoder->silence_buf_len);
 	}
 
-	unsigned char *encode_buf = frame_out->buffer;
+	encode_buf = frame_out->buffer;
 	frame_out->size = g722_encode(&encoder->state, encode_buf, encoder->silence_buf, encoder->silence_buf_len);
 	return TRUE;
 }
@@ -130,6 +134,7 @@ static const mpf_codec_descriptor_t g722_descriptor = {
 	16000,
 	8000,
 	1,
+	0,
 	{NULL, 0},
 	TRUE
 };
@@ -137,7 +142,8 @@ static const mpf_codec_descriptor_t g722_descriptor = {
 static const mpf_codec_attribs_t g722_attribs = {
 	{G722_CODEC_NAME, G722_CODEC_NAME_LENGTH},    /* codec name */
 	4,                                            /* bits per sample */
-	MPF_SAMPLE_RATE_16000                         /* supported sampling rates */
+	MPF_SAMPLE_RATE_16000,                        /* supported sampling rates */
+	10                                            /* base frame duration */
 };
 
 mpf_codec_t* mpf_codec_g722_create(apr_pool_t *pool)

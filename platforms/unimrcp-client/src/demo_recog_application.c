@@ -364,10 +364,10 @@ static apt_bool_t recog_app_stream_read(mpf_audio_stream_t *stream, mpf_frame_t 
 		}
 		else {
 			/* fill with silence in case no file available */
-			if(recog_channel->time_to_complete >= CODEC_FRAME_TIME_BASE) {
+			if(recog_channel->time_to_complete >= stream->rx_descriptor->frame_duration) {
 				frame->type |= MEDIA_FRAME_TYPE_AUDIO;
 				memset(frame->codec_frame.buffer,0,frame->codec_frame.size);
-				recog_channel->time_to_complete -= CODEC_FRAME_TIME_BASE;
+				recog_channel->time_to_complete -= stream->rx_descriptor->frame_duration;
 			}
 			else {
 				recog_channel->streaming = FALSE;

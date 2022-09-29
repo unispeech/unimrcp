@@ -121,6 +121,8 @@ struct rtp_transmitter_t {
 	/** Packetization time in msec */
 	apr_uint16_t    ptime;
 
+	/** Frame duration in msec */
+	apr_uint16_t    frame_duration;
 	/** Number of frames in a packet */
 	apr_uint16_t    packet_frames;
 	/** Current number of frames */
@@ -163,6 +165,7 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 {
 	transmitter->ptime = 0;
 
+	transmitter->frame_duration = 0;
 	transmitter->packet_frames = 0;
 	transmitter->current_frames = 0;
 	transmitter->samples_per_frame = 0;

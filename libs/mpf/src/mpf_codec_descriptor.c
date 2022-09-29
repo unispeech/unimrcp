@@ -54,13 +54,14 @@ static APR_INLINE apt_bool_t mpf_sampling_rate_check(apr_uint16_t sampling_rate,
 	return (mpf_sample_rate_mask_get(sampling_rate) & mask) ? TRUE : FALSE;
 }
 
-MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_pool_t *pool)
+MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_lpcm_descriptor_create(apr_uint16_t sampling_rate, apr_byte_t channel_count, apr_uint16_t frame_duration, apr_pool_t *pool)
 {
 	mpf_codec_descriptor_t *descriptor = mpf_codec_descriptor_create(pool);
 	descriptor->payload_type = RTP_PT_UNKNOWN;
 	descriptor->name = lpcm_attribs.name;
 	mpf_codec_sampling_rate_set(descriptor, sampling_rate);
 	descriptor->channel_count = channel_count;
+	descriptor->frame_duration = frame_duration;
 	return descriptor;
 }
 
@@ -74,7 +75,7 @@ MPF_DECLARE(mpf_codec_descriptor_t*) mpf_codec_descriptor_create_by_capabilities
 	}
 	
 	if(!attribs) {
-		return mpf_codec_lpcm_descriptor_create(8000,1,pool);
+		return mpf_codec_lpcm_descriptor_create(8000,1,CODEC_FRAME_TIME_BASE,pool);
 	}
 
 	descriptor = mpf_codec_descriptor_create(pool);

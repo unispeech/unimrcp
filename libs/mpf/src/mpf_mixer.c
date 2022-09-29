@@ -142,6 +142,7 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 {
 	apr_size_t i;
 	apr_size_t frame_size;
+	apr_uint16_t frame_duration = CODEC_FRAME_TIME_BASE;
 	mpf_codec_descriptor_t *descriptor;
 	mpf_audio_stream_t *source;
 	mpf_mixer_t *mixer;
@@ -170,12 +171,18 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 			/* set encoder after mixer */
 			mpf_audio_stream_t *encoder = mpf_encoder_create(sink,codec,pool);
 			sink = encoder;
+
+			if (codec->attribs->frame_duration > frame_duration) {
+				frame_duration = codec->attribs->frame_duration;
+			}
 		}
 	}
+
+	sink->tx_descriptor->frame_duration = frame_duration;
 	mixer->sink = sink;
 	mpf_audio_stream_tx_open(sink,NULL);
 
-	for(i=0; i<source_count; i++)	{
+	for(i=0; i<source_count; i++) {
 		source = source_arr[i];
 		if(!source) continue;
 
@@ -192,6 +199,8 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 				source = decoder;
 			}
 		}
+
+		source->rx_descriptor->frame_duration = frame_duration;
 		source_arr[i] = source;
 		mpf_audio_stream_rx_open(source,NULL);
 	}
@@ -199,7 +208,7 @@ MPF_DECLARE(mpf_object_t*) mpf_mixer_create(
 	mixer->source_count = source_count;
 
 	descriptor = sink->tx_descriptor;
-	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count);
+	frame_size = mpf_codec_linear_frame_size_calculate(descriptor->sampling_rate,descriptor->channel_count,frame_duration);
 	mixer->frame.codec_frame.size = frame_size;
 	mixer->frame.codec_frame.buffer = apr_palloc(pool,frame_size);
 	mixer->mix_frame.codec_frame.size = frame_size;
