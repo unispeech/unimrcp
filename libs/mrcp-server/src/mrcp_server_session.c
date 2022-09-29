@@ -157,17 +157,17 @@ static mrcp_engine_channel_t* mrcp_server_engine_channel_create(mrcp_server_sess
 				}
 				/* copy/apply session resource-specific attributes */
 				attribs = apr_table_overlay(session->base.pool,attribs,table);
-			}
 
-			/* check whether an engine is specified in the session attributes */
-			engine_name = apr_table_get(table,"engine");
-			if(engine_name) {
-				engine = mrcp_server_engine_get(session->server,engine_name);
-				if(!engine) {
-					apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "No Such MRCP Engine by Name [%s] for Resource [%s] " APT_NAMESID_FMT,
-						engine_name,
-						resource_name->buf,
-						MRCP_SESSION_NAMESID(session));
+				/* check whether an engine is specified in the session attributes */
+				engine_name = apr_table_get(table,"engine");
+				if(engine_name) {
+					engine = mrcp_server_engine_get(session->server,engine_name);
+					if(!engine) {
+						apt_log(APT_LOG_MARK, APT_PRIO_DEBUG, "No Such MRCP Engine by Name [%s] for Resource [%s] " APT_NAMESID_FMT,
+							engine_name,
+							resource_name->buf,
+							MRCP_SESSION_NAMESID(session));
+					}
 				}
 			}
 		}
