@@ -50,12 +50,12 @@ struct mpf_codec_t {
 /** Table of codec virtual methods */
 struct mpf_codec_vtable_t {
 	/** Virtual open encoder method */
-	apt_bool_t (*open_encoder)(mpf_codec_t *codec);
+	apt_bool_t (*open_encoder)(mpf_codec_t *codec, mpf_codec_descriptor_t *descriptor);
 	/** Virtual close encoder method */
 	apt_bool_t (*close_encoder)(mpf_codec_t *codec);
 
 	/** Virtual open decoder method */
-	apt_bool_t(*open_decoder)(mpf_codec_t *codec);
+	apt_bool_t(*open_decoder)(mpf_codec_t *codec, mpf_codec_descriptor_t *descriptor);
 	/** Virtual close decoder method */
 	apt_bool_t(*close_decoder)(mpf_codec_t *codec);
 
@@ -115,11 +115,11 @@ static APR_INLINE mpf_codec_t* mpf_codec_clone(mpf_codec_t *src_codec, apr_pool_
 }
 
 /** Open encoder */
-static APR_INLINE apt_bool_t mpf_codec_encoder_open(mpf_codec_t *codec)
+static APR_INLINE apt_bool_t mpf_codec_encoder_open(mpf_codec_t *codec, mpf_codec_descriptor_t *descriptor)
 {
 	apt_bool_t rv = TRUE;
 	if(codec->vtable->open_encoder) {
-		rv = codec->vtable->open_encoder(codec);
+		rv = codec->vtable->open_encoder(codec,descriptor);
 	}
 	return rv;
 }
@@ -135,11 +135,11 @@ static APR_INLINE apt_bool_t mpf_codec_encoder_close(mpf_codec_t *codec)
 }
 
 /** Open decoder */
-static APR_INLINE apt_bool_t mpf_codec_decoder_open(mpf_codec_t *codec)
+static APR_INLINE apt_bool_t mpf_codec_decoder_open(mpf_codec_t *codec, mpf_codec_descriptor_t *descriptor)
 {
 	apt_bool_t rv = TRUE;
 	if (codec->vtable->open_decoder) {
-		rv = codec->vtable->open_decoder(codec);
+		rv = codec->vtable->open_decoder(codec,descriptor);
 	}
 	return rv;
 }

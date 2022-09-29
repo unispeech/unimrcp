@@ -34,7 +34,7 @@ struct mpf_g722_decoder_t {
 	g722_decode_state_t   state;
 };
 
-static apt_bool_t mpf_g722_encoder_open(mpf_codec_t *codec)
+static apt_bool_t mpf_g722_encoder_open(mpf_codec_t *codec, mpf_codec_descriptor_t *descriptor)
 {
 	mpf_g722_encoder_t *encoder = (mpf_g722_encoder_t*)apr_palloc(codec->pool, sizeof(mpf_g722_encoder_t));
 	g722_encode_init(&encoder->state, 64000, 0);
@@ -55,7 +55,7 @@ static apt_bool_t mpf_g722_encoder_close(mpf_codec_t *codec)
 	return TRUE;
 }
 
-static apt_bool_t mpf_g722_decoder_open(mpf_codec_t *codec)
+static apt_bool_t mpf_g722_decoder_open(mpf_codec_t *codec, mpf_codec_descriptor_t *descriptor)
 {
 	mpf_g722_decoder_t *decoder = (mpf_g722_decoder_t*)apr_palloc(codec->pool, sizeof(mpf_g722_decoder_t));
 	g722_decode_init(&decoder->state, 64000, 0);

@@ -26,7 +26,6 @@ struct mpf_decoder_t {
 	mpf_frame_t         frame_in;
 };
 
-
 static apt_bool_t mpf_decoder_destroy(mpf_audio_stream_t *stream)
 {
 	mpf_decoder_t *decoder = stream->obj;
@@ -36,8 +35,14 @@ static apt_bool_t mpf_decoder_destroy(mpf_audio_stream_t *stream)
 static apt_bool_t mpf_decoder_open(mpf_audio_stream_t *stream, mpf_codec_t *codec)
 {
 	mpf_decoder_t *decoder = stream->obj;
-	mpf_codec_decoder_open(decoder->codec);
-	return mpf_audio_stream_rx_open(decoder->source,decoder->codec);
+	if (mpf_codec_decoder_open(decoder->codec, decoder->source->rx_descriptor) == FALSE) {
+		return FALSE;
+	}
+	if (mpf_audio_stream_rx_open(decoder->source, decoder->codec) == FALSE) {
+		mpf_codec_decoder_close(decoder->codec);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 static apt_bool_t mpf_decoder_close(mpf_audio_stream_t *stream)
