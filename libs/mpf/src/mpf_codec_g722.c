@@ -125,6 +125,7 @@ static const mpf_codec_vtable_t g722_vtable = {
 	mpf_g722_encode,
 	mpf_g722_decode,
 	NULL,
+	NULL,
 	mpf_g722_fill,
 	NULL
 };

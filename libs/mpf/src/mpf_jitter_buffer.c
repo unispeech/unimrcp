@@ -17,6 +17,8 @@
 #include "mpf_jitter_buffer.h"
 #include "mpf_trace.h"
 
+#define MAX_FRAMES_PER_PACKET 16
+
 #if ENABLE_JB_TRACE == 1
 #define JB_TRACE printf
 #elif ENABLE_JB_TRACE == 2
@@ -229,8 +231,11 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 {
 	mpf_frame_t *media_frame;
 	apr_uint32_t write_ts;
-	apr_size_t available_frame_count;
+	apr_uint16_t available_frame_count;
 	jb_result_t result;
+	mpf_codec_frame_t frames[MAX_FRAMES_PER_PACKET];
+	apr_uint16_t frame_count = MAX_FRAMES_PER_PACKET;
+	apr_uint16_t i;
 
 	if(marker) {
 		JB_TRACE("JB marker\n");
@@ -328,7 +333,7 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 	}
 
 	/* get number of frames available to write */
-	available_frame_count = jb->frame_count - (write_ts - jb->read_ts)/jb->frame_ts;
+	available_frame_count = (apr_uint16_t) (jb->frame_count - (write_ts - jb->read_ts)/jb->frame_ts);
 	if(available_frame_count <= 0) {
 		/* too early */
 		JB_TRACE("JB write ts=%u too early => discard\n",write_ts);
@@ -336,20 +341,21 @@ jb_result_t mpf_jitter_buffer_write(mpf_jitter_buffer_t *jb, void *buffer, apr_s
 	}
 
 	JB_TRACE("JB write ts=%u size=%"APR_SIZE_T_FMT"\n",write_ts,size);
-	while(available_frame_count && size) {
-		media_frame = mpf_jitter_buffer_frame_get(jb,write_ts);
-		media_frame->codec_frame.size = jb->frame_size;
-		if(mpf_codec_dissect(jb->codec,&buffer,&size,&media_frame->codec_frame) == FALSE) {
-			break;
+	if (mpf_codec_dissect(jb->codec, buffer, size, jb->frame_size, frames, &frame_count) == TRUE) {
+		if (frame_count > available_frame_count) {
+			/* not all frames can be accommodated (partially too early) */
+			JB_TRACE("JB write ts=%u partially too early => discard %d frames\n", write_ts, frame_count - available_frame_count);
+			frame_count = available_frame_count;
 		}
 
-		media_frame->type |= MEDIA_FRAME_TYPE_AUDIO;
-		write_ts += jb->frame_ts;
-		available_frame_count--;
-	}
+		for (i = 0; i < frame_count; i++) {
+			media_frame = mpf_jitter_buffer_frame_get(jb, write_ts);
+			media_frame->codec_frame.size = frames[i].size;
+			memcpy(media_frame->codec_frame.buffer, frames[i].buffer, frames[i].size);
 
-	if(size) {
-		/* no frame available to write, but some data remains in buffer (partialy too early) */
+			media_frame->type |= MEDIA_FRAME_TYPE_AUDIO;
+			write_ts += jb->frame_ts;
+		}
 	}
 
 	if(write_ts > jb->write_ts) {

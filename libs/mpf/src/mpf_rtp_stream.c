@@ -920,8 +920,13 @@ static apt_bool_t mpf_rtp_tx_stream_open(mpf_audio_stream_t *stream, mpf_codec_t
 	transmitter->packet_data = apr_palloc(
 							rtp_stream->pool,
 							sizeof(rtp_header_t) + transmitter->packet_frames * frame_size);
-	
+
+	transmitter->frames = apr_pcalloc(
+							rtp_stream->pool,
+							sizeof(mpf_codec_frame_t) * transmitter->packet_frames);
+
 	transmitter->inactivity = 1;
+	transmitter->codec = codec;
 	apt_log(MPF_LOG_MARK,APT_PRIO_INFO,"Open RTP Transmitter %s:%hu -> %s:%hu",
 			rtp_stream->rtp_l_sockaddr->hostname,
 			rtp_stream->rtp_l_sockaddr->port,
@@ -967,11 +972,12 @@ static APR_INLINE void rtp_header_prepare(
 static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp_transmitter_t *transmitter, const mpf_frame_t *frame)
 {
 	apt_bool_t status = TRUE;
-	memcpy(
-		transmitter->packet_data + transmitter->packet_size,
-		frame->codec_frame.buffer,
-		frame->codec_frame.size);
-	transmitter->packet_size += frame->codec_frame.size;
+
+	mpf_codec_frame_t *codec_frame = &transmitter->frames[transmitter->current_frames];
+	codec_frame->buffer = transmitter->packet_data + transmitter->packet_size;
+	codec_frame->size = frame->codec_frame.size;
+	memcpy(codec_frame->buffer,frame->codec_frame.buffer,frame->codec_frame.size);
+	transmitter->packet_size += codec_frame->size;
 
 	if(++transmitter->current_frames == transmitter->packet_frames) {
 		rtp_header_t *header = (rtp_header_t*)transmitter->packet_data;
@@ -982,6 +988,15 @@ static APR_INLINE apt_bool_t mpf_rtp_data_send(mpf_rtp_stream_t *rtp_stream, rtp
 			(header->marker == 1) ? '*' : ' ',
 			header->timestamp, transmitter->last_seq_num);
 		header->timestamp = htonl(header->timestamp);
+
+		if (mpf_codec_pack(
+			transmitter->codec,
+			transmitter->frames,
+			transmitter->packet_frames,
+			&transmitter->packet_size) == FALSE) {
+			return FALSE;
+		}
+
 		if(apr_socket_sendto(
 					rtp_stream->rtp_socket,
 					rtp_stream->rtp_r_sockaddr,

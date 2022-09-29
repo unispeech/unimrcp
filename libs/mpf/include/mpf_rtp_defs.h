@@ -125,6 +125,8 @@ struct rtp_transmitter_t {
 	apr_uint16_t    frame_duration;
 	/** Number of frames in a packet */
 	apr_uint16_t    packet_frames;
+	/** Array of frames in a packet */
+	mpf_codec_frame_t *frames;
 	/** Current number of frames */
 	apr_uint16_t    current_frames;
 	/** Samples in frames in timestamp units */
@@ -146,6 +148,9 @@ struct rtp_transmitter_t {
 
 	/** RTCP statistics used in SR */
 	rtcp_sr_stat_t  sr_stat;
+
+	/* codec to be used to pack payload */
+	mpf_codec_t    *codec;
 };
 
 
@@ -167,6 +172,7 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 
 	transmitter->frame_duration = 0;
 	transmitter->packet_frames = 0;
+	transmitter->frames = NULL;
 	transmitter->current_frames = 0;
 	transmitter->samples_per_frame = 0;
 
@@ -179,6 +185,8 @@ static APR_INLINE void rtp_transmitter_init(rtp_transmitter_t *transmitter)
 	transmitter->packet_size = 0;
 
 	mpf_rtcp_sr_stat_reset(&transmitter->sr_stat);
+
+	transmitter->codec = NULL;
 }
 
 APT_END_EXTERN_C

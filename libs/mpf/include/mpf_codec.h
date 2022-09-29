@@ -64,8 +64,10 @@ struct mpf_codec_vtable_t {
 	/** Virtual decode method */
 	apt_bool_t (*decode)(mpf_codec_t *codec, const mpf_codec_frame_t *frame_in, mpf_codec_frame_t *frame_out);
 
+	/** Virtual pack method */
+	apt_bool_t (*pack)(mpf_codec_t *codec, const mpf_codec_frame_t frames[], apr_uint16_t frame_count, apr_size_t *size);
 	/** Virtual dissect method */
-	apt_bool_t (*dissect)(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame);
+	apt_bool_t(*dissect)(mpf_codec_t *codec, void *buffer, apr_size_t buffer_size, apr_size_t frame_size, mpf_codec_frame_t frames[], apr_uint16_t *frame_count);
 
 	/** Virtual fill with silence method */
 	apt_bool_t (*fill)(mpf_codec_t *codec, mpf_codec_frame_t *frame_out);
@@ -174,25 +176,41 @@ static APR_INLINE apt_bool_t mpf_codec_decode(mpf_codec_t *codec, const mpf_code
 	return rv;
 }
 
-/** Dissect codec frame (navigate through codec frames in a buffer, which may contain multiple frames) */
-static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void **buffer, apr_size_t *size, mpf_codec_frame_t *frame)
+/** Pack codec frame(s) */
+static APR_INLINE apt_bool_t mpf_codec_pack(mpf_codec_t *codec, const mpf_codec_frame_t frames[], apr_uint16_t frame_count, apr_size_t *size)
 {
 	apt_bool_t rv = TRUE;
-	if(codec->vtable->dissect) {
-		/* custom dissector for codecs like G.729, G.723 */
-		rv = codec->vtable->dissect(codec,buffer,size,frame);
+	if (codec->vtable->pack) {
+		/* custom packer for codecs like G.722.2 (AMR) */
+		rv = codec->vtable->pack(codec, frames, frame_count, size);
+	}
+	return rv;
+}
+
+/** Dissect raw buffer into codec frame(s) */
+static APR_INLINE apt_bool_t mpf_codec_dissect(mpf_codec_t *codec, void *buffer, apr_size_t buffer_size, apr_size_t frame_size, mpf_codec_frame_t frames[], apr_uint16_t *frame_count)
+{
+	apt_bool_t rv = TRUE;
+	if (codec->vtable->dissect) {
+		/* custom dissector for codecs like G.722.2 (AMR) */
+		rv = codec->vtable->dissect(codec, buffer, buffer_size, frame_size, frames, frame_count);
 	}
 	else {
 		/* default dissector */
-		if(*size >= frame->size && frame->size) {
-			memcpy(frame->buffer,*buffer,frame->size);
-			
-			*buffer = (apr_byte_t*)*buffer + frame->size;
-			*size = *size - frame->size;
+		mpf_codec_frame_t *frame;
+		apr_uint16_t cur_frame = 0;
+		char *pos = (char*)buffer;
+		while (buffer_size >= frame_size && cur_frame < *frame_count) {
+			frame = &frames[cur_frame];
+			frame->size = frame_size;
+			frame->buffer = pos;
+
+			cur_frame++;
+			pos += frame_size;
+			buffer_size -= frame->size;
 		}
-		else {
-			rv = FALSE;
-		}
+
+		*frame_count = cur_frame;
 	}
 	return rv;
 }

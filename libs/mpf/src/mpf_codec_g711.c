@@ -126,6 +126,7 @@ static const mpf_codec_vtable_t g711u_vtable = {
 	g711u_encode,
 	g711u_decode,
 	NULL,
+	NULL,
 	g711u_fill,
 	NULL
 };
@@ -137,6 +138,7 @@ static const mpf_codec_vtable_t g711a_vtable = {
 	NULL,
 	g711a_encode,
 	g711a_decode,
+	NULL,
 	NULL,
 	g711a_fill,
 	NULL
