@@ -239,6 +239,10 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 					descriptor1->enabled = TRUE;
 					codec_list1->event_descriptor = descriptor1;
 					codec_list2->event_descriptor = descriptor2;
+
+					if(descriptor2->payload_type != descriptor1->payload_type) {
+						descriptor2->payload_type = descriptor1->payload_type;
+					}
 				}
 				else {
 					/* no match found, disable this descriptor */
@@ -259,6 +263,10 @@ MPF_DECLARE(apt_bool_t) mpf_codec_lists_intersect(mpf_codec_list_t *codec_list1,
 					descriptor1->enabled = TRUE;
 					codec_list1->primary_descriptor = descriptor1;
 					codec_list2->primary_descriptor = descriptor2;
+
+					if(descriptor2->payload_type >= RTP_PT_DYNAMIC && descriptor2->payload_type != descriptor1->payload_type) {
+						descriptor2->payload_type = descriptor1->payload_type;
+					}
 				}
 				else {
 					/* no match found, disable this descriptor */
