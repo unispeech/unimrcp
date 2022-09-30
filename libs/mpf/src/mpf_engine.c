@@ -51,6 +51,9 @@ mpf_codec_t* mpf_codec_l16_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711u_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g711a_create(apr_pool_t *pool);
 mpf_codec_t* mpf_codec_g722_create(apr_pool_t *pool);
+#ifdef ENABLE_AMR_CODEC
+mpf_codec_t* mpf_codec_amr_wb_create(apr_pool_t *pool);
+#endif
 
 APT_LOG_SOURCE_IMPLEMENT(MPF,mpf_log_source,"MPF")
 
@@ -435,6 +438,11 @@ MPF_DECLARE(mpf_codec_manager_t*) mpf_engine_codec_manager_create(apr_pool_t *po
 
 		codec = mpf_codec_g722_create(pool);
 		mpf_codec_manager_codec_register(codec_manager, codec);
+
+#ifdef ENABLE_AMR_CODEC
+		codec = mpf_codec_amr_wb_create(pool);
+		mpf_codec_manager_codec_register(codec_manager, codec);
+#endif
 	}
 	return codec_manager;
 }

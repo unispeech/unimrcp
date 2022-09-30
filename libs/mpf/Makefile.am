@@ -84,3 +84,10 @@ libmpf_la_SOURCES        = codecs/g711/g711.c \
                            src/mpf_rtp_attribs.c \
                            src/mpf_resampler.c \
                            src/mpf_stream.c
+if UNIMRCP_AMR_CODEC
+AM_CPPFLAGS              += -DENABLE_AMR_CODEC \
+                           $(UNIMRCP_OPENCORE_AMR_INCLUDES) \
+                           $(UNIMRCP_VO_AMRWBENC_INCLUDES)
+
+libmpf_la_SOURCES        += src/mpf_codec_amr.c
+endif

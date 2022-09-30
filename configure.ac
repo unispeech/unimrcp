@@ -91,6 +91,23 @@ UNIMRCP_CHECK_APR
 dnl Check for the Sofia-SIP library.
 UNIMRCP_CHECK_SOFIA
 
+dnl Enable AMR codec.
+AC_ARG_ENABLE(amr-codec,
+    [AC_HELP_STRING([--enable-amr-codec  ],[enable AMR codec])],
+    [enable_amr_codec="$enableval"],
+    [enable_amr_codec="no"])
+
+AC_MSG_NOTICE([enable AMR codec: $enable_amr_codec])
+if test "${enable_amr_codec}" != "no"; then
+    dnl Check for the OpenCORE AMR library.
+    UNIMRCP_CHECK_OPENCORE_AMR
+
+    dnl Check for the VO AMRWBENC library.
+    UNIMRCP_CHECK_VO_AMRWBENC
+fi
+
+AM_CONDITIONAL([UNIMRCP_AMR_CODEC],[test "${enable_amr_codec}" != "no"])
+
 dnl Enable inter-library dependencies.
 AC_ARG_ENABLE(interlib-deps,
     [AC_HELP_STRING([--disable-interlib-deps  ],[disable inter-library dependencies (might break builds)])],
@@ -254,6 +271,11 @@ echo
 echo APR version................... : $apr_version
 echo APR-util version.............. : $apu_version
 echo Sofia-SIP version............. : $sofia_version
+if test "${enable_amr_codec}" != "no"; then
+echo
+echo OpenCORE AMR version.......... : $opencore_amr_version
+echo VO AMRWBENC version........... : $vo_amrwbenc_version
+fi
 echo
 echo Compiler...................... : $CC
 echo Compiler flags................ : $CFLAGS

@@ -30,3 +30,7 @@ UNIMRCP_SERVERLIB_LIBS     = $(top_builddir)/modules/mrcp-sofiasip/libmrcpsofias
 
 # Linker options (LDFLAGS)
 UNIMRCP_SERVERLIB_OPTS     = $(UNI_LT_VERSION)
+
+if UNIMRCP_AMR_CODEC
+UNIMRCP_SERVERLIB_LIBS    += $(UNIMRCP_OPENCORE_AMR_LIBS) $(UNIMRCP_VO_AMRWBENC_LIBS)
+endif
