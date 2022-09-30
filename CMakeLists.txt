@@ -1,6 +1,22 @@
 cmake_minimum_required (VERSION 2.8)
 project (UniMRCP C)
 
+# CMake options
+option (ENABLE_CLIENT_LIB          "Enable UniMRCP client library"                  ON)
+option (ENABLE_CLIENT_APP          "Enable sample UniMRCP client application"       ON)
+option (ENABLE_UMC_APP             "Enable sample UniMRCP client C++ application"   ON)
+option (ENABLE_ASR_CLIENT          "Enable misc ASR client library and application" ON)
+
+option (ENABLE_SERVER_LIB          "Enable UniMRCP server library"                  ON)
+option (ENABLE_SERVER_APP          "Enable UniMRCP server application"              ON)
+
+option (ENABLE_DEMOSYNTH_PLUGIN    "Enable demo synthesizer plugin"                 ON)
+option (ENABLE_DEMORECOG_PLUGIN    "Enable demo recognizer plugin"                  ON)
+option (ENABLE_DEMOVERIFIER_PLUGIN "Enable demo verifier plugin"                    ON)
+option (ENABLE_RECORDER_PLUGIN     "Enable recorder plugin"                         ON)
+
+option (ENABLE_TEST_SUITES         "Enable test suites"                             OFF)
+
 # Organize targets into folders
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -75,39 +91,65 @@ add_subdirectory (libs/uni-rtsp)
 add_subdirectory (libs/mrcp)
 add_subdirectory (libs/mrcp-signaling)
 add_subdirectory (libs/mrcpv2-transport)
-add_subdirectory (libs/mrcp-engine)
+if (ENABLE_CLIENT_LIB)
 add_subdirectory (libs/mrcp-client)
+endif ()
+if (ENABLE_SERVER_LIB)
+add_subdirectory (libs/mrcp-engine)
 add_subdirectory (libs/mrcp-server)
+endif ()
 
 # Sub-projects: modules
 add_subdirectory (modules/mrcp-sofiasip)
 add_subdirectory (modules/mrcp-unirtsp)
 
 # Sub-projects: plug-ins
+if (ENABLE_DEMORECOG_PLUGIN)
 add_subdirectory (plugins/demo-recog)
+endif ()
+if (ENABLE_DEMOSYNTH_PLUGIN)
 add_subdirectory (plugins/demo-synth)
+endif ()
+if (ENABLE_DEMOVERIFIER_PLUGIN)
 add_subdirectory (plugins/demo-verifier)
+endif ()
+if (ENABLE_RECORDER_PLUGIN)
 add_subdirectory (plugins/mrcp-recorder)
+endif ()
 
 # Sub-projects: platform libraries
+if (ENABLE_CLIENT_LIB)
 add_subdirectory (platforms/libunimrcp-client)
+endif ()
+if (ENABLE_SERVER_LIB)
 add_subdirectory (platforms/libunimrcp-server)
+endif ()
 
 # Sub-projects: platform applications
+if (ENABLE_CLIENT_LIB AND ENABLE_UMC_APP)
 add_subdirectory (platforms/umc)
+endif ()
+if (ENABLE_CLIENT_LIB AND ENABLE_CLIENT_APP)
 add_subdirectory (platforms/unimrcp-client)
+endif ()
+if (ENABLE_SERVER_LIB AND ENABLE_SERVER_APP)
 add_subdirectory (platforms/unimrcp-server)
+endif ()
 
 # Sub-projects: asr-client
+if (ENABLE_CLIENT_LIB AND ENABLE_ASR_CLIENT)
 add_subdirectory (platforms/libasr-client)
 add_subdirectory (platforms/asr-client)
+endif ()
 
 # Sub-projects: tests
+if (ENABLE_TEST_SUITES)
 add_subdirectory (tests/apttest)
 add_subdirectory (tests/mpftest)
 add_subdirectory (tests/mrcptest)
 add_subdirectory (tests/rtsptest)
 add_subdirectory (tests/strtablegen)
+endif ()
 
 # Installation directives
 install (DIRECTORY DESTINATION log)
