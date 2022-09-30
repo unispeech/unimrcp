@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include "mpf_codec.h"
 #include "mpf_trace.h"
 #include <opencore-amrwb/dec_if.h>
@@ -257,7 +258,6 @@ static apt_bool_t mpf_amr_wb_dissect(mpf_codec_t *codec, void *buffer, apr_size_
 	apr_byte_t *toc;
 	apr_byte_t f_bit = 1;
 	apr_byte_t frame_type;
-	apr_byte_t good_quality;
 	apr_byte_t *read_ptr = buffer;
 	apr_byte_t *write_ptr = buffer;
 	mpf_codec_frame_t *frame;
@@ -275,7 +275,6 @@ static apt_bool_t mpf_amr_wb_dissect(mpf_codec_t *codec, void *buffer, apr_size_
 	toc = read_ptr;
 	while (buffer_size && cur_frame < *frame_count && f_bit) {
 		frame_type = ((toc[cur_frame] >> 3) & 0xF);
-		good_quality = ((toc[cur_frame] >> 2) & 0x01);
 		f_bit = ((toc[cur_frame] >> 7) & 0x01);
 
 		if (frame_type < AMR_WB_SID) {
