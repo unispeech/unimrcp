@@ -80,6 +80,11 @@ set (MPF_SOURCES
 	src/mpf_resampler.c
 	src/mpf_stream.c
 )
+
+if (${ENABLE_AMR_CODEC})
+	set (MPF_SOURCES ${MPF_SOURCES} src/mpf_codec_amr.c)
+endif ()
+
 source_group ("src" FILES ${MPF_SOURCES})
 
 set (MPF_G711_HEADERS
@@ -110,6 +115,9 @@ add_definitions (
 	${APR_DEFINES} 
 	${APU_DEFINES}
 )
+if (${ENABLE_AMR_CODEC})
+add_definitions (-DENABLE_AMR_CODEC)
+endif ()
 
 # Include directories
 include_directories (
@@ -119,3 +127,10 @@ include_directories (
 	${APR_INCLUDE_DIRS}
 	${APU_INCLUDE_DIRS}
 )
+
+if (${ENABLE_AMR_CODEC})
+include_directories (
+	${OPENCOREAMR_INCLUDE_DIRS}
+    ${VOAMRWBENC_INCLUDE_DIRS}
+)
+endif ()

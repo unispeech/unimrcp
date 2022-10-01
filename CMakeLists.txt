@@ -15,6 +15,8 @@ option (ENABLE_DEMORECOG_PLUGIN    "Enable demo recognizer plugin"              
 option (ENABLE_DEMOVERIFIER_PLUGIN "Enable demo verifier plugin"                    ON)
 option (ENABLE_RECORDER_PLUGIN     "Enable recorder plugin"                         ON)
 
+option (ENABLE_AMR_CODEC           "Enable AMR Codec"                               OFF)
+
 option (ENABLE_TEST_SUITES         "Enable test suites"                             OFF)
 
 # Organize targets into folders
@@ -32,6 +34,10 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/build/cmake)
 find_package (APR REQUIRED)
 find_package (APRUtil REQUIRED)
 find_package (Sofia REQUIRED)
+if (ENABLE_AMR_CODEC)
+	find_package (OpenCoreAMR REQUIRED)
+	find_package (VoAMRWBEnc REQUIRED)
+endif()
 
 # Set API definitions
 set (APR_TOOLKIT_DEFINES -DAPT_STATIC_LIB)

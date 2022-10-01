@@ -38,6 +38,14 @@ target_link_libraries(${PROJECT_NAME}
 	${APR_LIBRARIES}
 	${SOFIA_LIBRARIES}
 )
+
+if (${ENABLE_AMR_CODEC})
+target_link_libraries(${PROJECT_NAME}
+	${OPENCOREAMR_LIBRARIES}
+	${VOAMRWBENC_LIBRARIES}
+)
+endif ()
+
 # Input system libraries
 if (WIN32)
 	target_link_libraries(${PROJECT_NAME} ws2_32 winmm)
