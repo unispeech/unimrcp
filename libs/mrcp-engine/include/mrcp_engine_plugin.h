@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2015 Arsen Chaloyan
+ * Copyright 2008-2022 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ typedef apt_bool_t (*mrcp_plugin_log_source_accessor_f)(apt_log_source_t *log_so
  * Minor API changes that do not cause binary compatibility problems.
  * Reset to 0 when upgrading PLUGIN_MAJOR_VERSION
  */
-#define PLUGIN_MINOR_VERSION   7
+#define PLUGIN_MINOR_VERSION   8
 
 /** patch level 
  * The Patch Level never includes API changes, simply bug fixes.

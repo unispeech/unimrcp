@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2020 Arsen Chaloyan
+ * Copyright 2008-2022 Arsen Chaloyan
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@
  * Minor API changes that do not cause binary compatibility problems.
  * Reset to 0 when upgrading UNI_MAJOR_VERSION.
  */
-#define UNI_MINOR_VERSION   7
+#define UNI_MINOR_VERSION   8
 
 /** patch level 
  * The Patch Level never includes API changes, simply bug fixes.
@@ -70,7 +70,7 @@
                              ##UNI_PATCH_VERSION
 
 /** The Copyright. */
-#define UNI_COPYRIGHT "Copyright 2008-2020 Arsen Chaloyan"
+#define UNI_COPYRIGHT "Copyright 2008-2022 Arsen Chaloyan"
 
 /*
  * Use the brief description of the license for Win32 .rc files;
