@@ -36,6 +36,9 @@
 /unimrcpdeps.sln
 /unimrcpdeps-2010.sln
 
+# /.build/
+/.build*
+
 # /build/
 /build/ltmain.sh
 /build/depcomp
