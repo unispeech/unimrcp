@@ -1,3 +1,33 @@
+Changes for UniMRCP-1.8.0
+
+  APR-toolkit library
+
+  * Fixed an issue with never-elapsing timeouts in apt_timer_t by ensuring scheduled_time is not negative.
+
+  MPF library
+
+  * Changed the interface of mpf_codec_t.
+  * Added support for G.722 codec.
+  * Added support for AMR-WB codec.
+  * Added a new function mpf_codec_manager_codec_load() in addition to the existing function mpf_codec_manager_codec_list_load().
+  * Determine frame duration dynamically based on codecs involved in the media path instead of using CODEC_FRAME_TIME_BASE globally.
+  * By default, accept/use a dynamic RTP payload type specified in the offer.
+  * Use negotiated local media for both RTP send and receive.
+
+  MRCP server library
+
+  * Fixed processing of the START-INPUT-TIMERS request in the state machine of the speaker verification resource. Thanks Fabiano.
+  * Fixed a possible NULL pointer dereferencing while processing inappropriately composed feature tags.
+  
+  Sofia-SIP module (MRCPv2 agent)
+
+  * In offline mode, properly respond with SIP 503 Service Unavailable to SIP OPTIONS requests. (Issue #242, follow-up)
+
+  Miscellaneous
+
+  * Improved CMake-based build.
+
+
 Changes for UniMRCP-1.7.0
 
   APR-toolkit library
