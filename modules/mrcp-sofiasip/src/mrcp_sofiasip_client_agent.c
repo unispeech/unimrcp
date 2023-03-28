@@ -57,6 +57,7 @@ struct mrcp_sofia_session_t {
 	nua_handle_t              *nh;
 	enum nua_callstate         nua_state;
 
+	apt_bool_t                 offer_submitted;
 	apt_bool_t                 terminate_requested;
 	mrcp_session_descriptor_t *descriptor;
 	apr_thread_mutex_t        *mutex;
@@ -234,6 +235,7 @@ static apt_bool_t mrcp_sofia_session_create(mrcp_session_t *session, const mrcp_
 	sofia_session->home = su_home_new(sizeof(*sofia_session->home));
 	sofia_session->session = session;
 	sofia_session->sip_settings = settings;
+	sofia_session->offer_submitted = FALSE;
 	sofia_session->terminate_requested = FALSE;
 	sofia_session->descriptor = NULL;
 	session->obj = sofia_session;
@@ -364,6 +366,7 @@ static apt_bool_t mrcp_sofia_session_offer(mrcp_session_t *session, mrcp_session
 
 	if(sofia_session->nh) {
 		res = TRUE;
+		sofia_session->offer_submitted = TRUE;
 		nua_invite(sofia_session->nh,
 				TAG_IF(local_sdp_str,SOATAG_USER_SDP_STR(local_sdp_str)),
 				TAG_END());
@@ -561,8 +564,9 @@ static void mrcp_sofia_on_state_change(
 		return;
 	}
 
-	if(nua_state == nua_callstate_ready) {
+	if(nua_state == nua_callstate_ready && sofia_session->offer_submitted == TRUE) {
 		mrcp_sofia_on_session_ready(status,sofia_agent,nh,sofia_session,sip,tags);
+		sofia_session->offer_submitted = FALSE;
 	}
 	sofia_session->nua_state = nua_state;
 }
