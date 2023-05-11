@@ -82,7 +82,7 @@ static apt_bool_t mpf_g722_encode(mpf_codec_t *codec, const mpf_codec_frame_t *f
 		return FALSE;
 
 	encode_buf = frame_out->buffer;
-	frame_out->size = g722_encode(&encoder->state, encode_buf, frame_in->buffer, frame_in->size / sizeof(apr_int16_t));
+	frame_out->size = g722_encode(&encoder->state, encode_buf, frame_in->buffer, (int) (frame_in->size / sizeof(apr_int16_t)));
 	return TRUE;
 }
 
@@ -95,7 +95,7 @@ static apt_bool_t mpf_g722_decode(mpf_codec_t *codec, const mpf_codec_frame_t *f
 		return FALSE;
 
 	decode_buf = frame_out->buffer;
-	size = g722_decode(&decoder->state, decode_buf, frame_in->buffer, frame_in->size);
+	size = g722_decode(&decoder->state, decode_buf, frame_in->buffer, (int) frame_in->size);
 	frame_out->size = size * sizeof(apr_int16_t);
 	return TRUE;
 }
@@ -113,7 +113,7 @@ static apt_bool_t mpf_g722_fill(mpf_codec_t *codec, mpf_codec_frame_t *frame_out
 	}
 
 	encode_buf = frame_out->buffer;
-	frame_out->size = g722_encode(&encoder->state, encode_buf, encoder->silence_buf, encoder->silence_buf_len);
+	frame_out->size = g722_encode(&encoder->state, encode_buf, encoder->silence_buf, (int) encoder->silence_buf_len);
 	return TRUE;
 }
 
