@@ -68,6 +68,10 @@ struct rtsp_server_connection_t {
 	/** String identifier used for traces */
 	const char        *id;
 
+	/** Transparently dump whatever received/sent on transport layer,
+	if verbose is set to TRUE (default) */
+	apt_bool_t        verbose;
+
 	/** RTSP server, connection belongs to */
 	rtsp_server_t     *server;
 
@@ -655,9 +659,10 @@ static apt_bool_t rtsp_server_message_send(rtsp_server_t *server, rtsp_server_co
 			stream->text.length = stream->pos - stream->text.buf;
 			*stream->pos = '\0';
 
-			apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Send RTSP Data %s [%"APR_SIZE_T_FMT" bytes]\n%s",
+			apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Send RTSP Data %s [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 				rtsp_connection->id,
 				stream->text.length,
+				rtsp_connection->verbose == TRUE ? stream->text.length : 0,
 				stream->text.buf);
 			if(apr_socket_send(rtsp_connection->sock,stream->text.buf,&stream->text.length) == APR_SUCCESS) {
 				status = TRUE;
@@ -782,6 +787,7 @@ static apt_bool_t rtsp_server_connection_accept(rtsp_server_t *server)
 	rtsp_connection->pool = pool;
 	rtsp_connection->sock = NULL;
 	rtsp_connection->client_ip = NULL;
+	rtsp_connection->verbose = TRUE;
 	APR_RING_ELEM_INIT(rtsp_connection,link);
 
 	if(apr_socket_accept(&rtsp_connection->sock,server->listen_sock,rtsp_connection->pool) != APR_SUCCESS) {
@@ -831,6 +837,13 @@ static apt_bool_t rtsp_server_connection_accept(rtsp_server_t *server)
 												rtsp_server_inactivity_timer_proc,
 												rtsp_connection,
 												rtsp_connection->pool);
+	}
+
+	if (apt_log_masking_get() != APT_LOG_MASKING_NONE)
+	{
+		rtsp_connection->verbose = FALSE;
+		rtsp_parser_verbose_set(rtsp_connection->parser, TRUE);
+		rtsp_generator_verbose_set(rtsp_connection->generator, TRUE);
 	}
 
 	APR_RING_INSERT_TAIL(&server->connection_list,rtsp_connection,rtsp_server_connection_t,link);
@@ -927,9 +940,10 @@ static apt_bool_t rtsp_server_poller_signal_process(void *obj, const apr_pollfd_
 	/* calculate actual length of the stream */
 	stream->text.length = offset + length;
 	stream->pos[length] = '\0';
-	apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Data %s [%"APR_SIZE_T_FMT" bytes]\n%s",
+	apt_log(RTSP_LOG_MARK,APT_PRIO_INFO,"Receive RTSP Data %s [%"APR_SIZE_T_FMT" bytes]\n%.*s",
 		rtsp_connection->id,
 		length,
+		rtsp_connection->verbose == TRUE ? length : 0,
 		stream->pos);
 
 	/* reset pos */
