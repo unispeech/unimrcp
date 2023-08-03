@@ -57,6 +57,13 @@ RTSP_DECLARE(rtsp_parser_t*) rtsp_parser_create(apr_pool_t *pool)
 	return parser;
 }
 
+/** Set verbose mode for the parser */
+RTSP_DECLARE(void) rtsp_parser_verbose_set(rtsp_parser_t * parser, apt_bool_t verbose)
+{
+	apt_message_parser_verbose_set(parser->base, verbose);
+}
+
+
 /** Parse RTSP stream */
 RTSP_DECLARE(apt_message_status_e) rtsp_parser_run(rtsp_parser_t *parser, apt_text_stream_t *stream, rtsp_message_t **message)
 {
@@ -105,6 +112,11 @@ RTSP_DECLARE(rtsp_generator_t*) rtsp_generator_create(apr_pool_t *pool)
 	return generator;
 }
 
+/** Set verbose mode for the generator */
+RTSP_DECLARE(void) rtsp_generator_verbose_set(rtsp_generator_t * generator, apt_bool_t verbose)
+{
+	apt_message_generator_verbose_set(generator->base, verbose);
+}
 
 /** Generate RTSP stream */
 RTSP_DECLARE(apt_message_status_e) rtsp_generator_run(rtsp_generator_t *generator, rtsp_message_t *message, apt_text_stream_t *stream)
