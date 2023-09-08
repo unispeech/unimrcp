@@ -181,7 +181,7 @@ RTSP_DECLARE(rtsp_server_t*) rtsp_server_create(
 
 	server->listen_sock = NULL;
 	server->sockaddr = NULL;
-	apr_sockaddr_info_get(&server->sockaddr,listen_ip,APR_INET,listen_port,0,pool);
+	apr_sockaddr_info_get(&server->sockaddr,listen_ip,strchr(listen_ip, ':')?APR_INET6:APR_INET,listen_port,0,pool);
 	if(!server->sockaddr) {
 		return NULL;
 	}
